@@ -7,11 +7,46 @@ This is separate from single-stock realtime quotes.
 
 import logging
 import os
+import re
 from datetime import date, timedelta
 
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+
+_A_SHARE_CODE_PATTERN = re.compile(
+    r'^(60[0135]|68[89]|00[0-3]|30[01]|43\d|83\d|87\d)\d{3}$'
+)
+
+
+def filter_a_shares_only(df: pd.DataFrame) -> pd.DataFrame:
+    """Filter DataFrame to only include valid A-share stock codes.
+
+    Keeps codes matching mainstream A-share exchanges:
+    - 上交所主板: 600xxx, 601xxx, 603xxx, 605xxx
+    - 科创板: 688xxx, 689xxx
+    - 深交所主板: 000xxx, 001xxx, 002xxx, 003xxx
+    - 创业板: 300xxx, 301xxx
+    - 北交所: 43xxxx, 83xxxx, 87xxxx
+
+    Excludes ETFs, bonds, convertible bonds, closed-end funds, LOFs, and B-shares.
+    """
+    if df.empty or 'code' not in df.columns:
+        return df
+
+    def _is_a_share(code) -> bool:
+        if pd.isna(code):
+            return False
+        code_str = str(code).strip()
+        if not code_str or code_str == 'nan' or code_str == 'None':
+            return False
+        # Pad to 6 digits if needed (handles int codes or codes with stripped zeros)
+        code_str = code_str.zfill(6)
+        return bool(_A_SHARE_CODE_PATTERN.match(code_str))
+
+    mask = df['code'].apply(_is_a_share)
+    return df[mask].reset_index(drop=True)
 
 
 def fetch_cn_snapshot(source: str = "efinance") -> pd.DataFrame:
@@ -323,6 +358,11 @@ def _normalize(df: pd.DataFrame, source: str) -> pd.DataFrame:
         df = df[df["price"] > 0]
 
     df.attrs["snapshot_source"] = source
+    before_count = len(df)
+    df = filter_a_shares_only(df)
+    filtered_count = before_count - len(df)
+    if filtered_count > 0:
+        logger.info("Filtered %d non-A-share codes (ETF/bond/fund), %d A-shares remaining", filtered_count, len(df))
     return df
 
 
