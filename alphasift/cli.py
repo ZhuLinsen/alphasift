@@ -14,7 +14,7 @@ from alphasift.audit import audit_project
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources, write_doctor_report
 from alphasift.dsa import check_dsa_readiness
-from alphasift.evaluate import evaluate_saved_run, evaluate_saved_runs
+from alphasift.evaluate import evaluate_saved_run, evaluate_saved_runs, evaluate_saved_runs_by_windows
 from alphasift.hotspot import (
     append_hotspot_history,
     discover_hotspots,
@@ -189,6 +189,11 @@ def main():
     esp.add_argument("--failed-breakout-pct", type=float, default=None, help="突破失败判定的最高收益百分比")
     esp.add_argument("--with-price-path", action="store_true", help="额外抓取日 K 路径，计算最大回撤和最大浮盈")
     esp.add_argument("--price-path-lookback-days", type=int, default=None, help="价格路径日 K 回看天数")
+    esp.add_argument(
+        "--window",
+        default=None,
+        help="用逗号分隔多个窗口对价格路径进行滚动回看，例如 5,10,20；和 --price-path-lookback-days 互斥",
+    )
 
     # runs
     rp = sub.add_parser("runs", help="列出已保存的运行")
@@ -362,16 +367,34 @@ def main():
 
     elif args.command == "evaluate-strategies":
         config = Config.from_env()
-        result = evaluate_saved_runs(
-            config=config,
-            limit=args.limit,
-            strategy=args.strategy,
-            cost_bps=args.cost_bps,
-            follow_through_pct=args.follow_through_pct,
-            failed_breakout_pct=args.failed_breakout_pct,
-            with_price_path=args.with_price_path or None,
-            price_path_lookback_days=args.price_path_lookback_days,
-        )
+        try:
+            windows = _parse_window_list(args.window)
+        except ValueError as exc:
+            parser.error(str(exc))
+        if windows and args.price_path_lookback_days is not None:
+            parser.error("--window is incompatible with --price-path-lookback-days for this command")
+
+        if windows:
+            result = evaluate_saved_runs_by_windows(
+                windows=windows,
+                config=config,
+                limit=args.limit,
+                strategy=args.strategy,
+                cost_bps=args.cost_bps,
+                follow_through_pct=args.follow_through_pct,
+                failed_breakout_pct=args.failed_breakout_pct,
+            )
+        else:
+            result = evaluate_saved_runs(
+                config=config,
+                limit=args.limit,
+                strategy=args.strategy,
+                cost_bps=args.cost_bps,
+                follow_through_pct=args.follow_through_pct,
+                failed_breakout_pct=args.failed_breakout_pct,
+                with_price_path=args.with_price_path or None,
+                price_path_lookback_days=args.price_path_lookback_days,
+            )
         payload = {
             "evaluated_at": result.get("evaluated_at"),
             "snapshot_source": result.get("snapshot_source"),
@@ -380,6 +403,7 @@ def main():
             "strategy_filter": result.get("strategy_filter", ""),
             "cost_bps": result.get("cost_bps"),
             "with_price_path": result.get("with_price_path"),
+            "price_path_window_days": result.get("price_path_window_days", []),
             "strategy_summaries": result.get("strategy_summaries", []),
         }
         if args.output:
@@ -742,19 +766,51 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
             f"limit={result.get('limit')} strategy_filter={result.get('strategy_filter') or '-'} "
             f"price_path={result.get('with_price_path')}"
         ),
-        "strategy runs picks avg_return median_return win_rate max_dd max_runup outcome shapes",
     ]
+    if result.get("price_path_window_days"):
+        windows = ",".join(f"{item}d" for item in result.get("price_path_window_days", []))
+        lines.append(f"windows={windows}")
+    if result.get("strategy_summaries", []) and isinstance(result.get("strategy_summaries"), list):
+        sample = result["strategy_summaries"][0]
+        if isinstance(sample, dict) and sample.get("window_summaries") is not None:
+            lines.append("strategy windows avg_return median_return win_rate max_dd max_runup failed_follow missing")
+        else:
+            lines.append(
+                "strategy runs picks avg_return median_return win_rate max_dd max_runup outcome shapes"
+            )
     if result.get("source_errors"):
         lines.append("source_errors=" + " | ".join(result["source_errors"]))
     for item in result.get("strategy_summaries", []):
-        shapes = item.get("shape_status_counts", {}) or {}
-        shape_text = ",".join(f"{name}:{count}" for name, count in sorted(shapes.items())) or "-"
-        lines.append(
-            f"{item.get('strategy'):<20} {item.get('run_count'):<4} {item.get('pick_count'):<5} "
-            f"{item.get('average_return_pct')!s:<10} {item.get('median_return_pct')!s:<13} "
-            f"{item.get('win_rate')!s:<8} {item.get('average_max_drawdown_pct')!s:<8} "
-            f"{item.get('average_max_runup_pct')!s:<9} {item.get('outcome'):<17} {shape_text}"
-        )
+        windows = item.get("window_summaries")
+        if windows:
+            line_parts = [
+                f"{item.get('strategy'):<20} "
+                f"{item.get('window_count', len(windows))!s:>3}w "
+            ]
+            for window in windows:
+                window_days = window.get("window_days", "-")
+                line_parts.append(
+                    (
+                        f"{window_days}d:" 
+                        f"ret={window.get('average_return_pct')!s} "
+                        f"win={window.get('win_rate')!s} "
+                        f"dd={window.get('average_max_drawdown_pct')!s} "
+                        f"runup={window.get('average_max_runup_pct')!s} "
+                        f"f={window.get('failed_breakout_count', 0)} "
+                        f"t={window.get('breakout_follow_through_count', 0)} "
+                        f"m={window.get('missing_count', 0)}; "
+                    )
+                )
+            lines.append("".join(line_parts).strip())
+        else:
+            shapes = item.get("shape_status_counts", {}) or {}
+            shape_text = ",".join(f"{name}:{count}" for name, count in sorted(shapes.items())) or "-"
+            lines.append(
+                f"{item.get('strategy'):<20} {item.get('run_count'):<4} {item.get('pick_count'):<5} "
+                f"{item.get('average_return_pct')!s:<10} {item.get('median_return_pct')!s:<13} "
+                f"{item.get('win_rate')!s:<8} {item.get('average_max_drawdown_pct')!s:<8} "
+                f"{item.get('average_max_runup_pct')!s:<9} {item.get('outcome'):<17} {shape_text}"
+            )
     return "\n".join(lines)
 
 
@@ -1075,6 +1131,28 @@ def _apply_env_file_args(env_files: list[str] | None) -> None:
     items = [item for item in existing.split(os.pathsep) if item]
     items.extend(env_files)
     os.environ["ALPHASIFT_ENV_FILES"] = os.pathsep.join(items)
+
+
+def _parse_window_list(raw: str | None) -> list[int] | None:
+    if raw is None:
+        return None
+    values: list[int] = []
+    seen: set[int] = set()
+    for item in str(raw).split(","):
+        token = item.strip()
+        if not token:
+            continue
+        try:
+            value = int(token)
+        except ValueError as exc:
+            raise ValueError(f"Invalid --window value: {token}") from exc
+        if value <= 0:
+            raise ValueError("--window values must be positive integers")
+        if value in seen:
+            continue
+        seen.add(value)
+        values.append(value)
+    return sorted(values)
 
 
 def _split_csv_args(values: list[str] | None) -> list[str] | None:

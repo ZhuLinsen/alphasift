@@ -4,7 +4,12 @@ import threading
 import pandas as pd
 
 from alphasift.config import Config
-from alphasift.evaluate import evaluate_result_against_snapshot, evaluate_saved_run, evaluate_saved_runs
+from alphasift.evaluate import (
+    evaluate_result_against_snapshot,
+    evaluate_saved_run,
+    evaluate_saved_runs,
+    evaluate_saved_runs_by_windows,
+)
 from alphasift.models import Pick, ScreenResult
 from alphasift.store import (
     list_saved_runs,
@@ -436,6 +441,119 @@ def test_evaluate_saved_runs_uses_cached_price_paths(tmp_path, monkeypatch):
     assert result["summary"]["run_count"] == 2
     assert result["summary"]["path_pick_count"] == 2
     assert len(list((tmp_path / "daily_history").glob("*.json"))) == 1
+
+
+def test_evaluate_saved_runs_by_windows_aggregates_strategy_window_summaries(tmp_path, monkeypatch):
+    def fake_fetch_daily_history(code, **kwargs):
+        lookback = int(kwargs.get("lookback_days", 0) or 0)
+        if lookback >= 10:
+            path = pd.DataFrame(
+                [
+                    {"日期": "2026-04-01", "收盘": 10.0, "最高": 11.0, "最低": 9.0},
+                    {"日期": "2026-04-02", "收盘": 11.0, "最高": 13.0, "最低": 9.5},
+                    {"日期": "2026-04-03", "收盘": 11.5, "最高": 11.6, "最低": 10.5},
+                    {"日期": "2026-04-04", "收盘": 10.2, "最高": 11.0, "最低": 10.1},
+                    {"日期": "2026-04-05", "收盘": 11.2, "最高": 11.8, "最低": 9.8},
+                ]
+            )
+        else:
+            path = pd.DataFrame(
+                [
+                    {"日期": "2026-04-01", "收盘": 10.0, "最高": 11.0, "最低": 9.0},
+                    {"日期": "2026-04-02", "收盘": 11.0, "最高": 13.0, "最低": 9.5},
+                    {"日期": "2026-04-03", "收盘": 11.5, "最高": 11.6, "最低": 10.5},
+                ]
+            )
+        return path
+
+    monkeypatch.setattr("alphasift.evaluate.fetch_daily_history", fake_fetch_daily_history)
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="run_a",
+            created_at="2026-04-01T09:30:00",
+            picks=[
+                Pick(
+                    rank=1,
+                    code="000001",
+                    name="平安银行",
+                    final_score=80,
+                    screen_score=80,
+                    price=10,
+                    breakout_20d_pct=0.4,
+                )
+            ],
+        ),
+        data_dir=tmp_path,
+    )
+    save_screen_result(
+        ScreenResult(
+            strategy="volume_breakout",
+            market="cn",
+            run_id="run_b",
+            created_at="2026-04-01T09:30:00",
+            picks=[
+                Pick(
+                    rank=1,
+                    code="600000",
+                    name="浦发银行",
+                    final_score=70,
+                    screen_score=70,
+                    price=20,
+                    breakout_20d_pct=-0.5,
+                )
+            ],
+        ),
+        data_dir=tmp_path,
+    )
+    snapshot = pd.DataFrame(
+        [
+            {"code": "000001", "price": 11},
+            {"code": "600000", "price": 18},
+        ]
+    )
+    snapshot.attrs["snapshot_source"] = "test"
+
+    payload = evaluate_saved_runs_by_windows(
+        windows=[5, 10],
+        config=Config(llm_api_key="", data_dir=tmp_path),
+        current_snapshot=snapshot,
+        limit=10,
+        cost_bps=0,
+    )
+    window5 = evaluate_saved_runs(
+        config=Config(llm_api_key="", data_dir=tmp_path),
+        current_snapshot=snapshot,
+        limit=10,
+        cost_bps=0,
+        with_price_path=True,
+        price_path_lookback_days=5,
+    )
+    window10 = evaluate_saved_runs(
+        config=Config(llm_api_key="", data_dir=tmp_path),
+        current_snapshot=snapshot,
+        limit=10,
+        cost_bps=0,
+        with_price_path=True,
+        price_path_lookback_days=10,
+    )
+
+    assert payload["price_path_window_days"] == [5, 10]
+    assert payload["with_price_path"] is True
+    assert len(payload["strategy_summaries"]) == 2
+
+    strategy = next(item for item in payload["strategy_summaries"] if item["strategy"] == "dual_low")
+    assert strategy["window_count"] == 2
+    assert [window.get("window_days") for window in strategy["window_summaries"]] == [5, 10]
+    window5_summary = next(
+        item for item in window5["strategy_summaries"] if item.get("strategy") == "dual_low"
+    )
+    window10_summary = next(
+        item for item in window10["strategy_summaries"] if item.get("strategy") == "dual_low"
+    )
+    assert strategy["window_summaries"][0]["average_return_pct"] == window5_summary["average_return_pct"]
+    assert strategy["window_summaries"][1]["average_return_pct"] == window10_summary["average_return_pct"]
 
 
 def test_evaluate_saved_runs_filters_strategy_before_loading_runs(tmp_path):

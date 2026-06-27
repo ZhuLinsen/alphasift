@@ -6,6 +6,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -333,6 +334,97 @@ def evaluate_saved_runs(
         "strategy_summaries": strategy_summaries,
         "dimensions": dimensions,
         "runs": [_evaluation_brief(item) for item in evaluations],
+    }
+
+
+
+def _normalize_price_windows(windows: list[int]) -> list[int]:
+    unique: list[int] = []
+    seen: set[int] = set()
+    for window in windows:
+        value = int(window)
+        if value <= 0:
+            continue
+        if value in seen:
+            continue
+        seen.add(value)
+        unique.append(value)
+    return sorted(unique)
+
+
+def evaluate_saved_runs_by_windows(
+    *,
+    windows: list[int],
+    config: Config | None = None,
+    current_snapshot: pd.DataFrame | None = None,
+    limit: int = 20,
+    strategy: str | None = None,
+    cost_bps: float | None = None,
+    follow_through_pct: float | None = None,
+    failed_breakout_pct: float | None = None,
+) -> dict[str, Any]:
+    """Evaluate saved runs for multiple price-path windows."""
+    normalized_windows = _normalize_price_windows(windows)
+    if not normalized_windows:
+        normalized_windows = [30]
+
+    if config is None:
+        config = Config.from_env()
+
+    window_results: list[dict[str, Any]] = []
+    for window_days in normalized_windows:
+        window_results.append(
+            evaluate_saved_runs(
+                config=config,
+                current_snapshot=current_snapshot,
+                limit=limit,
+                strategy=strategy,
+                cost_bps=cost_bps,
+                follow_through_pct=follow_through_pct,
+                failed_breakout_pct=failed_breakout_pct,
+                with_price_path=True,
+                price_path_lookback_days=window_days,
+            )
+        )
+
+    merged: dict[str, list[dict[str, Any]]] = {}
+    for index, window_days in enumerate(normalized_windows):
+        for summary in window_results[index].get("strategy_summaries", []):
+            if not isinstance(summary, dict):
+                continue
+            strategy_name = str(summary.get("strategy", "unknown")) or "unknown"
+            merged.setdefault(strategy_name, []).append(
+                {
+                    "window_days": window_days,
+                    "average_return_pct": summary.get("average_return_pct"),
+                    "win_rate": summary.get("win_rate"),
+                    "average_max_drawdown_pct": summary.get("average_max_drawdown_pct"),
+                    "average_max_runup_pct": summary.get("average_max_runup_pct"),
+                    "failed_breakout_count": (summary.get("shape_status_counts", {}) or {}).get("failed_breakout", 0),
+                    "breakout_follow_through_count": (summary.get("shape_status_counts", {}) or {}).get("breakout_follow_through", 0),
+                    "missing_count": summary.get("missing_count", 0),
+                    "shape_status_counts": summary.get("shape_status_counts", {}),
+                    "pick_status_counts": summary.get("pick_status_counts", {}),
+                }
+            )
+
+    summary_by_strategy: list[dict[str, Any]] = []
+    for strategy_name, window_summaries in sorted(merged.items(), key=lambda item: item[0]):
+        window_summaries.sort(key=lambda item: int(item.get("window_days", 0)))
+        summary_by_strategy.append(
+            {
+                "strategy": strategy_name,
+                "window_count": len(window_summaries),
+                "window_summaries": window_summaries,
+            }
+        )
+
+    base_payload = window_results[0]
+    return {
+        **{k: base_payload[k] for k in base_payload if k != "strategy_summaries"},
+        "strategy_summaries": summary_by_strategy,
+        "price_path_window_days": normalized_windows,
+        "with_price_path": True,
     }
 
 
