@@ -13,6 +13,7 @@ from pathlib import Path
 from alphasift.audit import audit_project
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources, write_doctor_report
+from alphasift.dsa import check_dsa_readiness
 from alphasift.evaluate import evaluate_saved_run, evaluate_saved_runs
 from alphasift.hotspot import (
     append_hotspot_history,
@@ -245,6 +246,12 @@ def main():
     dsp.add_argument("--output", default=None, help="额外写出 JSON 诊断报告")
     dsp.add_argument("--json", action="store_true", help="以 JSON 输出")
     dsp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
+    drp = doctor_sub.add_parser("dsa-readiness", help="诊断可选 DSA 分析服务可用性")
+    drp.add_argument("--api-url", default=None, help="DSA base URL 或 analyze endpoint；默认读取 DSA_API_URL")
+    drp.add_argument("--timeout-sec", type=float, default=5.0, help="readiness probe 超时秒数")
+    drp.add_argument("--output", default=None, help="额外写出 JSON 诊断报告")
+    drp.add_argument("--json", action="store_true", help="以 JSON 输出")
+    drp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
 
     # quickstart
     qp = sub.add_parser(
@@ -521,23 +528,36 @@ def main():
             print(_format_audit_explain(result))
 
     elif args.command == "doctor":
-        if args.doctor_command != "data-sources":
-            parser.error("doctor requires a subcommand, e.g. doctor data-sources")
         config = Config.from_env()
-        result = doctor_data_sources(
-            config,
-            snapshot_sources=_split_csv_args(args.snapshot_source) or None,
-            daily_source=args.daily_source,
-            daily_code=args.daily_code,
-            run_live=not args.no_live,
-            check_daily=not args.no_daily,
-        )
-        if args.output:
-            write_doctor_report(args.output, result)
-        if args.json or not args.explain:
-            print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+        if args.doctor_command == "data-sources":
+            result = doctor_data_sources(
+                config,
+                snapshot_sources=_split_csv_args(args.snapshot_source) or None,
+                daily_source=args.daily_source,
+                daily_code=args.daily_code,
+                run_live=not args.no_live,
+                check_daily=not args.no_daily,
+            )
+            if args.output:
+                write_doctor_report(args.output, result)
+            if args.json or not args.explain:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+            else:
+                print(_format_data_sources_doctor_explain(result.to_dict()))
+        elif args.doctor_command == "dsa-readiness":
+            result = check_dsa_readiness(
+                args.api_url if args.api_url is not None else config.dsa_api_url,
+                timeout_sec=args.timeout_sec,
+            )
+            if args.output:
+                Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+                Path(args.output).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+            if args.json or not args.explain:
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+            else:
+                print(_format_dsa_readiness_explain(result))
         else:
-            print(_format_data_sources_doctor_explain(result.to_dict()))
+            parser.error("doctor requires a subcommand, e.g. doctor data-sources")
 
     elif args.command == "quickstart":
         _run_quickstart(strategy=args.strategy, max_output=args.max_output)
@@ -915,6 +935,16 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
     if recommendations:
         lines.append("recommendations=" + " | ".join(str(item) for item in recommendations))
     return "\n".join(lines)
+
+
+def _format_dsa_readiness_explain(result: dict) -> str:
+    return "\n".join([
+        (
+            f"dsa status={result.get('status')} available={result.get('available')} "
+            f"endpoint={result.get('endpoint') or '-'} http_status={result.get('http_status')}"
+        ),
+        f"error={result.get('error') or '-'}",
+    ])
 
 
 def _write_industry_cache_metadata(

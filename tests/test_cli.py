@@ -252,3 +252,54 @@ def test_cli_hotspot_cache_does_not_overwrite_non_empty_cache_with_empty_provide
     assert metadata["fallback_used"] is True
     assert metadata["history_appended"] is False
     assert metadata["rows"] == 1
+
+
+def test_cli_doctor_dsa_readiness_missing_url_writes_json(monkeypatch, tmp_path, capsys):
+    output = tmp_path / "dsa-readiness.json"
+    monkeypatch.delenv("DSA_API_URL", raising=False)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["alphasift", "doctor", "dsa-readiness", "--json", "--output", str(output)],
+    )
+
+    main()
+
+    payload = json.loads(capsys.readouterr().out)
+    written = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["available"] is False
+    assert payload["status"] == "missing_url"
+    assert written == payload
+
+
+def test_cli_doctor_dsa_readiness_explain_uses_configured_url(monkeypatch, capsys):
+    def fake_get(url, timeout):
+        class FakeResponse:
+            status_code = 405
+            text = ""
+
+        assert url == "http://localhost:8000/api/v1/analysis/analyze"
+        assert timeout == 1.0
+        return FakeResponse()
+
+    monkeypatch.setattr("alphasift.dsa.requests.get", fake_get)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "alphasift",
+            "doctor",
+            "dsa-readiness",
+            "--api-url",
+            "http://localhost:8000",
+            "--timeout-sec",
+            "1",
+            "--explain",
+        ],
+    )
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "dsa status=route_present available=True" in out
+    assert "http://localhost:8000/api/v1/analysis/analyze" in out
