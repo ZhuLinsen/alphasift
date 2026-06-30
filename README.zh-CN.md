@@ -147,6 +147,8 @@ $ alphasift screen dual_low --no-llm
 | `ALPHASIFT_SOURCE_CALL_TIMEOUT_SEC` | 否 | 第三方 wrapper 数据源调用的全局等待超时；`0`/`off` 表示关闭 | - |
 | `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | 否 | 快照 wrapper 源 `efinance`/`akshare_em`/`tushare` 的调用超时 | `60` |
 | `ALPHASIFT_DAILY_CALL_TIMEOUT_SEC` | 否 | 日 K wrapper 源 `akshare`/`baostock`/`tushare`/`yfinance` 的调用超时 | `20` |
+| `ALPHASIFT_EASTMONEY_MIN_INTERVAL_SEC` | 否 | 东财直连 HTTP 请求最小串行间隔 | `1.0` |
+| `ALPHASIFT_EASTMONEY_JITTER_SEC` | 否 | 每次东财直连请求额外加入的随机抖动 | `0.3` |
 | `TUSHARE_TOKEN` / `TUSHARE_API_TOKEN` | 使用 `tushare` 时必须 | Tushare Pro token，用于最近交易日日线和 daily_basic 兜底 | - |
 | `TUSHARE_TRADE_DATE` | 否 | 固定 Tushare 交易日，格式 `YYYYMMDD`，便于复现实验 | 自动取最近开市日 |
 | `POST_ANALYZERS` | 否 | L3 后置分析器，设为 `none` 可关闭 | `scorecard` |
@@ -298,7 +300,7 @@ tushare → sina → efinance → akshare_em → em_datacenter
 | `em_datacenter` | data.eastmoney.com | 选股器 API，**非交易时段可用** |
 | `tushare` | Tushare Pro `daily` + `daily_basic` | 最近交易日数据，需 `TUSHARE_TOKEN`，非实时 |
 
-> 周末/节假日 push2 接口不可用，会自动降级到 em_datacenter。若某个数据源超时、不可用或缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。直接 HTTP 源使用请求级 timeout；efinance、AkShare、Baostock、Tushare、yfinance 等第三方 wrapper 调用也有 caller-side timeout，避免库调用卡住整次筛选。
+> 周末/节假日 push2 接口不可用，会自动降级到 em_datacenter。若某个数据源超时、不可用或缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。直接 HTTP 源使用请求级 timeout；efinance、AkShare、Baostock、Tushare、yfinance 等第三方 wrapper 调用也有 caller-side timeout，避免库调用卡住整次筛选。东财直连请求参考 `a-stock-data` 的防封实践，统一走共享重试会话、串行间隔和随机抖动。
 
 ## 内置策略
 

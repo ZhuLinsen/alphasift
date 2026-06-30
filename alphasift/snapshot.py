@@ -8,6 +8,7 @@ This is separate from single-stock realtime quotes.
 import logging
 import json
 import os
+import random
 import threading
 import time
 from datetime import date, datetime, timezone, timedelta
@@ -15,6 +16,8 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from alphasift.source_guard import call_with_timeout, parse_source_timeout_seconds
 
@@ -22,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 _SNAPSHOT_CACHE_VERSION = 1
 _DEFAULT_TUSHARE_HTTP_URL = "http://api.waditu.com"
-_EM_REQUEST_MIN_INTERVAL_SECONDS = 0.25
+_EM_REQUEST_MIN_INTERVAL_SECONDS = 1.0
+_EM_REQUEST_JITTER_SECONDS = 0.3
 _SOURCE_HEALTH_FAILURE_THRESHOLD = 3
 _SOURCE_HEALTH_COOLDOWN_SECONDS = 5 * 60
 _SNAPSHOT_CALL_TIMEOUT_SECONDS = 60.0
@@ -452,21 +456,54 @@ def _eastmoney_get(url: str, **kwargs) -> requests.Response:
     """GET EastMoney endpoints through one throttled shared session.
 
     EastMoney endpoints are useful but more sensitive to bursty access than
-    lightweight direct sources. Keeping all direct calls behind one session and
-    a small process-wide interval reduces connection churn and accidental
-    request bursts when snapshot fallbacks are exercised repeatedly.
+    lightweight direct sources. Keeping all direct calls behind one retrying
+    session, a process-wide interval, and a little jitter follows the same
+    anti-ban pattern used by a-stock-data's ``em_get`` helper.
     """
     global _EM_LAST_REQUEST_AT, _EM_SESSION
     with _EM_LOCK:
         if _EM_SESSION is None:
-            _EM_SESSION = requests.Session()
+            _EM_SESSION = _build_eastmoney_session()
         elapsed = time.monotonic() - _EM_LAST_REQUEST_AT
-        if elapsed < _EM_REQUEST_MIN_INTERVAL_SECONDS:
-            time.sleep(_EM_REQUEST_MIN_INTERVAL_SECONDS - elapsed)
+        interval = _eastmoney_request_interval_seconds()
+        if elapsed < interval:
+            time.sleep(interval - elapsed)
         response = _EM_SESSION.get(url, **kwargs)
         _EM_LAST_REQUEST_AT = time.monotonic()
     response.raise_for_status()
     return response
+
+
+def _build_eastmoney_session() -> requests.Session:
+    session = requests.Session()
+    retry = Retry(
+        total=2,
+        backoff_factor=0.5,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=frozenset({"GET"}),
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+def _eastmoney_request_interval_seconds() -> float:
+    min_interval = _float_env(
+        "ALPHASIFT_EASTMONEY_MIN_INTERVAL_SEC",
+        _EM_REQUEST_MIN_INTERVAL_SECONDS,
+    )
+    jitter = _float_env(
+        "ALPHASIFT_EASTMONEY_JITTER_SEC",
+        _EM_REQUEST_JITTER_SECONDS,
+    )
+    return max(min_interval, 0.0) + random.uniform(0.0, max(jitter, 0.0))
+
+
+def _float_env(name: str, default: float) -> float:
+    value = os.getenv(name, "").strip()
+    return float(value) if value else float(default)
 
 
 def _fetch_tushare() -> pd.DataFrame:

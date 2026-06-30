@@ -147,12 +147,13 @@ def test_eastmoney_get_reuses_session_and_throttles(monkeypatch):
     monkeypatch.setattr("alphasift.snapshot._EM_LAST_REQUEST_AT", 99.95)
     monkeypatch.setattr("alphasift.snapshot.time.monotonic", lambda: next(times))
     monkeypatch.setattr("alphasift.snapshot.time.sleep", lambda seconds: events.append(("sleep", seconds)))
+    monkeypatch.setattr("alphasift.snapshot.random.uniform", lambda start, end: 0.0)
 
     response = _eastmoney_get("https://example.test", params={"p": 1})
 
     assert isinstance(response, FakeResponse)
     assert events[0][0] == "sleep"
-    assert events[0][1] == pytest.approx(0.2)
+    assert events[0][1] == pytest.approx(0.95)
     assert events[1] == ("https://example.test", {"params": {"p": 1}})
     assert events[2] == "raise"
 

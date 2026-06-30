@@ -58,7 +58,14 @@ alphasift/
 | `em_datacenter` | data.eastmoney.com | 选股器 API，非交易时段可用 |
 | `tushare` | Tushare Pro `daily` + `daily_basic` | 最近交易日数据，需 `TUSHARE_TOKEN`，非实时 |
 
-周末或节假日 push2 接口不可用时，会自动降级到 `em_datacenter`。如果某个数据源超时、不可用或缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。参考相邻项目 `daily_stock_analysis` 的 provider manager，AlphaSift 对 efinance、AkShare、Baostock、Tushare、yfinance 这类 wrapper 源增加 caller-side timeout，并继续通过 source-health 熔断、daily history cache 和 snapshot last-good cache 暴露 `fallback_used/stale/stale_age_hours/source_errors` 等质量语义；如设置 `SNAPSHOT_FALLBACK_MAX_AGE_HOURS`，超过该年龄的缓存不会被使用。
+周末或节假日 push2 接口不可用时，会自动降级到 `em_datacenter`。如果某个数据源超时、不可用或缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。AlphaSift 对 efinance、AkShare、Baostock、Tushare、yfinance 这类 wrapper 源增加 caller-side timeout，并继续通过 source-health 熔断、daily history cache 和 snapshot last-good cache 暴露 `fallback_used/stale/stale_age_hours/source_errors` 等质量语义；如设置 `SNAPSHOT_FALLBACK_MAX_AGE_HOURS`，超过该年龄的缓存不会被使用。
+
+## 参考项目取舍
+
+- [`simonlin1212/a-stock-data`](https://github.com/simonlin1212/a-stock-data)：明确优先使用通达信/腾讯等低封禁源，东财只用于独有数据，并对东财直连请求做共享 session、串行限流、随机抖动和重试。AlphaSift 已采用直接 HTTP 源优先、wrapper 超时、东财共享重试会话与 `ALPHASIFT_EASTMONEY_*` 限流参数。
+- [`akfamily/akshare`](https://github.com/akfamily/akshare)：覆盖面广、调用简单，但官方说明强调数据风险和接口可能变动。AlphaSift 保留 AkShare 作为备源或可选 provider，不再让它成为唯一关键路径。
+- [`microsoft/qlib`](https://github.com/microsoft/qlib)：强调本地数据准备、数据健康检查和可重复研究 workflow。AlphaSift 对应补上 `doctor data-sources`、source-health JSON、daily quality flags、saved-run/evaluate 闭环。
+- [`ricequant/rqalpha`](https://github.com/ricequant/rqalpha) 与 [`zvtvz/zvt`](https://github.com/zvtvz/zvt)：都把数据层/策略层解耦，支持扩展 provider 或本地持久化后再选股。AlphaSift 保持策略 YAML、数据源 fallback、last-good cache 与上层 DSA/API 解耦，而不是把某个免费源写死成强依赖。
 
 ## 已知限制
 
