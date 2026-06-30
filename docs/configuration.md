@@ -60,6 +60,9 @@ TUSHARE_TOKEN=...
 | `INDUSTRY_PROVIDER_MAX_BOARDS` | 否 | provider 模式最多反查板块数 | `80` |
 | `SNAPSHOT_SOURCE_PRIORITY` | 否 | 数据源优先级，逗号分隔；不设置时若配置了 Tushare token 会优先 `tushare` | 无 token: `sina,efinance,akshare_em,em_datacenter` |
 | `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` | 否 | last-good 快照缓存最大可接受年龄；为空/`none` 表示不限制 | - |
+| `ALPHASIFT_SOURCE_CALL_TIMEOUT_SEC` | 否 | 第三方 wrapper 数据源调用的全局等待超时；`0`/`off` 表示关闭 | - |
+| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | 否 | 快照 wrapper 源 `efinance`/`akshare_em`/`tushare` 的调用超时 | `60` |
+| `ALPHASIFT_DAILY_CALL_TIMEOUT_SEC` | 否 | 日 K wrapper 源 `akshare`/`baostock`/`tushare`/`yfinance` 的调用超时 | `20` |
 | `TUSHARE_TOKEN` / `TUSHARE_API_TOKEN` | 使用 `tushare` 时必须 | Tushare Pro token，用于最近交易日日线和 daily_basic 兜底 | - |
 | `TUSHARE_TRADE_DATE` | 否 | 固定 Tushare 交易日，格式 `YYYYMMDD`，便于复现实验 | 自动取最近开市日 |
 | `POST_ANALYZERS` | 否 | L3 后置分析器，设为 `none` 可关闭 | `scorecard` |
@@ -142,7 +145,7 @@ tushare -> sina -> efinance -> akshare_em -> em_datacenter
 | `em_datacenter` | data.eastmoney.com | 选股器 API，非交易时段可用 |
 | `tushare` | Tushare Pro `daily` + `daily_basic` | 最近交易日数据，需 `TUSHARE_TOKEN`，非实时 |
 
-周末或节假日 push2 接口不可用时，会自动降级到 `em_datacenter`。EastMoney 直连接口通过共享会话和轻量限流访问，减少连接抖动和连续降级时的突发请求。重复失败的数据源会进入短期健康度熔断，后续运行会临时跳过该源；日 K live 源全失败时可读取过期但结构有效的 history cache，并用 `daily_stale/source_errors` 标记降级。如果某个数据源缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。所有实时源失败时可读取 `snapshot.last_good.json`，并标记 `fallback_used/stale/stale_age_hours/source_errors`；如设置 `SNAPSHOT_FALLBACK_MAX_AGE_HOURS`，超过该年龄的缓存会被拒绝，避免长期重复使用过旧快照。
+周末或节假日 push2 接口不可用时，会自动降级到 `em_datacenter`。EastMoney 直连接口通过共享会话和轻量限流访问，减少连接抖动和连续降级时的突发请求。参考 `daily_stock_analysis` 的 provider manager，AlphaSift 对 efinance、AkShare、Baostock、Tushare、yfinance 这类第三方 wrapper 调用增加了 caller-side 超时；直接 HTTP 源继续使用请求级 timeout。重复失败的数据源会进入短期健康度熔断，后续运行会临时跳过该源；日 K live 源全失败时可读取过期但结构有效的 history cache，并用 `daily_stale/source_errors` 标记降级。如果某个数据源缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。所有实时源失败时可读取 `snapshot.last_good.json`，并标记 `fallback_used/stale/stale_age_hours/source_errors`；如设置 `SNAPSHOT_FALLBACK_MAX_AGE_HOURS`，超过该年龄的缓存会被拒绝，避免长期重复使用过旧快照。
 
 ### 数据源能力矩阵
 

@@ -136,13 +136,17 @@ $ alphasift screen dual_low --no-llm
 | `LLM_CONTEXT_MAX_CHARS` | 否 | 拼接后传给 LLM 的上下文最大长度 | `4000` |
 | `LLM_CANDIDATE_CONTEXT_ENABLED` | 否 | 是否默认对 LLM Top K 候选抓取新闻/公告/资金流线索 | `false` |
 | `LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES` | 否 | 候选级上下文最多抓取前 N 只 | `8` |
-| `LLM_CANDIDATE_CONTEXT_PROVIDERS` | 否 | 候选级抓取来源，逗号分隔：`news,fund_flow,announcement` | `news,fund_flow,announcement` |
+| `LLM_CANDIDATE_CONTEXT_PROVIDERS` | 否 | 候选级抓取来源，逗号分隔：`news,fund_flow,announcement,quote` | `news,fund_flow,announcement,quote` |
 | `LLM_CANDIDATE_CONTEXT_CACHE_ENABLED` | 否 | 是否缓存候选级抓取上下文 | `true` |
 | `LLM_CANDIDATE_CONTEXT_CACHE_TTL_HOURS` | 否 | 候选上下文缓存有效小时数 | `24` |
 | `INDUSTRY_MAP_FILES` | 否 | 本地 code->industry/concepts/board_heat 映射 CSV/JSON/JSONL，逗号分隔 | - |
 | `INDUSTRY_PROVIDER` | 否 | 可选行业/概念/板块热度 provider，如 `akshare`；默认关闭 | `none` |
 | `INDUSTRY_PROVIDER_MAX_BOARDS` | 否 | provider 模式最多反查板块数 | `80` |
-| `SNAPSHOT_SOURCE_PRIORITY` | 否 | 数据源优先级（逗号分隔）；不设置时若配置了 Tushare token 会优先 `tushare` | 无 token: `efinance,akshare_em,em_datacenter` |
+| `SNAPSHOT_SOURCE_PRIORITY` | 否 | 数据源优先级（逗号分隔）；不设置时若配置了 Tushare token 会优先 `tushare` | 无 token: `sina,efinance,akshare_em,em_datacenter` |
+| `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` | 否 | last-good 快照缓存最大可接受年龄；为空/`none` 表示不限制 | - |
+| `ALPHASIFT_SOURCE_CALL_TIMEOUT_SEC` | 否 | 第三方 wrapper 数据源调用的全局等待超时；`0`/`off` 表示关闭 | - |
+| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | 否 | 快照 wrapper 源 `efinance`/`akshare_em`/`tushare` 的调用超时 | `60` |
+| `ALPHASIFT_DAILY_CALL_TIMEOUT_SEC` | 否 | 日 K wrapper 源 `akshare`/`baostock`/`tushare`/`yfinance` 的调用超时 | `20` |
 | `TUSHARE_TOKEN` / `TUSHARE_API_TOKEN` | 使用 `tushare` 时必须 | Tushare Pro token，用于最近交易日日线和 daily_basic 兜底 | - |
 | `TUSHARE_TRADE_DATE` | 否 | 固定 Tushare 交易日，格式 `YYYYMMDD`，便于复现实验 | 自动取最近开市日 |
 | `POST_ANALYZERS` | 否 | L3 后置分析器，设为 `none` 可关闭 | `scorecard` |
@@ -158,7 +162,7 @@ $ alphasift screen dual_low --no-llm
 | `DAILY_ENRICH_ENABLED` | 否 | 是否默认对 L1 后 Top N 候选补充日 K 特征 | `false` |
 | `DAILY_ENRICH_MAX_CANDIDATES` | 否 | 日 K 增强最多处理候选数 | `100` |
 | `DAILY_LOOKBACK_DAYS` | 否 | 日 K 特征回看天数 | `120` |
-| `DAILY_SOURCE` | 否 | 日 K 数据源：`akshare`、`baostock`、`tushare` 或 `auto`；有 Tushare token 时 `auto` 优先用 `tushare` | `akshare` |
+| `DAILY_SOURCE` | 否 | 日 K 数据源：`auto`、`tencent`、`sina`、`akshare`、`baostock` 或 `tushare`；有 Tushare token 时 `auto` 使用 `tushare,tencent,sina,akshare,baostock`，否则使用 `tencent,sina,akshare,baostock` | `auto` |
 | `DAILY_FETCH_RETRIES` | 否 | 单只候选日 K 拉取失败后的重试次数 | `2` |
 | `DAILY_FETCH_MAX_WORKERS` | 否 | 日 K 拉取并发数，网络不稳时建议 `1`，稳定后可设 `2`/`4` | `1` |
 | `RISK_ENABLED` | 否 | 是否启用独立风险层 | `true` |
@@ -249,7 +253,7 @@ alphasift/
 - **组合分散覆盖层**：LLM 标注行业/主题后，默认按行业风险桶对重复候选做温和扣分；若 LLM 缺失行业标签但候选有 `industry`，会用结构化行业作后备锚点
 - **LiteLLM 配置复用**：兼容主模型、fallback、多渠道和 Router YAML，方便复用作者其他项目配置
 - **独立风险层**：在 LLM 后对过热、弱信号、低置信度等风险做统一扣分或剔除
-- **候选级日 K 增强**：只对 L1 后 Top N 候选补充 MA、60 日涨幅、MACD/RSI、signal_score、20 日突破幅度、区间振幅、20 日量能比、实体强度、MA20 回踩距离和平台持续天数；`DAILY_SOURCE=auto` 且配置了 Tushare token 时会先试 `tushare`，否则走 `akshare`，失败后降级到 `baostock`
+- **候选级日 K 增强**：只对 L1 后 Top N 候选补充 MA、60 日涨幅、MACD/RSI、signal_score、20 日突破幅度、区间振幅、20 日量能比、实体强度、MA20 回踩距离和平台持续天数；`DAILY_SOURCE=auto` 且配置了 Tushare token 时会先试 `tushare`，否则优先走 `tencent`、`sina` 直连源，再降级到 `akshare`、`baostock`
 - **默认 L3 评分器**：本地 `scorecard` 默认启用，作为最终候选的轻量一致性复核
 - **可评估闭环**：保存运行结果，用后续最新快照做 T+N 收益、胜率、缺失报价、交易成本扣减、等权组合摘要和形态后验标签统计；可选抓取日 K 路径计算最大回撤和最大浮盈
 - **DSA 后置增强**：DSA 只是一种可追加 L3 分析器，不参与全市场初筛，也不是默认依赖
@@ -274,26 +278,27 @@ AlphaSift 的定位是“全市场候选发现与横向排序引擎”。它负�
 
 ## 数据源
 
-支持四种 A 股全市场快照数据源，自动按优先级降级。默认未配置 Tushare token 时使用：
+支持五种 A 股全市场快照数据源，自动按优先级降级。默认未配置 Tushare token 时使用：
 
 ```text
-efinance → akshare_em → em_datacenter
+sina → efinance → akshare_em → em_datacenter
 ```
 
 若配置了 `TUSHARE_TOKEN` / `TUSHARE_API_TOKEN`，且没有手工设置 `SNAPSHOT_SOURCE_PRIORITY`，默认改为：
 
 ```text
-tushare → efinance → akshare_em → em_datacenter
+tushare → sina → efinance → akshare_em → em_datacenter
 ```
 
 | 数据源 | 接口 | 特点 |
 |--------|------|------|
+| `sina` | vip.stock.finance.sina.com.cn | 直连全市场源，含 PE/PB/换手率/市值字段 |
 | `efinance` | push2.eastmoney.com | 实时推送，交易时段最快 |
 | `akshare_em` | 82.push2.eastmoney.com | 实时推送，备选 |
 | `em_datacenter` | data.eastmoney.com | 选股器 API，**非交易时段可用** |
 | `tushare` | Tushare Pro `daily` + `daily_basic` | 最近交易日数据，需 `TUSHARE_TOKEN`，非实时 |
 
-> 周末/节假日 push2 接口不可用，会自动降级到 em_datacenter。若某个数据源缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。
+> 周末/节假日 push2 接口不可用，会自动降级到 em_datacenter。若某个数据源超时、不可用或缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。直接 HTTP 源使用请求级 timeout；efinance、AkShare、Baostock、Tushare、yfinance 等第三方 wrapper 调用也有 caller-side timeout，避免库调用卡住整次筛选。
 
 ## 内置策略
 

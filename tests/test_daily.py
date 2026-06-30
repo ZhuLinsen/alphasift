@@ -130,6 +130,28 @@ def test_fetch_daily_history_reports_retry_count(monkeypatch):
         fetch_daily_history("000001", retries=1)
 
 
+def test_fetch_daily_history_times_out_wrapper_sources(monkeypatch):
+    class FakeAkshare:
+        @staticmethod
+        def stock_zh_a_hist(**kwargs):
+            time.sleep(0.05)
+            return pd.DataFrame({
+                "日期": pd.date_range("2026-01-01", periods=40).astype(str),
+                "收盘": [10] * 40,
+            })
+
+    monkeypatch.setenv("ALPHASIFT_DAILY_CALL_TIMEOUT_SEC", "0.001")
+    monkeypatch.setitem(sys.modules, "akshare", FakeAkshare)
+
+    with pytest.raises(RuntimeError, match="daily source akshare timed out"):
+        fetch_daily_history("000001", source="akshare", retries=0)
+
+    health = daily_source_health_snapshot()
+    assert health["akshare"]["failures"] == 1.0
+    assert "timed out" in health["akshare"]["last_error"]
+    assert health["akshare"]["last_failure_at"] > 0
+
+
 def test_daily_source_health_temporarily_disables_repeated_failures(monkeypatch):
     _SOURCE_HEALTH.clear()
     monkeypatch.setattr("alphasift.daily.time.monotonic", lambda: 100.0)

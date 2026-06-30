@@ -168,6 +168,9 @@ AlphaSift is designed to reuse LiteLLM-style configuration used by `daily_stock_
 | `INDUSTRY_PROVIDER` | No | Optional board/industry provider such as `akshare` | `none` |
 | `SNAPSHOT_SOURCE_PRIORITY` | No | Snapshot source order | Depends on Tushare token |
 | `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` | No | Max acceptable age for last-good snapshot fallback; empty disables the guard | - |
+| `ALPHASIFT_SOURCE_CALL_TIMEOUT_SEC` | No | Global caller-side timeout for third-party wrapper data-source calls; `0`/`off` disables | - |
+| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | No | Snapshot wrapper timeout for `efinance`/`akshare_em`/`tushare` | `60` |
+| `ALPHASIFT_DAILY_CALL_TIMEOUT_SEC` | No | Daily wrapper timeout for `akshare`/`baostock`/`tushare`/`yfinance` | `20` |
 | `TUSHARE_TOKEN` / `TUSHARE_API_TOKEN` | For Tushare | Tushare Pro token | - |
 | `POST_ANALYZERS` | No | L3 analyzers; set `none` to disable | `scorecard` |
 | `DSA_API_URL` | For DSA analyzer | DSA service URL or full analysis endpoint | - |
@@ -240,7 +243,7 @@ Source support matrix:
 | Candidate context | `news`, `fund_flow`, `announcement`, `quote` | news, announcements, fund flow, Tencent quote valuation/turnover |
 | Last-good fallback | daily history cache and snapshot cache | marked with stale/fallback attrs when live sources fail |
 
-If a source is unavailable or lacks fields required by a strategy, AlphaSift skips it and tries the next source. Eastmoney-only HTTP fallbacks use a shared throttled session to reduce connection churn and bursty access. If all live sources fail, the last-good snapshot fallback is explicitly marked as stale/fallback data; `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` can reject overly old fallback cache to avoid repeating stale selections.
+If a source is unavailable, times out, or lacks fields required by a strategy, AlphaSift skips it and tries the next source. Direct HTTP sources use request timeouts; third-party wrapper calls such as efinance, AkShare, Baostock, Tushare, and yfinance also have caller-side timeouts inspired by the adjacent `daily_stock_analysis` provider manager, so a stuck wrapper cannot block the whole run indefinitely. Eastmoney-only HTTP fallbacks use a shared throttled session to reduce connection churn and bursty access. If all live sources fail, the last-good snapshot fallback is explicitly marked as stale/fallback data; `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` can reject overly old fallback cache to avoid repeating stale selections.
 
 ## Built-in strategies
 

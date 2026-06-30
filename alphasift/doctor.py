@@ -28,7 +28,7 @@ class SourceCheckResult:
     stale: bool = False
     stale_age_hours: float | None = None
     errors: list[str] = field(default_factory=list)
-    health: dict[str, dict[str, float | bool]] = field(default_factory=dict)
+    health: dict[str, dict[str, float | bool | str]] = field(default_factory=dict)
 
 
 @dataclass

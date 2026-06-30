@@ -15,6 +15,8 @@ import time
 import pandas as pd
 import requests
 
+from alphasift.source_guard import call_with_timeout, parse_source_timeout_seconds
+
 _DAILY_FEATURE_DEFAULTS = {
     "daily_data_points": pd.NA,
     "change_60d": pd.NA,
@@ -46,10 +48,11 @@ _DAILY_HISTORY_CACHE_VERSION = 1
 _DAILY_HISTORY_CACHE_TTL_SECONDS = 24 * 60 * 60
 _SOURCE_HEALTH_FAILURE_THRESHOLD = 3
 _SOURCE_HEALTH_COOLDOWN_SECONDS = 5 * 60
+_DAILY_CALL_TIMEOUT_SECONDS = 20.0
 _DEFAULT_TUSHARE_HTTP_URL = "http://api.waditu.com"
 _BAOSTOCK_LOCK = threading.Lock()
 _BAOSTOCK_OUTAGE_ERROR: str | None = None
-_SOURCE_HEALTH: dict[str, dict[str, float]] = {}
+_SOURCE_HEALTH: dict[str, dict[str, object]] = {}
 _SOURCE_HEALTH_LOCK = threading.Lock()
 
 
@@ -212,7 +215,12 @@ def fetch_daily_history(
             try:
                 if current == "yfinance":
                     from alphasift.snapshot_us import fetch_daily_history_yfinance
-                    result = fetch_daily_history_yfinance(code, lookback_days=lookback_days)
+                    result = _call_daily_wrapper(
+                        fetch_daily_history_yfinance,
+                        current,
+                        code,
+                        lookback_days=lookback_days,
+                    )
                 elif current == "tencent":
                     result = _fetch_daily_tencent(
                         normalized_code,
@@ -224,17 +232,23 @@ def fetch_daily_history(
                         lookback_days=normalized_lookback_days,
                     )
                 elif current == "akshare":
-                    result = _fetch_daily_akshare(
+                    result = _call_daily_wrapper(
+                        _fetch_daily_akshare,
+                        current,
                         normalized_code,
                         lookback_days=normalized_lookback_days,
                     )
                 elif current == "tushare":
-                    result = _fetch_daily_tushare(
+                    result = _call_daily_wrapper(
+                        _fetch_daily_tushare,
+                        current,
                         normalized_code,
                         lookback_days=normalized_lookback_days,
                     )
                 else:
-                    result = _fetch_daily_baostock(
+                    result = _call_daily_wrapper(
+                        _fetch_daily_baostock,
+                        current,
                         normalized_code,
                         lookback_days=normalized_lookback_days,
                     )
@@ -260,7 +274,7 @@ def fetch_daily_history(
                     break
                 time.sleep(min(0.5 * (attempt + 1), 2.0))
         errors.append(f"{current} after {attempts} attempts: {last_error}")
-        _record_source_failure(current)
+        _record_source_failure(current, last_error)
 
     if cache_path is not None:
         stale = _read_daily_history_cache(
@@ -301,6 +315,23 @@ def _normalize_max_workers(value: int | None) -> int:
     if value is None:
         return _DAILY_ENRICH_MAX_WORKERS
     return max(1, int(value))
+
+
+def _call_daily_wrapper(fetcher, source: str, *args, **kwargs) -> pd.DataFrame:
+    return call_with_timeout(
+        fetcher,
+        *args,
+        timeout_sec=_daily_call_timeout_seconds(),
+        label=f"daily source {source}",
+        **kwargs,
+    )
+
+
+def _daily_call_timeout_seconds() -> float | None:
+    return parse_source_timeout_seconds(
+        "ALPHASIFT_DAILY_CALL_TIMEOUT_SEC",
+        default=_DAILY_CALL_TIMEOUT_SECONDS,
+    )
 
 
 def _rank_daily_sources_by_health(sources: tuple[str, ...]) -> tuple[tuple[str, ...], list[str]]:
@@ -351,7 +382,7 @@ def _record_source_success(source: str, *, rows: int | None = None) -> None:
             state["avg_rows"] = previous_avg + (float(rows) - previous_avg) / successes
 
 
-def _record_source_failure(source: str) -> None:
+def _record_source_failure(source: str, error: object | None = None) -> None:
     now = time.monotonic()
     with _SOURCE_HEALTH_LOCK:
         state = _SOURCE_HEALTH.setdefault(source, {"failures": 0.0, "disabled_until": 0.0})
@@ -359,22 +390,25 @@ def _record_source_failure(source: str) -> None:
         state["failures"] = failures
         state["total_failures"] = float(state.get("total_failures", 0.0)) + 1.0
         state["last_failure_at"] = time.time()
+        if error is not None:
+            state["last_error"] = " ".join(str(error).split())
         if failures >= _SOURCE_HEALTH_FAILURE_THRESHOLD:
             state["disabled_until"] = now + _SOURCE_HEALTH_COOLDOWN_SECONDS
 
 
-def daily_source_health_snapshot() -> dict[str, dict[str, float | bool]]:
+def daily_source_health_snapshot() -> dict[str, dict[str, float | bool | str]]:
     """Return a copy of in-process daily-source health statistics."""
     return _daily_source_health_snapshot(tuple(_SOURCE_HEALTH))
 
 
-def _daily_source_health_snapshot(sources: tuple[str, ...]) -> dict[str, dict[str, float | bool]]:
+def _daily_source_health_snapshot(sources: tuple[str, ...]) -> dict[str, dict[str, float | bool | str]]:
     now = time.monotonic()
-    snapshot: dict[str, dict[str, float | bool]] = {}
+    snapshot: dict[str, dict[str, float | bool | str]] = {}
     with _SOURCE_HEALTH_LOCK:
         for source in sources:
             state = dict(_SOURCE_HEALTH.get(source, {}))
             disabled_until = float(state.get("disabled_until", 0.0))
+            cooldown_remaining = max(disabled_until - now, 0.0)
             snapshot[source] = {
                 "successes": float(state.get("successes", 0.0)),
                 "failures": float(state.get("failures", 0.0)),
@@ -382,6 +416,10 @@ def _daily_source_health_snapshot(sources: tuple[str, ...]) -> dict[str, dict[st
                 "last_rows": float(state.get("last_rows", 0.0)),
                 "avg_rows": float(state.get("avg_rows", 0.0)),
                 "disabled": disabled_until > now,
+                "cooldown_remaining_seconds": round(cooldown_remaining, 4),
+                "last_success_at": float(state.get("last_success_at", 0.0)),
+                "last_failure_at": float(state.get("last_failure_at", 0.0)),
+                "last_error": str(state.get("last_error", "")),
             }
     return snapshot
 

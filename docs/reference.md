@@ -48,16 +48,17 @@ alphasift/
 
 ## 数据源边界
 
-支持四种 A 股全市场快照数据源，自动按优先级降级。未显式设置 `SNAPSHOT_SOURCE_PRIORITY` 时，无 Tushare token 默认链路是 `efinance` -> `akshare_em` -> `em_datacenter`；有 token 默认链路是 `tushare` -> `efinance` -> `akshare_em` -> `em_datacenter`。
+支持五种 A 股全市场快照数据源，自动按优先级降级。未显式设置 `SNAPSHOT_SOURCE_PRIORITY` 时，无 Tushare token 默认链路是 `sina` -> `efinance` -> `akshare_em` -> `em_datacenter`；有 token 默认链路是 `tushare` -> `sina` -> `efinance` -> `akshare_em` -> `em_datacenter`。
 
 | 数据源 | 接口 | 特点 |
 |--------|------|------|
+| `sina` | vip.stock.finance.sina.com.cn | 直连全市场源，含 PE/PB/换手率/市值字段 |
 | `efinance` | push2.eastmoney.com | 实时推送，交易时段最快 |
 | `akshare_em` | 82.push2.eastmoney.com | 实时推送，备选 |
 | `em_datacenter` | data.eastmoney.com | 选股器 API，非交易时段可用 |
 | `tushare` | Tushare Pro `daily` + `daily_basic` | 最近交易日数据，需 `TUSHARE_TOKEN`，非实时 |
 
-周末或节假日 push2 接口不可用时，会自动降级到 `em_datacenter`。如果某个数据源缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。所有实时源失败时可回退到 last-good 快照，并通过 `fallback_used/stale/stale_age_hours/source_errors` 暴露质量语义；如设置 `SNAPSHOT_FALLBACK_MAX_AGE_HOURS`，超过该年龄的缓存不会被使用。
+周末或节假日 push2 接口不可用时，会自动降级到 `em_datacenter`。如果某个数据源超时、不可用或缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。参考相邻项目 `daily_stock_analysis` 的 provider manager，AlphaSift 对 efinance、AkShare、Baostock、Tushare、yfinance 这类 wrapper 源增加 caller-side timeout，并继续通过 source-health 熔断、daily history cache 和 snapshot last-good cache 暴露 `fallback_used/stale/stale_age_hours/source_errors` 等质量语义；如设置 `SNAPSHOT_FALLBACK_MAX_AGE_HOURS`，超过该年龄的缓存不会被使用。
 
 ## 已知限制
 
@@ -72,7 +73,7 @@ alphasift/
 
 对照同类智能投研项目，AlphaSift 后续优先补这些能力：
 
-- **数据可靠性**：已补 `tushare` 兜底；下一步做多源字段对账、数据新鲜度标记、异常值报告和缓存命中可视化。
+- **数据可靠性**：已补 `tushare` 兜底、wrapper 调用超时、source-health 熔断与 last-good/stale fallback；下一步做多源字段对账、数据新鲜度标记、异常值报告和缓存命中可视化。
 - **事件归因闭环**：把新闻、公告、资金流的事件标签纳入 `evaluate-batch` 统计，区分哪些事件真的改善后验表现。
 - **回测边界**：在现有 T+N 评估上继续补持仓约束、调仓周期、逐日权益曲线和复权处理；完整量化研究可对接 Qlib 或 Backtrader。
 - **Agent 产物**：把一次选股运行输出为稳定的 Markdown/JSON 报告包，便于被通知助手、Web UI 或 MCP/HTTP 服务消费。
