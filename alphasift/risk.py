@@ -27,6 +27,12 @@ _DEFAULT_RISK_PROFILE = {
     "llm_risk_points_cap": 4.0,
     "deep_risk_points": 1.5,
     "deep_risk_points_cap": 4.5,
+    "low_daily_quality_score": 70.0,
+    "low_daily_quality_points": 2.0,
+    "bad_daily_quality_flag_points": 3.0,
+    "stale_daily_cache_points": 2.5,
+    "fallback_daily_errors_points": 1.5,
+    "fetch_failed_daily_points": 6.0,
 }
 _DEFAULT_PORTFOLIO_BUCKETS = {
     "金融": ("券商", "银行", "保险", "金融"),
@@ -172,6 +178,10 @@ def assess_pick_risk(
         points += profile["low_llm_confidence_points"]
         flags.append("low_llm_confidence")
 
+    daily_points, daily_flags = _assess_daily_data_risk(pick, profile)
+    points += daily_points
+    flags.extend(daily_flags)
+
     llm_risks = [risk for risk in pick.llm_risks if risk]
     if llm_risks:
         points += min(len(llm_risks) * profile["llm_risk_points"], profile["llm_risk_points_cap"])
@@ -185,6 +195,44 @@ def assess_pick_risk(
         flags.extend(pick.deep_analysis_risk_flags)
 
     return points, _unique(flags)
+
+
+def _assess_daily_data_risk(pick: Pick, profile: dict[str, float]) -> tuple[float, list[str]]:
+    """Convert row-level daily-history quality metadata into risk points."""
+    points = 0.0
+    flags: list[str] = []
+
+    if pick.daily_quality_score is not None and pick.daily_quality_score < profile["low_daily_quality_score"]:
+        points += profile["low_daily_quality_points"]
+        flags.append("low_daily_quality")
+
+    quality_flags = _daily_quality_flag_set(pick.daily_quality_flags)
+    if "fetch_failed" in quality_flags:
+        points += profile["fetch_failed_daily_points"]
+        flags.append("daily_fetch_failed")
+    if "stale_cache" in quality_flags:
+        points += profile["stale_daily_cache_points"]
+        flags.append("daily_stale_cache")
+    if "fallback_errors" in quality_flags:
+        points += profile["fallback_daily_errors_points"]
+        flags.append("daily_source_fallback_errors")
+
+    severe_quality_flags = {"invalid_ohlc", "non_positive_price", "negative_volume"}
+    if quality_flags & severe_quality_flags:
+        points += profile["bad_daily_quality_flag_points"]
+        flags.append("bad_daily_quality_flags")
+
+    return points, flags
+
+
+def _daily_quality_flag_set(value: str) -> set[str]:
+    text = str(value or "").strip()
+    if not text or text.lower() in {"nan", "none", "<na>"}:
+        return set()
+    normalized = text
+    for separator in (",", "，", "|", " "):
+        normalized = normalized.replace(separator, ";")
+    return {item.strip() for item in normalized.split(";") if item.strip()}
 
 
 def _risk_level(points: float, max_penalty: float) -> str:

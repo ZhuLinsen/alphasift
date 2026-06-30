@@ -128,6 +128,12 @@ _RISK_PROFILE_KEYS = {
     "llm_risk_points_cap",
     "deep_risk_points",
     "deep_risk_points_cap",
+    "low_daily_quality_score",
+    "low_daily_quality_points",
+    "bad_daily_quality_flag_points",
+    "stale_daily_cache_points",
+    "fallback_daily_errors_points",
+    "fetch_failed_daily_points",
 }
 _PORTFOLIO_PROFILE_KEYS = {"max_same_bucket", "concentration_penalty", "buckets"}
 _SCORECARD_PROFILE_KEYS = {

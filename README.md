@@ -240,7 +240,7 @@ Source support matrix:
 
 | Capability | Primary chain | Fields |
 |---|---|---|
-| Daily K-line enrichment | `tushare` when token exists, then `tencent`, `sina`, `akshare`, `baostock` with health-aware auto reordering | OHLCV, qfq where supported, technical factors, 20d volatility/ATR/drawdown controls, per-row `daily_source` provenance, `daily_quality_score`/flags, source-health stats |
+| Daily K-line enrichment | `tushare` when token exists, then `tencent`, `sina`, `akshare`, `baostock` with health-aware auto reordering | OHLCV, qfq where supported, technical factors, 20d volatility/ATR/drawdown controls, per-row `daily_source` provenance, `daily_quality_score`/flags, source-health stats; low-quality/fetch-failed/stale rows feed the final risk overlay |
 | Full-market snapshot | `sina`, then `efinance`, `akshare_em`, `em_datacenter`; `tushare` first when token exists | price, change, amount, market cap, PE/PB, turnover |
 | Candidate context | `news`, `fund_flow`, `announcement`, `quote` | news, announcements, fund flow, Tencent quote valuation/turnover |
 | Last-good fallback | daily history cache and snapshot cache | marked with stale/fallback attrs when live sources fail |

@@ -172,6 +172,8 @@ def test_load_strategy_accepts_rule_profiles(tmp_path):
             "    momentum_chase_start_pct: 4.0",
             "  risk_profile:",
             "    chase_change_pct: 7.0",
+            "    low_daily_quality_score: 75.0",
+            "    fetch_failed_daily_points: 7.0",
             "  portfolio_profile:",
             "    max_same_bucket: 2",
             "    buckets:",
@@ -191,6 +193,8 @@ def test_load_strategy_accepts_rule_profiles(tmp_path):
 
     assert strategy.screening.scoring_profile["momentum_chase_start_pct"] == 4.0
     assert strategy.screening.risk_profile["chase_change_pct"] == 7.0
+    assert strategy.screening.risk_profile["low_daily_quality_score"] == 75.0
+    assert strategy.screening.risk_profile["fetch_failed_daily_points"] == 7.0
     assert strategy.screening.portfolio_profile["max_same_bucket"] == 2
     assert strategy.screening.scorecard_profile["value_quality_bonus"] == 1.5
     assert strategy.screening.event_profile["preferred_event_tags"] == ["回购增持"]

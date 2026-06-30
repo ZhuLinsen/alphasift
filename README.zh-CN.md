@@ -255,7 +255,7 @@ alphasift/
 - **组合分散覆盖层**：LLM 标注行业/主题后，默认按行业风险桶对重复候选做温和扣分；若 LLM 缺失行业标签但候选有 `industry`，会用结构化行业作后备锚点
 - **LiteLLM 配置复用**：兼容主模型、fallback、多渠道和 Router YAML，方便复用作者其他项目配置
 - **独立风险层**：在 LLM 后对过热、弱信号、低置信度等风险做统一扣分或剔除
-- **候选级日 K 增强**：只对 L1 后 Top N 候选补充 MA、60 日涨幅、MACD/RSI、signal_score、20 日突破幅度、区间振幅、20 日量能比、实体强度、MA20 回踩距离和平台持续天数；`DAILY_SOURCE=auto` 且配置了 Tushare token 时会先试 `tushare`，否则优先走 `tencent`、`sina` 直连源，再降级到 `akshare`、`baostock`
+- **候选级日 K 增强**：只对 L1 后 Top N 候选补充 MA、60 日涨幅、MACD/RSI、signal_score、20 日突破幅度、区间振幅、20 日量能比、实体强度、MA20 回踩距离和平台持续天数；`DAILY_SOURCE=auto` 且配置了 Tushare token 时会先试 `tushare`，否则优先走 `tencent`、`sina` 直连源，再降级到 `akshare`、`baostock`；低质量、拉取失败或 stale cache 行会进入最终风险扣分
 - **默认 L3 评分器**：本地 `scorecard` 默认启用，作为最终候选的轻量一致性复核
 - **可评估闭环**：保存运行结果，用后续最新快照做 T+N 收益、胜率、缺失报价、交易成本扣减、等权组合摘要和形态后验标签统计；可选抓取日 K 路径计算最大回撤和最大浮盈
 - **DSA 后置增强**：DSA 只是一种可追加 L3 分析器，不参与全市场初筛，也不是默认依赖

@@ -153,7 +153,7 @@ tushare -> sina -> efinance -> akshare_em -> em_datacenter
 
 | 能力 | 默认链路 | 主要字段 |
 |------|----------|----------|
-| 日 K 增强 | 有 token: `tushare,tencent,sina,akshare,baostock`；无 token: `tencent,sina,akshare,baostock`，并按 source-health 动态后移不健康源 | OHLCV、前复权（支持源）、技术指标、20日波动/ATR/回撤、逐行 `daily_source` 来源标记、`daily_quality_score`/flags（含 `fetch_failed` 行级失败标记）、source-health 统计；screen degradation 会汇总日K来源、质量 flags、异常 source-health 与 hard-filter 淘汰摘要 |
+| 日 K 增强 | 有 token: `tushare,tencent,sina,akshare,baostock`；无 token: `tencent,sina,akshare,baostock`，并按 source-health 动态后移不健康源 | OHLCV、前复权（支持源）、技术指标、20日波动/ATR/回撤、逐行 `daily_source` 来源标记、`daily_quality_score`/flags（含 `fetch_failed` 行级失败标记）、source-health 统计；screen degradation 会汇总日K来源、质量 flags、异常 source-health 与 hard-filter 淘汰摘要；低质量、拉取失败或 stale cache 行会进入最终风险扣分 |
 | 全市场快照 | 有 token: `tushare,sina,efinance,akshare_em,em_datacenter`；无 token: `sina,efinance,akshare_em,em_datacenter` | 价格、涨跌幅、成交额、市值、PE/PB、换手率 |
 | 候选级上下文 | `news,fund_flow,announcement,quote` | 新闻、资金流、公告、腾讯行情估值/换手率 |
 | 失败降级 | source health 熔断 + daily history cache + snapshot last-good cache | stale/fallback/source_errors 元数据 |

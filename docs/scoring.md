@@ -187,12 +187,13 @@ LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代
 | 异常量比、高换手 | penalty / 可选 veto |
 | 负 PE、高 PB | penalty |
 | 日 K 信号偏弱、MACD 空头、RSI 过热 | penalty |
+| 日 K 数据质量过低、拉取失败、过期缓存或 source fallback | penalty / 可选 veto |
 | LLM 风险标签、低置信度 | penalty |
 | DSA 或其他后置分析器风险标签 | 进入候选风险字段，DSA 自身也会影响后置分数 |
 
 最终输出同时包含 `risk_score`、`risk_level`、`risk_penalty` 和 `risk_flags`，便于后续 agent 或人工复核。
 
-策略 YAML 可以用 `risk_profile` 覆盖风险阈值和扣分点，例如 `chase_change_pct`、`abnormal_volume_ratio`、`high_turnover_rate`、`low_llm_confidence`。这避免把“8% 就算追高”“量比 6 就异常”这类市场风格假设写死在代码里。
+策略 YAML 可以用 `risk_profile` 覆盖风险阈值和扣分点，例如 `chase_change_pct`、`abnormal_volume_ratio`、`high_turnover_rate`、`low_llm_confidence`、`low_daily_quality_score`、`fetch_failed_daily_points`。这避免把“8% 就算追高”“量比 6 就异常”“拉取失败扣多少分”这类市场风格和数据质量假设写死在代码里。
 
 ## 组合分散覆盖层
 

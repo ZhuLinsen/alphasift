@@ -67,6 +67,58 @@ def test_risk_overlay_accepts_strategy_profile_thresholds():
     assert "single_day_chase_risk" not in result[0].risk_flags
 
 
+def test_risk_overlay_penalizes_low_quality_daily_data_and_reranks():
+    picks = [
+        Pick(
+            rank=1,
+            code="bad",
+            name="低质量",
+            final_score=82,
+            screen_score=82,
+            daily_quality_score=0,
+            daily_quality_flags="fetch_failed",
+        ),
+        Pick(
+            rank=2,
+            code="clean",
+            name="干净数据",
+            final_score=79,
+            screen_score=79,
+            daily_quality_score=95,
+            daily_quality_flags="",
+        ),
+    ]
+
+    result, degradation = apply_risk_overlay(picks, max_penalty=12, veto_high_risk=False)
+
+    assert degradation == []
+    assert [pick.code for pick in result] == ["clean", "bad"]
+    assert result[1].risk_penalty == 8
+    assert result[1].risk_level == "high"
+    assert "low_daily_quality" in result[1].risk_flags
+    assert "daily_fetch_failed" in result[1].risk_flags
+
+
+def test_risk_overlay_flags_stale_and_fallback_daily_data():
+    picks = [
+        Pick(
+            rank=1,
+            code="000001",
+            name="平安银行",
+            final_score=90,
+            screen_score=90,
+            daily_quality_score=72,
+            daily_quality_flags="stale_cache;fallback_errors",
+        )
+    ]
+
+    result, _ = apply_risk_overlay(picks, max_penalty=12, veto_high_risk=False)
+
+    assert result[0].risk_penalty == 4
+    assert "daily_stale_cache" in result[0].risk_flags
+    assert "daily_source_fallback_errors" in result[0].risk_flags
+
+
 def test_portfolio_overlay_penalizes_duplicate_llm_risk_bucket_and_reranks():
     picks = [
         Pick(

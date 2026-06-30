@@ -87,6 +87,8 @@ screening:
     chase_change_pct: float
     abnormal_volume_ratio: float
     high_turnover_rate: float
+    low_daily_quality_score: float
+    fetch_failed_daily_points: float
 
   portfolio_profile:       # 可选，覆盖 LLM 行业/主题风险桶
     max_same_bucket: int
