@@ -1673,6 +1673,13 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
         lines.append("snapshot_missing=" + ",".join(str(item) for item in snapshot.get("missing_fields") or []))
     if snapshot.get("errors"):
         lines.append("snapshot_errors=" + " | ".join(str(item) for item in snapshot.get("errors") or []))
+    quality = snapshot.get("quality_summary") or {}
+    if quality:
+        anomalies = ",".join(str(item) for item in (quality.get("anomalies") or [])[:6]) or "-"
+        lines.append(
+            f"snapshot_quality status={quality.get('status')} "
+            f"anomalies={anomalies}"
+        )
     health_summary = result.get("health_summary") or {}
     snapshot_health = health_summary.get("snapshot") or {}
     if snapshot_health:

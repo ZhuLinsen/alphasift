@@ -324,7 +324,7 @@ tushare → sina → efinance → akshare_em → em_datacenter
 
 ### 自定义策略
 
-可用 `alphasift overview --json/--explain` 获取一份 UI/agent 总览 payload，包含策略分组、可选策略推荐、数据源 `health_summary`、策略覆盖、最近运行和 next actions。可用 `alphasift strategies --json` 或 `alphasift strategies --explain` 查看策略风格属性、数据依赖、活跃硬筛、因子权重和 profile 覆盖项；UI 或 agent 需要推荐策略时，可追加 `--risk-profile defensive --holding-period swing --strict --json` 这类匹配条件，输出带 `score`、`matched`、`missing` 的候选策略；评审策略参数漂移时可用 `--compare dual_low low_volatility_quality --json`；新增策略时可用 `alphasift strategies --templates --explain` 和 `alphasift strategies --template <name>` 从模板生成 YAML 草稿；可用 `alphasift doctor data-sources --all-strategies --explain` 查看跨策略数据源字段覆盖矩阵和 source `health_summary`。在 `strategies/` 目录添加 YAML 文件即可。参考 [docs/strategy-guide.md](docs/strategy-guide.md)。
+可用 `alphasift overview --json/--explain` 获取一份 UI/agent 总览 payload，包含策略分组、可选策略推荐、数据源 `health_summary`、策略覆盖、最近运行和 next actions。可用 `alphasift strategies --json` 或 `alphasift strategies --explain` 查看策略风格属性、数据依赖、活跃硬筛、因子权重和 profile 覆盖项；UI 或 agent 需要推荐策略时，可追加 `--risk-profile defensive --holding-period swing --strict --json` 这类匹配条件，输出带 `score`、`matched`、`missing` 的候选策略；评审策略参数漂移时可用 `--compare dual_low low_volatility_quality --json`；新增策略时可用 `alphasift strategies --templates --explain` 和 `alphasift strategies --template <name>` 从模板生成 YAML 草稿；可用 `alphasift doctor data-sources --all-strategies --explain` 查看跨策略数据源字段覆盖矩阵、source `health_summary` 和 live snapshot `quality_summary`。在 `strategies/` 目录添加 YAML 文件即可。参考 [docs/strategy-guide.md](docs/strategy-guide.md)。
 
 ## 已知限制
 

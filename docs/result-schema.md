@@ -90,6 +90,7 @@ Use `--failure-samples N` to control how many sample cards are retained. Aggrega
 `alphasift doctor data-sources --json` emits a stable diagnostic payload for UI, agent, and operations surfaces:
 
 - `snapshot` / `daily`: status, selected source, row count, stale/fallback flags, required fields, missing fields, raw errors.
+- `snapshot.quality_summary`: field-quality diagnostics for live snapshot checks, including duplicate codes, checked fields, per-field missing/invalid/non-positive counts, and anomaly tokens.
 - `source_health`: raw per-source counters from in-process health guards.
 - `health_summary`: UI-ready grouping by `healthy_sources`, `failing_sources`, `disabled_sources`, `never_seen_sources`, plus `last_errors`.
 - `strategy_requirements` / `strategy_coverage`: required fields and coverage status for one strategy or the full strategy catalog.
@@ -104,7 +105,7 @@ Stable top-level fields:
 - `summary`: strategy counts, daily-strategy count, data-source status, strategy-match count, recent-run count, live-check flag.
 - `strategy_groups`: strategy names grouped by category, risk profile, holding period, and data requirement.
 - `strategy_matches`: optional ranked strategy recommendations with `score`, `matched`, and `missing`.
-- `data_sources`: compact data-source doctor subset with `health_summary`, strategy requirements, strategy coverage, and recommendations.
+- `data_sources`: compact data-source doctor subset with `health_summary`, `snapshot_quality`, strategy requirements, strategy coverage, and recommendations.
 - `recent_runs`: lightweight saved-run metadata from `alphasift runs --json`.
 - `next_actions`: UI-ready operational next steps.
 

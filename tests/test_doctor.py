@@ -70,9 +70,46 @@ def test_doctor_data_sources_aggregates_snapshot_and_daily(monkeypatch, tmp_path
     assert payload["daily"]["fallback_used"] is True
     assert "source_health" in payload
     assert "health_summary" in payload
+    assert payload["snapshot"]["quality_summary"]["status"] == "ok"
+    assert payload["health_summary"]["snapshot"]["quality_status"] == "ok"
     assert payload["health_summary"]["snapshot"]["selected_source"] == "sina"
     assert payload["health_summary"]["daily"]["selected_source"] == "tencent"
     assert "TUSHARE_TOKEN" not in json.dumps(payload, ensure_ascii=False)
+
+
+def test_doctor_data_sources_reports_snapshot_quality_anomalies(monkeypatch, tmp_path):
+    config = Config(
+        snapshot_source_priority=["sina"],
+        daily_source="auto",
+        fallback_snapshot_path=tmp_path / "snapshot.last_good.json",
+        daily_history_cache_dir=tmp_path / "daily_history",
+    )
+
+    def fake_snapshot(sources, **kwargs):
+        df = pd.DataFrame([
+            {"code": "000001", "name": "平安银行", "price": 10.0, "amount": 100000000},
+            {"code": "000001", "name": "", "price": 0.0, "amount": 0},
+            {"code": "600000", "name": "浦发银行", "price": "bad", "amount": None},
+        ])
+        df.attrs["snapshot_source"] = "sina"
+        return df
+
+    monkeypatch.setattr("alphasift.doctor.fetch_snapshot_with_fallback", fake_snapshot)
+
+    result = doctor_data_sources(config, check_daily=False)
+    payload = result.to_dict()
+    quality = payload["snapshot"]["quality_summary"]
+
+    assert payload["status"] == "degraded"
+    assert quality["status"] == "degraded"
+    assert quality["duplicate_code_count"] == 1
+    assert quality["field_stats"]["price"]["invalid_numeric_count"] == 1
+    assert quality["field_stats"]["price"]["non_positive_count"] == 1
+    assert quality["field_stats"]["amount"]["missing_count"] == 1
+    assert "duplicate_code_count:1" in quality["anomalies"]
+    assert "price:invalid_numeric=1" in quality["anomalies"]
+    assert "price:non_positive=1" in quality["anomalies"]
+    assert any("Snapshot quality anomalies detected" in item for item in payload["recommendations"])
 
 
 def test_doctor_data_sources_health_summary_reports_disabled_sources(monkeypatch, tmp_path):

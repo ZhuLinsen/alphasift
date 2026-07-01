@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
+
 from alphasift.config import Config
 from alphasift.daily import compute_daily_features, daily_source_health_snapshot, fetch_daily_history
 from alphasift.snapshot import (
@@ -32,6 +34,7 @@ class SourceCheckResult:
     health: dict[str, dict[str, float | bool | str]] = field(default_factory=dict)
     required_fields: list[str] = field(default_factory=list)
     missing_fields: list[str] = field(default_factory=list)
+    quality_summary: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -156,8 +159,12 @@ def _check_snapshot_sources(
             required_fields=required_fields,
         )
     missing_fields = [field for field in required_fields if field not in df.columns]
+    quality_summary = _snapshot_quality_summary(df, required_fields=required_fields)
+    quality_degraded = str(quality_summary.get("status", "")) not in {"", "ok"}
     return SourceCheckResult(
-        status="degraded" if bool(df.attrs.get("fallback_used")) or missing_fields else "ok",
+        status="degraded"
+        if bool(df.attrs.get("fallback_used")) or missing_fields or quality_degraded
+        else "ok",
         sources=sources,
         source=str(df.attrs.get("snapshot_source", "")),
         rows=int(len(df)),
@@ -168,6 +175,7 @@ def _check_snapshot_sources(
         health=snapshot_source_health_snapshot(sources),
         required_fields=required_fields,
         missing_fields=missing_fields,
+        quality_summary=quality_summary,
     )
 
 
@@ -290,6 +298,110 @@ def _missing_daily_feature_fields(df, required_fields: list[str]) -> list[str]:
         return []
     features = compute_daily_features(df)
     return [field for field in required_fields if field not in features]
+
+
+def _snapshot_quality_summary(df, *, required_fields: list[str]) -> dict[str, Any]:
+    checked_fields = _snapshot_quality_fields(df, required_fields)
+    anomalies: list[str] = []
+    field_stats: dict[str, dict[str, Any]] = {}
+    row_count = int(len(df))
+    if row_count == 0:
+        anomalies.append("snapshot_empty")
+
+    duplicate_code_count = 0
+    if "code" in df.columns:
+        duplicate_code_count = int(df["code"].astype(str).duplicated().sum())
+        if duplicate_code_count > 0:
+            anomalies.append(f"duplicate_code_count:{duplicate_code_count}")
+
+    for field_name in checked_fields:
+        if field_name not in df.columns:
+            field_stats[field_name] = {
+                "present": False,
+                "missing_count": row_count,
+                "missing_ratio": 1.0 if row_count else 0.0,
+                "invalid_numeric_count": 0,
+                "non_positive_count": 0,
+            }
+            anomalies.append(f"{field_name}:missing_column")
+            continue
+        series = df[field_name]
+        missing_mask = series.isna() | (series.astype(str).str.strip() == "")
+        missing_count = int(missing_mask.sum())
+        missing_ratio = _ratio(missing_count, row_count)
+        stats: dict[str, Any] = {
+            "present": True,
+            "missing_count": missing_count,
+            "missing_ratio": missing_ratio,
+            "invalid_numeric_count": 0,
+            "non_positive_count": 0,
+        }
+        if field_name in _SNAPSHOT_NUMERIC_FIELDS:
+            numeric = pd.to_numeric(series, errors="coerce")
+            invalid_numeric_count = int((numeric.isna() & ~missing_mask).sum())
+            non_positive_count = (
+                int((numeric <= 0).sum())
+                if field_name in _SNAPSHOT_POSITIVE_FIELDS
+                else 0
+            )
+            stats["invalid_numeric_count"] = invalid_numeric_count
+            stats["non_positive_count"] = non_positive_count
+            if invalid_numeric_count > 0:
+                anomalies.append(f"{field_name}:invalid_numeric={invalid_numeric_count}")
+            if non_positive_count > 0:
+                anomalies.append(f"{field_name}:non_positive={non_positive_count}")
+        if missing_count > 0 and field_name in required_fields:
+            anomalies.append(f"{field_name}:missing_values={missing_count}")
+        elif missing_ratio >= 0.25 and row_count > 0:
+            anomalies.append(f"{field_name}:missing_ratio={missing_ratio:.2f}")
+        field_stats[field_name] = stats
+
+    return {
+        "status": "degraded" if anomalies else "ok",
+        "row_count": row_count,
+        "duplicate_code_count": duplicate_code_count,
+        "checked_fields": checked_fields,
+        "anomalies": anomalies,
+        "field_stats": field_stats,
+    }
+
+
+_SNAPSHOT_DEFAULT_QUALITY_FIELDS = [
+    "code",
+    "name",
+    "price",
+    "change_pct",
+    "amount",
+    "total_mv",
+    "pe_ratio",
+    "pb_ratio",
+    "turnover_rate",
+    "volume_ratio",
+]
+_SNAPSHOT_NUMERIC_FIELDS = {
+    "price",
+    "change_pct",
+    "amount",
+    "total_mv",
+    "pe_ratio",
+    "pb_ratio",
+    "turnover_rate",
+    "volume_ratio",
+}
+_SNAPSHOT_POSITIVE_FIELDS = {"price", "amount", "total_mv"}
+
+
+def _snapshot_quality_fields(df, required_fields: list[str]) -> list[str]:
+    fields: list[str] = []
+    fields.extend(required_fields)
+    fields.extend(field for field in _SNAPSHOT_DEFAULT_QUALITY_FIELDS if field in df.columns)
+    return list(dict.fromkeys(field for field in fields if field))
+
+
+def _ratio(count: int, total: int) -> float:
+    if total <= 0:
+        return 0.0
+    return round(float(count) / float(total), 4)
 
 
 def _build_strategy_coverage(
@@ -438,6 +550,8 @@ def _source_family_health_summary(result: SourceCheckResult) -> dict[str, Any]:
         "stale": result.stale,
         "missing_fields": list(result.missing_fields),
         "error_count": len(result.errors),
+        "quality_status": result.quality_summary.get("status", ""),
+        "quality_anomaly_count": len(result.quality_summary.get("anomalies", []) or []),
     }
 
 
@@ -457,6 +571,16 @@ def _build_recommendations(
     elif snapshot.fallback_used:
         recommendations.append(
             "Snapshot used last-good cache: live sources are degraded; inspect snapshot.errors for the failing provider."
+        )
+    if snapshot.quality_summary.get("anomalies"):
+        anomalies = [
+            str(item)
+            for item in list(snapshot.quality_summary.get("anomalies", []) or [])[:4]
+        ]
+        recommendations.append(
+            "Snapshot quality anomalies detected: "
+            + ", ".join(anomalies)
+            + "; inspect snapshot.quality_summary before trusting hard filters."
         )
     if daily is not None:
         if daily.status == "failed":
