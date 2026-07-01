@@ -84,9 +84,9 @@ Stable fields include:
 
 `GET /data-source-history` summarizes the same sidecar metadata by snapshot source, without live checks:
 
-- `summary`: recent run count, source-error/degradation/fallback rates, capped source-error/degradation samples, daily-enriched run count, source names, and latest compact run.
-- `snapshot_sources`: one row per snapshot source with run count, strategy coverage, latest run, total/average picks, source-error and degradation rates and samples, fallback count, daily enrichment counts, and recent compact run cards.
-- `watchlist`: sources with any error, degradation, or last-good fallback usage, sorted by impact and carrying capped issue samples.
+- `summary`: recent run count, source-error/degradation/fallback rates, stability status/score, capped source-error/degradation samples, next actions, daily-enriched run count, source names, and latest compact run.
+- `snapshot_sources`: one row per snapshot source with run count, strategy coverage, latest run, total/average picks, source-error and degradation rates and samples, fallback rate/count, stability status/score, next actions, daily enrichment counts, and recent compact run cards.
+- `watchlist`: sources with any error, degradation, or last-good fallback usage, sorted by impact and carrying stability status, score, issue samples, and next actions.
 - Query params: `strategy` filters to one strategy and `limit` caps scanned metadata records.
 
 ## Evaluation failure review payload

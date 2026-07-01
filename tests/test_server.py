@@ -145,7 +145,9 @@ def test_api_data_source_history_returns_saved_run_source_rollup(tmp_path):
     assert payload["run_count"] == 2
     by_source = {item["snapshot_source"]: item for item in payload["snapshot_sources"]}
     assert by_source["sina"]["source_error_rate"] == 1.0
+    assert by_source["sina"]["stability_status"] == "degraded"
     assert by_source["efinance"]["source_error_rate"] == 0.0
+    assert by_source["efinance"]["stability_status"] == "ok"
 
 
 def test_api_report_returns_run_report_payload(tmp_path):

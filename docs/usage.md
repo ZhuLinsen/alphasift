@@ -170,7 +170,7 @@ alphasift report <run_id> --json --output data/reports/<run_id>.json
 curl "http://127.0.0.1:8765/strategy-run-summary?limit=50"
 ```
 
-`runs --json` 会输出轻量运行索引，包含策略版本、类别、数据源、LLM/日 K 状态、降级计数、少量错误/降级样例和建议报告路径。`/strategy-run-summary` 会按策略聚合这些索引，输出运行次数、最近报告、总候选数、source error/degradation 计数与样例、LLM/日 K 覆盖和最近运行卡片，不会触发 live 行情。`/data-source-history` 会按 snapshot source 聚合最近 runs，输出错误率、降级率、错误/降级样例、last-good fallback 次数、策略覆盖和 watchlist，用于稳定性面板观察某个源是否反复失败以及失败原因。默认报告是 Markdown，适合直接进入人工复盘、通知或日报；`report --json` 输出稳定的 `RunReport` payload，给 Web UI、agent 或外部服务消费。加 `--evaluate` 会在报告中附带最新 T+N 评估摘要。
+`runs --json` 会输出轻量运行索引，包含策略版本、类别、数据源、LLM/日 K 状态、降级计数、少量错误/降级样例和建议报告路径。`/strategy-run-summary` 会按策略聚合这些索引，输出运行次数、最近报告、总候选数、source error/degradation 计数与样例、LLM/日 K 覆盖和最近运行卡片，不会触发 live 行情。`/data-source-history` 会按 snapshot source 聚合最近 runs，输出错误率、降级率、错误/降级样例、last-good fallback 次数、稳定性状态/分数、策略覆盖、watchlist 和 next actions，用于稳定性面板观察某个源是否反复失败以及失败原因。默认报告是 Markdown，适合直接进入人工复盘、通知或日报；`report --json` 输出稳定的 `RunReport` payload，给 Web UI、agent 或外部服务消费。加 `--evaluate` 会在报告中附带最新 T+N 评估摘要。
 
 评估时额外抓取日 K 路径，输出最大回撤和最大浮盈：
 

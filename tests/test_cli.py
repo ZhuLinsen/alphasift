@@ -366,6 +366,17 @@ def test_cli_overview_json_combines_catalog_health_and_runs(monkeypatch, tmp_pat
 
 
 def test_cli_overview_explain_formats_dashboard_summary(monkeypatch, tmp_path, capsys):
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="run_overview_explain",
+            snapshot_source="sina",
+            source_errors=["sina: timeout"],
+            picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80)],
+        ),
+        data_dir=tmp_path,
+    )
     monkeypatch.setenv("ALPHASIFT_DATA_DIR", str(tmp_path))
     monkeypatch.setattr(sys, "argv", [
         "alphasift",
@@ -388,6 +399,8 @@ def test_cli_overview_explain_formats_dashboard_summary(monkeypatch, tmp_path, c
     assert "overview generated_at=" in out
     assert "snapshot_health" in out
     assert "freshness fresh_enough=False" in out
+    assert "source_history=" in out
+    assert "status=degraded" in out
     assert "categories=" in out
     assert "strategy_matches:" in out
     assert "low_volatility_quality" in out

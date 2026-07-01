@@ -61,6 +61,11 @@ def test_build_data_source_history_groups_runs_by_snapshot_source(tmp_path):
     ]
     assert payload["summary"]["fallback_run_count"] == 1
     assert payload["summary"]["fallback_rate"] == 0.3333
+    assert payload["summary"]["stability_status"] == "fallback"
+    assert payload["summary"]["stability_score"] == 51.7
+    assert payload["summary"]["next_actions"] == [
+        "Refresh live snapshot providers before relying on last-good cache runs."
+    ]
     assert payload["summary"]["latest_run"]["run_id"] == "run_cache"
 
     assert by_source["sina"]["run_count"] == 2
@@ -74,15 +79,29 @@ def test_build_data_source_history_groups_runs_by_snapshot_source(tmp_path):
     assert by_source["sina"]["runs_with_degradation"] == 1
     assert by_source["sina"]["degradation_rate"] == 0.5
     assert by_source["sina"]["degradation_samples"] == ["fallback"]
+    assert by_source["sina"]["fallback_rate"] == 0.0
+    assert by_source["sina"]["stability_status"] == "degraded"
+    assert by_source["sina"]["stability_score"] == 60.0
+    assert by_source["sina"]["next_actions"] == [
+        "Compare `sina` with alternate snapshot providers and inspect issue samples."
+    ]
     assert by_source["sina"]["daily_enriched_runs"] == 1
     assert by_source["sina"]["daily_enrich_count"] == 3
     assert by_source["sina"]["recent_runs"][1]["source_errors"] == ["akshare: timeout"]
 
     assert by_source["last_good_cache"]["fallback_run_count"] == 1
+    assert by_source["last_good_cache"]["fallback_rate"] == 1.0
     assert by_source["last_good_cache"]["degradation_rate"] == 1.0
+    assert by_source["last_good_cache"]["stability_status"] == "fallback"
+    assert by_source["last_good_cache"]["stability_score"] == 35.0
     assert payload["watchlist"][0]["snapshot_source"] == "last_good_cache"
+    assert payload["watchlist"][0]["stability_status"] == "fallback"
+    assert payload["watchlist"][0]["stability_score"] == 35.0
     assert payload["watchlist"][0]["degradation_samples"] == [
         "Snapshot source fallback: last_good_cache stale"
+    ]
+    assert payload["watchlist"][0]["next_actions"] == [
+        "Refresh live snapshot providers before relying on last-good cache runs."
     ]
 
 
@@ -112,4 +131,8 @@ def test_build_data_source_history_supports_strategy_filter(tmp_path):
 
     assert payload["strategy_filter"] == "dual_low"
     assert payload["run_count"] == 1
+    assert payload["summary"]["stability_status"] == "ok"
+    assert payload["summary"]["stability_score"] == 100.0
     assert payload["snapshot_sources"][0]["snapshot_source"] == "sina"
+    assert payload["snapshot_sources"][0]["stability_status"] == "ok"
+    assert payload["snapshot_sources"][0]["next_actions"] == []

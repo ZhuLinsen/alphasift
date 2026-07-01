@@ -101,6 +101,7 @@ def build_overview(
         "next_actions": _next_actions(
             doctor=doctor,
             recent_runs=recent_runs,
+            source_history=source_history,
             strategy_matches=strategy_matches,
             strategy_name=strategy_name,
             live_data_check=live_data_check,
@@ -168,6 +169,7 @@ def _next_actions(
     *,
     doctor: dict[str, Any],
     recent_runs: list[dict[str, object]],
+    source_history: dict[str, object],
     strategy_matches: list[dict[str, object]],
     strategy_name: str | None,
     live_data_check: bool,
@@ -176,6 +178,7 @@ def _next_actions(
     if not live_data_check:
         actions.append("Run `alphasift overview --live-data-check --explain` before relying on fresh data.")
     actions.extend(str(item) for item in doctor.get("recommendations", []) or [])
+    actions.extend(_source_history_actions(source_history))
     if strategy_matches:
         top = strategy_matches[0]
         actions.append(f"Try `alphasift screen {top.get('name')} --explain` for the top matched strategy.")
@@ -184,6 +187,17 @@ def _next_actions(
     if not recent_runs:
         actions.append("Run `alphasift screen <strategy> --save-run` to populate the recent-run panel.")
     return list(dict.fromkeys(actions))
+
+
+def _source_history_actions(source_history: dict[str, object]) -> list[str]:
+    watchlist = source_history.get("watchlist") or []
+    if not isinstance(watchlist, list):
+        return []
+    actions: list[str] = []
+    for item in watchlist[:2]:
+        if isinstance(item, dict):
+            actions.extend(str(action) for action in item.get("next_actions", []) or [])
+    return actions
 
 
 def overview_to_jsonable(payload: dict[str, Any]) -> dict[str, Any]:

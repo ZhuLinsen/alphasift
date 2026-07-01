@@ -15,6 +15,8 @@ def test_build_overview_groups_strategies_and_recent_runs(tmp_path):
             strategy_category="value",
             run_id="run_dual",
             snapshot_source="sina",
+            source_errors=["sina: timeout"],
+            degradation=["Snapshot source fallback: stale provider"],
             picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80)],
         ),
         data_dir=tmp_path,
@@ -39,6 +41,7 @@ def test_build_overview_groups_strategies_and_recent_runs(tmp_path):
     assert payload["run_history_summary"]["strategies"][0]["strategy"] == "dual_low"
     assert payload["data_source_history"]["run_count"] == 1
     assert payload["data_source_history"]["snapshot_sources"][0]["snapshot_source"] == "sina"
+    assert payload["data_source_history"]["summary"]["stability_status"] == "degraded"
     assert payload["strategy_cards"]["summary"]["strategy_count"] >= 10
     cards = {
         item["name"]: item
@@ -67,6 +70,7 @@ def test_build_overview_groups_strategies_and_recent_runs(tmp_path):
     assert "dual_low" in by_risk["defensive"]["strategies"]
     assert "volume_breakout" in daily_requirements["daily_k"]["strategies"]
     assert any("live-data-check" in item for item in payload["next_actions"])
+    assert any("Compare `sina` with alternate snapshot providers" in item for item in payload["next_actions"])
 
 
 def test_build_overview_includes_strategy_matches(tmp_path):

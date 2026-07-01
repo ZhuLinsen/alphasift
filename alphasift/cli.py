@@ -959,6 +959,8 @@ def _format_data_source_history_summary(summary: dict) -> str:
         "source_history="
         f"runs={summary.get('run_count', 0)} "
         f"sources={summary.get('source_count', 0)} "
+        f"status={values.get('stability_status', 'unknown')} "
+        f"score={values.get('stability_score', '-')} "
         f"source_error_rate={values.get('source_error_rate', 0.0)} "
         f"degradation_rate={values.get('degradation_rate', 0.0)} "
         f"fallback_rate={values.get('fallback_rate', 0.0)} "
