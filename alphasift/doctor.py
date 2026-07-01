@@ -44,6 +44,7 @@ class DataSourcesDoctorResult:
     snapshot: SourceCheckResult
     daily: SourceCheckResult | None = None
     strategy_requirements: dict[str, Any] = field(default_factory=dict)
+    strategy_coverage: list[dict[str, Any]] = field(default_factory=list)
     recommendations: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -64,11 +65,16 @@ def doctor_data_sources(
     run_live: bool = True,
     check_daily: bool = True,
     strategy_name: str | None = None,
+    all_strategies: bool = False,
 ) -> DataSourcesDoctorResult:
     """Check snapshot and daily K-line source health without exposing secrets."""
     sources = list(snapshot_sources or config.snapshot_source_priority)
     daily_source_name = daily_source or config.daily_source
-    strategy_requirements = _strategy_requirements(config, strategy_name)
+    strategy_requirements, coverage_requirements = _strategy_preflight_plan(
+        config,
+        strategy_name=strategy_name,
+        all_strategies=all_strategies,
+    )
     snapshot_required_fields = _required_fields_for_check(
         strategy_requirements.get("required_snapshot_fields"),
         default=["code", "name", "price"],
@@ -91,6 +97,7 @@ def doctor_data_sources(
         if check_daily
         else None
     )
+    strategy_coverage = _build_strategy_coverage(coverage_requirements, snapshot, daily)
     recommendations = _build_recommendations(snapshot, daily)
     statuses = [snapshot.status, daily.status if daily is not None else "skipped"]
     status = _overall_status(statuses)
@@ -109,6 +116,7 @@ def doctor_data_sources(
         snapshot=snapshot,
         daily=daily,
         strategy_requirements=strategy_requirements,
+        strategy_coverage=strategy_coverage,
         recommendations=recommendations,
     )
 
@@ -209,21 +217,59 @@ def _check_daily_sources(
     )
 
 
+def _strategy_preflight_plan(
+    config: Config,
+    *,
+    strategy_name: str | None,
+    all_strategies: bool,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    if strategy_name and all_strategies:
+        raise ValueError("--strategy and --all-strategies cannot be combined")
+    if all_strategies:
+        requirements = [_strategy_requirement_payload(item) for item in list_strategies(config.strategies_dir)]
+        return (
+            {
+                "mode": "all",
+                "strategy_count": len(requirements),
+                "daily_strategy_count": sum(
+                    1 for item in requirements if item["requires_daily_features"]
+                ),
+                "data_requirements": _union_fields(requirements, "data_requirements"),
+                "required_snapshot_fields": _union_fields(requirements, "required_snapshot_fields"),
+                "required_daily_fields": _union_fields(requirements, "required_daily_fields"),
+            },
+            requirements,
+        )
+    strategy_requirements = _strategy_requirements(config, strategy_name)
+    return strategy_requirements, [strategy_requirements] if strategy_requirements else []
+
+
 def _strategy_requirements(config: Config, strategy_name: str | None) -> dict[str, Any]:
     if not strategy_name:
         return {}
     for item in list_strategies(config.strategies_dir):
         if item.name == strategy_name:
-            return {
-                "strategy": item.name,
-                "display_name": item.display_name,
-                "category": item.category,
-                "data_requirements": list(item.data_requirements),
-                "requires_daily_features": bool(item.requires_daily_features),
-                "required_snapshot_fields": list(item.required_snapshot_fields),
-                "required_daily_fields": list(item.required_daily_fields),
-            }
+            return _strategy_requirement_payload(item)
     raise ValueError(f"Strategy '{strategy_name}' not found")
+
+
+def _strategy_requirement_payload(item) -> dict[str, Any]:
+    return {
+        "strategy": item.name,
+        "display_name": item.display_name,
+        "category": item.category,
+        "data_requirements": list(item.data_requirements),
+        "requires_daily_features": bool(item.requires_daily_features),
+        "required_snapshot_fields": list(item.required_snapshot_fields),
+        "required_daily_fields": list(item.required_daily_fields),
+    }
+
+
+def _union_fields(items: list[dict[str, Any]], key: str) -> list[str]:
+    values: list[str] = []
+    for item in items:
+        values.extend(str(value) for value in item.get(key, []) or [])
+    return list(dict.fromkeys(values))
 
 
 def _required_fields_for_check(value: object, *, default: list[str]) -> list[str]:
@@ -240,6 +286,66 @@ def _missing_daily_feature_fields(df, required_fields: list[str]) -> list[str]:
         return []
     features = compute_daily_features(df)
     return [field for field in required_fields if field not in features]
+
+
+def _build_strategy_coverage(
+    requirements: list[dict[str, Any]],
+    snapshot: SourceCheckResult,
+    daily: SourceCheckResult | None,
+) -> list[dict[str, Any]]:
+    if not requirements:
+        return []
+    snapshot_missing = set(snapshot.missing_fields)
+    daily_missing = set(daily.missing_fields if daily is not None else [])
+    coverage: list[dict[str, Any]] = []
+    for item in requirements:
+        required_snapshot = list(item.get("required_snapshot_fields", []) or [])
+        required_daily = list(item.get("required_daily_fields", []) or [])
+        item_snapshot_missing = [field for field in required_snapshot if field in snapshot_missing]
+        item_daily_missing = [field for field in required_daily if field in daily_missing]
+        coverage.append(
+            {
+                "strategy": item.get("strategy", ""),
+                "display_name": item.get("display_name", ""),
+                "category": item.get("category", ""),
+                "data_requirements": list(item.get("data_requirements", []) or []),
+                "requires_daily_features": bool(item.get("requires_daily_features")),
+                "status": _strategy_coverage_status(
+                    item,
+                    snapshot,
+                    daily,
+                    snapshot_missing=item_snapshot_missing,
+                    daily_missing=item_daily_missing,
+                ),
+                "required_snapshot_fields": required_snapshot,
+                "required_daily_fields": required_daily,
+                "snapshot_missing_fields": item_snapshot_missing,
+                "daily_missing_fields": item_daily_missing,
+            }
+        )
+    return coverage
+
+
+def _strategy_coverage_status(
+    item: dict[str, Any],
+    snapshot: SourceCheckResult,
+    daily: SourceCheckResult | None,
+    *,
+    snapshot_missing: list[str],
+    daily_missing: list[str],
+) -> str:
+    requires_daily = bool(item.get("requires_daily_features")) or bool(
+        item.get("required_daily_fields")
+    )
+    if snapshot.status == "failed" or (requires_daily and daily is not None and daily.status == "failed"):
+        return "failed"
+    if snapshot.status == "skipped" or (requires_daily and (daily is None or daily.status == "skipped")):
+        return "skipped"
+    if snapshot_missing or daily_missing:
+        return "degraded"
+    if snapshot.status == "degraded" or (requires_daily and daily is not None and daily.status == "degraded"):
+        return "degraded"
+    return "ok"
 
 
 def _overall_status(statuses: list[str]) -> str:

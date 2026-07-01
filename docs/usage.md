@@ -36,9 +36,10 @@ alphasift strategies --json
 
 ```bash
 alphasift doctor data-sources --strategy low_volatility_quality --no-live --explain
+alphasift doctor data-sources --all-strategies --no-live --explain
 ```
 
-该命令会列出策略依赖的 snapshot 字段和 daily 特征字段。去掉 `--no-live` 后会发起真实取数 smoke test，并在字段缺失、缓存过期或数据源降级时输出 `snapshot_missing`、`daily_missing`、`source_errors` 和修复建议。
+单策略模式会列出该策略依赖的 snapshot 字段和 daily 特征字段；全策略模式会输出策略覆盖矩阵，方便 UI/API 或 agent 判断哪些策略依赖日 K、哪些字段是数据源稳定性的关键路径。去掉 `--no-live` 后会发起真实取数 smoke test，并在字段缺失、缓存过期或数据源降级时输出 `snapshot_missing`、`daily_missing`、`source_errors` 和修复建议。
 
 ## 常用场景
 

@@ -249,6 +249,7 @@ def main():
     dsp.add_argument("--daily-source", default=None, help="daily K 来源，默认使用 DAILY_SOURCE/config")
     dsp.add_argument("--daily-code", default="000001", help="daily K smoke test 股票代码，默认 000001")
     dsp.add_argument("--strategy", default=None, help="按指定策略的必需 snapshot/daily 字段做数据源预检")
+    dsp.add_argument("--all-strategies", action="store_true", help="按所有策略的字段并集做数据源覆盖矩阵")
     dsp.add_argument("--no-live", action="store_true", help="只输出配置和内存 health，不发起网络取数")
     dsp.add_argument("--no-daily", action="store_true", help="跳过 daily K smoke test")
     dsp.add_argument("--output", default=None, help="额外写出 JSON 诊断报告")
@@ -572,6 +573,7 @@ def main():
                     run_live=not args.no_live,
                     check_daily=not args.no_daily,
                     strategy_name=args.strategy,
+                    all_strategies=args.all_strategies,
                 )
             except ValueError as exc:
                 parser.error(str(exc))
@@ -1043,11 +1045,18 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
     ]
     strategy = result.get("strategy_requirements") or {}
     if strategy:
-        lines.append(
-            f"strategy={strategy.get('strategy')} category={strategy.get('category')} "
-            f"data={','.join(strategy.get('data_requirements') or [])} "
-            f"daily_required={strategy.get('requires_daily_features')}"
-        )
+        if strategy.get("mode") == "all":
+            lines.append(
+                f"strategy_scope=all count={strategy.get('strategy_count')} "
+                f"daily_required_count={strategy.get('daily_strategy_count')} "
+                f"data={','.join(strategy.get('data_requirements') or [])}"
+            )
+        else:
+            lines.append(
+                f"strategy={strategy.get('strategy')} category={strategy.get('category')} "
+                f"data={','.join(strategy.get('data_requirements') or [])} "
+                f"daily_required={strategy.get('requires_daily_features')}"
+            )
     if snapshot.get("required_fields"):
         lines.append("snapshot_required=" + ",".join(str(item) for item in snapshot.get("required_fields") or []))
     if snapshot.get("missing_fields"):
@@ -1071,6 +1080,22 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
     recommendations = result.get("recommendations") or []
     if recommendations:
         lines.append("recommendations=" + " | ".join(str(item) for item in recommendations))
+    coverage = result.get("strategy_coverage") or []
+    if coverage:
+        lines.append("strategy_coverage:")
+        for item in coverage:
+            parts = [
+                f"- {item.get('strategy')} status={item.get('status')}",
+                f"category={item.get('category')}",
+                f"data={','.join(item.get('data_requirements') or [])}",
+                f"snapshot_fields={len(item.get('required_snapshot_fields') or [])}",
+                f"daily_fields={len(item.get('required_daily_fields') or [])}",
+            ]
+            if item.get("snapshot_missing_fields"):
+                parts.append("snapshot_missing=" + ",".join(item.get("snapshot_missing_fields") or []))
+            if item.get("daily_missing_fields"):
+                parts.append("daily_missing=" + ",".join(item.get("daily_missing_fields") or []))
+            lines.append(" ".join(parts))
     return "\n".join(lines)
 
 

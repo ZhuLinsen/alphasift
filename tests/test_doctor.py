@@ -94,6 +94,33 @@ def test_doctor_data_sources_reports_strategy_requirements_without_live(tmp_path
     assert "volatility_20d_pct" in payload["daily"]["required_fields"]
 
 
+def test_doctor_data_sources_reports_all_strategy_coverage_without_live(tmp_path):
+    config = Config(
+        strategies_dir=Path("strategies"),
+        snapshot_source_priority=["sina"],
+        daily_source="auto",
+        fallback_snapshot_path=tmp_path / "snapshot.last_good.json",
+        daily_history_cache_dir=tmp_path / "daily_history",
+    )
+
+    result = doctor_data_sources(
+        config,
+        all_strategies=True,
+        run_live=False,
+    )
+    payload = result.to_dict()
+    coverage = {item["strategy"]: item for item in payload["strategy_coverage"]}
+
+    assert payload["status"] == "skipped"
+    assert payload["strategy_requirements"]["mode"] == "all"
+    assert payload["strategy_requirements"]["strategy_count"] >= 9
+    assert "volume_ratio" in payload["snapshot"]["required_fields"]
+    assert "volatility_20d_pct" in payload["daily"]["required_fields"]
+    assert coverage["low_volatility_quality"]["status"] == "skipped"
+    assert "pb_ratio" in coverage["low_volatility_quality"]["required_snapshot_fields"]
+    assert "volatility_20d_pct" in coverage["low_volatility_quality"]["required_daily_fields"]
+
+
 def test_cli_doctor_data_sources_no_live_json(monkeypatch, tmp_path, capsys):
     output = tmp_path / "doctor.json"
     monkeypatch.setattr(
@@ -150,6 +177,29 @@ def test_cli_doctor_data_sources_strategy_explain(monkeypatch, capsys):
     assert "volatility_20d_pct" in out
 
 
+def test_cli_doctor_data_sources_all_strategies_explain(monkeypatch, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "alphasift",
+            "doctor",
+            "data-sources",
+            "--all-strategies",
+            "--no-live",
+            "--explain",
+        ],
+    )
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "strategy_scope=all" in out
+    assert "strategy_coverage:" in out
+    assert "low_volatility_quality status=skipped" in out
+    assert "daily_fields=6" in out
+
+
 def test_cli_doctor_data_sources_unknown_strategy_errors(monkeypatch, capsys):
     monkeypatch.setattr(
         sys,
@@ -170,3 +220,26 @@ def test_cli_doctor_data_sources_unknown_strategy_errors(monkeypatch, capsys):
     assert exc.value.code == 2
     err = capsys.readouterr().err
     assert "Strategy 'missing_strategy' not found" in err
+
+
+def test_cli_doctor_data_sources_rejects_strategy_with_all_strategies(monkeypatch, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "alphasift",
+            "doctor",
+            "data-sources",
+            "--strategy",
+            "dual_low",
+            "--all-strategies",
+            "--no-live",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "--strategy and --all-strategies cannot be combined" in err
