@@ -248,6 +248,7 @@ def main():
     dsp.add_argument("--snapshot-source", action="append", default=None, help="snapshot 来源，可重复或逗号分隔")
     dsp.add_argument("--daily-source", default=None, help="daily K 来源，默认使用 DAILY_SOURCE/config")
     dsp.add_argument("--daily-code", default="000001", help="daily K smoke test 股票代码，默认 000001")
+    dsp.add_argument("--strategy", default=None, help="按指定策略的必需 snapshot/daily 字段做数据源预检")
     dsp.add_argument("--no-live", action="store_true", help="只输出配置和内存 health，不发起网络取数")
     dsp.add_argument("--no-daily", action="store_true", help="跳过 daily K smoke test")
     dsp.add_argument("--output", default=None, help="额外写出 JSON 诊断报告")
@@ -562,14 +563,18 @@ def main():
     elif args.command == "doctor":
         config = Config.from_env()
         if args.doctor_command == "data-sources":
-            result = doctor_data_sources(
-                config,
-                snapshot_sources=_split_csv_args(args.snapshot_source) or None,
-                daily_source=args.daily_source,
-                daily_code=args.daily_code,
-                run_live=not args.no_live,
-                check_daily=not args.no_daily,
-            )
+            try:
+                result = doctor_data_sources(
+                    config,
+                    snapshot_sources=_split_csv_args(args.snapshot_source) or None,
+                    daily_source=args.daily_source,
+                    daily_code=args.daily_code,
+                    run_live=not args.no_live,
+                    check_daily=not args.no_daily,
+                    strategy_name=args.strategy,
+                )
+            except ValueError as exc:
+                parser.error(str(exc))
             if args.output:
                 write_doctor_report(args.output, result)
             if args.json or not args.explain:
@@ -1036,6 +1041,17 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
             f"stale={snapshot.get('stale')} sources={','.join(snapshot.get('sources') or [])}"
         ),
     ]
+    strategy = result.get("strategy_requirements") or {}
+    if strategy:
+        lines.append(
+            f"strategy={strategy.get('strategy')} category={strategy.get('category')} "
+            f"data={','.join(strategy.get('data_requirements') or [])} "
+            f"daily_required={strategy.get('requires_daily_features')}"
+        )
+    if snapshot.get("required_fields"):
+        lines.append("snapshot_required=" + ",".join(str(item) for item in snapshot.get("required_fields") or []))
+    if snapshot.get("missing_fields"):
+        lines.append("snapshot_missing=" + ",".join(str(item) for item in snapshot.get("missing_fields") or []))
     if snapshot.get("errors"):
         lines.append("snapshot_errors=" + " | ".join(str(item) for item in snapshot.get("errors") or []))
     if daily:
@@ -1045,6 +1061,10 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
             f"rows={daily.get('rows', 0)} stale={daily.get('stale')} "
             f"code={config.get('daily_code') or '-'} requested={config.get('daily_source') or '-'}"
         )
+        if daily.get("required_fields"):
+            lines.append("daily_required=" + ",".join(str(item) for item in daily.get("required_fields") or []))
+        if daily.get("missing_fields"):
+            lines.append("daily_missing=" + ",".join(str(item) for item in daily.get("missing_fields") or []))
         if daily.get("errors"):
             lines.append("daily_errors=" + " | ".join(str(item) for item in daily.get("errors") or []))
     lines.append(f"tushare_configured={config.get('tushare_configured')} live_checks={config.get('live_checks')}")

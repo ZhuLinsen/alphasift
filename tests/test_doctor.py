@@ -1,7 +1,9 @@
 import json
 import sys
+from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from alphasift.cli import main
 from alphasift.config import Config
@@ -70,6 +72,28 @@ def test_doctor_data_sources_aggregates_snapshot_and_daily(monkeypatch, tmp_path
     assert "TUSHARE_TOKEN" not in json.dumps(payload, ensure_ascii=False)
 
 
+def test_doctor_data_sources_reports_strategy_requirements_without_live(tmp_path):
+    config = Config(
+        strategies_dir=Path("strategies"),
+        snapshot_source_priority=["sina"],
+        daily_source="auto",
+        fallback_snapshot_path=tmp_path / "snapshot.last_good.json",
+        daily_history_cache_dir=tmp_path / "daily_history",
+    )
+
+    result = doctor_data_sources(
+        config,
+        strategy_name="low_volatility_quality",
+        run_live=False,
+    )
+    payload = result.to_dict()
+
+    assert payload["status"] == "skipped"
+    assert payload["strategy_requirements"]["strategy"] == "low_volatility_quality"
+    assert "pb_ratio" in payload["snapshot"]["required_fields"]
+    assert "volatility_20d_pct" in payload["daily"]["required_fields"]
+
+
 def test_cli_doctor_data_sources_no_live_json(monkeypatch, tmp_path, capsys):
     output = tmp_path / "doctor.json"
     monkeypatch.setattr(
@@ -99,3 +123,50 @@ def test_cli_doctor_data_sources_no_live_json(monkeypatch, tmp_path, capsys):
     assert payload["daily"]["status"] == "skipped"
     assert payload["config"]["snapshot_source_priority"] == ["sina", "efinance"]
     assert saved["source_health"] == payload["source_health"]
+
+
+def test_cli_doctor_data_sources_strategy_explain(monkeypatch, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "alphasift",
+            "doctor",
+            "data-sources",
+            "--strategy",
+            "low_volatility_quality",
+            "--no-live",
+            "--explain",
+        ],
+    )
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "strategy=low_volatility_quality" in out
+    assert "snapshot_required=" in out
+    assert "pb_ratio" in out
+    assert "daily_required=" in out
+    assert "volatility_20d_pct" in out
+
+
+def test_cli_doctor_data_sources_unknown_strategy_errors(monkeypatch, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "alphasift",
+            "doctor",
+            "data-sources",
+            "--strategy",
+            "missing_strategy",
+            "--no-live",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "Strategy 'missing_strategy' not found" in err
