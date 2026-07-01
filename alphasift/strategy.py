@@ -315,6 +315,128 @@ def list_strategies(strategies_dir: Path | None = None) -> list[StrategyInfo]:
     return infos
 
 
+def match_strategies(
+    strategies_dir: Path | None = None,
+    *,
+    risk_profile: str = "",
+    holding_period: str = "",
+    execution_style: str = "",
+    market_regime: list[str] | None = None,
+    capital_profile: str = "",
+    data_requirements: list[str] | None = None,
+    tags: list[str] | None = None,
+    category: str = "",
+    daily_required: bool | None = None,
+    strict: bool = False,
+    limit: int | None = None,
+) -> list[dict[str, object]]:
+    """Rank strategies by UI/agent-facing selection preferences."""
+    criteria = {
+        "risk_profile": risk_profile,
+        "holding_period": holding_period,
+        "execution_style": execution_style,
+        "capital_profile": capital_profile,
+        "category": category,
+    }
+    regimes = _normalized_values(market_regime)
+    required_data = _normalized_values(data_requirements)
+    required_tags = _normalized_values(tags)
+    results: list[dict[str, object]] = []
+
+    for info in list_strategies(strategies_dir):
+        score = 0.0
+        matched: list[str] = []
+        missing: list[str] = []
+        style = info.style or {}
+
+        score += _match_single(
+            criteria["risk_profile"],
+            str(style.get("risk_profile") or ""),
+            "risk_profile",
+            3.0,
+            matched,
+            missing,
+        )
+        score += _match_single(
+            criteria["holding_period"],
+            str(style.get("holding_period") or ""),
+            "holding_period",
+            2.0,
+            matched,
+            missing,
+        )
+        score += _match_single(
+            criteria["execution_style"],
+            str(style.get("execution_style") or ""),
+            "execution_style",
+            2.0,
+            matched,
+            missing,
+        )
+        score += _match_single(
+            criteria["capital_profile"],
+            str(style.get("capital_profile") or ""),
+            "capital_profile",
+            1.0,
+            matched,
+            missing,
+        )
+        score += _match_single(
+            criteria["category"],
+            info.category,
+            "category",
+            1.5,
+            matched,
+            missing,
+        )
+
+        available_regimes = _normalized_values(style.get("market_regime", []))
+        score += _match_many(regimes, available_regimes, "market_regime", 1.0, matched, missing)
+        score += _match_many(
+            required_data,
+            _normalized_values(info.data_requirements),
+            "data_requirement",
+            1.0,
+            matched,
+            missing,
+        )
+        score += _match_many(required_tags, _normalized_values(info.tags), "tag", 1.0, matched, missing)
+        if daily_required is not None:
+            if bool(info.requires_daily_features) == daily_required:
+                score += 1.0
+                matched.append(f"daily_required:{str(daily_required).lower()}")
+            else:
+                missing.append(f"daily_required:{str(daily_required).lower()}")
+
+        if strict and missing:
+            continue
+        results.append({
+            "name": info.name,
+            "display_name": info.display_name,
+            "description": info.description,
+            "version": info.version,
+            "category": info.category,
+            "tags": list(info.tags),
+            "market_scope": list(info.market_scope),
+            "style": dict(info.style),
+            "data_requirements": list(info.data_requirements),
+            "requires_daily_features": info.requires_daily_features,
+            "required_snapshot_fields": list(info.required_snapshot_fields),
+            "required_daily_fields": list(info.required_daily_fields),
+            "factor_weights": dict(info.factor_weights),
+            "active_filters": list(info.active_filters),
+            "profile_keys": dict(info.profile_keys),
+            "score": round(score, 2),
+            "matched": matched,
+            "missing": missing,
+        })
+
+    results.sort(key=lambda item: (-float(item["score"]), str(item["name"])))
+    if limit is not None:
+        results = results[:max(limit, 0)]
+    return results
+
+
 def _strategy_data_requirements(strategy: Strategy, *, daily_required: bool) -> list[str]:
     requirements = ["snapshot"]
     if daily_required:
@@ -508,6 +630,58 @@ def _string_list(value: object) -> list[str]:
     if isinstance(value, str):
         return [item.strip() for item in value.split(",") if item.strip()]
     return []
+
+
+def _normalized_values(values: object) -> list[str]:
+    raw = _string_list(values)
+    normalized = []
+    seen = set()
+    for item in raw:
+        token = item.strip().lower()
+        if not token or token in seen:
+            continue
+        normalized.append(token)
+        seen.add(token)
+    return normalized
+
+
+def _match_single(
+    expected: str,
+    actual: str,
+    label: str,
+    weight: float,
+    matched: list[str],
+    missing: list[str],
+) -> float:
+    expected_normalized = expected.strip().lower()
+    if not expected_normalized:
+        return 0.0
+    if actual.strip().lower() == expected_normalized:
+        matched.append(f"{label}:{expected_normalized}")
+        return weight
+    missing.append(f"{label}:{expected_normalized}")
+    return 0.0
+
+
+def _match_many(
+    expected: list[str],
+    actual: list[str],
+    label: str,
+    weight: float,
+    matched: list[str],
+    missing: list[str],
+) -> float:
+    if not expected:
+        return 0.0
+    actual_set = set(actual)
+    score = 0.0
+    for item in expected:
+        if item in actual_set:
+            matched.append(f"{label}:{item}")
+            score += weight
+        else:
+            missing.append(f"{label}:{item}")
+    return score
 
 
 def _validate_strategy_dir_sync(strategies_dir: Path) -> None:

@@ -32,6 +32,15 @@ alphasift strategies --json
 
 结构化输出包含策略分类、标签、风格属性、数据依赖、是否需要日 K、必需 snapshot/daily 字段、活跃 hard filters、因子权重和 profile 覆盖项。
 
+也可以直接按风格/数据依赖匹配策略，给命令行、Web UI 或 agent 做策略选择：
+
+```bash
+alphasift strategies --risk-profile defensive --holding-period swing --market-regime risk_off --strict --explain
+alphasift strategies --risk-profile aggressive --data-requirement daily_k --limit 2 --json
+```
+
+匹配结果包含 `score`、`matched` 和 `missing`，便于界面展示为什么推荐某个策略，以及哪些偏好没有满足。
+
 按具体策略预检数据源字段覆盖：
 
 ```bash

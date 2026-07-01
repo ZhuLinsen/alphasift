@@ -102,6 +102,53 @@ def test_cli_strategies_explain_shows_data_requirements(monkeypatch, capsys):
     assert "daily_k[change_60d,signal_score" in out
 
 
+def test_cli_strategies_json_matches_style_preferences(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", [
+        "alphasift",
+        "strategies",
+        "--risk-profile",
+        "defensive",
+        "--holding-period",
+        "swing",
+        "--market-regime",
+        "risk_off",
+        "--strict",
+        "--json",
+    ])
+
+    main()
+
+    payload = json.loads(capsys.readouterr().out)
+    assert [item["name"] for item in payload] == ["low_volatility_quality"]
+    assert payload[0]["score"] == 6.0
+    assert payload[0]["missing"] == []
+    assert payload[0]["style"]["ui_badge"] == "质量"
+
+
+def test_cli_strategies_explain_matches_data_requirements(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", [
+        "alphasift",
+        "strategies",
+        "--risk-profile",
+        "aggressive",
+        "--data-requirement",
+        "daily_k",
+        "--limit",
+        "2",
+        "--explain",
+    ])
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "strategy_matches=2" in out
+    assert "criteria=risk_profile=aggressive;data_requirements=daily_k;limit=2" in out
+    assert "volume_breakout" in out
+    assert "matched=risk_profile:aggressive,data_requirement:daily_k" in out
+    assert "capital_heat" in out
+    assert "missing=data_requirement:daily_k" in out
+
+
 def test_cli_runs_json_filters_strategy(monkeypatch, tmp_path, capsys):
     save_screen_result(
         ScreenResult(

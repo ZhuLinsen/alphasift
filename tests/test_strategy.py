@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 import alphasift.strategy as strategy_module
-from alphasift.strategy import list_strategies, load_all_strategies, load_strategy
+from alphasift.strategy import list_strategies, load_all_strategies, load_strategy, match_strategies
 
 
 def test_disabled_strategies_are_not_listed():
@@ -104,6 +104,36 @@ def test_strategy_info_exposes_catalog_capabilities():
     assert strategy.style["holding_period"] == "swing"
     assert strategy.style["execution_style"] == "quality_defensive"
     assert "low_volatility" in strategy.style["market_regime"]
+
+
+def test_match_strategies_strictly_filters_style_preferences():
+    matches = match_strategies(
+        Path("strategies"),
+        risk_profile="defensive",
+        holding_period="swing",
+        market_regime=["risk_off"],
+        strict=True,
+    )
+
+    assert [item["name"] for item in matches] == ["low_volatility_quality"]
+    assert matches[0]["score"] == pytest.approx(6.0)
+    assert matches[0]["missing"] == []
+    assert "risk_profile:defensive" in matches[0]["matched"]
+    assert "market_regime:risk_off" in matches[0]["matched"]
+
+
+def test_match_strategies_ranks_partial_matches():
+    matches = match_strategies(
+        Path("strategies"),
+        risk_profile="aggressive",
+        data_requirements=["daily_k"],
+        limit=2,
+    )
+
+    assert [item["name"] for item in matches] == ["volume_breakout", "capital_heat"]
+    assert matches[0]["score"] > matches[1]["score"]
+    assert "data_requirement:daily_k" in matches[0]["matched"]
+    assert "data_requirement:daily_k" in matches[1]["missing"]
 
 
 def test_load_all_strategies_allows_repo_local_custom_strategy(tmp_path):

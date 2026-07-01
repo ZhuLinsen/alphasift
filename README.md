@@ -266,7 +266,7 @@ If a source is unavailable, times out, or lacks fields required by a strategy, A
 | `momentum_quality` | Framework | Trend confirmation plus quality filters |
 | `shrink_pullback` | Trend | Pullback into support during a broader uptrend; uses daily enrichment |
 
-Use `alphasift strategies --json` or `alphasift strategies --explain` to inspect strategy style, data requirements, active filters, factor weights, and profile overrides. Use `alphasift doctor data-sources --all-strategies --explain` to inspect the cross-strategy data-source field coverage matrix before relying on live screening. Add custom YAML strategies under `strategies/`. See [docs/strategy-guide.md](docs/strategy-guide.md).
+Use `alphasift strategies --json` or `alphasift strategies --explain` to inspect strategy style, data requirements, active filters, factor weights, and profile overrides. Add matching flags such as `--risk-profile defensive --holding-period swing --strict --json` when a UI or agent needs ranked strategy recommendations instead of the full catalog. Use `alphasift doctor data-sources --all-strategies --explain` to inspect the cross-strategy data-source field coverage matrix before relying on live screening. Add custom YAML strategies under `strategies/`. See [docs/strategy-guide.md](docs/strategy-guide.md).
 
 ## Project layout
 

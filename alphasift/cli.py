@@ -38,7 +38,7 @@ from alphasift.store import (
     save_screen_result,
     screen_result_to_jsonl,
 )
-from alphasift.strategy import list_strategies
+from alphasift.strategy import list_strategies, match_strategies
 
 
 def main():
@@ -159,6 +159,22 @@ def main():
     stp = sub.add_parser("strategies", help="列出可用策略")
     stp.add_argument("--json", action="store_true", help="以 JSON 输出完整策略目录元数据")
     stp.add_argument("--explain", action="store_true", help="输出包含数据依赖和主要因子的可读策略目录")
+    stp.add_argument("--risk-profile", default=None, help="按风险风格匹配：defensive / balanced / aggressive")
+    stp.add_argument("--holding-period", default=None, help="按持有周期匹配：short_term / swing / watchlist")
+    stp.add_argument("--execution-style", default=None, help="按执行风格匹配，例如 mean_reversion / breakout")
+    stp.add_argument("--market-regime", action="append", default=None, help="按行情环境匹配，可重复或逗号分隔")
+    stp.add_argument("--capital-profile", default=None, help="按流动性/容量风格匹配")
+    stp.add_argument("--data-requirement", action="append", default=None, help="按数据依赖匹配，可重复或逗号分隔")
+    stp.add_argument("--tag", action="append", default=None, help="按策略标签匹配，可重复或逗号分隔")
+    stp.add_argument("--category", default=None, help="按策略分类匹配")
+    stp.add_argument(
+        "--daily-required",
+        choices=["any", "true", "false"],
+        default="any",
+        help="按是否依赖日 K 特征匹配",
+    )
+    stp.add_argument("--strict", action="store_true", help="只返回满足全部匹配条件的策略")
+    stp.add_argument("--limit", type=int, default=None, help="最多返回 N 个策略匹配结果")
 
     # evaluate
     ep = sub.add_parser("evaluate", help="用最新快照评估已保存的选股结果")
@@ -338,19 +354,42 @@ def main():
             print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
 
     elif args.command == "strategies":
-        strategies = list_strategies()
-        if args.json:
-            print(json.dumps([asdict(item) for item in strategies], ensure_ascii=False, indent=2))
-        elif args.explain:
-            print(_format_strategies_explain(strategies))
+        if _has_strategy_match_args(args):
+            criteria = _strategy_match_criteria_from_args(args)
+            matches = match_strategies(
+                risk_profile=args.risk_profile or "",
+                holding_period=args.holding_period or "",
+                execution_style=args.execution_style or "",
+                market_regime=_split_csv_args(args.market_regime) or [],
+                capital_profile=args.capital_profile or "",
+                data_requirements=_split_csv_args(args.data_requirement) or [],
+                tags=_split_csv_args(args.tag) or [],
+                category=args.category or "",
+                daily_required=_parse_daily_required(args.daily_required),
+                strict=args.strict,
+                limit=args.limit,
+            )
+            if args.json:
+                print(json.dumps(matches, ensure_ascii=False, indent=2))
+            elif args.explain:
+                print(_format_strategy_matches_explain(matches, criteria=criteria))
+            else:
+                for item in matches:
+                    print(_format_strategy_match_line(item))
         else:
-            for s in strategies:
-                tags = ",".join(s.tags)
-                suffix = f" tags={tags}" if tags else ""
-                print(
-                    f"  {s.name:<25} {s.display_name:<10} "
-                    f"v{s.version:<5} [{s.category}] {s.description}{suffix}"
-                )
+            strategies = list_strategies()
+            if args.json:
+                print(json.dumps([asdict(item) for item in strategies], ensure_ascii=False, indent=2))
+            elif args.explain:
+                print(_format_strategies_explain(strategies))
+            else:
+                for s in strategies:
+                    tags = ",".join(s.tags)
+                    suffix = f" tags={tags}" if tags else ""
+                    print(
+                        f"  {s.name:<25} {s.display_name:<10} "
+                        f"v{s.version:<5} [{s.category}] {s.description}{suffix}"
+                    )
 
     elif args.command == "evaluate":
         config = Config.from_env()
@@ -747,6 +786,107 @@ def _format_strategies_explain(strategies) -> str:
             lines.append(f"  required_fields={required_fields}")
         lines.append(f"  {strategy.display_name}: {strategy.description}")
     return "\n".join(lines)
+
+
+def _has_strategy_match_args(args) -> bool:
+    return any((
+        bool(args.risk_profile),
+        bool(args.holding_period),
+        bool(args.execution_style),
+        bool(args.market_regime),
+        bool(args.capital_profile),
+        bool(args.data_requirement),
+        bool(args.tag),
+        bool(args.category),
+        args.daily_required != "any",
+        bool(args.strict),
+        args.limit is not None,
+    ))
+
+
+def _strategy_match_criteria_from_args(args) -> dict[str, object]:
+    criteria: dict[str, object] = {}
+    for attr in ("risk_profile", "holding_period", "execution_style", "capital_profile", "category"):
+        value = getattr(args, attr)
+        if value:
+            criteria[attr] = value
+    for attr, key in (
+        ("market_regime", "market_regime"),
+        ("data_requirement", "data_requirements"),
+        ("tag", "tags"),
+    ):
+        value = _split_csv_args(getattr(args, attr)) or []
+        if value:
+            criteria[key] = value
+    daily_required = _parse_daily_required(args.daily_required)
+    if daily_required is not None:
+        criteria["daily_required"] = daily_required
+    if args.strict:
+        criteria["strict"] = True
+    if args.limit is not None:
+        criteria["limit"] = args.limit
+    return criteria
+
+
+def _parse_daily_required(value: str) -> bool | None:
+    if value == "true":
+        return True
+    if value == "false":
+        return False
+    return None
+
+
+def _format_strategy_matches_explain(matches: list[dict[str, object]], *, criteria: dict[str, object]) -> str:
+    lines = [
+        f"strategy_matches={len(matches)} criteria={_format_match_criteria(criteria)}",
+    ]
+    if not matches:
+        return "\n".join(lines)
+    lines.append("score strategy category style data daily matched missing")
+    for item in matches:
+        lines.append(_format_strategy_match_line(item))
+    return "\n".join(lines)
+
+
+def _format_strategy_match_line(item: dict[str, object]) -> str:
+    style = item.get("style", {})
+    if not isinstance(style, dict):
+        style = {}
+    data = ",".join(str(value) for value in item.get("data_requirements", []) or []) or "-"
+    matched = _format_match_tokens(item.get("matched", []) or [])
+    missing = _format_match_tokens(item.get("missing", []) or [])
+    return (
+        f"{float(item.get('score', 0.0)):>4.1f} "
+        f"{str(item.get('name', '')):<24} "
+        f"{str(item.get('category', '-')):<9} "
+        f"style={_format_strategy_style(style):<40} "
+        f"data={data:<32} "
+        f"daily={str(item.get('requires_daily_features', False)):<5} "
+        f"matched={matched} missing={missing}"
+    )
+
+
+def _format_match_criteria(criteria: dict[str, object]) -> str:
+    if not criteria:
+        return "-"
+    parts = []
+    for key, value in criteria.items():
+        if isinstance(value, list):
+            value_text = ",".join(str(item) for item in value)
+        else:
+            value_text = str(value).lower() if isinstance(value, bool) else str(value)
+        parts.append(f"{key}={value_text}")
+    return ";".join(parts)
+
+
+def _format_match_tokens(values: object, *, limit: int = 6) -> str:
+    if not isinstance(values, list):
+        return "-"
+    shown = [str(item) for item in values[:limit]]
+    if not shown:
+        return "-"
+    suffix = f",+{len(values) - limit}" if len(values) > limit else ""
+    return ",".join(shown) + suffix
 
 
 def _format_top_factor_weights(weights: dict[str, float], *, limit: int = 4) -> str:

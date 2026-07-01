@@ -128,6 +128,8 @@ screening:
   max_output: int          # 最终输出数量，默认 5
 ```
 
+`style` 不参与硬筛，但会进入 `alphasift strategies --json` 和策略匹配命令。例如 `alphasift strategies --risk-profile defensive --market-regime risk_off --strict --json` 会按这些字段返回带 `score`、`matched`、`missing` 的候选策略，方便 Web UI、agent 或通知流解释为什么选用某个策略。
+
 ## 策略分类说明
 
 | 分类 | 适用场景 | 示例 |
