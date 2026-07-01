@@ -84,6 +84,19 @@ Stable fields include:
 - `strategy_requirements` / `strategy_coverage`: required fields and coverage status for one strategy or the full strategy catalog.
 - `recommendations`: next actions derived from live check status, fallback use, stale cache, and health guard state.
 
+## Overview payload
+
+`alphasift overview --json` is the preferred first-screen payload for UI/agent integrations. Current schema version is `1`.
+
+Stable top-level fields:
+
+- `summary`: strategy counts, daily-strategy count, data-source status, strategy-match count, recent-run count, live-check flag.
+- `strategy_groups`: strategy names grouped by category, risk profile, holding period, and data requirement.
+- `strategy_matches`: optional ranked strategy recommendations with `score`, `matched`, and `missing`.
+- `data_sources`: compact data-source doctor subset with `health_summary`, strategy requirements, strategy coverage, and recommendations.
+- `recent_runs`: lightweight saved-run metadata from `alphasift runs --json`.
+- `next_actions`: UI-ready operational next steps.
+
 ## DSA readiness
 
 DSA is optional. Core screening must continue when DSA is unavailable.

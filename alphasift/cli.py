@@ -23,6 +23,7 @@ from alphasift.hotspot import (
     save_hotspots_json,
 )
 from alphasift.industry import fetch_akshare_board_map, save_industry_map
+from alphasift.overview import build_overview
 from alphasift.pipeline import screen
 from alphasift.report import (
     build_run_report_payload,
@@ -225,6 +226,31 @@ def main():
     rp.add_argument("--limit", type=int, default=20)
     rp.add_argument("--strategy", default=None, help="只列出指定策略的运行")
     rp.add_argument("--json", action="store_true", help="以 JSON 输出完整运行元数据")
+
+    # overview
+    op = sub.add_parser("overview", help="输出 UI/agent 总览：策略、数据源健康和最近运行")
+    op.add_argument("--strategy", default=None, help="聚焦指定策略，同时过滤最近运行")
+    op.add_argument("--runs-limit", type=int, default=5, help="最近运行最多返回 N 条")
+    op.add_argument("--live-data-check", action="store_true", help="执行真实数据源 smoke check；默认只读健康状态")
+    op.add_argument("--risk-profile", default=None, help="推荐策略风险风格：defensive / balanced / aggressive")
+    op.add_argument("--holding-period", default=None, help="推荐策略持有周期：short_term / swing / watchlist")
+    op.add_argument("--execution-style", default=None, help="推荐策略执行风格，例如 mean_reversion / breakout")
+    op.add_argument("--market-regime", action="append", default=None, help="推荐策略行情环境，可重复或逗号分隔")
+    op.add_argument("--capital-profile", default=None, help="推荐策略流动性/容量风格")
+    op.add_argument("--data-requirement", action="append", default=None, help="推荐策略数据依赖，可重复或逗号分隔")
+    op.add_argument("--tag", action="append", default=None, help="推荐策略标签，可重复或逗号分隔")
+    op.add_argument("--category", default=None, help="推荐策略分类")
+    op.add_argument(
+        "--daily-required",
+        choices=["any", "true", "false"],
+        default="any",
+        help="按是否依赖日 K 特征推荐策略",
+    )
+    op.add_argument("--strict", action="store_true", help="只推荐满足全部策略偏好的候选")
+    op.add_argument("--match-limit", type=int, default=5, help="最多返回 N 个策略推荐")
+    op.add_argument("--output", default=None, help="额外写出 overview JSON")
+    op.add_argument("--json", action="store_true", help="以 JSON 输出")
+    op.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
 
     # report
     rep = sub.add_parser("report", help="把已保存运行生成为 Markdown/JSON 报告")
@@ -505,6 +531,27 @@ def main():
                 f"{item['path']}"
             )
 
+    elif args.command == "overview":
+        config = Config.from_env()
+        payload = build_overview(
+            config,
+            strategy_name=args.strategy,
+            runs_limit=args.runs_limit,
+            live_data_check=args.live_data_check,
+            strategy_match=_overview_strategy_match_from_args(args),
+            match_limit=args.match_limit,
+        )
+        if args.output:
+            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+            Path(args.output).write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+        if args.explain:
+            print(_format_overview_explain(payload))
+        else:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+
     elif args.command == "report":
         config = Config.from_env()
         try:
@@ -759,6 +806,81 @@ def _run_quickstart(*, strategy: str = "dual_low", max_output: int = 5) -> None:
     print("   alphasift screen <strategy> --save-run    # 保存运行")
     print("   alphasift evaluate <run_id> --explain     # T+N 评估")
     print("   alphasift strategies                      # 完整策略列表")
+
+
+def _overview_strategy_match_from_args(args) -> dict[str, object]:
+    daily_required = _parse_daily_required(args.daily_required)
+    return {
+        "risk_profile": args.risk_profile or "",
+        "holding_period": args.holding_period or "",
+        "execution_style": args.execution_style or "",
+        "market_regime": _split_csv_args(args.market_regime) or [],
+        "capital_profile": args.capital_profile or "",
+        "data_requirements": _split_csv_args(args.data_requirement) or [],
+        "tags": _split_csv_args(args.tag) or [],
+        "category": args.category or "",
+        "daily_required": daily_required,
+        "strict": bool(args.strict),
+    }
+
+
+def _format_overview_explain(payload: dict) -> str:
+    summary = payload.get("summary", {}) or {}
+    data_sources = payload.get("data_sources", {}) or {}
+    health = data_sources.get("health_summary", {}) or {}
+    lines = [
+        (
+            f"overview generated_at={payload.get('generated_at')} "
+            f"strategies={summary.get('strategy_count')} "
+            f"daily_strategies={summary.get('daily_strategy_count')} "
+            f"runs={summary.get('recent_run_count')} "
+            f"matches={summary.get('strategy_match_count')} "
+            f"data_status={summary.get('data_source_status')} "
+            f"live_check={summary.get('live_data_check')}"
+        ),
+    ]
+    if health.get("snapshot"):
+        lines.append(_format_source_health_summary("snapshot_health", health["snapshot"]))
+    if health.get("daily"):
+        lines.append(_format_source_health_summary("daily_health", health["daily"]))
+    groups = payload.get("strategy_groups", {}) or {}
+    for title, key in (
+        ("categories", "by_category"),
+        ("risk_profiles", "by_risk_profile"),
+        ("holding_periods", "by_holding_period"),
+        ("data_requirements", "by_data_requirement"),
+    ):
+        group_text = _format_overview_groups(groups.get(key, []) or [])
+        if group_text:
+            lines.append(f"{title}={group_text}")
+    matches = payload.get("strategy_matches", []) or []
+    if matches:
+        lines.append("strategy_matches:")
+        for item in matches:
+            lines.append(_format_strategy_match_line(item))
+    runs = payload.get("recent_runs", []) or []
+    if runs:
+        lines.append("recent_runs:")
+        for item in runs:
+            lines.append(
+                f"- {item.get('run_id')} strategy={item.get('strategy')} "
+                f"picks={item.get('picks')} source={item.get('snapshot_source') or '-'} "
+                f"degraded={item.get('degradation_count', 0)}"
+            )
+    actions = payload.get("next_actions", []) or []
+    if actions:
+        lines.append("next_actions=" + " | ".join(str(item) for item in actions))
+    return "\n".join(lines)
+
+
+def _format_overview_groups(groups: list[dict[str, object]], *, limit: int = 6) -> str:
+    if not groups:
+        return ""
+    shown = groups[:limit]
+    text = ",".join(f"{item.get('name')}:{item.get('count')}" for item in shown)
+    if len(groups) > limit:
+        text += f",+{len(groups) - limit}"
+    return text
 
 
 def _format_strategies_explain(strategies) -> str:

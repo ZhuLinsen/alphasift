@@ -186,6 +186,70 @@ def test_cli_runs_json_filters_strategy(monkeypatch, tmp_path, capsys):
     assert payload[0]["post_analyzers"] == ["scorecard"]
 
 
+def test_cli_overview_json_combines_catalog_health_and_runs(monkeypatch, tmp_path, capsys):
+    save_screen_result(
+        ScreenResult(
+            strategy="volume_breakout",
+            market="cn",
+            run_id="run_breakout",
+            snapshot_source="sina",
+            picks=[Pick(rank=1, code="000002", name="万科A", final_score=75, screen_score=75)],
+        ),
+        data_dir=tmp_path,
+    )
+    monkeypatch.setenv("ALPHASIFT_DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(sys, "argv", [
+        "alphasift",
+        "overview",
+        "--risk-profile",
+        "aggressive",
+        "--data-requirement",
+        "daily_k",
+        "--match-limit",
+        "1",
+        "--runs-limit",
+        "1",
+        "--json",
+    ])
+
+    main()
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["schema_version"] == 1
+    assert payload["summary"]["strategy_match_count"] == 1
+    assert payload["strategy_matches"][0]["name"] == "volume_breakout"
+    assert payload["recent_runs"][0]["run_id"] == "run_breakout"
+    assert "health_summary" in payload["data_sources"]
+
+
+def test_cli_overview_explain_formats_dashboard_summary(monkeypatch, tmp_path, capsys):
+    monkeypatch.setenv("ALPHASIFT_DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(sys, "argv", [
+        "alphasift",
+        "overview",
+        "--risk-profile",
+        "defensive",
+        "--holding-period",
+        "swing",
+        "--market-regime",
+        "risk_off",
+        "--strict",
+        "--match-limit",
+        "1",
+        "--explain",
+    ])
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "overview generated_at=" in out
+    assert "snapshot_health" in out
+    assert "categories=" in out
+    assert "strategy_matches:" in out
+    assert "low_volatility_quality" in out
+    assert "next_actions=" in out
+
+
 def test_cli_hotspots_explain_shows_fallback_and_source_errors(monkeypatch, tmp_path, capsys):
     cache = tmp_path / "hotspots.json"
     save_hotspots_json(

@@ -36,6 +36,9 @@ cp .env.example .env
 # List built-in strategies
 alphasift strategies
 
+# UI/agent overview: strategy groups, source health, recent runs
+alphasift overview --explain
+
 # Run the no-key demo
 alphasift quickstart
 
@@ -266,7 +269,7 @@ If a source is unavailable, times out, or lacks fields required by a strategy, A
 | `momentum_quality` | Framework | Trend confirmation plus quality filters |
 | `shrink_pullback` | Trend | Pullback into support during a broader uptrend; uses daily enrichment |
 
-Use `alphasift strategies --json` or `alphasift strategies --explain` to inspect strategy style, data requirements, active filters, factor weights, and profile overrides. Add matching flags such as `--risk-profile defensive --holding-period swing --strict --json` when a UI or agent needs ranked strategy recommendations instead of the full catalog. Use `alphasift doctor data-sources --all-strategies --explain` to inspect the cross-strategy data-source field coverage matrix and source `health_summary` before relying on live screening. Add custom YAML strategies under `strategies/`. See [docs/strategy-guide.md](docs/strategy-guide.md).
+Use `alphasift overview --json/--explain` for one UI/agent payload that combines strategy groups, optional strategy recommendations, data-source `health_summary`, strategy coverage, recent runs, and next actions. Use `alphasift strategies --json` or `alphasift strategies --explain` to inspect strategy style, data requirements, active filters, factor weights, and profile overrides. Add matching flags such as `--risk-profile defensive --holding-period swing --strict --json` when a UI or agent needs ranked strategy recommendations instead of the full catalog. Use `alphasift doctor data-sources --all-strategies --explain` to inspect the cross-strategy data-source field coverage matrix and source `health_summary` before relying on live screening. Add custom YAML strategies under `strategies/`. See [docs/strategy-guide.md](docs/strategy-guide.md).
 
 ## Project layout
 
@@ -300,6 +303,7 @@ alphasift/
     ├── post_analysis.py     # L3 post-analysis plugins
     ├── dsa.py               # Optional DSA integration
     ├── store.py             # Run persistence
+    ├── overview.py          # UI/agent overview payload
     ├── evaluate.py          # T+N evaluation
     ├── pipeline.py          # Main orchestration
     └── strategy.py          # Strategy YAML loader

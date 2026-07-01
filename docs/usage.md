@@ -23,6 +23,17 @@ alphasift runs
 alphasift evaluate <run_id> --explain
 ```
 
+## UI/agent 总览
+
+`overview` 会把策略分组、策略推荐、数据源健康、策略字段覆盖、最近运行和 next actions 放到同一份 payload，适合 Web UI、通知助手或 agent 首屏使用：
+
+```bash
+alphasift overview --explain
+alphasift overview --risk-profile aggressive --data-requirement daily_k --match-limit 2 --json
+```
+
+默认不会发起网络请求，只读取当前进程的 source-health 和本地 run 索引；需要真实数据源 smoke check 时加 `--live-data-check`。
+
 策略目录也可以输出更完整的能力描述，方便 UI、agent 或外部系统选择合适策略：
 
 ```bash

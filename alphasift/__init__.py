@@ -7,6 +7,7 @@ from alphasift.pipeline import screen
 from alphasift.evaluate import evaluate_saved_run, evaluate_saved_runs
 from alphasift.strategy import list_strategies
 from alphasift.audit import audit_project
+from alphasift.overview import build_overview
 
 __all__ = [
     "__version__",
@@ -15,4 +16,5 @@ __all__ = [
     "evaluate_saved_runs",
     "list_strategies",
     "audit_project",
+    "build_overview",
 ]
