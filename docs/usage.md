@@ -35,7 +35,7 @@ alphasift serve --host 127.0.0.1 --port 8765
 
 默认不会发起网络请求，只读取当前进程的 source-health 和本地 run 索引；需要真实数据源 smoke check 时加 `--live-data-check`。
 
-`alphasift serve` 会启动只读本地 JSON API，方便 UI、agent 或外部编排层直接消费稳定 payload。默认监听 `127.0.0.1:8765`，可用端点包括 `/health`、`/result-schema`、`/overview`、`/strategies`、`/strategy?name=<strategy_name>`、`/strategy-compare?base=<base>&target=<target>`、`/strategy-facets`、`/strategy-readiness`、`/strategy-templates`、`/strategy-template?name=<template_name>`、`/runs`、`/report?run=<run_id>` 和 `/doctor/data-sources`。HTTP API 默认也不做 live 数据源检查；需要时给 `/overview?live=true`、`/strategy-readiness?live=true` 或 `/doctor/data-sources?live=true`。
+`alphasift serve` 会启动只读本地 JSON API，方便 UI、agent 或外部编排层直接消费稳定 payload。默认监听 `127.0.0.1:8765`，可用端点包括 `/health`、`/result-schema`、`/overview`、`/strategies`、`/strategy?name=<strategy_name>`、`/strategy-compare?base=<base>&target=<target>`、`/strategy-facets`、`/strategy-readiness`、`/strategy-run-summary`、`/strategy-templates`、`/strategy-template?name=<template_name>`、`/runs`、`/report?run=<run_id>` 和 `/doctor/data-sources`。HTTP API 默认也不做 live 数据源检查；需要时给 `/overview?live=true`、`/strategy-readiness?live=true` 或 `/doctor/data-sources?live=true`。
 
 策略目录也可以输出更完整的能力描述，方便 UI、agent 或外部系统选择合适策略：
 
@@ -165,9 +165,10 @@ alphasift runs --json
 alphasift runs --strategy low_volatility_quality --json
 alphasift report <run_id> --output data/reports/<run_id>.md
 alphasift report <run_id> --json --output data/reports/<run_id>.json
+curl "http://127.0.0.1:8765/strategy-run-summary?limit=50"
 ```
 
-`runs --json` 会输出轻量运行索引，包含策略版本、类别、数据源、LLM/日 K 状态、降级计数和建议报告路径。默认报告是 Markdown，适合直接进入人工复盘、通知或日报；`report --json` 输出稳定的 `RunReport` payload，给 Web UI、agent 或外部服务消费。加 `--evaluate` 会在报告中附带最新 T+N 评估摘要。
+`runs --json` 会输出轻量运行索引，包含策略版本、类别、数据源、LLM/日 K 状态、降级计数和建议报告路径。`/strategy-run-summary` 会按策略聚合这些索引，输出运行次数、最近报告、总候选数、source error/degradation 计数、LLM/日 K 覆盖和最近运行卡片，不会触发 live 行情。默认报告是 Markdown，适合直接进入人工复盘、通知或日报；`report --json` 输出稳定的 `RunReport` payload，给 Web UI、agent 或外部服务消费。加 `--evaluate` 会在报告中附带最新 T+N 评估摘要。
 
 评估时额外抓取日 K 路径，输出最大回撤和最大浮盈：
 

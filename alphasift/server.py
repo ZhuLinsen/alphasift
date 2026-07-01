@@ -14,6 +14,7 @@ from alphasift.doctor import doctor_data_sources
 from alphasift.overview import build_overview
 from alphasift.report import build_run_report_payload
 from alphasift.result_schema import screen_result_schema
+from alphasift.run_history import build_strategy_run_summary
 from alphasift.store import list_saved_runs, load_screen_result
 from alphasift.strategy import compare_strategies, list_strategies, match_strategies, strategy_facets
 from alphasift.strategy_templates import get_strategy_template, list_strategy_templates
@@ -143,6 +144,12 @@ def build_api_response(
                 "name": template_name,
             }
         return 200, {"schema_version": 1, "template": template}
+    if path == "/strategy-run-summary":
+        return 200, build_strategy_run_summary(
+            data_dir=config.data_dir,
+            limit=_int_param(params, "limit", 100),
+            strategy=_single(params, "strategy") or None,
+        )
     if path == "/runs":
         return 200, {
             "schema_version": 1,
@@ -238,6 +245,7 @@ def _index_payload() -> dict[str, Any]:
             "/strategy-compare",
             "/strategy-facets",
             "/strategy-readiness",
+            "/strategy-run-summary",
             "/strategy-templates",
             "/strategy-template",
             "/runs",
