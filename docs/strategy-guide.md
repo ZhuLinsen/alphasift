@@ -228,7 +228,7 @@ alphasift strategies --compare dual_low low_volatility_quality --json
 
 对比 payload 会列出风格、数据依赖、必需字段、硬筛参数、因子权重和 profile keys 的差异，并在 `summary.compatibility_notes` 中提示日 K 依赖或数据要求变化。
 
-`alphasift screen --save-run` 会把 `strategy_version`、候选、分数、风险和后置分析结果一起保存。后续可用 `alphasift evaluate <run_id>` 做单次 T+N 后验评估，也可以用 `alphasift evaluate-batch --limit 20 --explain` 对最近保存的 runs 做策略级聚合复盘。评估会按收益、交易成本、行业/主题、风险标签、持有期和形态后验标签聚合，并输出 `failure_review`，把失败样本、共性风险 flag、失败突破、严重回撤和下一步调参建议聚在一起。
+`alphasift screen --save-run` 会把 `strategy_version`、候选、分数、风险和后置分析结果一起保存。后续可用 `alphasift evaluate <run_id>` 做单次 T+N 后验评估，也可以用 `alphasift evaluate-batch --limit 20 --explain` 对最近保存的 runs 做策略级聚合复盘。评估会按收益、交易成本、行业/主题、LLM 催化/风险、后置分析标签、风险标签、持有期和形态后验标签聚合，并输出 `failure_review`，把失败样本、共性事件信号、共性风险 flag、失败突破、严重回撤和下一步调参建议聚在一起。
 
 ## L3 后置分析器
 

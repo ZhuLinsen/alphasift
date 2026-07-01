@@ -117,6 +117,9 @@ def evaluate_saved_run(
             llm_sector=pick.llm_sector or pick.industry,
             llm_theme=pick.llm_theme,
             llm_tags=list(pick.llm_tags),
+            llm_catalysts=list(pick.llm_catalysts),
+            llm_risks=list(pick.llm_risks),
+            post_analysis_tags=list(pick.post_analysis_tags),
             risk_level=pick.risk_level,
             risk_flags=list(pick.risk_flags),
             portfolio_flags=list(pick.portfolio_flags),
@@ -202,6 +205,9 @@ def evaluate_result_against_snapshot(
             llm_sector=pick.llm_sector or pick.industry,
             llm_theme=pick.llm_theme,
             llm_tags=list(pick.llm_tags),
+            llm_catalysts=list(pick.llm_catalysts),
+            llm_risks=list(pick.llm_risks),
+            post_analysis_tags=list(pick.post_analysis_tags),
             risk_level=pick.risk_level,
             risk_flags=list(pick.risk_flags),
             portfolio_flags=list(pick.portfolio_flags),
@@ -310,6 +316,9 @@ def evaluate_saved_runs(
         "by_sector": _aggregate_by_pick_label(evaluations, "llm_sector"),
         "by_theme": _aggregate_by_pick_label(evaluations, "llm_theme"),
         "by_tag": _aggregate_by_pick_multi_label(evaluations, "llm_tags"),
+        "by_llm_catalyst": _aggregate_by_pick_multi_label(evaluations, "llm_catalysts"),
+        "by_llm_risk": _aggregate_by_pick_multi_label(evaluations, "llm_risks"),
+        "by_post_analysis_tag": _aggregate_by_pick_multi_label(evaluations, "post_analysis_tags"),
         "by_risk_flag": _aggregate_by_pick_multi_label(evaluations, "risk_flags"),
         "by_portfolio_flag": _aggregate_by_pick_multi_label(evaluations, "portfolio_flags"),
         "by_holding_period": _aggregate_by_holding_period(evaluations),
@@ -793,6 +802,11 @@ def _failure_review(
         "by_portfolio_flag": _aggregate_failure_dimension(samples, "portfolio_flags", multi=True),
         "by_shape_status": _aggregate_failure_dimension(samples, "shape_status"),
         "by_shape_tag": _aggregate_failure_dimension(samples, "shape_tags", multi=True),
+        "by_llm_tag": _aggregate_failure_dimension(samples, "llm_tags", multi=True),
+        "by_llm_catalyst": _aggregate_failure_dimension(samples, "llm_catalysts", multi=True),
+        "by_llm_risk": _aggregate_failure_dimension(samples, "llm_risks", multi=True),
+        "by_post_analysis_tag": _aggregate_failure_dimension(samples, "post_analysis_tags", multi=True),
+        "by_event_signal": _aggregate_failure_dimension(samples, "event_signals", multi=True),
         "by_failure_reason": _aggregate_failure_dimension(samples, "failure_reasons", multi=True),
     }
     returns = [
@@ -851,6 +865,10 @@ def _failure_samples(evaluations: list[EvaluationResult]) -> list[dict[str, obje
                 "llm_sector": pick.llm_sector,
                 "llm_theme": pick.llm_theme,
                 "llm_tags": list(pick.llm_tags),
+                "llm_catalysts": list(pick.llm_catalysts),
+                "llm_risks": list(pick.llm_risks),
+                "post_analysis_tags": list(pick.post_analysis_tags),
+                "event_signals": _event_signals(pick),
                 "risk_level": pick.risk_level,
                 "risk_flags": list(pick.risk_flags),
                 "portfolio_flags": list(pick.portfolio_flags),
@@ -886,6 +904,8 @@ def _failure_reasons(pick: PickEvaluation) -> list[str]:
         reasons.append(f"risk_flag:{flag}")
     for flag in pick.portfolio_flags:
         reasons.append(f"portfolio_flag:{flag}")
+    for risk in pick.llm_risks:
+        reasons.append(f"llm_risk:{risk}")
     return _dedupe_strings(reasons)
 
 
@@ -974,6 +994,16 @@ def _failure_recommendations(
         recommendations.append(
             f"Portfolio flag `{portfolio_item}` repeats in failure samples; review portfolio_profile concentration rules."
         )
+    llm_risk_item = _top_dimension_label(dimensions.get("by_llm_risk", {}), exclude={"none"})
+    if llm_risk_item:
+        recommendations.append(
+            f"LLM risk `{llm_risk_item}` repeats in failure samples; consider adding it to avoided_event_tags or risk_profile penalties."
+        )
+    event_item = _top_dimension_label(dimensions.get("by_event_signal", {}), exclude={"none"})
+    if event_item:
+        recommendations.append(
+            f"Event signal `{event_item}` repeats in failure samples; compare its win/loss history before using it as a positive catalyst."
+        )
     shape_item = _top_dimension_label(dimensions.get("by_shape_status", {}), exclude={"unknown", ""})
     if shape_item:
         recommendations.append(
@@ -998,6 +1028,15 @@ def _top_dimension_label(
 
 def _is_negative_sample(item: dict[str, object]) -> bool:
     return item.get("return_pct") is not None and float(item["return_pct"]) < 0
+
+
+def _event_signals(pick: PickEvaluation) -> list[str]:
+    return _dedupe_strings([
+        *[f"tag:{item}" for item in pick.llm_tags],
+        *[f"catalyst:{item}" for item in pick.llm_catalysts],
+        *[f"risk:{item}" for item in pick.llm_risks],
+        *[f"post:{item}" for item in pick.post_analysis_tags],
+    ]) or ["none"]
 
 
 def _dedupe_strings(values) -> list[str]:

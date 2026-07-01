@@ -239,6 +239,9 @@ class PickEvaluation:
     llm_sector: str = ""
     llm_theme: str = ""
     llm_tags: list[str] = field(default_factory=list)
+    llm_catalysts: list[str] = field(default_factory=list)
+    llm_risks: list[str] = field(default_factory=list)
+    post_analysis_tags: list[str] = field(default_factory=list)
     risk_level: str = ""
     risk_flags: list[str] = field(default_factory=list)
     portfolio_flags: list[str] = field(default_factory=list)

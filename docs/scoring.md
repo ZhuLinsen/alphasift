@@ -156,8 +156,8 @@ LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代
 `evaluate-batch` 和 `evaluate-strategies` 的 JSON payload 同时包含 `failure_review`，用于策略研发复盘：
 
 - `summary`：失败样本数、负收益数、缺报价数、失败突破数、严重回撤数、最差收益。
-- `failure_samples`：按严重程度排序的样本，包含 run、策略、代码、收益、形态状态、风险/组合 flags 和失败原因。
-- `dimensions`：按策略、行业/主题、风险 flag、组合 flag、形态状态、失败原因聚合失败样本。
+- `failure_samples`：按严重程度排序的样本，包含 run、策略、代码、收益、LLM tags/catalysts/risks、后置分析标签、形态状态、风险/组合 flags、`event_signals` 和失败原因。
+- `dimensions`：按策略、行业/主题、LLM 催化/风险、后置分析标签、合并事件信号、风险 flag、组合 flag、形态状态、失败原因聚合失败样本。
 - `recommendations`：面向调参和数据检查的下一步建议。
 
 可用 `--failure-samples N` 控制 explain/JSON 中保留的样本数量，`0` 表示只保留聚合和建议。

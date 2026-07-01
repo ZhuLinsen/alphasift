@@ -298,8 +298,12 @@ def test_evaluate_saved_runs_aggregates_by_strategy(tmp_path, monkeypatch):
                     final_score=70,
                     screen_score=70,
                     price=20,
+                    llm_tags=["订单催化"],
+                    llm_catalysts=["订单落地"],
+                    llm_risks=["监管问询"],
                     risk_flags=["高换手"],
                     portfolio_flags=["题材集中"],
+                    post_analysis_tags=["volume_spike"],
                     breakout_20d_pct=0.2,
                 )
             ],
@@ -342,6 +346,9 @@ def test_evaluate_saved_runs_aggregates_by_strategy(tmp_path, monkeypatch):
     assert result["dimensions"]["by_sector"]["银行"]["average_return_pct"] == 10.0
     assert result["dimensions"]["by_theme"]["低估值修复"]["win_rate"] == 100.0
     assert result["dimensions"]["by_tag"]["价值"]["pick_count"] == 1
+    assert result["dimensions"]["by_llm_catalyst"]["订单落地"]["pick_count"] == 1
+    assert result["dimensions"]["by_llm_risk"]["监管问询"]["average_return_pct"] == -10.0
+    assert result["dimensions"]["by_post_analysis_tag"]["volume_spike"]["pick_count"] == 1
     assert result["dimensions"]["by_risk_flag"]["低波动"]["average_return_pct"] == 10.0
     assert result["dimensions"]["by_holding_period"]["T+20_plus"]["pick_count"] == 2
     assert result["dimensions"]["by_shape_status"]["breakout_follow_through"]["pick_count"] == 1
@@ -355,9 +362,14 @@ def test_evaluate_saved_runs_aggregates_by_strategy(tmp_path, monkeypatch):
     assert review["failure_samples"][0]["code"] == "600000"
     assert "negative_return" in review["failure_samples"][0]["failure_reasons"]
     assert "shape_status:failed_breakout" in review["failure_samples"][0]["failure_reasons"]
+    assert "risk:监管问询" in review["failure_samples"][0]["event_signals"]
+    assert review["dimensions"]["by_event_signal"]["risk:监管问询"]["failure_count"] == 1
+    assert review["dimensions"]["by_llm_risk"]["监管问询"]["failure_count"] == 1
+    assert review["dimensions"]["by_post_analysis_tag"]["volume_spike"]["failure_count"] == 1
     assert review["dimensions"]["by_risk_flag"]["高换手"]["failure_count"] == 1
     assert review["dimensions"]["by_portfolio_flag"]["题材集中"]["failure_count"] == 1
     assert any("Failed breakout samples" in item for item in review["recommendations"])
+    assert any("LLM risk `监管问询`" in item for item in review["recommendations"])
     assert result["summary"]["path_pick_count"] == 2
     assert result["summary"]["average_max_drawdown_pct"] == -7.5
     assert result["cost_bps"] == 0.0

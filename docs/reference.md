@@ -82,10 +82,10 @@ alphasift/
 对照同类智能投研项目，AlphaSift 后续优先补这些能力：
 
 - **数据可靠性**：已补 `tushare` 兜底、wrapper 调用超时、source-health 熔断、`health_summary` 聚合与 last-good/stale fallback；下一步做多源字段对账、数据新鲜度标记、异常值报告和缓存命中可视化。
-- **事件归因闭环**：把新闻、公告、资金流的事件标签纳入 `evaluate-batch` 统计，区分哪些事件真的改善后验表现。
+- **事件归因闭环**：已把 LLM tags/catalysts/risks、后置分析标签和合并事件信号纳入 `evaluate-batch/evaluate-strategies` 的维度统计与 `failure_review`，用于区分哪些事件信号在失败样本中反复出现。
 - **回测边界**：在现有 T+N 评估上继续补持仓约束、调仓周期、逐日权益曲线和复权处理；完整量化研究可对接 Qlib 或 Backtrader。
 - **Agent 产物**：已补 `alphasift overview --json/--explain` 和 `alphasift report <run_id>`，可把策略分组、数据源健康、最近运行、next actions 和单次选股运行输出为稳定 payload，便于被通知助手、Web UI 或 MCP/HTTP 服务消费；下一步补报告模板和轻量 Web/API surface。
-- **策略研发**：已补 `alphasift strategies --json/--explain`、`strategies --compare`、`strategies --templates/--template`、`evaluate-batch/evaluate-strategies` 的 `failure_review` 失败样本复盘、策略风格属性、策略数据依赖、必需 snapshot/daily 字段、单策略/全策略 `doctor data-sources --strategy/--all-strategies` 预检、活跃过滤/因子权重/profile 元数据，以及 `low_volatility_quality` 防守型质量策略；下一步把事件标签纳入失败样本复盘，让 YAML 策略迭代更可控。
+- **策略研发**：已补 `alphasift strategies --json/--explain`、`strategies --compare`、`strategies --templates/--template`、`evaluate-batch/evaluate-strategies` 的 `failure_review` 失败样本复盘、事件信号归因、策略风格属性、策略数据依赖、必需 snapshot/daily 字段、单策略/全策略 `doctor data-sources --strategy/--all-strategies` 预检、活跃过滤/因子权重/profile 元数据，以及 `low_volatility_quality` 防守型质量策略；下一步把成功/失败样本的事件胜率沉淀成策略模板建议。
 
 ## 实测记录
 

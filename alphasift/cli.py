@@ -1335,6 +1335,9 @@ def _format_evaluation_batch_explain(result: dict) -> str:
     for title, key in (
         ("top_sectors", "by_sector"),
         ("top_themes", "by_theme"),
+        ("top_llm_catalysts", "by_llm_catalyst"),
+        ("top_llm_risks", "by_llm_risk"),
+        ("top_post_tags", "by_post_analysis_tag"),
         ("top_risk_flags", "by_risk_flag"),
         ("shape_status", "by_shape_status"),
         ("shape_tags", "by_shape_tag"),
@@ -1432,6 +1435,8 @@ def _format_failure_review_explain(
         for title, key in (
             ("failure_strategies", "by_strategy"),
             ("failure_reasons", "by_failure_reason"),
+            ("failure_event_signals", "by_event_signal"),
+            ("failure_llm_risks", "by_llm_risk"),
             ("failure_risk_flags", "by_risk_flag"),
             ("failure_shapes", "by_shape_status"),
         ):

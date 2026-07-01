@@ -287,6 +287,8 @@ def test_cli_evaluate_batch_explain_includes_failure_review(monkeypatch, tmp_pat
                     final_score=70,
                     screen_score=70,
                     price=20,
+                    llm_catalysts=["订单落地"],
+                    llm_risks=["监管问询"],
                     breakout_20d_pct=0.2,
                 )
             ],
@@ -314,6 +316,9 @@ def test_cli_evaluate_batch_explain_includes_failure_review(monkeypatch, tmp_pat
     assert "failure_samples run strategy rank code return status reasons" in out
     assert "run_fail" in out
     assert "negative_return" in out
+    assert "failure_event_signals=" in out
+    assert "risk:监管问询" in out
+    assert "failure_llm_risks=监管问询" in out
     assert "failure_next_actions=" in out
 
 
