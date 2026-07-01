@@ -4,7 +4,13 @@ from pathlib import Path
 import pytest
 
 import alphasift.strategy as strategy_module
-from alphasift.strategy import list_strategies, load_all_strategies, load_strategy, match_strategies
+from alphasift.strategy import (
+    compare_strategies,
+    list_strategies,
+    load_all_strategies,
+    load_strategy,
+    match_strategies,
+)
 
 
 def test_disabled_strategies_are_not_listed():
@@ -134,6 +140,21 @@ def test_match_strategies_ranks_partial_matches():
     assert matches[0]["score"] > matches[1]["score"]
     assert "data_requirement:daily_k" in matches[0]["matched"]
     assert "data_requirement:daily_k" in matches[1]["missing"]
+
+
+def test_compare_strategies_reports_style_data_and_weight_diffs():
+    payload = compare_strategies("dual_low", "low_volatility_quality", Path("strategies"))
+
+    assert payload["base"]["name"] == "dual_low"
+    assert payload["target"]["name"] == "low_volatility_quality"
+    differences = payload["differences"]
+    assert "daily_k" in differences["data_requirements"]["added"]
+    assert "industry_context" in differences["data_requirements"]["added"]
+    assert "volatility_20d_pct" in differences["required_daily_fields"]["added"]
+    assert differences["style"]["changed"]["holding_period"]["base"] == "watchlist"
+    assert differences["style"]["changed"]["holding_period"]["target"] == "swing"
+    assert differences["factor_weights"]["changed"]["stability"]["delta"] == pytest.approx(0.10)
+    assert "daily_feature_requirement_changed" in payload["summary"]["compatibility_notes"]
 
 
 def test_load_all_strategies_allows_repo_local_custom_strategy(tmp_path):

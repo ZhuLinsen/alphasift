@@ -149,6 +149,46 @@ def test_cli_strategies_explain_matches_data_requirements(monkeypatch, capsys):
     assert "missing=data_requirement:daily_k" in out
 
 
+def test_cli_strategies_compare_json_shows_parameter_diffs(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", [
+        "alphasift",
+        "strategies",
+        "--compare",
+        "dual_low",
+        "low_volatility_quality",
+        "--json",
+    ])
+
+    main()
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["base"]["name"] == "dual_low"
+    assert payload["target"]["name"] == "low_volatility_quality"
+    assert "daily_k" in payload["differences"]["data_requirements"]["added"]
+    assert "volatility_20d_pct" in payload["differences"]["required_daily_fields"]["added"]
+    assert "daily_feature_requirement_changed" in payload["summary"]["compatibility_notes"]
+
+
+def test_cli_strategies_compare_explain_shows_changed_sections(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", [
+        "alphasift",
+        "strategies",
+        "--compare",
+        "dual_low",
+        "low_volatility_quality",
+        "--explain",
+    ])
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "strategy_compare base=dual_low" in out
+    assert "target=low_volatility_quality" in out
+    assert "data_requirements:" in out
+    assert "daily_k" in out
+    assert "factor_weights:" in out
+
+
 def test_cli_runs_json_filters_strategy(monkeypatch, tmp_path, capsys):
     save_screen_result(
         ScreenResult(

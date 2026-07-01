@@ -3,7 +3,7 @@
 
 import hashlib
 import logging
-from dataclasses import fields
+from dataclasses import asdict, fields
 from pathlib import Path
 
 import yaml
@@ -437,6 +437,81 @@ def match_strategies(
     return results
 
 
+def compare_strategies(
+    base_name: str,
+    target_name: str,
+    strategies_dir: Path | None = None,
+) -> dict[str, object]:
+    """Compare two enabled strategies for strategy review and UI diff views."""
+    from alphasift.config import Config
+    from alphasift.filter import requires_daily_features
+
+    if strategies_dir is None:
+        strategies_dir = Config.from_env().strategies_dir
+    strategies = load_all_strategies(strategies_dir)
+    try:
+        base = strategies[base_name]
+        target = strategies[target_name]
+    except KeyError as exc:
+        missing = exc.args[0]
+        raise ValueError(f"Strategy '{missing}' not found") from exc
+
+    base_daily = requires_daily_features(base.screening.hard_filters)
+    target_daily = requires_daily_features(target.screening.hard_filters)
+    differences = {
+        "identity": _mapping_diff(
+            {
+                "version": base.version,
+                "category": base.category,
+                "market_scope": list(base.screening.market_scope),
+                "requires_daily_features": base_daily,
+            },
+            {
+                "version": target.version,
+                "category": target.category,
+                "market_scope": list(target.screening.market_scope),
+                "requires_daily_features": target_daily,
+            },
+        ),
+        "tags": _list_diff(base.tags, target.tags),
+        "style": _mapping_diff(_style_to_dict(base.style), _style_to_dict(target.style)),
+        "data_requirements": _list_diff(
+            _strategy_data_requirements(base, daily_required=base_daily),
+            _strategy_data_requirements(target, daily_required=target_daily),
+        ),
+        "required_snapshot_fields": _list_diff(
+            _required_snapshot_fields(base.screening.hard_filters),
+            _required_snapshot_fields(target.screening.hard_filters),
+        ),
+        "required_daily_fields": _list_diff(
+            _required_daily_fields(base.screening.hard_filters),
+            _required_daily_fields(target.screening.hard_filters),
+        ),
+        "active_filters": _list_diff(
+            _active_hard_filters(base.screening.hard_filters),
+            _active_hard_filters(target.screening.hard_filters),
+        ),
+        "hard_filter_values": _mapping_diff(
+            _active_filter_values(base.screening.hard_filters),
+            _active_filter_values(target.screening.hard_filters),
+        ),
+        "factor_weights": _numeric_mapping_diff(
+            base.screening.factor_weights,
+            target.screening.factor_weights,
+        ),
+        "profile_keys": _nested_list_diff(
+            _strategy_profile_keys(base.screening),
+            _strategy_profile_keys(target.screening),
+        ),
+    }
+    return {
+        "base": _strategy_compare_summary(base, daily_required=base_daily),
+        "target": _strategy_compare_summary(target, daily_required=target_daily),
+        "differences": differences,
+        "summary": _strategy_compare_summary_notes(differences),
+    }
+
+
 def _strategy_data_requirements(strategy: Strategy, *, daily_required: bool) -> list[str]:
     requirements = ["snapshot"]
     if daily_required:
@@ -447,6 +522,121 @@ def _strategy_data_requirements(strategy: Strategy, *, daily_required: bool) -> 
     if strategy.screening.event_profile:
         requirements.append("event_context")
     return requirements
+
+
+def _strategy_compare_summary(strategy: Strategy, *, daily_required: bool) -> dict[str, object]:
+    return {
+        "name": strategy.name,
+        "display_name": strategy.display_name,
+        "version": strategy.version,
+        "category": strategy.category,
+        "tags": list(strategy.tags),
+        "style": _style_to_dict(strategy.style),
+        "data_requirements": _strategy_data_requirements(strategy, daily_required=daily_required),
+        "requires_daily_features": daily_required,
+        "active_filters": _active_hard_filters(strategy.screening.hard_filters),
+        "factor_weights": {key: float(value) for key, value in strategy.screening.factor_weights.items()},
+        "profile_keys": _strategy_profile_keys(strategy.screening),
+    }
+
+
+def _strategy_compare_summary_notes(differences: dict[str, object]) -> dict[str, object]:
+    changed_sections = [
+        name
+        for name, value in differences.items()
+        if _diff_has_changes(value)
+    ]
+    notes: list[str] = []
+    data_diff = differences.get("data_requirements", {})
+    if isinstance(data_diff, dict):
+        added = data_diff.get("added", [])
+        removed = data_diff.get("removed", [])
+        if added:
+            notes.append("target_requires_additional_data:" + ",".join(str(item) for item in added))
+        if removed:
+            notes.append("target_removes_data:" + ",".join(str(item) for item in removed))
+    identity_diff = differences.get("identity", {})
+    if isinstance(identity_diff, dict) and "requires_daily_features" in identity_diff.get("changed", {}):
+        notes.append("daily_feature_requirement_changed")
+    return {
+        "changed_sections": changed_sections,
+        "change_count": len(changed_sections),
+        "compatibility_notes": notes,
+    }
+
+
+def _diff_has_changes(value: object) -> bool:
+    if not isinstance(value, dict):
+        return bool(value)
+    for key in ("added", "removed", "changed"):
+        item = value.get(key)
+        if item:
+            return True
+    for item in value.values():
+        if isinstance(item, dict) and _diff_has_changes(item):
+            return True
+    return False
+
+
+def _active_filter_values(filters_config: HardFilterConfig) -> dict[str, object]:
+    active = set(_active_hard_filters(filters_config))
+    values = asdict(filters_config)
+    return {
+        key: value
+        for key, value in values.items()
+        if key in active
+    }
+
+
+def _list_diff(base: list[object], target: list[object]) -> dict[str, list[object]]:
+    base_values = list(dict.fromkeys(base))
+    target_values = list(dict.fromkeys(target))
+    return {
+        "shared": [item for item in base_values if item in target_values],
+        "added": [item for item in target_values if item not in base_values],
+        "removed": [item for item in base_values if item not in target_values],
+    }
+
+
+def _mapping_diff(base: dict[str, object], target: dict[str, object]) -> dict[str, object]:
+    base_keys = set(base)
+    target_keys = set(target)
+    changed = {}
+    for key in sorted(base_keys & target_keys):
+        if base[key] != target[key]:
+            changed[key] = {
+                "base": base[key],
+                "target": target[key],
+            }
+    return {
+        "added": {key: target[key] for key in sorted(target_keys - base_keys)},
+        "removed": {key: base[key] for key in sorted(base_keys - target_keys)},
+        "changed": changed,
+    }
+
+
+def _numeric_mapping_diff(base: dict[str, object], target: dict[str, object]) -> dict[str, object]:
+    diff = _mapping_diff(
+        {key: float(value) for key, value in base.items()},
+        {key: float(value) for key, value in target.items()},
+    )
+    changed = diff.get("changed", {})
+    if isinstance(changed, dict):
+        for item in changed.values():
+            if isinstance(item, dict):
+                item["delta"] = round(float(item["target"]) - float(item["base"]), 6)
+    return diff
+
+
+def _nested_list_diff(
+    base: dict[str, list[str]],
+    target: dict[str, list[str]],
+) -> dict[str, object]:
+    keys = sorted(set(base) | set(target))
+    return {
+        key: _list_diff(base.get(key, []), target.get(key, []))
+        for key in keys
+    }
 
 
 def _active_hard_filters(filters_config: HardFilterConfig) -> list[str]:

@@ -97,6 +97,15 @@ Stable top-level fields:
 - `recent_runs`: lightweight saved-run metadata from `alphasift runs --json`.
 - `next_actions`: UI-ready operational next steps.
 
+## Strategy compare payload
+
+`alphasift strategies --compare <base> <target> --json` emits a stable diff payload for strategy review screens:
+
+- `base` / `target`: compact strategy summaries with version, category, tags, style, data requirements, active filters, factor weights, and profile keys.
+- `differences`: sectioned diffs for identity, tags, style, data requirements, required fields, active filters, hard-filter values, factor weights, and profile keys.
+- `summary.changed_sections`: sections with meaningful differences.
+- `summary.compatibility_notes`: UI-ready notes such as additional data requirements or daily-feature requirement changes.
+
 ## DSA readiness
 
 DSA is optional. Core screening must continue when DSA is unavailable.

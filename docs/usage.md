@@ -52,6 +52,15 @@ alphasift strategies --risk-profile aggressive --data-requirement daily_k --limi
 
 匹配结果包含 `score`、`matched` 和 `missing`，便于界面展示为什么推荐某个策略，以及哪些偏好没有满足。
 
+策略迭代或新增策略前，可以对比两套策略的风格、数据依赖、必需字段、硬筛参数和因子权重：
+
+```bash
+alphasift strategies --compare dual_low low_volatility_quality --explain
+alphasift strategies --compare dual_low low_volatility_quality --json
+```
+
+JSON 输出包含 `differences` 和 `summary.compatibility_notes`，适合 UI 展示参数变更、日 K 依赖变化和数据源兼容性影响。
+
 按具体策略预检数据源字段覆盖：
 
 ```bash

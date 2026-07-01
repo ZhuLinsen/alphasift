@@ -39,7 +39,7 @@ from alphasift.store import (
     save_screen_result,
     screen_result_to_jsonl,
 )
-from alphasift.strategy import list_strategies, match_strategies
+from alphasift.strategy import compare_strategies, list_strategies, match_strategies
 
 
 def main():
@@ -160,6 +160,7 @@ def main():
     stp = sub.add_parser("strategies", help="列出可用策略")
     stp.add_argument("--json", action="store_true", help="以 JSON 输出完整策略目录元数据")
     stp.add_argument("--explain", action="store_true", help="输出包含数据依赖和主要因子的可读策略目录")
+    stp.add_argument("--compare", nargs=2, metavar=("BASE", "TARGET"), help="对比两套策略的风格、依赖、硬筛和权重")
     stp.add_argument("--risk-profile", default=None, help="按风险风格匹配：defensive / balanced / aggressive")
     stp.add_argument("--holding-period", default=None, help="按持有周期匹配：short_term / swing / watchlist")
     stp.add_argument("--execution-style", default=None, help="按执行风格匹配，例如 mean_reversion / breakout")
@@ -380,7 +381,16 @@ def main():
             print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
 
     elif args.command == "strategies":
-        if _has_strategy_match_args(args):
+        if args.compare:
+            try:
+                payload = compare_strategies(args.compare[0], args.compare[1])
+            except ValueError as exc:
+                parser.error(str(exc))
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, indent=2))
+            else:
+                print(_format_strategy_compare_explain(payload))
+        elif _has_strategy_match_args(args):
             criteria = _strategy_match_criteria_from_args(args)
             matches = match_strategies(
                 risk_profile=args.risk_profile or "",
@@ -908,6 +918,100 @@ def _format_strategies_explain(strategies) -> str:
             lines.append(f"  required_fields={required_fields}")
         lines.append(f"  {strategy.display_name}: {strategy.description}")
     return "\n".join(lines)
+
+
+def _format_strategy_compare_explain(payload: dict[str, object]) -> str:
+    base = payload.get("base", {}) or {}
+    target = payload.get("target", {}) or {}
+    summary = payload.get("summary", {}) or {}
+    differences = payload.get("differences", {}) or {}
+    lines = [
+        (
+            f"strategy_compare base={base.get('name')} v{base.get('version')} "
+            f"target={target.get('name')} v{target.get('version')} "
+            f"changed_sections={','.join(summary.get('changed_sections', []) or []) or '-'} "
+            f"change_count={summary.get('change_count', 0)}"
+        )
+    ]
+    notes = summary.get("compatibility_notes", []) or []
+    if notes:
+        lines.append("compatibility_notes=" + " | ".join(str(item) for item in notes))
+    for section in (
+        "identity",
+        "tags",
+        "style",
+        "data_requirements",
+        "required_snapshot_fields",
+        "required_daily_fields",
+        "active_filters",
+        "hard_filter_values",
+        "factor_weights",
+        "profile_keys",
+    ):
+        text = _format_diff_section(differences.get(section, {}))
+        if text:
+            lines.append(f"{section}: {text}")
+    return "\n".join(lines)
+
+
+def _format_diff_section(diff: object) -> str:
+    if not isinstance(diff, dict):
+        return ""
+    parts = []
+    for key in ("added", "removed"):
+        value = diff.get(key)
+        if value:
+            parts.append(f"{key}={_compact_diff_value(value)}")
+    changed = diff.get("changed")
+    if changed:
+        parts.append("changed=" + _compact_changed_values(changed))
+    nested_parts = []
+    for key, value in diff.items():
+        if key in {"added", "removed", "changed", "shared"}:
+            continue
+        if isinstance(value, dict):
+            nested = _format_diff_section(value)
+            if nested:
+                nested_parts.append(f"{key}[{nested}]")
+    parts.extend(nested_parts)
+    return " ".join(parts)
+
+
+def _compact_changed_values(changed: object, *, limit: int = 8) -> str:
+    if not isinstance(changed, dict):
+        return _compact_diff_value(changed)
+    items = []
+    for idx, (key, value) in enumerate(changed.items()):
+        if idx >= limit:
+            items.append(f"+{len(changed) - limit}")
+            break
+        if isinstance(value, dict) and "base" in value and "target" in value:
+            base = _compact_diff_value(value.get("base"))
+            target = _compact_diff_value(value.get("target"))
+            if "delta" in value:
+                items.append(f"{key}:{base}->{target}({value.get('delta'):+g})")
+            else:
+                items.append(f"{key}:{base}->{target}")
+        else:
+            items.append(f"{key}:{_compact_diff_value(value)}")
+    return ",".join(items)
+
+
+def _compact_diff_value(value: object, *, limit: int = 8) -> str:
+    if isinstance(value, list):
+        shown = [str(item) for item in value[:limit]]
+        if len(value) > limit:
+            shown.append(f"+{len(value) - limit}")
+        return ",".join(shown)
+    if isinstance(value, dict):
+        items = []
+        for idx, (key, item) in enumerate(value.items()):
+            if idx >= limit:
+                items.append(f"+{len(value) - limit}")
+                break
+            items.append(f"{key}:{item}")
+        return ",".join(items)
+    return str(value)
 
 
 def _has_strategy_match_args(args) -> bool:
