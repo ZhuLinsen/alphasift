@@ -25,6 +25,8 @@ def test_api_health_and_index(tmp_path):
 
     assert status == 200
     assert "/overview" in index["endpoints"]
+    assert "/result-schema" in index["endpoints"]
+    assert "/strategy-templates" in index["endpoints"]
     assert health_status == 200
     assert health == {"status": "ok", "service": "alphasift", "schema_version": 1}
 
@@ -112,6 +114,62 @@ def test_api_strategies_supports_matching_query(tmp_path):
     assert payload["schema_version"] == 1
     assert payload["strategies"][0]["name"] == "volume_breakout"
     assert "data_requirement:daily_k" in payload["strategies"][0]["matched"]
+
+
+def test_api_result_schema_returns_machine_readable_contract(tmp_path):
+    status, payload = build_api_response(_config(tmp_path), "/result-schema")
+
+    assert status == 200
+    assert payload["object"] == "ScreenResult"
+    assert "picks" in payload["top_level_fields"]
+    assert "final_score" in payload["pick_fields"]
+    assert payload["ui_card_fields"]["identity"] == [
+        "rank",
+        "code",
+        "name",
+        "final_score",
+        "screen_score",
+    ]
+
+
+def test_api_strategy_templates_and_template_detail(tmp_path):
+    catalog_status, catalog = build_api_response(_config(tmp_path), "/strategy-templates")
+    detail_status, detail = build_api_response(
+        _config(tmp_path),
+        "/strategy-template",
+        query="name=momentum_breakout_daily",
+    )
+    no_yaml_status, no_yaml_detail = build_api_response(
+        _config(tmp_path),
+        "/strategy-template",
+        query="name=momentum_breakout_daily&include_yaml=false",
+    )
+
+    assert catalog_status == 200
+    assert catalog["schema_version"] == 1
+    assert catalog["templates"][0]["name"] == "defensive_value_quality"
+    assert "yaml" not in catalog["templates"][0]
+    assert detail_status == 200
+    assert detail["template"]["name"] == "momentum_breakout_daily"
+    assert "yaml" in detail["template"]
+    assert "daily_k" in detail["template"]["data_requirements"]
+    assert no_yaml_status == 200
+    assert "yaml" not in no_yaml_detail["template"]
+
+
+def test_api_strategy_template_errors_are_json(tmp_path):
+    missing_status, missing = build_api_response(_config(tmp_path), "/strategy-template")
+    unknown_status, unknown = build_api_response(
+        _config(tmp_path),
+        "/strategy-template",
+        query="name=missing",
+    )
+
+    assert missing_status == 400
+    assert missing["error"] == "missing_template_name"
+    assert unknown_status == 404
+    assert unknown["error"] == "strategy_template_not_found"
+    assert unknown["name"] == "missing"
 
 
 def test_api_doctor_defaults_to_no_live(tmp_path):

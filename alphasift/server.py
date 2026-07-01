@@ -13,8 +13,10 @@ from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
 from alphasift.overview import build_overview
 from alphasift.report import build_run_report_payload
+from alphasift.result_schema import screen_result_schema
 from alphasift.store import list_saved_runs, load_screen_result
 from alphasift.strategy import list_strategies, match_strategies
+from alphasift.strategy_templates import get_strategy_template, list_strategy_templates
 
 
 def build_api_response(
@@ -29,6 +31,8 @@ def build_api_response(
         return 200, _index_payload()
     if path == "/health":
         return 200, {"status": "ok", "service": "alphasift", "schema_version": 1}
+    if path == "/result-schema":
+        return 200, screen_result_schema()
     if path == "/overview":
         return 200, build_overview(
             config,
@@ -53,6 +57,27 @@ def build_api_response(
             "schema_version": 1,
             "strategies": [asdict(item) for item in list_strategies(config.strategies_dir)],
         }
+    if path == "/strategy-templates":
+        return 200, {"schema_version": 1, "templates": list_strategy_templates()}
+    if path == "/strategy-template":
+        template_name = _single(params, "name")
+        if not template_name:
+            return 400, {
+                "error": "missing_template_name",
+                "message": "Query parameter `name` is required.",
+            }
+        try:
+            template = get_strategy_template(
+                template_name,
+                include_yaml=_bool_param(params, "include_yaml", True),
+            )
+        except ValueError as exc:
+            return 404, {
+                "error": "strategy_template_not_found",
+                "message": str(exc),
+                "name": template_name,
+            }
+        return 200, {"schema_version": 1, "template": template}
     if path == "/runs":
         return 200, {
             "schema_version": 1,
@@ -141,8 +166,11 @@ def _index_payload() -> dict[str, Any]:
         "schema_version": 1,
         "endpoints": [
             "/health",
+            "/result-schema",
             "/overview",
             "/strategies",
+            "/strategy-templates",
+            "/strategy-template",
             "/runs",
             "/report",
             "/doctor/data-sources",

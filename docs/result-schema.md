@@ -123,8 +123,11 @@ Stable top-level fields:
 `alphasift serve` exposes read-only JSON endpoints for local UI/agent integrations without requiring a web framework dependency:
 
 - `GET /health`: service status and schema version.
+- `GET /result-schema`: same shape as `screen_result_schema()`; UI-ready field groups and non-goals for `ScreenResult` consumers.
 - `GET /overview`: same shape as `alphasift overview --json`; supports query params such as `strategy`, `runs_limit`, `live`, `risk_profile`, `holding_period`, `data_requirement`, and `match_limit`.
 - `GET /strategies`: strategy catalog, or ranked matches when style/data query params are present.
+- `GET /strategy-templates`: lightweight strategy authoring template catalog without YAML bodies.
+- `GET /strategy-template?name=<template_name>`: one strategy authoring template; supports `include_yaml=false`.
 - `GET /runs`: saved-run metadata with optional `strategy` and `limit`.
 - `GET /report?run=<run_id>`: same shape as `alphasift report <run_id> --json`; supports `max_picks`.
 - `GET /doctor/data-sources`: same shape as `doctor data-sources --json`; defaults to no live checks unless `live=true`.
