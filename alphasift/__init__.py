@@ -10,6 +10,7 @@ from alphasift.audit import audit_project
 from alphasift.overview import build_overview
 from alphasift.run_history import build_strategy_run_summary
 from alphasift.server import build_api_response, serve_api
+from alphasift.strategy_cards import build_strategy_cards
 from alphasift.strategy_templates import get_strategy_template, list_strategy_templates
 
 __all__ = [
@@ -25,6 +26,7 @@ __all__ = [
     "audit_project",
     "build_overview",
     "build_strategy_run_summary",
+    "build_strategy_cards",
     "build_api_response",
     "serve_api",
 ]

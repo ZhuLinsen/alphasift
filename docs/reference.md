@@ -84,7 +84,7 @@ alphasift/
 - **数据可靠性**：已补 `tushare` 兜底、wrapper 调用超时、source-health 熔断、`health_summary` 聚合、`freshness_summary` 新鲜度/缓存状态摘要、`--compare-snapshot-sources` 多源字段/代码交集对账、snapshot `quality_summary` 字段异常报告与 last-good/stale fallback；下一步做缓存命中趋势可视化。
 - **事件归因闭环**：已把 LLM tags/catalysts/risks、后置分析标签和合并事件信号纳入 `evaluate-batch/evaluate-strategies` 的维度统计、`failure_review` 与 `event_signal_review`，用于区分哪些事件信号在成功/失败样本中反复出现，并给出 prefer/avoid/watch 动作建议。
 - **回测边界**：在现有 T+N 评估上继续补持仓约束、调仓周期、逐日权益曲线和复权处理；完整量化研究可对接 Qlib 或 Backtrader。
-- **Agent 产物**：已补 `alphasift overview --json/--explain`、`alphasift report <run_id>` 和 `alphasift serve` 只读本地 JSON API，可把策略分组、策略筛选 facets、策略准备度、saved-run 历史摘要、数据源健康、最近运行、next actions 和单次选股运行输出为稳定 payload，便于被通知助手、Web UI 或 MCP/HTTP 服务消费；下一步补报告模板和更完整的 UI 审批流。
+- **Agent 产物**：已补 `alphasift overview --json/--explain`、`alphasift report <run_id>` 和 `alphasift serve` 只读本地 JSON API，可把策略分组、策略筛选 facets、策略卡片、策略准备度、saved-run 历史摘要、数据源健康、最近运行、next actions 和单次选股运行输出为稳定 payload，便于被通知助手、Web UI 或 MCP/HTTP 服务消费；下一步补报告模板和更完整的 UI 审批流。
 - **策略研发**：已补 `alphasift strategies --json/--explain`、`strategies --compare`、`strategies --templates/--template`、`evaluate-batch/evaluate-strategies` 的 `failure_review`/`event_signal_review`、策略风格属性、策略数据依赖、必需 snapshot/daily 字段、单策略/全策略 `doctor data-sources --strategy/--all-strategies` 预检、`strategy_readiness_summary`、活跃过滤/因子权重/profile 元数据，以及 `low_volatility_quality` 防守型质量策略；事件胜率建议已能输出策略级 `screening.event_profile` YAML patch 建议。下一步可把这些建议接入 UI 审批或生成候选策略变体。
 
 ## 实测记录

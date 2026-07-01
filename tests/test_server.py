@@ -29,6 +29,7 @@ def test_api_health_and_index(tmp_path):
     assert "/strategy" in index["endpoints"]
     assert "/strategy-compare" in index["endpoints"]
     assert "/strategy-facets" in index["endpoints"]
+    assert "/strategy-cards" in index["endpoints"]
     assert "/strategy-readiness" in index["endpoints"]
     assert "/strategy-run-summary" in index["endpoints"]
     assert "/strategy-templates" in index["endpoints"]
@@ -60,6 +61,7 @@ def test_api_overview_and_runs_are_ui_ready(tmp_path):
     assert overview["summary"]["strategy_match_count"] == 1
     assert overview["strategy_matches"][0]["name"] == "low_volatility_quality"
     assert overview["recent_runs"][0]["run_id"] == "run_api"
+    assert overview["strategy_cards"]["cards"][0]["name"]
     assert runs_status == 200
     assert runs["runs"][0]["run_id"] == "run_api"
     assert overview["run_history_summary"]["strategies"][0]["strategy"] == "dual_low"
@@ -179,6 +181,39 @@ def test_api_strategy_facets_returns_filter_values(tmp_path):
     assert facets["tag"]["multi"] is True
     assert "daily_k" in data_values
     assert "volume_breakout" in data_values["daily_k"]["strategies"]
+
+
+def test_api_strategy_cards_returns_ui_cards(tmp_path):
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="run_card_api",
+            snapshot_source="sina",
+            picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80)],
+        ),
+        data_dir=tmp_path,
+    )
+
+    status, payload = build_api_response(
+        _config(tmp_path),
+        "/strategy-cards",
+        query="strategy=dual_low&limit=5",
+    )
+    missing_status, missing = build_api_response(
+        _config(tmp_path),
+        "/strategy-cards",
+        query="strategy=missing",
+    )
+
+    assert status == 200
+    assert payload["schema_version"] == 1
+    assert payload["strategy_filter"] == "dual_low"
+    assert payload["cards"][0]["name"] == "dual_low"
+    assert payload["cards"][0]["history"]["latest_run_id"] == "run_card_api"
+    assert payload["cards"][0]["readiness"]["status"] == "skipped"
+    assert missing_status == 404
+    assert missing["error"] == "strategy_not_found"
 
 
 def test_api_strategy_readiness_defaults_to_all_strategies_without_live(tmp_path):

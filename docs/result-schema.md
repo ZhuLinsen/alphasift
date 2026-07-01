@@ -123,6 +123,7 @@ Stable top-level fields:
 - `summary`: strategy counts, daily-strategy count, data-source status, strategy-match count, recent-run count, live-check flag.
 - `strategy_groups`: strategy names grouped by category, risk profile, holding period, and data requirement.
 - `strategy_facets`: UI-ready strategy filter facets with values, counts, query params, and backing strategy names.
+- `strategy_cards`: UI-ready strategy cards that join catalog metadata, readiness state, saved-run history, top factors, use-case hints, and next actions.
 - `strategy_matches`: optional ranked strategy recommendations with `score`, `matched`, and `missing`.
 - `data_sources`: compact data-source doctor subset with `health_summary`, `freshness_summary`, `snapshot_quality`, strategy requirements, strategy coverage, and recommendations.
 - `data_sources.strategy_readiness_summary`: compact readiness rollup for strategy availability panels.
@@ -141,6 +142,7 @@ Stable top-level fields:
 - `GET /strategy?name=<strategy_name>`: one strategy metadata card with style, data requirements, required fields, active filters, factor weights, and profile keys.
 - `GET /strategy-compare?base=<strategy>&target=<strategy>`: same diff payload as `alphasift strategies --compare <base> <target> --json`.
 - `GET /strategy-facets`: strategy filter facets for UI controls, including category, tag, style, data requirement, daily requirement, and required-field dimensions.
+- `GET /strategy-cards`: joined strategy cards for dashboards; supports `strategy`, `limit`, and `live`.
 - `GET /strategy-readiness`: compact strategy readiness payload; defaults to all strategies and no live data checks, supports `strategy`, `live`, `snapshot_source`, `daily_source`, `daily_code`, and `no_daily`.
 - `GET /strategy-run-summary`: saved-run metadata rollup by strategy; supports `strategy` and `limit`.
 - `GET /strategy-templates`: lightweight strategy authoring template catalog without YAML bodies.

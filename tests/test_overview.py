@@ -37,6 +37,13 @@ def test_build_overview_groups_strategies_and_recent_runs(tmp_path):
     assert payload["recent_runs"][0]["run_id"] == "run_dual"
     assert payload["run_history_summary"]["run_count"] == 1
     assert payload["run_history_summary"]["strategies"][0]["strategy"] == "dual_low"
+    assert payload["strategy_cards"]["summary"]["strategy_count"] >= 10
+    cards = {
+        item["name"]: item
+        for item in payload["strategy_cards"]["cards"]
+    }
+    assert cards["dual_low"]["history"]["run_count"] == 1
+    assert cards["dual_low"]["readiness"]["status"] == "skipped"
     assert payload["data_sources"]["health_summary"]["snapshot"]["requested_sources"] == ["sina"]
     assert payload["data_sources"]["freshness_summary"]["snapshot"]["data_state"] == "not_checked"
     assert payload["data_sources"]["freshness_summary"]["fresh_enough"] is False
@@ -83,3 +90,20 @@ def test_build_overview_includes_strategy_matches(tmp_path):
     assert payload["strategy_matches"][0]["name"] == "volume_breakout"
     assert "data_requirement:daily_k" in payload["strategy_matches"][0]["matched"]
     assert any("volume_breakout" in item for item in payload["next_actions"])
+
+
+def test_build_overview_strategy_cards_follow_strategy_filter(tmp_path):
+    config = Config(
+        strategies_dir=Path("strategies"),
+        data_dir=tmp_path,
+        snapshot_source_priority=["sina"],
+        daily_source="auto",
+        fallback_snapshot_path=tmp_path / "snapshot.last_good.json",
+        daily_history_cache_dir=tmp_path / "daily_history",
+    )
+
+    payload = build_overview(config, strategy_name="blue_chip_income")
+
+    assert payload["strategy_cards"]["strategy_filter"] == "blue_chip_income"
+    assert payload["strategy_cards"]["summary"]["strategy_count"] == 1
+    assert [item["name"] for item in payload["strategy_cards"]["cards"]] == ["blue_chip_income"]

@@ -17,6 +17,7 @@ from alphasift.result_schema import screen_result_schema
 from alphasift.run_history import build_strategy_run_summary
 from alphasift.store import list_saved_runs, load_screen_result
 from alphasift.strategy import compare_strategies, list_strategies, match_strategies, strategy_facets
+from alphasift.strategy_cards import build_strategy_cards
 from alphasift.strategy_templates import get_strategy_template, list_strategy_templates
 
 
@@ -93,6 +94,20 @@ def build_api_response(
         return 200, {"schema_version": 1, "comparison": comparison}
     if path == "/strategy-facets":
         return 200, strategy_facets(config.strategies_dir)
+    if path == "/strategy-cards":
+        try:
+            return 200, build_strategy_cards(
+                config,
+                strategy_name=_single(params, "strategy") or None,
+                runs_limit=_int_param(params, "limit", 100),
+                live_data_check=_bool_param(params, "live", False),
+            )
+        except ValueError as exc:
+            return 404, {
+                "error": "strategy_not_found",
+                "message": str(exc),
+                "strategy": _single(params, "strategy"),
+            }
     if path == "/strategy-readiness":
         strategy_name = _single(params, "strategy") or None
         try:
@@ -244,6 +259,7 @@ def _index_payload() -> dict[str, Any]:
             "/strategy",
             "/strategy-compare",
             "/strategy-facets",
+            "/strategy-cards",
             "/strategy-readiness",
             "/strategy-run-summary",
             "/strategy-templates",

@@ -12,6 +12,7 @@ from alphasift.doctor import doctor_data_sources
 from alphasift.run_history import build_strategy_run_summary
 from alphasift.store import list_saved_runs
 from alphasift.strategy import list_strategies, match_strategies, strategy_facets_from_infos
+from alphasift.strategy_cards import build_strategy_cards_from_parts
 
 
 def build_overview(
@@ -41,6 +42,11 @@ def build_overview(
         limit=max(int(runs_limit), 20),
         strategy=strategy_name,
     )
+    card_strategies = [
+        item
+        for item in strategies
+        if not strategy_name or item.name == strategy_name
+    ]
     match_kwargs = dict(strategy_match or {})
     strategy_matches = []
     if _has_match_criteria(match_kwargs):
@@ -64,6 +70,13 @@ def build_overview(
         },
         "strategy_groups": _strategy_groups(strategies),
         "strategy_facets": strategy_facets_from_infos(strategies),
+        "strategy_cards": build_strategy_cards_from_parts(
+            card_strategies,
+            strategy_coverage=doctor.get("strategy_coverage", []),
+            run_history_summary=run_history,
+            live_data_check=live_data_check,
+            strategy_filter=strategy_name or "",
+        ),
         "strategy_matches": strategy_matches,
         "data_sources": {
             "status": doctor.get("status"),
