@@ -210,6 +210,7 @@ def main():
     ebp.add_argument("--failed-breakout-pct", type=float, default=None, help="突破失败判定的最高收益百分比")
     ebp.add_argument("--with-price-path", action="store_true", help="额外抓取日 K 路径，计算最大回撤和最大浮盈")
     ebp.add_argument("--price-path-lookback-days", type=int, default=None, help="价格路径日 K 回看天数")
+    ebp.add_argument("--failure-samples", type=int, default=5, help="失败样本复盘最多展示 N 条，0 表示只输出聚合")
 
     # evaluate-strategies
     esp = sub.add_parser("evaluate-strategies", help="生成策略级评估 summary")
@@ -223,6 +224,7 @@ def main():
     esp.add_argument("--failed-breakout-pct", type=float, default=None, help="突破失败判定的最高收益百分比")
     esp.add_argument("--with-price-path", action="store_true", help="额外抓取日 K 路径，计算最大回撤和最大浮盈")
     esp.add_argument("--price-path-lookback-days", type=int, default=None, help="价格路径日 K 回看天数")
+    esp.add_argument("--failure-samples", type=int, default=5, help="失败样本复盘最多展示 N 条，0 表示只输出聚合")
     esp.add_argument(
         "--window",
         default=None,
@@ -471,6 +473,7 @@ def main():
             failed_breakout_pct=args.failed_breakout_pct,
             with_price_path=args.with_price_path or None,
             price_path_lookback_days=args.price_path_lookback_days,
+            failure_sample_limit=args.failure_samples,
         )
         if args.save:
             save_evaluation_result(result, data_dir=config.data_dir)
@@ -524,6 +527,7 @@ def main():
                 cost_bps=args.cost_bps,
                 follow_through_pct=args.follow_through_pct,
                 failed_breakout_pct=args.failed_breakout_pct,
+                failure_sample_limit=args.failure_samples,
             )
         else:
             result = evaluate_saved_runs(
@@ -535,6 +539,7 @@ def main():
                 failed_breakout_pct=args.failed_breakout_pct,
                 with_price_path=args.with_price_path or None,
                 price_path_lookback_days=args.price_path_lookback_days,
+                failure_sample_limit=args.failure_samples,
             )
         payload = {
             "evaluated_at": result.get("evaluated_at"),
@@ -546,6 +551,7 @@ def main():
             "with_price_path": result.get("with_price_path"),
             "price_path_window_days": result.get("price_path_window_days", []),
             "strategy_summaries": result.get("strategy_summaries", []),
+            "failure_review": result.get("failure_review", {}),
         }
         if args.output:
             Path(args.output).parent.mkdir(parents=True, exist_ok=True)
@@ -1338,6 +1344,7 @@ def _format_evaluation_batch_explain(result: dict) -> str:
         items = _top_dimension_items(dimensions.get(key, {}))
         if items:
             lines.append(f"{title}=" + " | ".join(items))
+    lines.extend(_format_failure_review_explain(result.get("failure_review", {})))
     return "\n".join(lines)
 
 
@@ -1394,7 +1401,65 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
                 f"{item.get('win_rate')!s:<8} {item.get('average_max_drawdown_pct')!s:<8} "
                 f"{item.get('average_max_runup_pct')!s:<9} {item.get('outcome'):<17} {shape_text}"
             )
+    lines.extend(_format_failure_review_explain(result.get("failure_review", {}), include_samples=False))
     return "\n".join(lines)
+
+
+def _format_failure_review_explain(
+    review: object,
+    *,
+    include_samples: bool = True,
+) -> list[str]:
+    if not isinstance(review, dict) or not review:
+        return []
+    summary = review.get("summary", {})
+    if not isinstance(summary, dict):
+        summary = {}
+    lines = [
+        (
+            "failure_review "
+            f"failures={summary.get('failure_count', 0)} "
+            f"shown={summary.get('shown_failure_count', 0)} "
+            f"negative={summary.get('negative_pick_count', 0)} "
+            f"missing={summary.get('missing_count', 0)} "
+            f"failed_breakout={summary.get('failed_breakout_count', 0)} "
+            f"severe_drawdown={summary.get('severe_drawdown_count', 0)} "
+            f"worst_return={summary.get('worst_return_pct')}"
+        )
+    ]
+    dimensions = review.get("dimensions", {})
+    if isinstance(dimensions, dict):
+        for title, key in (
+            ("failure_strategies", "by_strategy"),
+            ("failure_reasons", "by_failure_reason"),
+            ("failure_risk_flags", "by_risk_flag"),
+            ("failure_shapes", "by_shape_status"),
+        ):
+            items = _top_failure_dimension_items(dimensions.get(key, {}))
+            if items:
+                lines.append(f"{title}=" + " | ".join(items))
+    if include_samples:
+        samples = review.get("failure_samples", [])
+        if isinstance(samples, list) and samples:
+            lines.append("failure_samples run strategy rank code return status reasons")
+            for item in samples:
+                if not isinstance(item, dict):
+                    continue
+                reason_values = item.get("failure_reasons", [])
+                if not isinstance(reason_values, list):
+                    reason_values = []
+                reasons = ",".join(str(value) for value in reason_values[:4]) or "-"
+                ret = item.get("return_pct")
+                ret_text = "-" if ret is None else f"{float(ret):.2f}%"
+                lines.append(
+                    f"{str(item.get('run_id') or ''):<16} {str(item.get('strategy') or ''):<20} "
+                    f"{item.get('rank')!s:<4} {str(item.get('code') or ''):<8} "
+                    f"{ret_text:<8} {str(item.get('status') or ''):<10} {reasons}"
+                )
+    recommendations = review.get("recommendations", [])
+    if isinstance(recommendations, list) and recommendations:
+        lines.append("failure_next_actions=" + " | ".join(str(item) for item in recommendations))
+    return lines
 
 
 def _format_hotspots_explain(hotspots: list, *, provider: str = "") -> str:
@@ -1494,6 +1559,31 @@ def _top_dimension_items(items: dict, *, limit: int = 5) -> list[str]:
         (
             f"{label}:n={stats.get('pick_count')},"
             f"avg={stats.get('average_return_pct')},win={stats.get('win_rate')}"
+        )
+        for label, stats in ranked[:limit]
+    ]
+
+
+def _top_failure_dimension_items(items: object, *, limit: int = 5) -> list[str]:
+    if not isinstance(items, dict):
+        return []
+    ranked = sorted(
+        (
+            (str(label), stats)
+            for label, stats in items.items()
+            if isinstance(stats, dict)
+        ),
+        key=lambda item: (
+            -int(item[1].get("failure_count", 0) or 0),
+            item[1].get("worst_return_pct") is None,
+            float(item[1].get("worst_return_pct") or 0),
+            item[0],
+        ),
+    )
+    return [
+        (
+            f"{label}:n={stats.get('failure_count')},"
+            f"avg={stats.get('average_return_pct')},worst={stats.get('worst_return_pct')}"
         )
         for label, stats in ranked[:limit]
     ]

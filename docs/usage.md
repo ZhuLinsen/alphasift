@@ -144,7 +144,10 @@ alphasift screen balanced_alpha --industry-map-file data/industry_map.csv
 
 ```bash
 alphasift evaluate-batch --limit 20 --explain
+alphasift evaluate-batch --limit 20 --with-price-path --failure-samples 10 --json
 ```
+
+批量评估会输出 `failure_review`，把负收益、缺报价、失败突破、严重回撤等样本按策略/风险 flag/形态/失败原因聚合，并给出下一步调参或数据检查建议。
 
 为保存的运行生成复盘报告：
 
@@ -184,6 +187,7 @@ alphasift runs --strategy dual_low --json
 ```
 
 评估会用保存时价格与评估时最新快照价格计算 T+N 收益、胜率、缺失报价、交易成本扣减、等权组合摘要和形态后验标签。启用 `--with-price-path` 后，会额外估算最大回撤和最大浮盈。
+`evaluate-batch` / `evaluate-strategies` 还会输出 `failure_review`，用于定位反复失效的策略、风险 flag、形态状态和数据问题。
 
 ## 自定义策略
 

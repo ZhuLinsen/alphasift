@@ -74,6 +74,17 @@ Stable fields include:
 - enrichment status: `llm_ranked`, `llm_coverage`, `daily_enriched`, `daily_enrich_count`, `post_analyzers`
 - paths: `path`, `report_path`
 
+## Evaluation failure review payload
+
+`alphasift evaluate-batch --json` and `alphasift evaluate-strategies --json` include `failure_review` for strategy iteration screens:
+
+- `summary`: failure counts, shown sample count, negative-pick count, missing quote count, failed-breakout count, severe drawdown count, average negative return, and worst return.
+- `failure_samples`: worst-first sample cards with run, strategy, code, rank, return, quote status, risk/portfolio flags, shape status/tags, path status, drawdown/runup, and `failure_reasons`.
+- `dimensions`: failure aggregations by strategy, sector, theme, risk flag, portfolio flag, shape status, shape tag, and failure reason.
+- `recommendations`: UI-ready next actions for data coverage, breakout filters, risk thresholds, concentration rules, or drawdown controls.
+
+Use `--failure-samples N` to control how many sample cards are retained. Aggregations and recommendations remain available even when `N=0`.
+
 ## Data-source doctor payload
 
 `alphasift doctor data-sources --json` emits a stable diagnostic payload for UI, agent, and operations surfaces:

@@ -18,7 +18,7 @@ AlphaSift is an agent-friendly stock discovery and ranking engine. It scans a br
 - **L3 pluggable post-analysis**: local scorecard by default, with optional DSA or external HTTP analyzers.
 - **Hotspot discovery**: topic/sector heat ranking, hotspot detail resolution, leader stock fallbacks, cache quality metadata, and history sidecars.
 - **Daily feature enrichment**: optional candidate-level daily K-line features such as moving averages, MACD/RSI, breakout strength, volume ratio, pullback distance, and platform duration.
-- **Evaluation loop**: save runs, evaluate later using newer snapshots, deduct transaction cost, tag follow-through / failed-breakout outcomes, and optionally fetch price paths for max drawdown / max favorable excursion.
+- **Evaluation loop**: save runs, evaluate later using newer snapshots, deduct transaction cost, tag follow-through / failed-breakout outcomes, review failure samples, and optionally fetch price paths for max drawdown / max favorable excursion.
 - **Agent-native interface**: `SKILL.md` describes capabilities and callable interfaces for AI agents.
 
 ## Quick start

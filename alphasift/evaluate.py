@@ -241,6 +241,7 @@ def evaluate_saved_runs(
     failed_breakout_pct: float | None = None,
     with_price_path: bool | None = None,
     price_path_lookback_days: int | None = None,
+    failure_sample_limit: int = 5,
 ) -> dict[str, object]:
     """Evaluate multiple saved runs with one current snapshot and aggregate stats."""
     if config is None:
@@ -333,6 +334,10 @@ def evaluate_saved_runs(
         "portfolio_by_strategy": portfolio_by_strategy,
         "strategy_summaries": strategy_summaries,
         "dimensions": dimensions,
+        "failure_review": _failure_review(
+            evaluations,
+            sample_limit=failure_sample_limit,
+        ),
         "runs": [_evaluation_brief(item) for item in evaluations],
     }
 
@@ -362,6 +367,7 @@ def evaluate_saved_runs_by_windows(
     cost_bps: float | None = None,
     follow_through_pct: float | None = None,
     failed_breakout_pct: float | None = None,
+    failure_sample_limit: int = 5,
 ) -> dict[str, Any]:
     """Evaluate saved runs for multiple price-path windows."""
     normalized_windows = _normalize_price_windows(windows)
@@ -384,6 +390,7 @@ def evaluate_saved_runs_by_windows(
                 failed_breakout_pct=failed_breakout_pct,
                 with_price_path=True,
                 price_path_lookback_days=window_days,
+                failure_sample_limit=failure_sample_limit,
             )
         )
 
@@ -769,6 +776,240 @@ def _strategy_outcome(summary: dict[str, object]) -> str:
     if avg_f < 0 and win_f < 50:
         return "negative"
     return "mixed"
+
+
+def _failure_review(
+    evaluations: list[EvaluationResult],
+    *,
+    sample_limit: int = 5,
+) -> dict[str, object]:
+    samples = _failure_samples(evaluations)
+    shown_samples = samples[:max(0, int(sample_limit))]
+    dimensions = {
+        "by_strategy": _aggregate_failure_dimension(samples, "strategy"),
+        "by_sector": _aggregate_failure_dimension(samples, "llm_sector"),
+        "by_theme": _aggregate_failure_dimension(samples, "llm_theme"),
+        "by_risk_flag": _aggregate_failure_dimension(samples, "risk_flags", multi=True),
+        "by_portfolio_flag": _aggregate_failure_dimension(samples, "portfolio_flags", multi=True),
+        "by_shape_status": _aggregate_failure_dimension(samples, "shape_status"),
+        "by_shape_tag": _aggregate_failure_dimension(samples, "shape_tags", multi=True),
+        "by_failure_reason": _aggregate_failure_dimension(samples, "failure_reasons", multi=True),
+    }
+    returns = [
+        float(item["return_pct"])
+        for item in samples
+        if item.get("return_pct") is not None
+    ]
+    negative_returns = [value for value in returns if value < 0]
+    summary = {
+        "failure_count": len(samples),
+        "shown_failure_count": len(shown_samples),
+        "negative_pick_count": sum(1 for item in samples if _is_negative_sample(item)),
+        "missing_count": sum(1 for item in samples if item.get("status") != "ok"),
+        "failed_breakout_count": sum(
+            1 for item in samples if item.get("shape_status") == "failed_breakout"
+        ),
+        "severe_drawdown_count": sum(
+            1
+            for item in samples
+            if item.get("max_drawdown_pct") is not None
+            and float(item["max_drawdown_pct"]) <= -8.0
+        ),
+        "average_negative_return_pct": (
+            _safe_round(sum(negative_returns) / len(negative_returns)) if negative_returns else None
+        ),
+        "worst_return_pct": _safe_round(min(returns)) if returns else None,
+    }
+    return {
+        "summary": summary,
+        "failure_samples": shown_samples,
+        "dimensions": dimensions,
+        "recommendations": _failure_recommendations(summary, dimensions),
+    }
+
+
+def _failure_samples(evaluations: list[EvaluationResult]) -> list[dict[str, object]]:
+    samples: list[dict[str, object]] = []
+    for evaluation in evaluations:
+        for pick in evaluation.picks:
+            reasons = _failure_reasons(pick)
+            if not reasons:
+                continue
+            samples.append({
+                "run_id": evaluation.run_id,
+                "strategy": evaluation.strategy,
+                "created_at": evaluation.created_at,
+                "elapsed_days": evaluation.elapsed_days,
+                "code": pick.code,
+                "name": pick.name,
+                "rank": pick.rank,
+                "entry_price": pick.entry_price,
+                "current_price": pick.current_price,
+                "return_pct": pick.return_pct,
+                "final_score": pick.final_score,
+                "status": pick.status,
+                "llm_sector": pick.llm_sector,
+                "llm_theme": pick.llm_theme,
+                "llm_tags": list(pick.llm_tags),
+                "risk_level": pick.risk_level,
+                "risk_flags": list(pick.risk_flags),
+                "portfolio_flags": list(pick.portfolio_flags),
+                "shape_status": pick.shape_status,
+                "shape_tags": list(pick.shape_tags),
+                "path_status": pick.path_status,
+                "max_drawdown_pct": pick.max_drawdown_pct,
+                "max_runup_pct": pick.max_runup_pct,
+                "failure_reasons": reasons,
+            })
+    return sorted(samples, key=_failure_sample_sort_key)
+
+
+def _failure_reasons(pick: PickEvaluation) -> list[str]:
+    reasons: list[str] = []
+    if pick.status != "ok":
+        reasons.append(f"quote_status:{pick.status}")
+    if pick.return_pct is not None and pick.return_pct < 0:
+        reasons.append("negative_return")
+        if pick.return_pct <= -5:
+            reasons.append("large_loss")
+    if pick.shape_status in {"failed_breakout", "pullback_failed"}:
+        reasons.append(f"shape_status:{pick.shape_status}")
+    elif pick.shape_status in {"breakout_unconfirmed"}:
+        reasons.append("shape_status:breakout_unconfirmed")
+    if pick.max_drawdown_pct is not None and pick.max_drawdown_pct <= -8:
+        reasons.append("path_drawdown_breach")
+    if pick.path_status and pick.path_status != "ok":
+        reasons.append(f"path_status:{pick.path_status}")
+    if not reasons:
+        return []
+    for flag in pick.risk_flags:
+        reasons.append(f"risk_flag:{flag}")
+    for flag in pick.portfolio_flags:
+        reasons.append(f"portfolio_flag:{flag}")
+    return _dedupe_strings(reasons)
+
+
+def _failure_sample_sort_key(item: dict[str, object]) -> tuple[object, ...]:
+    return_pct = item.get("return_pct")
+    if return_pct is not None:
+        return (0, float(return_pct), str(item.get("strategy", "")), int(item.get("rank", 0) or 0))
+    return (1, str(item.get("status", "")), str(item.get("strategy", "")), int(item.get("rank", 0) or 0))
+
+
+def _aggregate_failure_dimension(
+    samples: list[dict[str, object]],
+    field: str,
+    *,
+    multi: bool = False,
+) -> dict[str, dict[str, object]]:
+    groups: dict[str, list[dict[str, object]]] = {}
+    for sample in samples:
+        labels = _sample_labels(sample.get(field), multi=multi)
+        for label in labels:
+            groups.setdefault(label, []).append(sample)
+    result: dict[str, dict[str, object]] = {}
+    for label, items in groups.items():
+        returns = [
+            float(item["return_pct"])
+            for item in items
+            if item.get("return_pct") is not None
+        ]
+        result[label] = {
+            "failure_count": len(items),
+            "evaluated_failure_count": len(returns),
+            "average_return_pct": _safe_round(sum(returns) / len(returns)) if returns else None,
+            "worst_return_pct": _safe_round(min(returns)) if returns else None,
+            "sample_codes": _dedupe_strings(
+                str(item.get("code", ""))
+                for item in sorted(items, key=_failure_sample_sort_key)
+                if item.get("code")
+            )[:3],
+        }
+    return dict(
+        sorted(
+            result.items(),
+            key=lambda item: (
+                -int(item[1]["failure_count"]),
+                item[1]["worst_return_pct"] is None,
+                float(item[1]["worst_return_pct"] or 0),
+                item[0],
+            ),
+        )
+    )
+
+
+def _sample_labels(value: object, *, multi: bool) -> list[str]:
+    if multi:
+        return _normalize_labels(value or ["none"])
+    text = str(value or "unknown").strip()
+    return [text or "unknown"]
+
+
+def _failure_recommendations(
+    summary: dict[str, object],
+    dimensions: dict[str, dict[str, dict[str, object]]],
+) -> list[str]:
+    if int(summary.get("failure_count", 0) or 0) == 0:
+        return ["No evaluated failure samples yet; keep collecting saved runs before tuning strategy thresholds."]
+    recommendations: list[str] = []
+    if int(summary.get("missing_count", 0) or 0) > 0:
+        recommendations.append(
+            "Missing or bad current quotes appeared in failure samples; check snapshot source coverage before tuning strategy logic."
+        )
+    if int(summary.get("failed_breakout_count", 0) or 0) > 0:
+        recommendations.append(
+            "Failed breakout samples appeared; review breakout filters such as volume confirmation, MA20 position, and consolidation quality."
+        )
+    if int(summary.get("severe_drawdown_count", 0) or 0) > 0:
+        recommendations.append(
+            "Price-path drawdown breaches appeared; review stop-loss assumptions or tighten volatility and drawdown filters."
+        )
+    risk_item = _top_dimension_label(dimensions.get("by_risk_flag", {}), exclude={"none"})
+    if risk_item:
+        recommendations.append(
+            f"Risk flag `{risk_item}` repeats in failure samples; consider adjusting risk_profile thresholds or penalties."
+        )
+    portfolio_item = _top_dimension_label(dimensions.get("by_portfolio_flag", {}), exclude={"none"})
+    if portfolio_item:
+        recommendations.append(
+            f"Portfolio flag `{portfolio_item}` repeats in failure samples; review portfolio_profile concentration rules."
+        )
+    shape_item = _top_dimension_label(dimensions.get("by_shape_status", {}), exclude={"unknown", ""})
+    if shape_item:
+        recommendations.append(
+            f"Shape outcome `{shape_item}` is a recurring failure bucket; compare it against strategy intent before raising exposure."
+        )
+    return _dedupe_strings(recommendations)
+
+
+def _top_dimension_label(
+    items: dict[str, dict[str, object]],
+    *,
+    exclude: set[str],
+) -> str:
+    for label, stats in items.items():
+        if label in exclude:
+            continue
+        if int(stats.get("failure_count", 0) or 0) <= 0:
+            continue
+        return label
+    return ""
+
+
+def _is_negative_sample(item: dict[str, object]) -> bool:
+    return item.get("return_pct") is not None and float(item["return_pct"]) < 0
+
+
+def _dedupe_strings(values) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = str(value or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        result.append(text)
+    return result
 
 
 def _aggregate_by_pick_label(

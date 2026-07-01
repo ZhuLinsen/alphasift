@@ -290,7 +290,19 @@ def test_evaluate_saved_runs_aggregates_by_strategy(tmp_path, monkeypatch):
             market="cn",
             run_id="run_b",
             created_at="2026-04-01T09:30:00",
-            picks=[Pick(rank=1, code="600000", name="浦发银行", final_score=70, screen_score=70, price=20)],
+            picks=[
+                Pick(
+                    rank=1,
+                    code="600000",
+                    name="浦发银行",
+                    final_score=70,
+                    screen_score=70,
+                    price=20,
+                    risk_flags=["高换手"],
+                    portfolio_flags=["题材集中"],
+                    breakout_20d_pct=0.2,
+                )
+            ],
         ),
         data_dir=tmp_path,
     )
@@ -333,8 +345,19 @@ def test_evaluate_saved_runs_aggregates_by_strategy(tmp_path, monkeypatch):
     assert result["dimensions"]["by_risk_flag"]["低波动"]["average_return_pct"] == 10.0
     assert result["dimensions"]["by_holding_period"]["T+20_plus"]["pick_count"] == 2
     assert result["dimensions"]["by_shape_status"]["breakout_follow_through"]["pick_count"] == 1
-    assert result["dimensions"]["by_shape_tag"]["breakout_setup"]["pick_count"] == 1
+    assert result["dimensions"]["by_shape_tag"]["breakout_setup"]["pick_count"] == 2
     assert result["dimensions"]["by_path_status"]["ok"]["pick_count"] == 2
+    review = result["failure_review"]
+    assert review["summary"]["failure_count"] == 1
+    assert review["summary"]["negative_pick_count"] == 1
+    assert review["summary"]["failed_breakout_count"] == 1
+    assert review["summary"]["severe_drawdown_count"] == 1
+    assert review["failure_samples"][0]["code"] == "600000"
+    assert "negative_return" in review["failure_samples"][0]["failure_reasons"]
+    assert "shape_status:failed_breakout" in review["failure_samples"][0]["failure_reasons"]
+    assert review["dimensions"]["by_risk_flag"]["高换手"]["failure_count"] == 1
+    assert review["dimensions"]["by_portfolio_flag"]["题材集中"]["failure_count"] == 1
+    assert any("Failed breakout samples" in item for item in review["recommendations"])
     assert result["summary"]["path_pick_count"] == 2
     assert result["summary"]["average_max_drawdown_pct"] == -7.5
     assert result["cost_bps"] == 0.0

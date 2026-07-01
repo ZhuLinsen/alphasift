@@ -1,6 +1,8 @@
 import json
 import sys
 
+import pandas as pd
+
 from alphasift.cli import _append_industry_cache_history, _write_industry_cache_metadata, main
 from alphasift.hotspot import (
     HotspotDetail,
@@ -268,6 +270,51 @@ def test_cli_runs_json_filters_strategy(monkeypatch, tmp_path, capsys):
     assert payload[0]["snapshot_source"] == "sina"
     assert payload[0]["daily_enriched"] is True
     assert payload[0]["post_analyzers"] == ["scorecard"]
+
+
+def test_cli_evaluate_batch_explain_includes_failure_review(monkeypatch, tmp_path, capsys):
+    save_screen_result(
+        ScreenResult(
+            strategy="volume_breakout",
+            market="cn",
+            run_id="run_fail",
+            created_at="2026-04-01T09:30:00",
+            picks=[
+                Pick(
+                    rank=1,
+                    code="600000",
+                    name="浦发银行",
+                    final_score=70,
+                    screen_score=70,
+                    price=20,
+                    breakout_20d_pct=0.2,
+                )
+            ],
+        ),
+        data_dir=tmp_path,
+    )
+
+    def fake_fetch_snapshot(*args, **kwargs):
+        snapshot = pd.DataFrame([{"code": "600000", "price": 18}])
+        snapshot.attrs["snapshot_source"] = "test"
+        return snapshot
+
+    monkeypatch.setenv("ALPHASIFT_DATA_DIR", str(tmp_path))
+    monkeypatch.setattr("alphasift.evaluate.fetch_snapshot_with_fallback", fake_fetch_snapshot)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["alphasift", "evaluate-batch", "--limit", "1", "--cost-bps", "0", "--failure-samples", "1", "--explain"],
+    )
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "failure_review failures=1 shown=1 negative=1" in out
+    assert "failure_samples run strategy rank code return status reasons" in out
+    assert "run_fail" in out
+    assert "negative_return" in out
+    assert "failure_next_actions=" in out
 
 
 def test_cli_overview_json_combines_catalog_health_and_runs(monkeypatch, tmp_path, capsys):

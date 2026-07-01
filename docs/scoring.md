@@ -153,6 +153,15 @@ LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代
 
 批量评估会按 `by_shape_status` 和 `by_shape_tag` 聚合，帮助发现某类形态是否反复失效。`evaluate-batch` 还会输出 `portfolio_summary` 和 `portfolio_by_strategy`，把每次 run 当作等权组合，统计组合收益、组合胜率，以及启用价格路径后的组合级平均最大回撤/最大浮盈。
 
+`evaluate-batch` 和 `evaluate-strategies` 的 JSON payload 同时包含 `failure_review`，用于策略研发复盘：
+
+- `summary`：失败样本数、负收益数、缺报价数、失败突破数、严重回撤数、最差收益。
+- `failure_samples`：按严重程度排序的样本，包含 run、策略、代码、收益、形态状态、风险/组合 flags 和失败原因。
+- `dimensions`：按策略、行业/主题、风险 flag、组合 flag、形态状态、失败原因聚合失败样本。
+- `recommendations`：面向调参和数据检查的下一步建议。
+
+可用 `--failure-samples N` 控制 explain/JSON 中保留的样本数量，`0` 表示只保留聚合和建议。
+
 如果启用 `--with-price-path` 或 `EVALUATION_PRICE_PATH_ENABLED=true`，评估会额外抓取候选日 K 路径，并计算：
 
 - `path_end_return_pct`：路径最后一个交易日相对保存价的收益
