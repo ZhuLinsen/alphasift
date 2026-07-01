@@ -12,8 +12,8 @@ from alphasift.hotspot import (
     TimelineEvent,
     save_hotspots_json,
 )
-from alphasift.models import Pick, ScreenResult
-from alphasift.store import save_screen_result
+from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
+from alphasift.store import save_evaluation_result, save_screen_result
 
 
 def test_write_industry_cache_metadata_supports_output_without_suffix(tmp_path):
@@ -338,6 +338,30 @@ def test_cli_overview_json_combines_catalog_health_and_runs(monkeypatch, tmp_pat
         ),
         data_dir=tmp_path,
     )
+    save_evaluation_result(
+        EvaluationResult(
+            run_id="run_breakout",
+            strategy="volume_breakout",
+            market="cn",
+            created_at="2026-04-01T09:30:00",
+            evaluated_at="2026-04-02T09:30:00",
+            average_return_pct=7.0,
+            win_rate=100.0,
+            picks=[
+                PickEvaluation(
+                    code="000002",
+                    name="万科A",
+                    rank=1,
+                    entry_price=10,
+                    current_price=10.7,
+                    return_pct=7.0,
+                    status="ok",
+                    final_score=75,
+                )
+            ],
+        ),
+        data_dir=tmp_path,
+    )
     monkeypatch.setenv("ALPHASIFT_DATA_DIR", str(tmp_path))
     monkeypatch.setattr(sys, "argv", [
         "alphasift",
@@ -361,6 +385,7 @@ def test_cli_overview_json_combines_catalog_health_and_runs(monkeypatch, tmp_pat
     assert payload["strategy_matches"][0]["name"] == "volume_breakout"
     assert payload["recent_runs"][0]["run_id"] == "run_breakout"
     assert payload["data_source_history"]["snapshot_sources"][0]["snapshot_source"] == "sina"
+    assert payload["performance_summary"]["leaderboard"][0]["strategy"] == "volume_breakout"
     assert "health_summary" in payload["data_sources"]
     assert payload["data_sources"]["freshness_summary"]["snapshot"]["data_state"] == "not_checked"
 
@@ -405,6 +430,48 @@ def test_cli_overview_explain_formats_dashboard_summary(monkeypatch, tmp_path, c
     assert "strategy_matches:" in out
     assert "low_volatility_quality" in out
     assert "next_actions=" in out
+
+
+def test_cli_performance_explain_formats_saved_evaluations(monkeypatch, tmp_path, capsys):
+    save_evaluation_result(
+        EvaluationResult(
+            run_id="run_perf_cli",
+            strategy="dual_low",
+            market="cn",
+            created_at="2026-04-01T09:30:00",
+            evaluated_at="2026-04-02T09:30:00",
+            average_return_pct=3.0,
+            win_rate=100.0,
+            picks=[
+                PickEvaluation(
+                    code="000001",
+                    name="平安银行",
+                    rank=1,
+                    entry_price=10,
+                    current_price=10.3,
+                    return_pct=3.0,
+                    status="ok",
+                    final_score=80,
+                )
+            ],
+        ),
+        data_dir=tmp_path,
+    )
+    monkeypatch.setenv("ALPHASIFT_DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(sys, "argv", [
+        "alphasift",
+        "performance",
+        "--strategy",
+        "dual_low",
+        "--explain",
+    ])
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "performance=evaluations=1 strategies=1 outcome=strong" in out
+    assert "performance_leaderboard strategy evals score outcome avg_return win_rate latest_run" in out
+    assert "dual_low" in out
 
 
 def test_cli_hotspots_explain_shows_fallback_and_source_errors(monkeypatch, tmp_path, capsys):

@@ -89,6 +89,13 @@ Stable fields include:
 - `watchlist`: sources with any error, degradation, or last-good fallback usage, sorted by impact and carrying stability status, score, issue samples, and next actions.
 - Query params: `strategy` filters to one strategy and `limit` caps scanned metadata records.
 
+`GET /strategy-performance` summarizes saved evaluation files without re-running live evaluation:
+
+- `summary`: global evaluation count, pick/evaluated/missing counts, average and median return, win rate, average run return, run win rate, performance score, outcome, latest evaluation, and next actions.
+- `strategies`: one row per strategy with latest evaluation metadata, pick counts, return/win-rate metrics, run-level metrics, source/degradation counts, performance score, outcome, next actions, and recent compact evaluation cards.
+- `leaderboard`: top strategy rows sorted by performance score for first-screen comparison.
+- Query params: `strategy` filters to one strategy and `limit` caps scanned evaluation files.
+
 ## Evaluation failure review payload
 
 `alphasift evaluate-batch --json` and `alphasift evaluate-strategies --json` include `failure_review` for strategy iteration screens:
@@ -130,12 +137,13 @@ Stable top-level fields:
 - `summary`: strategy counts, daily-strategy count, data-source status, strategy-match count, recent-run count, live-check flag.
 - `strategy_groups`: strategy names grouped by category, risk profile, holding period, and data requirement.
 - `strategy_facets`: UI-ready strategy filter facets with values, counts, query params, and backing strategy names.
-- `strategy_cards`: UI-ready strategy cards that join catalog metadata, readiness state, saved-run history, top factors, use-case hints, and next actions.
+- `strategy_cards`: UI-ready strategy cards that join catalog metadata, readiness state, saved-run history, saved-evaluation performance, top factors, use-case hints, and next actions.
 - `strategy_matches`: optional ranked strategy recommendations with `score`, `matched`, and `missing`.
 - `data_sources`: compact data-source doctor subset with `health_summary`, `freshness_summary`, `snapshot_quality`, strategy requirements, strategy coverage, and recommendations.
 - `data_sources.strategy_readiness_summary`: compact readiness rollup for strategy availability panels.
 - `run_history_summary`: saved-run metadata rollup by strategy for history dashboards.
 - `data_source_history`: saved-run metadata rollup by snapshot source for data-stability dashboards.
+- `performance_summary`: saved-evaluation rollup by strategy for performance leaderboards.
 - `recent_runs`: lightweight saved-run metadata from `alphasift runs --json`.
 - `next_actions`: UI-ready operational next steps.
 
@@ -154,6 +162,7 @@ Stable top-level fields:
 - `GET /strategy-readiness`: compact strategy readiness payload; defaults to all strategies and no live data checks, supports `strategy`, `live`, `snapshot_source`, `daily_source`, `daily_code`, and `no_daily`.
 - `GET /strategy-run-summary`: saved-run metadata rollup by strategy; supports `strategy` and `limit`.
 - `GET /data-source-history`: saved-run metadata rollup by snapshot source; supports `strategy` and `limit`.
+- `GET /strategy-performance`: saved-evaluation rollup by strategy; supports `strategy` and `limit`.
 - `GET /strategy-templates`: lightweight strategy authoring template catalog without YAML bodies.
 - `GET /strategy-template?name=<template_name>`: one strategy authoring template; supports `include_yaml=false`.
 - `GET /runs`: saved-run metadata with optional `strategy` and `limit`.

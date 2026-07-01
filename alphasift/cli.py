@@ -24,6 +24,7 @@ from alphasift.hotspot import (
 )
 from alphasift.industry import fetch_akshare_board_map, save_industry_map
 from alphasift.overview import build_overview
+from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.pipeline import screen
 from alphasift.report import (
     build_run_report_payload,
@@ -212,6 +213,13 @@ def main():
     ebp.add_argument("--with-price-path", action="store_true", help="额外抓取日 K 路径，计算最大回撤和最大浮盈")
     ebp.add_argument("--price-path-lookback-days", type=int, default=None, help="价格路径日 K 回看天数")
     ebp.add_argument("--failure-samples", type=int, default=5, help="失败样本复盘最多展示 N 条，0 表示只输出聚合")
+
+    # performance
+    pp = sub.add_parser("performance", help="汇总已保存 evaluation 的策略后验表现")
+    pp.add_argument("--limit", type=int, default=100, help="最多读取最近 N 个已保存 evaluation")
+    pp.add_argument("--strategy", default=None, help="只汇总指定策略")
+    pp.add_argument("--json", action="store_true", help="以 JSON 输出")
+    pp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
 
     # evaluate-strategies
     esp = sub.add_parser("evaluate-strategies", help="生成策略级评估 summary")
@@ -515,6 +523,18 @@ def main():
             print(_format_evaluation_batch_explain(result))
         else:
             print(json.dumps(result, ensure_ascii=False, indent=2))
+
+    elif args.command == "performance":
+        config = Config.from_env()
+        payload = build_strategy_performance_summary(
+            data_dir=config.data_dir,
+            limit=args.limit,
+            strategy=args.strategy,
+        )
+        if args.explain and not args.json:
+            print(_format_performance_summary_explain(payload))
+        else:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
 
     elif args.command == "evaluate-strategies":
         config = Config.from_env()
@@ -912,6 +932,9 @@ def _format_overview_explain(payload: dict) -> str:
     source_history = payload.get("data_source_history") or {}
     if source_history.get("run_count"):
         lines.append(_format_data_source_history_summary(source_history))
+    performance = payload.get("performance_summary") or {}
+    if performance.get("evaluation_count"):
+        lines.append(_format_performance_summary_line(performance))
     groups = payload.get("strategy_groups", {}) or {}
     for title, key in (
         ("categories", "by_category"),
@@ -966,6 +989,46 @@ def _format_data_source_history_summary(summary: dict) -> str:
         f"fallback_rate={values.get('fallback_rate', 0.0)} "
         f"watchlist={len(watchlist)}"
     )
+
+
+def _format_performance_summary_line(payload: dict) -> str:
+    values = payload.get("summary") or {}
+    leaderboard = payload.get("leaderboard") or []
+    return (
+        "performance="
+        f"evaluations={payload.get('evaluation_count', 0)} "
+        f"strategies={payload.get('strategy_count', 0)} "
+        f"outcome={values.get('outcome', 'insufficient_data')} "
+        f"score={_display_value(values.get('performance_score'))} "
+        f"avg_return={_display_value(values.get('average_return_pct'))} "
+        f"win_rate={_display_value(values.get('win_rate'))} "
+        f"leaderboard={len(leaderboard)}"
+    )
+
+
+def _format_performance_summary_explain(payload: dict) -> str:
+    lines = [_format_performance_summary_line(payload)]
+    rows = payload.get("leaderboard") or []
+    if rows:
+        lines.append("performance_leaderboard strategy evals score outcome avg_return win_rate latest_run")
+        for item in rows[:10]:
+            lines.append(
+                f"  {item.get('strategy')} "
+                f"{item.get('evaluation_count', 0)} "
+                f"{_display_value(item.get('performance_score'))} "
+                f"{item.get('outcome', '-')} "
+                f"{_display_value(item.get('average_return_pct'))} "
+                f"{_display_value(item.get('win_rate'))} "
+                f"{item.get('latest_run_id', '-')}"
+            )
+    actions = (payload.get("summary") or {}).get("next_actions") or []
+    if actions:
+        lines.append("performance_next_actions=" + " | ".join(str(item) for item in actions))
+    return "\n".join(lines)
+
+
+def _display_value(value: object) -> object:
+    return "-" if value is None else value
 
 
 def _format_strategies_explain(strategies) -> str:

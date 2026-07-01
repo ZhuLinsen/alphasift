@@ -1,9 +1,9 @@
 from pathlib import Path
 
 from alphasift.config import Config
-from alphasift.models import Pick, ScreenResult
+from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
 from alphasift.server import build_api_response
-from alphasift.store import save_screen_result
+from alphasift.store import save_evaluation_result, save_screen_result
 
 
 def _config(tmp_path):
@@ -33,6 +33,7 @@ def test_api_health_and_index(tmp_path):
     assert "/strategy-readiness" in index["endpoints"]
     assert "/strategy-run-summary" in index["endpoints"]
     assert "/data-source-history" in index["endpoints"]
+    assert "/strategy-performance" in index["endpoints"]
     assert "/strategy-templates" in index["endpoints"]
     assert health_status == 200
     assert health == {"status": "ok", "service": "alphasift", "schema_version": 1}
@@ -148,6 +149,46 @@ def test_api_data_source_history_returns_saved_run_source_rollup(tmp_path):
     assert by_source["sina"]["stability_status"] == "degraded"
     assert by_source["efinance"]["source_error_rate"] == 0.0
     assert by_source["efinance"]["stability_status"] == "ok"
+
+
+def test_api_strategy_performance_returns_saved_evaluation_rollup(tmp_path):
+    save_evaluation_result(
+        EvaluationResult(
+            run_id="run_perf_api",
+            strategy="dual_low",
+            market="cn",
+            created_at="2026-04-01T09:30:00",
+            evaluated_at="2026-04-02T09:30:00",
+            average_return_pct=3.0,
+            win_rate=100.0,
+            picks=[
+                PickEvaluation(
+                    code="000001",
+                    name="平安银行",
+                    rank=1,
+                    entry_price=10,
+                    current_price=10.3,
+                    return_pct=3.0,
+                    status="ok",
+                    final_score=80,
+                )
+            ],
+        ),
+        data_dir=tmp_path,
+    )
+
+    status, payload = build_api_response(
+        _config(tmp_path),
+        "/strategy-performance",
+        query="strategy=dual_low&limit=5",
+    )
+
+    assert status == 200
+    assert payload["schema_version"] == 1
+    assert payload["strategy_filter"] == "dual_low"
+    assert payload["evaluation_count"] == 1
+    assert payload["leaderboard"][0]["strategy"] == "dual_low"
+    assert payload["leaderboard"][0]["outcome"] == "strong"
 
 
 def test_api_report_returns_run_report_payload(tmp_path):

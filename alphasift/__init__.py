@@ -5,6 +5,7 @@ __version__ = "0.2.0"
 
 from alphasift.pipeline import screen
 from alphasift.evaluate import evaluate_saved_run, evaluate_saved_runs
+from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.strategy import compare_strategies, list_strategies, strategy_facets
 from alphasift.audit import audit_project
 from alphasift.overview import build_overview
@@ -19,6 +20,7 @@ __all__ = [
     "screen",
     "evaluate_saved_run",
     "evaluate_saved_runs",
+    "build_strategy_performance_summary",
     "list_strategies",
     "compare_strategies",
     "strategy_facets",

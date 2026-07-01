@@ -10,6 +10,7 @@ from typing import Any
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
 from alphasift.models import StrategyInfo
+from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.run_history import build_strategy_run_summary
 from alphasift.strategy import list_strategies
 
@@ -37,10 +38,16 @@ def build_strategy_cards(
         limit=runs_limit,
         strategy=strategy_name,
     )
+    performance = build_strategy_performance_summary(
+        data_dir=config.data_dir,
+        limit=runs_limit,
+        strategy=strategy_name,
+    )
     return build_strategy_cards_from_parts(
         strategies,
         strategy_coverage=doctor.get("strategy_coverage", []),
         run_history_summary=run_history,
+        performance_summary=performance,
         live_data_check=live_data_check,
         strategy_filter=strategy_name or "",
     )
@@ -51,6 +58,7 @@ def build_strategy_cards_from_parts(
     *,
     strategy_coverage: list[dict[str, Any]] | None = None,
     run_history_summary: dict[str, Any] | None = None,
+    performance_summary: dict[str, Any] | None = None,
     live_data_check: bool = False,
     strategy_filter: str = "",
 ) -> dict[str, Any]:
@@ -63,11 +71,16 @@ def build_strategy_cards_from_parts(
         str(item.get("strategy") or ""): item
         for item in ((run_history_summary or {}).get("strategies", []) or [])
     }
+    performance_by_strategy = {
+        str(item.get("strategy") or ""): item
+        for item in ((performance_summary or {}).get("strategies", []) or [])
+    }
     cards = [
         _strategy_card(
             strategy,
             coverage=coverage_by_strategy.get(strategy.name, {}),
             history=history_by_strategy.get(strategy.name, {}),
+            performance=performance_by_strategy.get(strategy.name, {}),
             live_data_check=live_data_check,
         )
         for strategy in strategies
@@ -99,10 +112,12 @@ def _strategy_card(
     *,
     coverage: dict[str, Any],
     history: dict[str, Any],
+    performance: dict[str, Any],
     live_data_check: bool,
 ) -> dict[str, Any]:
     readiness_status = str(coverage.get("status") or "skipped")
     history_payload = _history_payload(history)
+    performance_payload = _performance_payload(performance)
     return {
         "name": strategy.name,
         "display_name": strategy.display_name,
@@ -131,10 +146,12 @@ def _strategy_card(
             "daily_missing_fields": list(coverage.get("daily_missing_fields", []) or []),
         },
         "history": history_payload,
+        "performance": performance_payload,
         "actions": _card_actions(
             strategy,
             readiness_status=readiness_status,
             history=history_payload,
+            performance=performance_payload,
         ),
     }
 
@@ -200,6 +217,27 @@ def _history_payload(history: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _performance_payload(performance: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "evaluation_count": _int_value(performance.get("evaluation_count")),
+        "latest_run_id": str(performance.get("latest_run_id") or ""),
+        "latest_evaluated_at": str(performance.get("latest_evaluated_at") or ""),
+        "latest_elapsed_days": performance.get("latest_elapsed_days"),
+        "pick_count": _int_value(performance.get("pick_count")),
+        "evaluated_pick_count": _int_value(performance.get("evaluated_pick_count")),
+        "missing_count": _int_value(performance.get("missing_count")),
+        "average_return_pct": performance.get("average_return_pct"),
+        "median_return_pct": performance.get("median_return_pct"),
+        "win_rate": performance.get("win_rate"),
+        "average_run_return_pct": performance.get("average_run_return_pct"),
+        "run_win_rate": performance.get("run_win_rate"),
+        "performance_score": performance.get("performance_score"),
+        "outcome": str(performance.get("outcome") or "insufficient_data"),
+        "next_actions": _string_list(performance.get("next_actions", []))[:3],
+        "recent_evaluations": list(performance.get("recent_evaluations", []) or [])[:3],
+    }
+
+
 def _top_factors(weights: dict[str, float]) -> list[dict[str, object]]:
     rows = [
         {"name": str(name), "weight": float(weight)}
@@ -215,6 +253,7 @@ def _card_actions(
     *,
     readiness_status: str,
     history: dict[str, Any],
+    performance: dict[str, Any],
 ) -> list[str]:
     actions: list[str] = []
     if readiness_status == "skipped":
@@ -227,6 +266,10 @@ def _card_actions(
         actions.append(f"Run `alphasift screen {strategy.name} --save-run` to seed history.")
     elif _int_value(history.get("degradation_count")) > 0:
         actions.append(f"Review latest report for `{strategy.name}` data degradation.")
+    if _int_value(performance.get("evaluation_count")) <= 0:
+        actions.append(f"Run `alphasift evaluate <run_id> --save` to seed `{strategy.name}` performance.")
+    elif str(performance.get("outcome") or "") in {"negative", "mixed"}:
+        actions.extend(_string_list(performance.get("next_actions", []))[:1])
     return list(dict.fromkeys(actions))
 
 

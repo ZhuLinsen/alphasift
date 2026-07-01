@@ -9,6 +9,7 @@ from typing import Any
 
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
+from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.run_history import build_strategy_run_summary
 from alphasift.source_history import build_data_source_history
 from alphasift.store import list_saved_runs
@@ -48,6 +49,11 @@ def build_overview(
         limit=max(int(runs_limit), 20),
         strategy=strategy_name,
     )
+    performance = build_strategy_performance_summary(
+        data_dir=config.data_dir,
+        limit=max(int(runs_limit), 20),
+        strategy=strategy_name,
+    )
     card_strategies = [
         item
         for item in strategies
@@ -80,6 +86,7 @@ def build_overview(
             card_strategies,
             strategy_coverage=doctor.get("strategy_coverage", []),
             run_history_summary=run_history,
+            performance_summary=performance,
             live_data_check=live_data_check,
             strategy_filter=strategy_name or "",
         ),
@@ -97,11 +104,13 @@ def build_overview(
         },
         "run_history_summary": run_history,
         "data_source_history": source_history,
+        "performance_summary": performance,
         "recent_runs": recent_runs,
         "next_actions": _next_actions(
             doctor=doctor,
             recent_runs=recent_runs,
             source_history=source_history,
+            performance_summary=performance,
             strategy_matches=strategy_matches,
             strategy_name=strategy_name,
             live_data_check=live_data_check,
@@ -170,6 +179,7 @@ def _next_actions(
     doctor: dict[str, Any],
     recent_runs: list[dict[str, object]],
     source_history: dict[str, object],
+    performance_summary: dict[str, object],
     strategy_matches: list[dict[str, object]],
     strategy_name: str | None,
     live_data_check: bool,
@@ -179,6 +189,7 @@ def _next_actions(
         actions.append("Run `alphasift overview --live-data-check --explain` before relying on fresh data.")
     actions.extend(str(item) for item in doctor.get("recommendations", []) or [])
     actions.extend(_source_history_actions(source_history))
+    actions.extend(_performance_actions(performance_summary, has_recent_runs=bool(recent_runs)))
     if strategy_matches:
         top = strategy_matches[0]
         actions.append(f"Try `alphasift screen {top.get('name')} --explain` for the top matched strategy.")
@@ -198,6 +209,15 @@ def _source_history_actions(source_history: dict[str, object]) -> list[str]:
         if isinstance(item, dict):
             actions.extend(str(action) for action in item.get("next_actions", []) or [])
     return actions
+
+
+def _performance_actions(performance_summary: dict[str, object], *, has_recent_runs: bool) -> list[str]:
+    if not has_recent_runs and not int(performance_summary.get("evaluation_count") or 0):
+        return []
+    summary = performance_summary.get("summary") or {}
+    if not isinstance(summary, dict):
+        return []
+    return [str(item) for item in summary.get("next_actions", []) or []]
 
 
 def overview_to_jsonable(payload: dict[str, Any]) -> dict[str, Any]:

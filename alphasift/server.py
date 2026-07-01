@@ -12,6 +12,7 @@ from urllib.parse import parse_qs, urlparse
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
 from alphasift.overview import build_overview
+from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.report import build_run_report_payload
 from alphasift.result_schema import screen_result_schema
 from alphasift.run_history import build_strategy_run_summary
@@ -172,6 +173,12 @@ def build_api_response(
             limit=_int_param(params, "limit", 100),
             strategy=_single(params, "strategy") or None,
         )
+    if path == "/strategy-performance":
+        return 200, build_strategy_performance_summary(
+            data_dir=config.data_dir,
+            limit=_int_param(params, "limit", 100),
+            strategy=_single(params, "strategy") or None,
+        )
     if path == "/runs":
         return 200, {
             "schema_version": 1,
@@ -270,6 +277,7 @@ def _index_payload() -> dict[str, Any]:
             "/strategy-readiness",
             "/strategy-run-summary",
             "/data-source-history",
+            "/strategy-performance",
             "/strategy-templates",
             "/strategy-template",
             "/runs",
