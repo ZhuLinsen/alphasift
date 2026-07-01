@@ -45,6 +45,23 @@ For upstream UI / DSA / agent integrations, use these field groups:
 - watch items / invalidators: `llm_watch_items`, `llm_invalidators`, `deep_analysis_operation_advice`
 - post-analysis: `post_analysis_status`, `post_analysis_summaries`, `post_analysis_tags`
 
+## RunReport payload
+
+Saved runs can be rendered into a Markdown report or exported as a JSON payload:
+
+```bash
+alphasift report <run_id> --output data/reports/<run_id>.md
+alphasift report <run_id> --json
+```
+
+The current `RunReport` schema version is `1`. Stable top-level fields:
+
+- `run`: run identity, strategy/version/category, counts, LLM/post-analysis metadata.
+- `summary_cards`: compact metric cards with `label`, `value`, and `status`.
+- `source_health`: snapshot source, source errors, degradation notes, daily enrichment status.
+- `top_picks`: UI-ready pick cards with identity, scores, risk, topic, daily quality, and post-analysis fields.
+- `evaluation`: optional T+N evaluation summary and evaluated pick cards when `--evaluate` is used.
+
 ## DSA readiness
 
 DSA is optional. Core screening must continue when DSA is unavailable.

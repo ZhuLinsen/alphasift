@@ -62,6 +62,7 @@ alphasift screen balanced_alpha --industry-map-file data/industry_map.csv
 # 保存运行，之后用最新快照做 T+N 评估
 alphasift screen dual_low --no-llm --save-run
 alphasift runs
+alphasift report <run_id> --output data/reports/dual_low.md
 alphasift evaluate <run_id> --explain
 alphasift evaluate-batch --limit 20 --explain
 # 如需更完整复盘，可额外抓取日 K 路径，输出最大回撤/最大浮盈

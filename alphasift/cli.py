@@ -24,9 +24,16 @@ from alphasift.hotspot import (
 )
 from alphasift.industry import fetch_akshare_board_map, save_industry_map
 from alphasift.pipeline import screen
+from alphasift.report import (
+    build_run_report_payload,
+    render_run_report_markdown,
+    report_payload_to_json,
+    write_run_report,
+)
 from alphasift.store import (
     evaluation_result_to_jsonl,
     list_saved_runs,
+    load_screen_result,
     save_evaluation_result,
     save_screen_result,
     screen_result_to_jsonl,
@@ -200,6 +207,19 @@ def main():
     # runs
     rp = sub.add_parser("runs", help="列出已保存的运行")
     rp.add_argument("--limit", type=int, default=20)
+
+    # report
+    rep = sub.add_parser("report", help="把已保存运行生成为 Markdown/JSON 报告")
+    rep.add_argument("run", help="run_id 或保存的 run JSON 文件路径")
+    rep.add_argument("--output", default=None, help="写出报告路径；默认打印到 stdout")
+    rep.add_argument("--json", action="store_true", help="输出 UI/agent 可消费的 JSON payload")
+    rep.add_argument("--max-picks", type=int, default=10, help="报告中最多展示前 N 只候选")
+    rep.add_argument("--evaluate", action="store_true", help="生成报告前附带最新 T+N 评估")
+    rep.add_argument("--cost-bps", type=float, default=None, help="评估收益扣除的往返成本，单位 bps")
+    rep.add_argument("--follow-through-pct", type=float, default=None, help="突破延续判定的最低收益百分比")
+    rep.add_argument("--failed-breakout-pct", type=float, default=None, help="突破失败判定的最高收益百分比")
+    rep.add_argument("--with-price-path", action="store_true", help="附带评估时抓取日 K 路径")
+    rep.add_argument("--price-path-lookback-days", type=int, default=None, help="价格路径日 K 回看天数")
 
     # industry-cache
     icp = sub.add_parser("industry-cache", help="刷新行业/概念映射缓存文件")
@@ -434,6 +454,35 @@ def main():
                 f"{item['run_id']:<14} {item['strategy']:<20} "
                 f"{item['created_at']:<26} picks={item['picks']} {item['path']}"
             )
+
+    elif args.command == "report":
+        config = Config.from_env()
+        try:
+            run = load_screen_result(args.run, data_dir=config.data_dir)
+        except FileNotFoundError as exc:
+            parser.error(str(exc))
+        evaluation = None
+        if args.evaluate:
+            evaluation = evaluate_saved_run(
+                args.run,
+                config=config,
+                cost_bps=args.cost_bps,
+                follow_through_pct=args.follow_through_pct,
+                failed_breakout_pct=args.failed_breakout_pct,
+                with_price_path=args.with_price_path or None,
+                price_path_lookback_days=args.price_path_lookback_days,
+            )
+        payload = build_run_report_payload(
+            run,
+            evaluation=evaluation,
+            max_picks=args.max_picks,
+        )
+        if args.output:
+            write_run_report(args.output, payload, json_output=args.json)
+        elif args.json:
+            print(report_payload_to_json(payload))
+        else:
+            print(render_run_report_markdown(payload), end="")
 
     elif args.command == "industry-cache":
         mapping, notes = fetch_akshare_board_map(max_boards=args.max_boards)

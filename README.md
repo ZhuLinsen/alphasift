@@ -65,6 +65,10 @@ alphasift screen dual_low --no-post-analysis
 
 # Audit project and strategy configuration
 alphasift audit
+
+# Save a run and generate a Markdown review report
+alphasift screen dual_low --no-llm --save-run
+alphasift report <run_id> --output data/reports/dual_low.md
 ```
 
 Example output shape:

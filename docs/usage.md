@@ -105,6 +105,15 @@ alphasift screen balanced_alpha --industry-map-file data/industry_map.csv
 alphasift evaluate-batch --limit 20 --explain
 ```
 
+为保存的运行生成复盘报告：
+
+```bash
+alphasift report <run_id> --output data/reports/<run_id>.md
+alphasift report <run_id> --json --output data/reports/<run_id>.json
+```
+
+默认报告是 Markdown，适合直接进入人工复盘、通知或日报；`--json` 输出稳定的 `RunReport` payload，给 Web UI、agent 或外部服务消费。加 `--evaluate` 会在报告中附带最新 T+N 评估摘要。
+
 评估时额外抓取日 K 路径，输出最大回撤和最大浮盈：
 
 ```bash
