@@ -10,6 +10,7 @@ from alphasift.strategy import (
     load_all_strategies,
     load_strategy,
     match_strategies,
+    strategy_facets,
 )
 
 
@@ -140,6 +141,41 @@ def test_match_strategies_ranks_partial_matches():
     assert matches[0]["score"] > matches[1]["score"]
     assert "data_requirement:daily_k" in matches[0]["matched"]
     assert "data_requirement:daily_k" in matches[1]["missing"]
+
+
+def test_strategy_facets_are_ui_filter_ready():
+    payload = strategy_facets(Path("strategies"))
+
+    assert payload["schema_version"] == 1
+    assert payload["strategy_count"] >= 9
+    facets = {
+        item["name"]: item
+        for item in payload["facets"]
+    }
+    risk_values = {
+        item["value"]: item
+        for item in facets["risk_profile"]["values"]
+    }
+    data_values = {
+        item["value"]: item
+        for item in facets["data_requirement"]["values"]
+    }
+    daily_values = {
+        item["value"]: item
+        for item in facets["daily_required"]["values"]
+    }
+    daily_fields = {
+        item["value"]: item
+        for item in facets["required_daily_field"]["values"]
+    }
+
+    assert facets["risk_profile"]["query_param"] == "risk_profile"
+    assert facets["data_requirement"]["multi"] is True
+    assert "low_volatility_quality" in risk_values["defensive"]["strategies"]
+    assert "volume_breakout" in data_values["daily_k"]["strategies"]
+    assert "low_volatility_quality" in daily_values["true"]["strategies"]
+    assert facets["required_daily_field"]["filterable"] is False
+    assert "volume_breakout" in daily_fields["signal_score"]["strategies"]
 
 
 def test_compare_strategies_reports_style_data_and_weight_diffs():

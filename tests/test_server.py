@@ -26,6 +26,7 @@ def test_api_health_and_index(tmp_path):
     assert status == 200
     assert "/overview" in index["endpoints"]
     assert "/result-schema" in index["endpoints"]
+    assert "/strategy-facets" in index["endpoints"]
     assert "/strategy-templates" in index["endpoints"]
     assert health_status == 200
     assert health == {"status": "ok", "service": "alphasift", "schema_version": 1}
@@ -114,6 +115,25 @@ def test_api_strategies_supports_matching_query(tmp_path):
     assert payload["schema_version"] == 1
     assert payload["strategies"][0]["name"] == "volume_breakout"
     assert "data_requirement:daily_k" in payload["strategies"][0]["matched"]
+
+
+def test_api_strategy_facets_returns_filter_values(tmp_path):
+    status, payload = build_api_response(_config(tmp_path), "/strategy-facets")
+
+    assert status == 200
+    assert payload["schema_version"] == 1
+    facets = {
+        item["name"]: item
+        for item in payload["facets"]
+    }
+    data_values = {
+        item["value"]: item
+        for item in facets["data_requirement"]["values"]
+    }
+    assert facets["risk_profile"]["query_param"] == "risk_profile"
+    assert facets["tag"]["multi"] is True
+    assert "daily_k" in data_values
+    assert "volume_breakout" in data_values["daily_k"]["strategies"]
 
 
 def test_api_result_schema_returns_machine_readable_contract(tmp_path):

@@ -315,6 +315,137 @@ def list_strategies(strategies_dir: Path | None = None) -> list[StrategyInfo]:
     return infos
 
 
+def strategy_facets(strategies_dir: Path | None = None) -> dict[str, object]:
+    """Return UI-ready filter facets for the strategy catalog."""
+    return strategy_facets_from_infos(list_strategies(strategies_dir))
+
+
+def strategy_facets_from_infos(strategies: list[StrategyInfo]) -> dict[str, object]:
+    """Build strategy catalog facets from already loaded strategy metadata."""
+    return {
+        "schema_version": 1,
+        "strategy_count": len(strategies),
+        "daily_strategy_count": sum(1 for item in strategies if item.requires_daily_features),
+        "facets": [
+            _strategy_facet(
+                strategies,
+                name="category",
+                query_param="category",
+                multi=False,
+                values_fn=lambda item: [item.category],
+            ),
+            _strategy_facet(
+                strategies,
+                name="risk_profile",
+                query_param="risk_profile",
+                multi=False,
+                values_fn=lambda item: [str(item.style.get("risk_profile") or "")],
+            ),
+            _strategy_facet(
+                strategies,
+                name="holding_period",
+                query_param="holding_period",
+                multi=False,
+                values_fn=lambda item: [str(item.style.get("holding_period") or "")],
+            ),
+            _strategy_facet(
+                strategies,
+                name="execution_style",
+                query_param="execution_style",
+                multi=False,
+                values_fn=lambda item: [str(item.style.get("execution_style") or "")],
+            ),
+            _strategy_facet(
+                strategies,
+                name="capital_profile",
+                query_param="capital_profile",
+                multi=False,
+                values_fn=lambda item: [str(item.style.get("capital_profile") or "")],
+            ),
+            _strategy_facet(
+                strategies,
+                name="market_regime",
+                query_param="market_regime",
+                multi=True,
+                values_fn=lambda item: item.style.get("market_regime", []),
+            ),
+            _strategy_facet(
+                strategies,
+                name="data_requirement",
+                query_param="data_requirement",
+                multi=True,
+                values_fn=lambda item: item.data_requirements,
+            ),
+            _strategy_facet(
+                strategies,
+                name="tag",
+                query_param="tag",
+                multi=True,
+                values_fn=lambda item: item.tags,
+            ),
+            _strategy_facet(
+                strategies,
+                name="daily_required",
+                query_param="daily_required",
+                multi=False,
+                values_fn=lambda item: [str(bool(item.requires_daily_features)).lower()],
+            ),
+            _strategy_facet(
+                strategies,
+                name="required_snapshot_field",
+                query_param="",
+                multi=True,
+                filterable=False,
+                values_fn=lambda item: item.required_snapshot_fields,
+            ),
+            _strategy_facet(
+                strategies,
+                name="required_daily_field",
+                query_param="",
+                multi=True,
+                filterable=False,
+                values_fn=lambda item: item.required_daily_fields,
+            ),
+        ],
+    }
+
+
+def _strategy_facet(
+    strategies: list[StrategyInfo],
+    *,
+    name: str,
+    query_param: str,
+    multi: bool,
+    values_fn,
+    filterable: bool = True,
+) -> dict[str, object]:
+    groups: dict[str, list[str]] = {}
+    for item in strategies:
+        raw_values = values_fn(item) or []
+        if isinstance(raw_values, str):
+            raw_values = [raw_values]
+        for raw_value in raw_values:
+            value = str(raw_value).strip()
+            if value:
+                groups.setdefault(value, []).append(item.name)
+    values = [
+        {
+            "value": value,
+            "count": len(strategy_names),
+            "strategies": sorted(strategy_names),
+        }
+        for value, strategy_names in groups.items()
+    ]
+    values.sort(key=lambda item: (-int(item["count"]), str(item["value"])))
+    return {
+        "name": name,
+        "query_param": query_param,
+        "filterable": bool(filterable),
+        "multi": bool(multi),
+        "values": values,
+    }
+
+
 def match_strategies(
     strategies_dir: Path | None = None,
     *,

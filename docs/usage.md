@@ -25,7 +25,7 @@ alphasift evaluate <run_id> --explain
 
 ## UI/agent 总览
 
-`overview` 会把策略分组、策略推荐、数据源健康、数据新鲜度/缓存状态、策略字段覆盖、最近运行和 next actions 放到同一份 payload，适合 Web UI、通知助手或 agent 首屏使用：
+`overview` 会把策略分组、策略筛选 facets、策略推荐、数据源健康、数据新鲜度/缓存状态、策略字段覆盖、最近运行和 next actions 放到同一份 payload，适合 Web UI、通知助手或 agent 首屏使用：
 
 ```bash
 alphasift overview --explain
@@ -35,16 +35,17 @@ alphasift serve --host 127.0.0.1 --port 8765
 
 默认不会发起网络请求，只读取当前进程的 source-health 和本地 run 索引；需要真实数据源 smoke check 时加 `--live-data-check`。
 
-`alphasift serve` 会启动只读本地 JSON API，方便 UI、agent 或外部编排层直接消费稳定 payload。默认监听 `127.0.0.1:8765`，可用端点包括 `/health`、`/result-schema`、`/overview`、`/strategies`、`/strategy-templates`、`/strategy-template?name=<template_name>`、`/runs`、`/report?run=<run_id>` 和 `/doctor/data-sources`。HTTP API 默认也不做 live 数据源检查；需要时给 `/overview?live=true` 或 `/doctor/data-sources?live=true`。
+`alphasift serve` 会启动只读本地 JSON API，方便 UI、agent 或外部编排层直接消费稳定 payload。默认监听 `127.0.0.1:8765`，可用端点包括 `/health`、`/result-schema`、`/overview`、`/strategies`、`/strategy-facets`、`/strategy-templates`、`/strategy-template?name=<template_name>`、`/runs`、`/report?run=<run_id>` 和 `/doctor/data-sources`。HTTP API 默认也不做 live 数据源检查；需要时给 `/overview?live=true` 或 `/doctor/data-sources?live=true`。
 
 策略目录也可以输出更完整的能力描述，方便 UI、agent 或外部系统选择合适策略：
 
 ```bash
 alphasift strategies --explain
 alphasift strategies --json
+curl "http://127.0.0.1:8765/strategy-facets"
 ```
 
-结构化输出包含策略分类、标签、风格属性、数据依赖、是否需要日 K、必需 snapshot/daily 字段、活跃 hard filters、因子权重和 profile 覆盖项。
+结构化输出包含策略分类、标签、风格属性、数据依赖、是否需要日 K、必需 snapshot/daily 字段、活跃 hard filters、因子权重和 profile 覆盖项。`/strategy-facets` 会把这些属性汇总成可直接驱动筛选控件的 `value/count/strategies` 列表，并标出对应 query 参数。
 
 也可以直接按风格/数据依赖匹配策略，给命令行、Web UI 或 agent 做策略选择：
 

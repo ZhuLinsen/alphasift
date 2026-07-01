@@ -113,6 +113,7 @@ Stable top-level fields:
 
 - `summary`: strategy counts, daily-strategy count, data-source status, strategy-match count, recent-run count, live-check flag.
 - `strategy_groups`: strategy names grouped by category, risk profile, holding period, and data requirement.
+- `strategy_facets`: UI-ready strategy filter facets with values, counts, query params, and backing strategy names.
 - `strategy_matches`: optional ranked strategy recommendations with `score`, `matched`, and `missing`.
 - `data_sources`: compact data-source doctor subset with `health_summary`, `freshness_summary`, `snapshot_quality`, strategy requirements, strategy coverage, and recommendations.
 - `recent_runs`: lightweight saved-run metadata from `alphasift runs --json`.
@@ -126,6 +127,7 @@ Stable top-level fields:
 - `GET /result-schema`: same shape as `screen_result_schema()`; UI-ready field groups and non-goals for `ScreenResult` consumers.
 - `GET /overview`: same shape as `alphasift overview --json`; supports query params such as `strategy`, `runs_limit`, `live`, `risk_profile`, `holding_period`, `data_requirement`, and `match_limit`.
 - `GET /strategies`: strategy catalog, or ranked matches when style/data query params are present.
+- `GET /strategy-facets`: strategy filter facets for UI controls, including category, tag, style, data requirement, daily requirement, and required-field dimensions.
 - `GET /strategy-templates`: lightweight strategy authoring template catalog without YAML bodies.
 - `GET /strategy-template?name=<template_name>`: one strategy authoring template; supports `include_yaml=false`.
 - `GET /runs`: saved-run metadata with optional `strategy` and `limit`.

@@ -10,7 +10,7 @@ from typing import Any
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
 from alphasift.store import list_saved_runs
-from alphasift.strategy import list_strategies, match_strategies
+from alphasift.strategy import list_strategies, match_strategies, strategy_facets_from_infos
 
 
 def build_overview(
@@ -57,6 +57,7 @@ def build_overview(
             "strategy_filter": strategy_name or "",
         },
         "strategy_groups": _strategy_groups(strategies),
+        "strategy_facets": strategy_facets_from_infos(strategies),
         "strategy_matches": strategy_matches,
         "data_sources": {
             "status": doctor.get("status"),

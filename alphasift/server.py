@@ -15,7 +15,7 @@ from alphasift.overview import build_overview
 from alphasift.report import build_run_report_payload
 from alphasift.result_schema import screen_result_schema
 from alphasift.store import list_saved_runs, load_screen_result
-from alphasift.strategy import list_strategies, match_strategies
+from alphasift.strategy import list_strategies, match_strategies, strategy_facets
 from alphasift.strategy_templates import get_strategy_template, list_strategy_templates
 
 
@@ -57,6 +57,8 @@ def build_api_response(
             "schema_version": 1,
             "strategies": [asdict(item) for item in list_strategies(config.strategies_dir)],
         }
+    if path == "/strategy-facets":
+        return 200, strategy_facets(config.strategies_dir)
     if path == "/strategy-templates":
         return 200, {"schema_version": 1, "templates": list_strategy_templates()}
     if path == "/strategy-template":
@@ -169,6 +171,7 @@ def _index_payload() -> dict[str, Any]:
             "/result-schema",
             "/overview",
             "/strategies",
+            "/strategy-facets",
             "/strategy-templates",
             "/strategy-template",
             "/runs",

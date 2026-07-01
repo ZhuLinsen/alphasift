@@ -42,7 +42,16 @@ def test_build_overview_groups_strategies_and_recent_runs(tmp_path):
         item["name"]: item
         for item in payload["strategy_groups"]["by_risk_profile"]
     }
+    facets = {
+        item["name"]: item
+        for item in payload["strategy_facets"]["facets"]
+    }
+    daily_requirements = {
+        item["value"]: item
+        for item in facets["data_requirement"]["values"]
+    }
     assert "dual_low" in by_risk["defensive"]["strategies"]
+    assert "volume_breakout" in daily_requirements["daily_k"]["strategies"]
     assert any("live-data-check" in item for item in payload["next_actions"])
 
 
