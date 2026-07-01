@@ -909,6 +909,9 @@ def _format_overview_explain(payload: dict) -> str:
         lines.append(_format_source_health_summary("daily_health", health["daily"]))
     if freshness:
         lines.append(_format_freshness_summary(freshness))
+    source_history = payload.get("data_source_history") or {}
+    if source_history.get("run_count"):
+        lines.append(_format_data_source_history_summary(source_history))
     groups = payload.get("strategy_groups", {}) or {}
     for title, key in (
         ("categories", "by_category"),
@@ -947,6 +950,20 @@ def _format_overview_groups(groups: list[dict[str, object]], *, limit: int = 6) 
     if len(groups) > limit:
         text += f",+{len(groups) - limit}"
     return text
+
+
+def _format_data_source_history_summary(summary: dict) -> str:
+    values = summary.get("summary") or {}
+    watchlist = summary.get("watchlist") or []
+    return (
+        "source_history="
+        f"runs={summary.get('run_count', 0)} "
+        f"sources={summary.get('source_count', 0)} "
+        f"source_error_rate={values.get('source_error_rate', 0.0)} "
+        f"degradation_rate={values.get('degradation_rate', 0.0)} "
+        f"fallback_rate={values.get('fallback_rate', 0.0)} "
+        f"watchlist={len(watchlist)}"
+    )
 
 
 def _format_strategies_explain(strategies) -> str:

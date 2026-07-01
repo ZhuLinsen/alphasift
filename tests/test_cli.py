@@ -360,6 +360,7 @@ def test_cli_overview_json_combines_catalog_health_and_runs(monkeypatch, tmp_pat
     assert payload["summary"]["strategy_match_count"] == 1
     assert payload["strategy_matches"][0]["name"] == "volume_breakout"
     assert payload["recent_runs"][0]["run_id"] == "run_breakout"
+    assert payload["data_source_history"]["snapshot_sources"][0]["snapshot_source"] == "sina"
     assert "health_summary" in payload["data_sources"]
     assert payload["data_sources"]["freshness_summary"]["snapshot"]["data_state"] == "not_checked"
 

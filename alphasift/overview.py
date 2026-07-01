@@ -10,6 +10,7 @@ from typing import Any
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
 from alphasift.run_history import build_strategy_run_summary
+from alphasift.source_history import build_data_source_history
 from alphasift.store import list_saved_runs
 from alphasift.strategy import list_strategies, match_strategies, strategy_facets_from_infos
 from alphasift.strategy_cards import build_strategy_cards_from_parts
@@ -38,6 +39,11 @@ def build_overview(
         strategy=strategy_name,
     )
     run_history = build_strategy_run_summary(
+        data_dir=config.data_dir,
+        limit=max(int(runs_limit), 20),
+        strategy=strategy_name,
+    )
+    source_history = build_data_source_history(
         data_dir=config.data_dir,
         limit=max(int(runs_limit), 20),
         strategy=strategy_name,
@@ -90,6 +96,7 @@ def build_overview(
             "recommendations": doctor.get("recommendations", []),
         },
         "run_history_summary": run_history,
+        "data_source_history": source_history,
         "recent_runs": recent_runs,
         "next_actions": _next_actions(
             doctor=doctor,

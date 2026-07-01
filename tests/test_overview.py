@@ -37,6 +37,8 @@ def test_build_overview_groups_strategies_and_recent_runs(tmp_path):
     assert payload["recent_runs"][0]["run_id"] == "run_dual"
     assert payload["run_history_summary"]["run_count"] == 1
     assert payload["run_history_summary"]["strategies"][0]["strategy"] == "dual_low"
+    assert payload["data_source_history"]["run_count"] == 1
+    assert payload["data_source_history"]["snapshot_sources"][0]["snapshot_source"] == "sina"
     assert payload["strategy_cards"]["summary"]["strategy_count"] >= 10
     cards = {
         item["name"]: item

@@ -32,6 +32,7 @@ def test_api_health_and_index(tmp_path):
     assert "/strategy-cards" in index["endpoints"]
     assert "/strategy-readiness" in index["endpoints"]
     assert "/strategy-run-summary" in index["endpoints"]
+    assert "/data-source-history" in index["endpoints"]
     assert "/strategy-templates" in index["endpoints"]
     assert health_status == 200
     assert health == {"status": "ok", "service": "alphasift", "schema_version": 1}
@@ -105,6 +106,46 @@ def test_api_strategy_run_summary_returns_saved_run_rollup(tmp_path):
     assert payload["strategies"][0]["strategy"] == "dual_low"
     assert payload["strategies"][0]["latest_run_id"] == "run_b"
     assert payload["strategies"][0]["runs_with_source_errors"] == 1
+
+
+def test_api_data_source_history_returns_saved_run_source_rollup(tmp_path):
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="run_source_a",
+            created_at="2026-04-01T09:30:00",
+            snapshot_source="sina",
+            source_errors=["source: timeout"],
+            picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80)],
+        ),
+        data_dir=tmp_path,
+    )
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="run_source_b",
+            created_at="2026-04-02T09:30:00",
+            snapshot_source="efinance",
+            picks=[Pick(rank=1, code="000002", name="万科A", final_score=85, screen_score=85)],
+        ),
+        data_dir=tmp_path,
+    )
+
+    status, payload = build_api_response(
+        _config(tmp_path),
+        "/data-source-history",
+        query="strategy=dual_low&limit=5",
+    )
+
+    assert status == 200
+    assert payload["schema_version"] == 1
+    assert payload["strategy_filter"] == "dual_low"
+    assert payload["run_count"] == 2
+    by_source = {item["snapshot_source"]: item for item in payload["snapshot_sources"]}
+    assert by_source["sina"]["source_error_rate"] == 1.0
+    assert by_source["efinance"]["source_error_rate"] == 0.0
 
 
 def test_api_report_returns_run_report_payload(tmp_path):

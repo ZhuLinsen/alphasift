@@ -1,0 +1,178 @@
+# -*- coding: utf-8 -*-
+"""Saved-run data-source reliability summaries for UI and agents."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from pathlib import Path
+
+from alphasift.store import list_saved_runs
+
+
+def build_data_source_history(
+    *,
+    data_dir: Path,
+    limit: int = 100,
+    strategy: str | None = None,
+) -> dict[str, object]:
+    """Summarize recent saved-run source reliability without loading full runs."""
+    runs = list_saved_runs(data_dir=data_dir, limit=limit, strategy=strategy)
+    source_rows = [_source_summary(items) for items in _group_runs_by_snapshot_source(runs).values()]
+    source_rows.sort(
+        key=lambda item: (
+            float(item.get("source_error_rate") or 0.0) + float(item.get("degradation_rate") or 0.0),
+            str(item.get("latest_created_at") or ""),
+            str(item.get("snapshot_source") or ""),
+        ),
+        reverse=True,
+    )
+    return {
+        "schema_version": 1,
+        "run_count": len(runs),
+        "source_count": len(source_rows),
+        "limit": int(limit),
+        "strategy_filter": strategy or "",
+        "summary": _history_summary(runs),
+        "snapshot_sources": source_rows,
+        "watchlist": _watchlist(source_rows),
+    }
+
+
+def _group_runs_by_snapshot_source(
+    runs: list[dict[str, object]],
+) -> dict[str, list[dict[str, object]]]:
+    groups: dict[str, list[dict[str, object]]] = {}
+    for item in runs:
+        source_name = str(item.get("snapshot_source") or "unknown")
+        groups.setdefault(source_name, []).append(item)
+    return groups
+
+
+def _source_summary(runs: list[dict[str, object]]) -> dict[str, object]:
+    ordered = sorted(runs, key=_run_sort_key, reverse=True)
+    latest = ordered[0] if ordered else {}
+    source_error_runs = [
+        item for item in ordered if _int_value(item.get("source_error_count")) > 0
+    ]
+    degraded_runs = [
+        item for item in ordered if _int_value(item.get("degradation_count")) > 0
+    ]
+    return {
+        "snapshot_source": str(latest.get("snapshot_source") or "unknown"),
+        "run_count": len(ordered),
+        "strategy_count": len(_unique_values(item.get("strategy") for item in ordered)),
+        "strategies": _unique_values(item.get("strategy") for item in ordered),
+        "latest_run_id": str(latest.get("run_id") or ""),
+        "latest_created_at": str(latest.get("created_at") or ""),
+        "total_picks": sum(_int_value(item.get("picks")) for item in ordered),
+        "average_picks": _average(_int_value(item.get("picks")) for item in ordered),
+        "runs_with_source_errors": len(source_error_runs),
+        "source_error_count": sum(_int_value(item.get("source_error_count")) for item in ordered),
+        "source_error_rate": _rate(len(source_error_runs), len(ordered)),
+        "runs_with_degradation": len(degraded_runs),
+        "degradation_count": sum(_int_value(item.get("degradation_count")) for item in ordered),
+        "degradation_rate": _rate(len(degraded_runs), len(ordered)),
+        "fallback_run_count": sum(
+            1 for item in ordered if str(item.get("snapshot_source") or "") == "last_good_cache"
+        ),
+        "daily_enriched_runs": sum(1 for item in ordered if bool(item.get("daily_enriched"))),
+        "daily_enrich_count": sum(_int_value(item.get("daily_enrich_count")) for item in ordered),
+        "recent_runs": [_compact_run(item) for item in ordered[:5]],
+    }
+
+
+def _history_summary(runs: list[dict[str, object]]) -> dict[str, object]:
+    error_runs = [item for item in runs if _int_value(item.get("source_error_count")) > 0]
+    degraded_runs = [item for item in runs if _int_value(item.get("degradation_count")) > 0]
+    fallback_runs = [
+        item for item in runs if str(item.get("snapshot_source") or "") == "last_good_cache"
+    ]
+    return {
+        "runs_with_source_errors": len(error_runs),
+        "source_error_rate": _rate(len(error_runs), len(runs)),
+        "runs_with_degradation": len(degraded_runs),
+        "degradation_rate": _rate(len(degraded_runs), len(runs)),
+        "fallback_run_count": len(fallback_runs),
+        "fallback_rate": _rate(len(fallback_runs), len(runs)),
+        "daily_enriched_runs": sum(1 for item in runs if bool(item.get("daily_enriched"))),
+        "snapshot_sources": _unique_values(item.get("snapshot_source") for item in runs),
+        "latest_run": _compact_run(max(runs, key=_run_sort_key)) if runs else {},
+    }
+
+
+def _watchlist(source_rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    rows = []
+    for item in source_rows:
+        if (
+            float(item.get("source_error_rate") or 0.0) > 0
+            or float(item.get("degradation_rate") or 0.0) > 0
+            or _int_value(item.get("fallback_run_count")) > 0
+        ):
+            rows.append(
+                {
+                    "snapshot_source": item.get("snapshot_source", ""),
+                    "run_count": item.get("run_count", 0),
+                    "source_error_rate": item.get("source_error_rate", 0.0),
+                    "degradation_rate": item.get("degradation_rate", 0.0),
+                    "fallback_run_count": item.get("fallback_run_count", 0),
+                    "latest_run_id": item.get("latest_run_id", ""),
+                    "strategies": item.get("strategies", []),
+                }
+            )
+    rows.sort(
+        key=lambda item: (
+            float(item.get("source_error_rate") or 0.0) + float(item.get("degradation_rate") or 0.0),
+            _int_value(item.get("fallback_run_count")),
+            str(item.get("snapshot_source") or ""),
+        ),
+        reverse=True,
+    )
+    return rows
+
+
+def _compact_run(item: dict[str, object]) -> dict[str, object]:
+    return {
+        "run_id": str(item.get("run_id") or ""),
+        "strategy": str(item.get("strategy") or ""),
+        "created_at": str(item.get("created_at") or ""),
+        "picks": _int_value(item.get("picks")),
+        "snapshot_source": str(item.get("snapshot_source") or ""),
+        "source_error_count": _int_value(item.get("source_error_count")),
+        "degradation_count": _int_value(item.get("degradation_count")),
+        "report_path": str(item.get("report_path") or ""),
+    }
+
+
+def _unique_values(values) -> list[str]:
+    return list(dict.fromkeys(str(value) for value in values if str(value or "")))
+
+
+def _average(values) -> float | None:
+    items = [float(value) for value in values]
+    if not items:
+        return None
+    return round(sum(items) / len(items), 4)
+
+
+def _rate(count: int, total: int) -> float:
+    if total <= 0:
+        return 0.0
+    return round(float(count) / float(total), 4)
+
+
+def _int_value(value: object) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _run_sort_key(item: dict[str, object]) -> tuple[datetime, str]:
+    return (_parse_created_at(str(item.get("created_at") or "")), str(item.get("run_id") or ""))
+
+
+def _parse_created_at(value: str) -> datetime:
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return datetime.min

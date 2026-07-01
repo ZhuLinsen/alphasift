@@ -82,6 +82,13 @@ Stable fields include:
 - `strategies`: one row per strategy with run count, latest run/report, total and average picks, snapshot sources, source-error/degradation counts, LLM/daily-enrichment coverage, post-analyzers, and recent compact run cards.
 - Query params: `strategy` filters to one strategy and `limit` caps how many recent run metadata records are scanned.
 
+`GET /data-source-history` summarizes the same sidecar metadata by snapshot source, without live checks:
+
+- `summary`: recent run count, source-error/degradation/fallback rates, daily-enriched run count, source names, and latest compact run.
+- `snapshot_sources`: one row per snapshot source with run count, strategy coverage, latest run, total/average picks, source-error and degradation rates, fallback count, daily enrichment counts, and recent compact run cards.
+- `watchlist`: sources with any error, degradation, or last-good fallback usage, sorted by impact.
+- Query params: `strategy` filters to one strategy and `limit` caps scanned metadata records.
+
 ## Evaluation failure review payload
 
 `alphasift evaluate-batch --json` and `alphasift evaluate-strategies --json` include `failure_review` for strategy iteration screens:
@@ -128,6 +135,7 @@ Stable top-level fields:
 - `data_sources`: compact data-source doctor subset with `health_summary`, `freshness_summary`, `snapshot_quality`, strategy requirements, strategy coverage, and recommendations.
 - `data_sources.strategy_readiness_summary`: compact readiness rollup for strategy availability panels.
 - `run_history_summary`: saved-run metadata rollup by strategy for history dashboards.
+- `data_source_history`: saved-run metadata rollup by snapshot source for data-stability dashboards.
 - `recent_runs`: lightweight saved-run metadata from `alphasift runs --json`.
 - `next_actions`: UI-ready operational next steps.
 
@@ -145,6 +153,7 @@ Stable top-level fields:
 - `GET /strategy-cards`: joined strategy cards for dashboards; supports `strategy`, `limit`, and `live`.
 - `GET /strategy-readiness`: compact strategy readiness payload; defaults to all strategies and no live data checks, supports `strategy`, `live`, `snapshot_source`, `daily_source`, `daily_code`, and `no_daily`.
 - `GET /strategy-run-summary`: saved-run metadata rollup by strategy; supports `strategy` and `limit`.
+- `GET /data-source-history`: saved-run metadata rollup by snapshot source; supports `strategy` and `limit`.
 - `GET /strategy-templates`: lightweight strategy authoring template catalog without YAML bodies.
 - `GET /strategy-template?name=<template_name>`: one strategy authoring template; supports `include_yaml=false`.
 - `GET /runs`: saved-run metadata with optional `strategy` and `limit`.
