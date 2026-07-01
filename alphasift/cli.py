@@ -324,6 +324,7 @@ def main():
     dsp.add_argument("--daily-code", default="000001", help="daily K smoke test 股票代码，默认 000001")
     dsp.add_argument("--strategy", default=None, help="按指定策略的必需 snapshot/daily 字段做数据源预检")
     dsp.add_argument("--all-strategies", action="store_true", help="按所有策略的字段并集做数据源覆盖矩阵")
+    dsp.add_argument("--compare-snapshot-sources", action="store_true", help="逐个检查 snapshot 源字段覆盖和代码交集")
     dsp.add_argument("--no-live", action="store_true", help="只输出配置和内存 health，不发起网络取数")
     dsp.add_argument("--no-daily", action="store_true", help="跳过 daily K smoke test")
     dsp.add_argument("--output", default=None, help="额外写出 JSON 诊断报告")
@@ -771,6 +772,7 @@ def main():
                     check_daily=not args.no_daily,
                     strategy_name=args.strategy,
                     all_strategies=args.all_strategies,
+                    compare_snapshot_sources=args.compare_snapshot_sources,
                 )
             except ValueError as exc:
                 parser.error(str(exc))
@@ -1752,6 +1754,9 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
     freshness = result.get("freshness_summary") or {}
     if freshness:
         lines.append(_format_freshness_summary(freshness))
+    reconciliation = result.get("snapshot_reconciliation") or {}
+    if reconciliation:
+        lines.extend(_format_snapshot_reconciliation_explain(reconciliation))
     if daily:
         lines.append(
             "daily "
@@ -1801,6 +1806,38 @@ def _format_source_health_summary(label: str, summary: dict) -> str:
         f"never_seen={_join_or_dash(summary.get('never_seen_sources') or [])} "
         f"errors={summary.get('error_count', 0)}"
     )
+
+
+def _format_snapshot_reconciliation_explain(reconciliation: dict) -> list[str]:
+    summary = reconciliation.get("summary", {}) or {}
+    lines = [
+        (
+            "snapshot_reconciliation "
+            f"status={reconciliation.get('status')} "
+            f"baseline={reconciliation.get('baseline_source') or '-'} "
+            f"sources={summary.get('source_count', 0)} "
+            f"ok={summary.get('ok_source_count', 0)} "
+            f"degraded={summary.get('degraded_source_count', 0)} "
+            f"failed={summary.get('failed_source_count', 0)}"
+        )
+    ]
+    sources = reconciliation.get("sources", []) or []
+    if sources:
+        lines.append("snapshot_sources source status rows overlap missing quality errors")
+        for item in sources:
+            missing = _join_or_dash(item.get("missing_fields") or [])
+            errors = _join_or_dash(item.get("errors") or [])
+            overlap = item.get("overlap_with_baseline_ratio")
+            overlap_text = "-" if overlap is None else f"{float(overlap):.2f}"
+            lines.append(
+                f"{str(item.get('source') or ''):<16} {str(item.get('status') or ''):<9} "
+                f"{item.get('rows', 0)!s:<6} {overlap_text:<7} "
+                f"{missing:<24} {str(item.get('quality_status') or '-'):<8} {errors}"
+            )
+    warnings = summary.get("warnings", []) or []
+    if warnings:
+        lines.append("snapshot_reconciliation_warnings=" + " | ".join(str(item) for item in warnings))
+    return lines
 
 
 def _format_freshness_summary(summary: dict) -> str:

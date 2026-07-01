@@ -13,6 +13,7 @@ import pandas as pd
 from alphasift.config import Config
 from alphasift.daily import compute_daily_features, daily_source_health_snapshot, fetch_daily_history
 from alphasift.snapshot import (
+    fetch_cn_snapshot,
     fetch_snapshot_with_fallback,
     snapshot_source_health_snapshot,
 )
@@ -50,6 +51,7 @@ class DataSourcesDoctorResult:
     strategy_coverage: list[dict[str, Any]] = field(default_factory=list)
     health_summary: dict[str, Any] = field(default_factory=dict)
     freshness_summary: dict[str, Any] = field(default_factory=dict)
+    snapshot_reconciliation: dict[str, Any] = field(default_factory=dict)
     recommendations: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -71,6 +73,7 @@ def doctor_data_sources(
     check_daily: bool = True,
     strategy_name: str | None = None,
     all_strategies: bool = False,
+    compare_snapshot_sources: bool = False,
 ) -> DataSourcesDoctorResult:
     """Check snapshot and daily K-line source health without exposing secrets."""
     sources = list(snapshot_sources or config.snapshot_source_priority)
@@ -105,6 +108,12 @@ def doctor_data_sources(
     strategy_coverage = _build_strategy_coverage(coverage_requirements, snapshot, daily)
     health_summary = _build_health_summary(snapshot, daily)
     freshness_summary = _build_freshness_summary(snapshot, daily)
+    snapshot_reconciliation = _snapshot_source_reconciliation(
+        sources,
+        required_fields=snapshot_required_fields,
+        run_live=run_live,
+        enabled=compare_snapshot_sources,
+    )
     recommendations = _build_recommendations(snapshot, daily)
     statuses = [snapshot.status, daily.status if daily is not None else "skipped"]
     status = _overall_status(statuses)
@@ -126,6 +135,7 @@ def doctor_data_sources(
         strategy_coverage=strategy_coverage,
         health_summary=health_summary,
         freshness_summary=freshness_summary,
+        snapshot_reconciliation=snapshot_reconciliation,
         recommendations=recommendations,
     )
 
@@ -399,6 +409,150 @@ def _snapshot_quality_fields(df, required_fields: list[str]) -> list[str]:
     fields.extend(required_fields)
     fields.extend(field for field in _SNAPSHOT_DEFAULT_QUALITY_FIELDS if field in df.columns)
     return list(dict.fromkeys(field for field in fields if field))
+
+
+def _snapshot_source_reconciliation(
+    sources: list[str],
+    *,
+    required_fields: list[str],
+    run_live: bool,
+    enabled: bool,
+) -> dict[str, Any]:
+    if not enabled:
+        return {}
+    if not run_live:
+        return {
+            "status": "skipped",
+            "reason": "live_checks_disabled",
+            "required_fields": list(required_fields),
+            "sources": [],
+            "summary": {
+                "source_count": len(sources),
+                "ok_source_count": 0,
+                "degraded_source_count": 0,
+                "failed_source_count": 0,
+                "field_coverage": {},
+                "warnings": ["snapshot_reconciliation_skipped:no_live"],
+            },
+        }
+
+    rows: list[dict[str, Any]] = []
+    code_sets: dict[str, set[str]] = {}
+    for source in sources:
+        try:
+            df = fetch_cn_snapshot(source)
+        except Exception as exc:  # noqa: BLE001 - doctor should capture provider failures.
+            rows.append({
+                "source": source,
+                "status": "failed",
+                "rows": 0,
+                "missing_fields": list(required_fields),
+                "quality_status": "",
+                "quality_anomaly_count": 0,
+                "overlap_with_baseline_count": 0,
+                "overlap_with_baseline_ratio": None,
+                "sample_codes": [],
+                "errors": [str(exc)],
+            })
+            continue
+
+        missing_fields = [field for field in required_fields if field not in df.columns]
+        quality_summary = _snapshot_quality_summary(df, required_fields=required_fields)
+        quality_status = str(quality_summary.get("status", ""))
+        status = "degraded" if missing_fields or quality_status == "degraded" else "ok"
+        codes = _snapshot_reconciliation_codes(df)
+        code_sets[source] = codes
+        rows.append({
+            "source": source,
+            "status": status,
+            "rows": int(len(df)),
+            "missing_fields": missing_fields,
+            "quality_status": quality_status,
+            "quality_anomaly_count": len(quality_summary.get("anomalies", []) or []),
+            "overlap_with_baseline_count": 0,
+            "overlap_with_baseline_ratio": None,
+            "sample_codes": sorted(codes)[:5],
+            "errors": [],
+        })
+
+    baseline_source = _snapshot_reconciliation_baseline(rows)
+    baseline_codes = code_sets.get(baseline_source, set())
+    if baseline_codes:
+        for row in rows:
+            source = str(row.get("source", ""))
+            codes = code_sets.get(source, set())
+            shared_count = len(codes & baseline_codes)
+            row["overlap_with_baseline_count"] = shared_count
+            row["overlap_with_baseline_ratio"] = _ratio(shared_count, len(baseline_codes))
+
+    summary = _snapshot_reconciliation_summary(rows, required_fields)
+    if not any(row.get("status") in {"ok", "degraded"} for row in rows):
+        status = "failed"
+    elif summary["failed_source_count"] or summary["degraded_source_count"]:
+        status = "degraded"
+    else:
+        status = "ok"
+    return {
+        "status": status,
+        "baseline_source": baseline_source,
+        "required_fields": list(required_fields),
+        "sources": rows,
+        "summary": summary,
+    }
+
+
+def _snapshot_reconciliation_codes(df: pd.DataFrame) -> set[str]:
+    if "code" not in df.columns:
+        return set()
+    return {
+        str(value).strip()
+        for value in df["code"].tolist()
+        if str(value).strip()
+    }
+
+
+def _snapshot_reconciliation_baseline(rows: list[dict[str, Any]]) -> str:
+    for row in rows:
+        if row.get("status") in {"ok", "degraded"}:
+            return str(row.get("source", ""))
+    return ""
+
+
+def _snapshot_reconciliation_summary(
+    rows: list[dict[str, Any]],
+    required_fields: list[str],
+) -> dict[str, Any]:
+    warnings: list[str] = []
+    field_coverage: dict[str, dict[str, Any]] = {}
+    for field_name in required_fields:
+        present_sources: list[str] = []
+        missing_sources: list[str] = []
+        for row in rows:
+            source = str(row.get("source", ""))
+            if row.get("status") == "failed":
+                continue
+            if field_name in (row.get("missing_fields") or []):
+                missing_sources.append(source)
+            else:
+                present_sources.append(source)
+        if missing_sources:
+            warnings.append(f"{field_name}:missing_in={','.join(missing_sources)}")
+        field_coverage[field_name] = {
+            "present_source_count": len(present_sources),
+            "missing_sources": missing_sources,
+        }
+
+    failed_sources = [str(row.get("source", "")) for row in rows if row.get("status") == "failed"]
+    if failed_sources:
+        warnings.append("failed_sources:" + ",".join(failed_sources))
+    return {
+        "source_count": len(rows),
+        "ok_source_count": sum(1 for row in rows if row.get("status") == "ok"),
+        "degraded_source_count": sum(1 for row in rows if row.get("status") == "degraded"),
+        "failed_source_count": len(failed_sources),
+        "field_coverage": field_coverage,
+        "warnings": warnings,
+    }
 
 
 def _ratio(count: int, total: int) -> float:

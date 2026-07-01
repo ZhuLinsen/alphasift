@@ -101,6 +101,7 @@ The same commands also include `event_signal_review` for success/failure attribu
 - `source_health`: raw per-source counters from in-process health guards.
 - `health_summary`: UI-ready grouping by `healthy_sources`, `failing_sources`, `disabled_sources`, `never_seen_sources`, plus `last_errors`.
 - `freshness_summary`: UI-ready snapshot/daily freshness and cache status with `data_state`, `cache_state`, fallback/stale/unchecked counters, warnings, and `fresh_enough`.
+- `snapshot_reconciliation`: present when `--compare-snapshot-sources` is used; compares configured snapshot providers by rows, required-field coverage, quality status, failed sources, and code overlap against the first usable provider.
 - `strategy_requirements` / `strategy_coverage`: required fields and coverage status for one strategy or the full strategy catalog.
 - `recommendations`: next actions derived from live check status, fallback use, stale cache, and health guard state.
 

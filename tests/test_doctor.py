@@ -121,6 +121,116 @@ def test_doctor_data_sources_reports_snapshot_quality_anomalies(monkeypatch, tmp
     assert any("Snapshot quality anomalies detected" in item for item in payload["recommendations"])
 
 
+def test_doctor_data_sources_reconciles_snapshot_sources(monkeypatch, tmp_path):
+    config = Config(
+        strategies_dir=Path("strategies"),
+        snapshot_source_priority=["sina", "efinance", "bad"],
+        daily_source="auto",
+        fallback_snapshot_path=tmp_path / "snapshot.last_good.json",
+        daily_history_cache_dir=tmp_path / "daily_history",
+    )
+
+    def fake_snapshot(sources, **kwargs):
+        assert sources == ["sina", "efinance", "bad"]
+        assert "pb_ratio" in kwargs["required_columns"]
+        df = pd.DataFrame([
+            {
+                "code": "000001",
+                "name": "平安银行",
+                "price": 10.0,
+                "amount": 100000000,
+                "total_mv": 10000000000,
+                "pe_ratio": 8.0,
+                "pb_ratio": 0.8,
+                "change_pct": 1.0,
+            },
+            {
+                "code": "600000",
+                "name": "浦发银行",
+                "price": 20.0,
+                "amount": 120000000,
+                "total_mv": 12000000000,
+                "pe_ratio": 9.0,
+                "pb_ratio": 0.9,
+                "change_pct": 0.8,
+            },
+        ])
+        df.attrs["snapshot_source"] = "sina"
+        return df
+
+    def fake_fetch_cn_snapshot(source):
+        if source == "sina":
+            return pd.DataFrame([
+                {
+                    "code": "000001",
+                    "name": "平安银行",
+                    "price": 10.0,
+                    "amount": 100000000,
+                    "total_mv": 10000000000,
+                    "pe_ratio": 8.0,
+                    "pb_ratio": 0.8,
+                    "change_pct": 1.0,
+                },
+                {
+                    "code": "600000",
+                    "name": "浦发银行",
+                    "price": 20.0,
+                    "amount": 120000000,
+                    "total_mv": 12000000000,
+                    "pe_ratio": 9.0,
+                    "pb_ratio": 0.9,
+                    "change_pct": 0.8,
+                },
+            ])
+        if source == "efinance":
+            return pd.DataFrame([
+                {
+                    "code": "000001",
+                    "name": "平安银行",
+                    "price": 10.1,
+                    "amount": 110000000,
+                    "total_mv": 10000000000,
+                    "pe_ratio": 8.1,
+                    "change_pct": 1.1,
+                },
+                {
+                    "code": "000002",
+                    "name": "万科A",
+                    "price": 12.0,
+                    "amount": 90000000,
+                    "total_mv": 9000000000,
+                    "pe_ratio": 7.5,
+                    "change_pct": 0.5,
+                },
+            ])
+        raise RuntimeError("offline")
+
+    monkeypatch.setattr("alphasift.doctor.fetch_snapshot_with_fallback", fake_snapshot)
+    monkeypatch.setattr("alphasift.doctor.fetch_cn_snapshot", fake_fetch_cn_snapshot)
+
+    result = doctor_data_sources(
+        config,
+        strategy_name="dual_low",
+        check_daily=False,
+        compare_snapshot_sources=True,
+    )
+    payload = result.to_dict()
+    reconciliation = payload["snapshot_reconciliation"]
+    by_source = {item["source"]: item for item in reconciliation["sources"]}
+
+    assert reconciliation["status"] == "degraded"
+    assert reconciliation["baseline_source"] == "sina"
+    assert reconciliation["summary"]["source_count"] == 3
+    assert reconciliation["summary"]["ok_source_count"] == 1
+    assert reconciliation["summary"]["degraded_source_count"] == 1
+    assert reconciliation["summary"]["failed_source_count"] == 1
+    assert by_source["efinance"]["missing_fields"] == ["pb_ratio"]
+    assert by_source["efinance"]["overlap_with_baseline_ratio"] == 0.5
+    assert by_source["bad"]["errors"] == ["offline"]
+    assert reconciliation["summary"]["field_coverage"]["pb_ratio"]["missing_sources"] == ["efinance"]
+    assert "failed_sources:bad" in reconciliation["summary"]["warnings"]
+
+
 def test_doctor_data_sources_health_summary_reports_disabled_sources(monkeypatch, tmp_path):
     _SOURCE_HEALTH.clear()
     monkeypatch.setattr("alphasift.snapshot.time.monotonic", lambda: 100.0)
@@ -260,6 +370,51 @@ def test_cli_doctor_data_sources_strategy_explain(monkeypatch, capsys):
     assert "daily_health" in out
     assert "freshness fresh_enough=False" in out
     assert "snapshot=not_checked:not_checked" in out
+
+
+def test_cli_doctor_data_sources_explains_snapshot_reconciliation(monkeypatch, capsys):
+    def fake_snapshot(sources, **kwargs):
+        df = pd.DataFrame([
+            {"code": "000001", "name": "平安银行", "price": 10.0, "pb_ratio": 0.8},
+        ])
+        df.attrs["snapshot_source"] = "sina"
+        return df
+
+    def fake_fetch_cn_snapshot(source):
+        if source == "sina":
+            return pd.DataFrame([
+                {"code": "000001", "name": "平安银行", "price": 10.0, "pb_ratio": 0.8},
+            ])
+        return pd.DataFrame([
+            {"code": "000001", "name": "平安银行", "price": 10.0},
+        ])
+
+    monkeypatch.setattr("alphasift.doctor.fetch_snapshot_with_fallback", fake_snapshot)
+    monkeypatch.setattr("alphasift.doctor.fetch_cn_snapshot", fake_fetch_cn_snapshot)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "alphasift",
+            "doctor",
+            "data-sources",
+            "--strategy",
+            "dual_low",
+            "--snapshot-source",
+            "sina,efinance",
+            "--no-daily",
+            "--compare-snapshot-sources",
+            "--explain",
+        ],
+    )
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "snapshot_reconciliation status=degraded" in out
+    assert "snapshot_sources source status rows overlap missing quality errors" in out
+    assert "efinance" in out
+    assert "pb_ratio" in out
 
 
 def test_cli_doctor_data_sources_all_strategies_explain(monkeypatch, capsys):

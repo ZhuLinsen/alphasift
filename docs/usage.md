@@ -76,11 +76,12 @@ alphasift strategies --template momentum_breakout_daily --json
 ```bash
 alphasift doctor data-sources --strategy low_volatility_quality --no-live --explain
 alphasift doctor data-sources --all-strategies --no-live --explain
+alphasift doctor data-sources --strategy dual_low --compare-snapshot-sources --explain
 ```
 
-单策略模式会列出该策略依赖的 snapshot 字段和 daily 特征字段；全策略模式会输出策略覆盖矩阵，方便 UI/API 或 agent 判断哪些策略依赖日 K、哪些字段是数据源稳定性的关键路径。去掉 `--no-live` 后会发起真实取数 smoke test，并在字段缺失、缓存过期或数据源降级时输出 `snapshot_missing`、`daily_missing`、`source_errors`、`freshness_summary` 和修复建议。
+单策略模式会列出该策略依赖的 snapshot 字段和 daily 特征字段；全策略模式会输出策略覆盖矩阵，方便 UI/API 或 agent 判断哪些策略依赖日 K、哪些字段是数据源稳定性的关键路径。去掉 `--no-live` 后会发起真实取数 smoke test，并在字段缺失、缓存过期或数据源降级时输出 `snapshot_missing`、`daily_missing`、`source_errors`、`freshness_summary` 和修复建议。加 `--compare-snapshot-sources` 会逐个检查配置里的 snapshot provider，对比行数、必需字段覆盖、字段质量、失败源和代码交集，用于发现某个源虽然可用但缺少策略关键字段。
 
-JSON 输出同时包含原始 `source_health` counters、聚合后的 `health_summary` 和 live snapshot 的 `quality_summary`。`health_summary` 会把 source 分成 `healthy_sources`、`failing_sources`、`disabled_sources` 和 `never_seen_sources`，用于界面展示数据源健康度、熔断状态和最近错误；`snapshot.quality_summary` 会统计重复代码、字段缺失率、非法数字和价格/成交额/市值非正等异常，避免数据源虽然返回行数但字段质量不可用。
+JSON 输出同时包含原始 `source_health` counters、聚合后的 `health_summary`、`freshness_summary` 和 live snapshot 的 `quality_summary`。`health_summary` 会把 source 分成 `healthy_sources`、`failing_sources`、`disabled_sources` 和 `never_seen_sources`，用于界面展示数据源健康度、熔断状态和最近错误；`snapshot.quality_summary` 会统计重复代码、字段缺失率、非法数字和价格/成交额/市值非正等异常，避免数据源虽然返回行数但字段质量不可用。
 
 ## 常用场景
 
