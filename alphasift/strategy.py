@@ -3,6 +3,7 @@
 
 import hashlib
 import logging
+from dataclasses import fields
 from pathlib import Path
 
 import yaml
@@ -274,13 +275,16 @@ def _strategy_dir_signature(strategies_dir: Path) -> tuple[tuple[str, int, int, 
 def list_strategies(strategies_dir: Path | None = None) -> list[StrategyInfo]:
     """List available screening strategies."""
     from alphasift.config import Config
+    from alphasift.filter import requires_daily_features
 
     if strategies_dir is None:
         strategies_dir = Config.from_env().strategies_dir
 
     strategies = load_all_strategies(strategies_dir)
-    return [
-        StrategyInfo(
+    infos: list[StrategyInfo] = []
+    for s in strategies.values():
+        daily_required = requires_daily_features(s.screening.hard_filters)
+        infos.append(StrategyInfo(
             name=s.name,
             display_name=s.display_name,
             description=s.description,
@@ -288,9 +292,56 @@ def list_strategies(strategies_dir: Path | None = None) -> list[StrategyInfo]:
             category=s.category,
             tags=s.tags,
             market_scope=s.screening.market_scope,
-        )
-        for s in strategies.values()
-    ]
+            requires_daily_features=daily_required,
+            data_requirements=_strategy_data_requirements(s, daily_required=daily_required),
+            active_filters=_active_hard_filters(s.screening.hard_filters),
+            factor_weights={key: float(value) for key, value in s.screening.factor_weights.items()},
+            profile_keys=_strategy_profile_keys(s.screening),
+        ))
+    return infos
+
+
+def _strategy_data_requirements(strategy: Strategy, *, daily_required: bool) -> list[str]:
+    requirements = ["snapshot"]
+    if daily_required:
+        requirements.append("daily_k")
+    factors = set(strategy.screening.factor_weights)
+    if factors & {"theme_heat", "topic_alignment"}:
+        requirements.append("industry_context")
+    if strategy.screening.event_profile:
+        requirements.append("event_context")
+    return requirements
+
+
+def _active_hard_filters(filters_config: HardFilterConfig) -> list[str]:
+    active: list[str] = []
+    defaults = HardFilterConfig()
+    for item in fields(HardFilterConfig):
+        name = item.name
+        value = getattr(filters_config, name)
+        default = getattr(defaults, name)
+        if name == "exclude_st":
+            if bool(value):
+                active.append(name)
+            continue
+        if value != default and value is not None and value is not False:
+            active.append(name)
+    return active
+
+
+def _strategy_profile_keys(screening: ScreeningConfig) -> dict[str, list[str]]:
+    profile_values = {
+        "scoring": screening.scoring_profile,
+        "risk": screening.risk_profile,
+        "portfolio": screening.portfolio_profile,
+        "scorecard": screening.scorecard_profile,
+        "event": screening.event_profile,
+    }
+    return {
+        name: sorted(value)
+        for name, value in profile_values.items()
+        if value
+    }
 
 
 def _validate_strategy_dir_sync(strategies_dir: Path) -> None:

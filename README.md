@@ -254,13 +254,14 @@ If a source is unavailable, times out, or lacks fields required by a strategy, A
 | `dual_low` | Value | Low PE + low PB defensive value screen |
 | `volume_breakout` | Trend | Volume expansion and resistance breakout |
 | `quality_value` | Value | Reasonable valuation, liquidity, and controlled volatility |
+| `low_volatility_quality` | Quality | Defensive quality screen using daily volatility, drawdown, ATR, and data-quality controls |
 | `capital_heat` | Momentum | Active capital flow without extreme overheating |
 | `oversold_reversal` | Reversal | Repair candidates with controlled drawdown and still-valid liquidity |
 | `balanced_alpha` | Framework | General multi-factor discovery strategy |
 | `momentum_quality` | Framework | Trend confirmation plus quality filters |
 | `shrink_pullback` | Trend | Pullback into support during a broader uptrend; uses daily enrichment |
 
-Add custom YAML strategies under `strategies/`. See [docs/strategy-guide.md](docs/strategy-guide.md).
+Use `alphasift strategies --json` or `alphasift strategies --explain` to inspect strategy data requirements, active filters, factor weights, and profile overrides. Add custom YAML strategies under `strategies/`. See [docs/strategy-guide.md](docs/strategy-guide.md).
 
 ## Project layout
 

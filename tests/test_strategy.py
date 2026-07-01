@@ -13,6 +13,7 @@ def test_disabled_strategies_are_not_listed():
     assert "balanced_alpha" in strategies
     assert "capital_heat" in strategies
     assert "dual_low" in strategies
+    assert "low_volatility_quality" in strategies
     assert "momentum_quality" in strategies
     assert "oversold_reversal" in strategies
     assert "quality_value" in strategies
@@ -27,6 +28,7 @@ def test_list_strategies_returns_enabled_strategies_only():
         "balanced_alpha",
         "capital_heat",
         "dual_low",
+        "low_volatility_quality",
         "momentum_quality",
         "oversold_reversal",
         "quality_value",
@@ -65,6 +67,22 @@ def test_builtin_strategy_factor_weights_are_normalized_and_diversified():
         assert weights["value"] <= 0.34
         assert weights["momentum"] > 0
         assert weights["activity"] > 0
+
+
+def test_strategy_info_exposes_catalog_capabilities():
+    info_by_name = {
+        item.name: item
+        for item in list_strategies(Path("strategies"))
+    }
+
+    strategy = info_by_name["low_volatility_quality"]
+
+    assert strategy.requires_daily_features is True
+    assert strategy.data_requirements == ["snapshot", "daily_k", "industry_context"]
+    assert strategy.factor_weights["stability"] == pytest.approx(0.30)
+    assert "volatility_20d_pct_max" in strategy.active_filters
+    assert "risk" in strategy.profile_keys
+    assert "low_daily_quality_score" in strategy.profile_keys["risk"]
 
 
 def test_load_all_strategies_allows_repo_local_custom_strategy(tmp_path):

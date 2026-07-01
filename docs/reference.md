@@ -66,6 +66,7 @@ alphasift/
 - [`akfamily/akshare`](https://github.com/akfamily/akshare)：覆盖面广、调用简单，但官方说明强调数据风险和接口可能变动。AlphaSift 保留 AkShare 作为备源或可选 provider，不再让它成为唯一关键路径。
 - [`microsoft/qlib`](https://github.com/microsoft/qlib)：强调本地数据准备、数据健康检查和可重复研究 workflow。AlphaSift 对应补上 `doctor data-sources`、source-health JSON、daily quality flags、saved-run/evaluate 闭环。
 - [`ricequant/rqalpha`](https://github.com/ricequant/rqalpha) 与 [`zvtvz/zvt`](https://github.com/zvtvz/zvt)：都把数据层/策略层解耦，支持扩展 provider 或本地持久化后再选股。AlphaSift 保持策略 YAML、数据源 fallback、last-good cache 与上层 DSA/API 解耦，而不是把某个免费源写死成强依赖。
+- [`freqtrade/freqtrade`](https://github.com/freqtrade/freqtrade)：把 strategy 列表、backtesting、参数优化和 WebUI/状态展示做成核心使用路径。AlphaSift 不做交易 bot，但策略目录需要提供机器可读能力描述，方便 CLI、Web UI、DSA 或通知助手按数据依赖和风格选择策略。
 
 ## 已知限制
 
@@ -84,7 +85,7 @@ alphasift/
 - **事件归因闭环**：把新闻、公告、资金流的事件标签纳入 `evaluate-batch` 统计，区分哪些事件真的改善后验表现。
 - **回测边界**：在现有 T+N 评估上继续补持仓约束、调仓周期、逐日权益曲线和复权处理；完整量化研究可对接 Qlib 或 Backtrader。
 - **Agent 产物**：把一次选股运行输出为稳定的 Markdown/JSON 报告包，便于被通知助手、Web UI 或 MCP/HTTP 服务消费。
-- **策略研发**：增加策略 profile 模板、参数版本对比和失败样本复盘，让 YAML 策略迭代更可控。
+- **策略研发**：已补 `alphasift strategies --json/--explain`、策略数据依赖/活跃过滤/因子权重/profile 元数据，以及 `low_volatility_quality` 防守型质量策略；下一步增加策略 profile 模板、参数版本对比和失败样本复盘，让 YAML 策略迭代更可控。
 
 ## 实测记录
 

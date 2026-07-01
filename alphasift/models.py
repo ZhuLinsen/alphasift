@@ -85,6 +85,11 @@ class StrategyInfo:
     category: str
     tags: list[str]
     market_scope: list[str]
+    requires_daily_features: bool = False
+    data_requirements: list[str] = field(default_factory=list)
+    active_filters: list[str] = field(default_factory=list)
+    factor_weights: dict[str, float] = field(default_factory=dict)
+    profile_keys: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass

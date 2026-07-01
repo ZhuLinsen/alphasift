@@ -67,6 +67,31 @@ def test_cli_hotspots_provider_none_explain_does_not_call_network(monkeypatch, c
     assert "hotspots=0 provider=none" in out
 
 
+def test_cli_strategies_json_exposes_catalog_metadata(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["alphasift", "strategies", "--json"])
+
+    main()
+
+    payload = json.loads(capsys.readouterr().out)
+    by_name = {item["name"]: item for item in payload}
+    low_volatility = by_name["low_volatility_quality"]
+    assert low_volatility["requires_daily_features"] is True
+    assert low_volatility["data_requirements"] == ["snapshot", "daily_k", "industry_context"]
+    assert low_volatility["factor_weights"]["stability"] == 0.30
+    assert "volatility_20d_pct_max" in low_volatility["active_filters"]
+
+
+def test_cli_strategies_explain_shows_data_requirements(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["alphasift", "strategies", "--explain"])
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "strategies=" in out
+    assert "low_volatility_quality" in out
+    assert "data=snapshot,daily_k,industry_context" in out
+
+
 def test_cli_hotspots_explain_shows_fallback_and_source_errors(monkeypatch, tmp_path, capsys):
     cache = tmp_path / "hotspots.json"
     save_hotspots_json(

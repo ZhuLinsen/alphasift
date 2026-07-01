@@ -149,7 +149,9 @@ def main():
     sp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
 
     # strategies
-    sub.add_parser("strategies", help="列出可用策略")
+    stp = sub.add_parser("strategies", help="列出可用策略")
+    stp.add_argument("--json", action="store_true", help="以 JSON 输出完整策略目录元数据")
+    stp.add_argument("--explain", action="store_true", help="输出包含数据依赖和主要因子的可读策略目录")
 
     # evaluate
     ep = sub.add_parser("evaluate", help="用最新快照评估已保存的选股结果")
@@ -312,13 +314,19 @@ def main():
             print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
 
     elif args.command == "strategies":
-        for s in list_strategies():
-            tags = ",".join(s.tags)
-            suffix = f" tags={tags}" if tags else ""
-            print(
-                f"  {s.name:<25} {s.display_name:<10} "
-                f"v{s.version:<5} [{s.category}] {s.description}{suffix}"
-            )
+        strategies = list_strategies()
+        if args.json:
+            print(json.dumps([asdict(item) for item in strategies], ensure_ascii=False, indent=2))
+        elif args.explain:
+            print(_format_strategies_explain(strategies))
+        else:
+            for s in strategies:
+                tags = ",".join(s.tags)
+                suffix = f" tags={tags}" if tags else ""
+                print(
+                    f"  {s.name:<25} {s.display_name:<10} "
+                    f"v{s.version:<5} [{s.category}] {s.description}{suffix}"
+                )
 
     elif args.command == "evaluate":
         config = Config.from_env()
@@ -645,6 +653,33 @@ def _run_quickstart(*, strategy: str = "dual_low", max_output: int = 5) -> None:
     print("   alphasift screen <strategy> --save-run    # 保存运行")
     print("   alphasift evaluate <run_id> --explain     # T+N 评估")
     print("   alphasift strategies                      # 完整策略列表")
+
+
+def _format_strategies_explain(strategies) -> str:
+    lines = [f"strategies={len(strategies)}"]
+    for strategy in strategies:
+        factors = _format_top_factor_weights(strategy.factor_weights)
+        data = ",".join(strategy.data_requirements) or "-"
+        filters = ",".join(strategy.active_filters[:8]) or "-"
+        extra_filters = len(strategy.active_filters) - 8
+        if extra_filters > 0:
+            filters = f"{filters},+{extra_filters}"
+        profiles = ",".join(strategy.profile_keys) or "-"
+        tags = ",".join(strategy.tags) or "-"
+        lines.append(
+            f"{strategy.name:<24} v{strategy.version:<5} [{strategy.category:<9}] "
+            f"data={data:<32} daily_required={strategy.requires_daily_features!s:<5} "
+            f"factors={factors:<42} filters={filters} profiles={profiles} tags={tags}"
+        )
+        lines.append(f"  {strategy.display_name}: {strategy.description}")
+    return "\n".join(lines)
+
+
+def _format_top_factor_weights(weights: dict[str, float], *, limit: int = 4) -> str:
+    if not weights:
+        return "-"
+    ordered = sorted(weights.items(), key=lambda item: (-float(item[1]), item[0]))[:limit]
+    return ",".join(f"{name}:{float(value):.2f}" for name, value in ordered)
 
 
 def _format_screen_explain(result) -> str:

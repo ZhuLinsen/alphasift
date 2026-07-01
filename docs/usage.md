@@ -23,6 +23,15 @@ alphasift runs
 alphasift evaluate <run_id> --explain
 ```
 
+策略目录也可以输出更完整的能力描述，方便 UI、agent 或外部系统选择合适策略：
+
+```bash
+alphasift strategies --explain
+alphasift strategies --json
+```
+
+结构化输出包含策略分类、标签、数据依赖、是否需要日 K、活跃 hard filters、因子权重和 profile 覆盖项。
+
 ## 常用场景
 
 使用 LLM 横向排序：

@@ -309,6 +309,7 @@ tushare → sina → efinance → akshare_em → em_datacenter
 | `dual_low` | 价值 | 低 PE + 低 PB，适合价值投资 |
 | `volume_breakout` | 趋势 | 放量突破关键阻力位 |
 | `quality_value` | 价值 | 估值合理、流动性充足、波动不过热 |
+| `low_volatility_quality` | 质量 | 用日 K 波动、回撤、ATR 和数据质量约束做防守型质量筛选 |
 | `capital_heat` | 动量 | 资金活跃、量价同步但未极端过热 |
 | `oversold_reversal` | 反转 | 跌幅可控且流动性仍在的修复候选 |
 | `balanced_alpha` | 框架 | 综合估值、资金、动量、稳定性的通用发现策略 |
@@ -317,7 +318,7 @@ tushare → sina → efinance → akshare_em → em_datacenter
 
 ### 自定义策略
 
-在 `strategies/` 目录添加 YAML 文件即可。参考 [docs/strategy-guide.md](docs/strategy-guide.md)。
+可用 `alphasift strategies --json` 或 `alphasift strategies --explain` 查看策略数据依赖、活跃硬筛、因子权重和 profile 覆盖项。在 `strategies/` 目录添加 YAML 文件即可。参考 [docs/strategy-guide.md](docs/strategy-guide.md)。
 
 ## 已知限制
 
