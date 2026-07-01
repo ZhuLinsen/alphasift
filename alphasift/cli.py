@@ -1764,6 +1764,9 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
     freshness = result.get("freshness_summary") or {}
     if freshness:
         lines.append(_format_freshness_summary(freshness))
+    readiness = result.get("strategy_readiness_summary") or {}
+    if readiness:
+        lines.append(_format_strategy_readiness_summary(readiness))
     reconciliation = result.get("snapshot_reconciliation") or {}
     if reconciliation:
         lines.extend(_format_snapshot_reconciliation_explain(reconciliation))
@@ -1804,6 +1807,16 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
                 parts.append("daily_missing=" + ",".join(item.get("daily_missing_fields") or []))
             lines.append(" ".join(parts))
     return "\n".join(lines)
+
+
+def _format_strategy_readiness_summary(summary: dict) -> str:
+    return (
+        "strategy_readiness "
+        f"ready={summary.get('ready_strategy_count', 0)} "
+        f"attention={summary.get('attention_strategy_count', 0)} "
+        f"unchecked={summary.get('unchecked_strategy_count', 0)} "
+        f"daily_required={summary.get('daily_strategy_count', 0)}"
+    )
 
 
 def _format_source_health_summary(label: str, summary: dict) -> str:

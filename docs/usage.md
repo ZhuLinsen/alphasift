@@ -35,7 +35,7 @@ alphasift serve --host 127.0.0.1 --port 8765
 
 默认不会发起网络请求，只读取当前进程的 source-health 和本地 run 索引；需要真实数据源 smoke check 时加 `--live-data-check`。
 
-`alphasift serve` 会启动只读本地 JSON API，方便 UI、agent 或外部编排层直接消费稳定 payload。默认监听 `127.0.0.1:8765`，可用端点包括 `/health`、`/result-schema`、`/overview`、`/strategies`、`/strategy?name=<strategy_name>`、`/strategy-compare?base=<base>&target=<target>`、`/strategy-facets`、`/strategy-templates`、`/strategy-template?name=<template_name>`、`/runs`、`/report?run=<run_id>` 和 `/doctor/data-sources`。HTTP API 默认也不做 live 数据源检查；需要时给 `/overview?live=true` 或 `/doctor/data-sources?live=true`。
+`alphasift serve` 会启动只读本地 JSON API，方便 UI、agent 或外部编排层直接消费稳定 payload。默认监听 `127.0.0.1:8765`，可用端点包括 `/health`、`/result-schema`、`/overview`、`/strategies`、`/strategy?name=<strategy_name>`、`/strategy-compare?base=<base>&target=<target>`、`/strategy-facets`、`/strategy-readiness`、`/strategy-templates`、`/strategy-template?name=<template_name>`、`/runs`、`/report?run=<run_id>` 和 `/doctor/data-sources`。HTTP API 默认也不做 live 数据源检查；需要时给 `/overview?live=true`、`/strategy-readiness?live=true` 或 `/doctor/data-sources?live=true`。
 
 策略目录也可以输出更完整的能力描述，方便 UI、agent 或外部系统选择合适策略：
 
@@ -84,9 +84,10 @@ curl "http://127.0.0.1:8765/strategy-template?name=momentum_breakout_daily"
 alphasift doctor data-sources --strategy low_volatility_quality --no-live --explain
 alphasift doctor data-sources --all-strategies --no-live --explain
 alphasift doctor data-sources --strategy dual_low --compare-snapshot-sources --explain
+curl "http://127.0.0.1:8765/strategy-readiness"
 ```
 
-单策略模式会列出该策略依赖的 snapshot 字段和 daily 特征字段；全策略模式会输出策略覆盖矩阵，方便 UI/API 或 agent 判断哪些策略依赖日 K、哪些字段是数据源稳定性的关键路径。去掉 `--no-live` 后会发起真实取数 smoke test，并在字段缺失、缓存过期或数据源降级时输出 `snapshot_missing`、`daily_missing`、`source_errors`、`freshness_summary` 和修复建议。加 `--compare-snapshot-sources` 会逐个检查配置里的 snapshot provider，对比行数、必需字段覆盖、字段质量、失败源和代码交集，用于发现某个源虽然可用但缺少策略关键字段。
+单策略模式会列出该策略依赖的 snapshot 字段和 daily 特征字段；全策略模式会输出策略覆盖矩阵和 `strategy_readiness_summary`，方便 UI/API 或 agent 判断哪些策略已可用、哪些尚未 live 检查、哪些字段是数据源稳定性的关键路径。去掉 `--no-live` 后会发起真实取数 smoke test，并在字段缺失、缓存过期或数据源降级时输出 `snapshot_missing`、`daily_missing`、`source_errors`、`freshness_summary` 和修复建议。加 `--compare-snapshot-sources` 会逐个检查配置里的 snapshot provider，对比行数、必需字段覆盖、字段质量、失败源和代码交集，用于发现某个源虽然可用但缺少策略关键字段。
 
 JSON 输出同时包含原始 `source_health` counters、聚合后的 `health_summary`、`freshness_summary` 和 live snapshot 的 `quality_summary`。`health_summary` 会把 source 分成 `healthy_sources`、`failing_sources`、`disabled_sources` 和 `never_seen_sources`，用于界面展示数据源健康度、熔断状态和最近错误；`snapshot.quality_summary` 会统计重复代码、字段缺失率、非法数字和价格/成交额/市值非正等异常，避免数据源虽然返回行数但字段质量不可用。
 

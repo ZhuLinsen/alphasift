@@ -49,6 +49,7 @@ class DataSourcesDoctorResult:
     daily: SourceCheckResult | None = None
     strategy_requirements: dict[str, Any] = field(default_factory=dict)
     strategy_coverage: list[dict[str, Any]] = field(default_factory=list)
+    strategy_readiness_summary: dict[str, Any] = field(default_factory=dict)
     health_summary: dict[str, Any] = field(default_factory=dict)
     freshness_summary: dict[str, Any] = field(default_factory=dict)
     snapshot_reconciliation: dict[str, Any] = field(default_factory=dict)
@@ -106,6 +107,7 @@ def doctor_data_sources(
         else None
     )
     strategy_coverage = _build_strategy_coverage(coverage_requirements, snapshot, daily)
+    strategy_readiness_summary = _build_strategy_readiness_summary(strategy_coverage)
     health_summary = _build_health_summary(snapshot, daily)
     freshness_summary = _build_freshness_summary(snapshot, daily)
     snapshot_reconciliation = _snapshot_source_reconciliation(
@@ -133,6 +135,7 @@ def doctor_data_sources(
         daily=daily,
         strategy_requirements=strategy_requirements,
         strategy_coverage=strategy_coverage,
+        strategy_readiness_summary=strategy_readiness_summary,
         health_summary=health_summary,
         freshness_summary=freshness_summary,
         snapshot_reconciliation=snapshot_reconciliation,
@@ -620,6 +623,73 @@ def _strategy_coverage_status(
     if snapshot.status == "degraded" or (requires_daily and daily is not None and daily.status == "degraded"):
         return "degraded"
     return "ok"
+
+
+def _build_strategy_readiness_summary(coverage: list[dict[str, Any]]) -> dict[str, Any]:
+    status_counts = {status: 0 for status in ("ok", "degraded", "failed", "skipped")}
+    for item in coverage:
+        status = str(item.get("status") or "unknown")
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    impacted = [
+        _strategy_readiness_item(item)
+        for item in coverage
+        if str(item.get("status") or "") in {"degraded", "failed"}
+    ]
+    unchecked = [
+        _strategy_readiness_item(item)
+        for item in coverage
+        if str(item.get("status") or "") == "skipped"
+    ]
+    next_actions: list[str] = []
+    if unchecked:
+        next_actions.append("Run a live data-source check before relying on strategy readiness.")
+    if impacted:
+        next_actions.append("Review missing snapshot/daily fields for degraded or failed strategies.")
+
+    return {
+        "schema_version": 1,
+        "strategy_count": len(coverage),
+        "ready_strategy_count": status_counts.get("ok", 0),
+        "attention_strategy_count": status_counts.get("degraded", 0) + status_counts.get("failed", 0),
+        "unchecked_strategy_count": status_counts.get("skipped", 0),
+        "daily_strategy_count": sum(1 for item in coverage if bool(item.get("requires_daily_features"))),
+        "status_counts": status_counts,
+        "impacted_strategies": impacted,
+        "unchecked_strategies": unchecked,
+        "missing_snapshot_fields": _missing_field_impacts(coverage, "snapshot_missing_fields"),
+        "missing_daily_fields": _missing_field_impacts(coverage, "daily_missing_fields"),
+        "next_actions": next_actions,
+    }
+
+
+def _strategy_readiness_item(item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "strategy": item.get("strategy", ""),
+        "display_name": item.get("display_name", ""),
+        "status": item.get("status", ""),
+        "requires_daily_features": bool(item.get("requires_daily_features")),
+        "snapshot_missing_fields": list(item.get("snapshot_missing_fields", []) or []),
+        "daily_missing_fields": list(item.get("daily_missing_fields", []) or []),
+    }
+
+
+def _missing_field_impacts(coverage: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
+    impacts: dict[str, list[str]] = {}
+    for item in coverage:
+        strategy_name = str(item.get("strategy") or "")
+        for field_name in item.get(key, []) or []:
+            impacts.setdefault(str(field_name), []).append(strategy_name)
+    rows = [
+        {
+            "field": field_name,
+            "strategy_count": len(strategy_names),
+            "strategies": sorted(strategy_names),
+        }
+        for field_name, strategy_names in impacts.items()
+    ]
+    rows.sort(key=lambda item: (-int(item["strategy_count"]), str(item["field"])))
+    return rows
 
 
 def _overall_status(statuses: list[str]) -> str:

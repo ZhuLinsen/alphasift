@@ -92,6 +92,36 @@ def build_api_response(
         return 200, {"schema_version": 1, "comparison": comparison}
     if path == "/strategy-facets":
         return 200, strategy_facets(config.strategies_dir)
+    if path == "/strategy-readiness":
+        strategy_name = _single(params, "strategy") or None
+        try:
+            result = doctor_data_sources(
+                config,
+                snapshot_sources=_multi(params, "snapshot_source") or None,
+                daily_source=_single(params, "daily_source") or None,
+                daily_code=_single(params, "daily_code") or "000001",
+                run_live=_bool_param(params, "live", False),
+                check_daily=not _bool_param(params, "no_daily", False),
+                strategy_name=strategy_name,
+                all_strategies=strategy_name is None,
+            ).to_dict()
+        except ValueError as exc:
+            return 404, {
+                "error": "strategy_not_found",
+                "message": str(exc),
+                "strategy": strategy_name or "",
+            }
+        return 200, {
+            "schema_version": 1,
+            "status": result.get("status"),
+            "config": result.get("config", {}),
+            "strategy_requirements": result.get("strategy_requirements", {}),
+            "strategy_coverage": result.get("strategy_coverage", []),
+            "strategy_readiness_summary": result.get("strategy_readiness_summary", {}),
+            "health_summary": result.get("health_summary", {}),
+            "freshness_summary": result.get("freshness_summary", {}),
+            "recommendations": result.get("recommendations", []),
+        }
     if path == "/strategy-templates":
         return 200, {"schema_version": 1, "templates": list_strategy_templates()}
     if path == "/strategy-template":
@@ -207,6 +237,7 @@ def _index_payload() -> dict[str, Any]:
             "/strategy",
             "/strategy-compare",
             "/strategy-facets",
+            "/strategy-readiness",
             "/strategy-templates",
             "/strategy-template",
             "/runs",

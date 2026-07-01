@@ -29,6 +29,7 @@ def test_api_health_and_index(tmp_path):
     assert "/strategy" in index["endpoints"]
     assert "/strategy-compare" in index["endpoints"]
     assert "/strategy-facets" in index["endpoints"]
+    assert "/strategy-readiness" in index["endpoints"]
     assert "/strategy-templates" in index["endpoints"]
     assert health_status == 200
     assert health == {"status": "ok", "service": "alphasift", "schema_version": 1}
@@ -136,6 +137,43 @@ def test_api_strategy_facets_returns_filter_values(tmp_path):
     assert facets["tag"]["multi"] is True
     assert "daily_k" in data_values
     assert "volume_breakout" in data_values["daily_k"]["strategies"]
+
+
+def test_api_strategy_readiness_defaults_to_all_strategies_without_live(tmp_path):
+    status, payload = build_api_response(_config(tmp_path), "/strategy-readiness")
+
+    assert status == 200
+    assert payload["schema_version"] == 1
+    assert payload["config"]["live_checks"] is False
+    assert payload["strategy_requirements"]["mode"] == "all"
+    summary = payload["strategy_readiness_summary"]
+    assert summary["strategy_count"] >= 9
+    assert summary["unchecked_strategy_count"] >= 9
+    assert summary["status_counts"]["skipped"] >= 9
+    assert payload["strategy_coverage"][0]["status"] == "skipped"
+
+
+def test_api_strategy_readiness_supports_single_strategy_and_errors(tmp_path):
+    status, payload = build_api_response(
+        _config(tmp_path),
+        "/strategy-readiness",
+        query="strategy=low_volatility_quality",
+    )
+    missing_status, missing = build_api_response(
+        _config(tmp_path),
+        "/strategy-readiness",
+        query="strategy=missing",
+    )
+
+    assert status == 200
+    assert payload["strategy_requirements"]["strategy"] == "low_volatility_quality"
+    assert payload["strategy_readiness_summary"]["strategy_count"] == 1
+    assert (
+        payload["strategy_readiness_summary"]["unchecked_strategies"][0]["strategy"]
+        == "low_volatility_quality"
+    )
+    assert missing_status == 404
+    assert missing["error"] == "strategy_not_found"
 
 
 def test_api_strategy_detail_returns_one_strategy(tmp_path):

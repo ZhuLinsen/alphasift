@@ -67,6 +67,7 @@ def build_overview(
             "snapshot_quality": (doctor.get("snapshot", {}) or {}).get("quality_summary", {}),
             "strategy_requirements": doctor.get("strategy_requirements", {}),
             "strategy_coverage": doctor.get("strategy_coverage", []),
+            "strategy_readiness_summary": doctor.get("strategy_readiness_summary", {}),
             "recommendations": doctor.get("recommendations", []),
         },
         "recent_runs": recent_runs,

@@ -38,6 +38,9 @@ def test_build_overview_groups_strategies_and_recent_runs(tmp_path):
     assert payload["data_sources"]["health_summary"]["snapshot"]["requested_sources"] == ["sina"]
     assert payload["data_sources"]["freshness_summary"]["snapshot"]["data_state"] == "not_checked"
     assert payload["data_sources"]["freshness_summary"]["fresh_enough"] is False
+    readiness = payload["data_sources"]["strategy_readiness_summary"]
+    assert readiness["strategy_count"] >= 9
+    assert readiness["unchecked_strategy_count"] >= 9
     by_risk = {
         item["name"]: item
         for item in payload["strategy_groups"]["by_risk_profile"]

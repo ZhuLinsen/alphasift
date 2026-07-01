@@ -305,6 +305,15 @@ def test_doctor_data_sources_reports_all_strategy_coverage_without_live(tmp_path
     assert coverage["low_volatility_quality"]["style"]["holding_period"] == "swing"
     assert "pb_ratio" in coverage["low_volatility_quality"]["required_snapshot_fields"]
     assert "volatility_20d_pct" in coverage["low_volatility_quality"]["required_daily_fields"]
+    readiness = payload["strategy_readiness_summary"]
+    assert readiness["schema_version"] == 1
+    assert readiness["strategy_count"] >= 9
+    assert readiness["unchecked_strategy_count"] >= 9
+    assert readiness["status_counts"]["skipped"] >= 9
+    assert readiness["daily_strategy_count"] >= 3
+    assert readiness["missing_snapshot_fields"] == []
+    assert readiness["missing_daily_fields"] == []
+    assert any("live data-source check" in item for item in readiness["next_actions"])
 
 
 def test_cli_doctor_data_sources_no_live_json(monkeypatch, tmp_path, capsys):
@@ -435,6 +444,7 @@ def test_cli_doctor_data_sources_all_strategies_explain(monkeypatch, capsys):
 
     out = capsys.readouterr().out
     assert "strategy_scope=all" in out
+    assert "strategy_readiness ready=0 attention=0" in out
     assert "strategy_coverage:" in out
     assert "low_volatility_quality status=skipped" in out
     assert "daily_fields=6" in out

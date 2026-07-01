@@ -103,6 +103,7 @@ The same commands also include `event_signal_review` for success/failure attribu
 - `freshness_summary`: UI-ready snapshot/daily freshness and cache status with `data_state`, `cache_state`, fallback/stale/unchecked counters, warnings, and `fresh_enough`.
 - `snapshot_reconciliation`: present when `--compare-snapshot-sources` is used; compares configured snapshot providers by rows, required-field coverage, quality status, failed sources, and code overlap against the first usable provider.
 - `strategy_requirements` / `strategy_coverage`: required fields and coverage status for one strategy or the full strategy catalog.
+- `strategy_readiness_summary`: UI-ready strategy readiness rollup with ready/attention/unchecked counts, status counts, impacted/unchecked strategy cards, missing-field impacts, and next actions.
 - `recommendations`: next actions derived from live check status, fallback use, stale cache, and health guard state.
 
 ## Overview payload
@@ -116,6 +117,7 @@ Stable top-level fields:
 - `strategy_facets`: UI-ready strategy filter facets with values, counts, query params, and backing strategy names.
 - `strategy_matches`: optional ranked strategy recommendations with `score`, `matched`, and `missing`.
 - `data_sources`: compact data-source doctor subset with `health_summary`, `freshness_summary`, `snapshot_quality`, strategy requirements, strategy coverage, and recommendations.
+- `data_sources.strategy_readiness_summary`: compact readiness rollup for strategy availability panels.
 - `recent_runs`: lightweight saved-run metadata from `alphasift runs --json`.
 - `next_actions`: UI-ready operational next steps.
 
@@ -130,6 +132,7 @@ Stable top-level fields:
 - `GET /strategy?name=<strategy_name>`: one strategy metadata card with style, data requirements, required fields, active filters, factor weights, and profile keys.
 - `GET /strategy-compare?base=<strategy>&target=<strategy>`: same diff payload as `alphasift strategies --compare <base> <target> --json`.
 - `GET /strategy-facets`: strategy filter facets for UI controls, including category, tag, style, data requirement, daily requirement, and required-field dimensions.
+- `GET /strategy-readiness`: compact strategy readiness payload; defaults to all strategies and no live data checks, supports `strategy`, `live`, `snapshot_source`, `daily_source`, `daily_code`, and `no_daily`.
 - `GET /strategy-templates`: lightweight strategy authoring template catalog without YAML bodies.
 - `GET /strategy-template?name=<template_name>`: one strategy authoring template; supports `include_yaml=false`.
 - `GET /runs`: saved-run metadata with optional `strategy` and `limit`.
