@@ -551,6 +551,7 @@ def main():
             "with_price_path": result.get("with_price_path"),
             "price_path_window_days": result.get("price_path_window_days", []),
             "strategy_summaries": result.get("strategy_summaries", []),
+            "event_signal_review": result.get("event_signal_review", {}),
             "failure_review": result.get("failure_review", {}),
         }
         if args.output:
@@ -1347,6 +1348,7 @@ def _format_evaluation_batch_explain(result: dict) -> str:
         items = _top_dimension_items(dimensions.get(key, {}))
         if items:
             lines.append(f"{title}=" + " | ".join(items))
+    lines.extend(_format_event_signal_review_explain(result.get("event_signal_review", {})))
     lines.extend(_format_failure_review_explain(result.get("failure_review", {})))
     return "\n".join(lines)
 
@@ -1404,8 +1406,47 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
                 f"{item.get('win_rate')!s:<8} {item.get('average_max_drawdown_pct')!s:<8} "
                 f"{item.get('average_max_runup_pct')!s:<9} {item.get('outcome'):<17} {shape_text}"
             )
+    lines.extend(_format_event_signal_review_explain(result.get("event_signal_review", {}), limit=5))
     lines.extend(_format_failure_review_explain(result.get("failure_review", {}), include_samples=False))
     return "\n".join(lines)
+
+
+def _format_event_signal_review_explain(
+    review: object,
+    *,
+    limit: int = 8,
+) -> list[str]:
+    if not isinstance(review, dict) or not review:
+        return []
+    summary = review.get("summary", {})
+    if not isinstance(summary, dict):
+        summary = {}
+    lines = [
+        (
+            "event_signal_review "
+            f"signals={summary.get('signal_count', 0)} "
+            f"occurrences={summary.get('signal_occurrence_count', 0)} "
+            f"positive={summary.get('positive_signal_count', 0)} "
+            f"negative={summary.get('negative_signal_count', 0)} "
+            f"mixed={summary.get('mixed_signal_count', 0)}"
+        )
+    ]
+    signals = review.get("signals", [])
+    if isinstance(signals, list) and signals:
+        lines.append("event_signals signal action picks avg_return win_rate failures codes")
+        for item in signals[:limit]:
+            if not isinstance(item, dict):
+                continue
+            codes = ",".join(str(value) for value in item.get("sample_codes", [])[:3]) or "-"
+            lines.append(
+                f"{str(item.get('signal') or ''):<28} {str(item.get('action') or ''):<16} "
+                f"{item.get('pick_count')!s:<5} {item.get('average_return_pct')!s:<10} "
+                f"{item.get('win_rate')!s:<8} {item.get('failure_count')!s:<8} {codes}"
+            )
+    recommendations = review.get("recommendations", [])
+    if isinstance(recommendations, list) and recommendations:
+        lines.append("event_signal_next_actions=" + " | ".join(str(item) for item in recommendations))
+    return lines
 
 
 def _format_failure_review_explain(

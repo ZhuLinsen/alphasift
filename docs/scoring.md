@@ -162,6 +162,8 @@ LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代
 
 可用 `--failure-samples N` 控制 explain/JSON 中保留的样本数量，`0` 表示只保留聚合和建议。
 
+同一批量评估 payload 还会输出 `event_signal_review`，把 `llm_tags`、`llm_catalysts`、`llm_risks` 和 `post_analysis_tags` 统一成 `tag:`、`catalyst:`、`risk:`、`post:` 四类事件信号。每个信号会给出样本数、胜率、平均/中位/最优/最差收益、失败率和 `prefer` / `avoid` / `watch` 动作建议，方便把后验表现沉淀回策略的 `preferred_event_tags`、`avoided_event_tags` 或 risk profile。
+
 如果启用 `--with-price-path` 或 `EVALUATION_PRICE_PATH_ENABLED=true`，评估会额外抓取候选日 K 路径，并计算：
 
 - `path_end_return_pct`：路径最后一个交易日相对保存价的收益

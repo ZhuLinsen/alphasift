@@ -313,11 +313,13 @@ def test_cli_evaluate_batch_explain_includes_failure_review(monkeypatch, tmp_pat
 
     out = capsys.readouterr().out
     assert "failure_review failures=1 shown=1 negative=1" in out
+    assert "event_signal_review signals=" in out
+    assert "event_signals signal action picks avg_return win_rate failures codes" in out
+    assert "risk:监管问询" in out
     assert "failure_samples run strategy rank code return status reasons" in out
     assert "run_fail" in out
     assert "negative_return" in out
     assert "failure_event_signals=" in out
-    assert "risk:监管问询" in out
     assert "failure_llm_risks=监管问询" in out
     assert "failure_next_actions=" in out
 

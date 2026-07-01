@@ -85,6 +85,12 @@ Stable fields include:
 
 Use `--failure-samples N` to control how many sample cards are retained. Aggregations and recommendations remain available even when `N=0`.
 
+The same commands also include `event_signal_review` for success/failure attribution across event-like labels:
+
+- `summary`: signal count, signal occurrence count, positive/negative/mixed signal counts.
+- `signals`: one row per combined signal such as `tag:<label>`, `catalyst:<label>`, `risk:<label>`, or `post:<label>`, with sample count, evaluated count, average/median/best/worst returns, win rate, failure count/rate, sample codes, and an `action` of `prefer`, `avoid`, `watch`, or `insufficient_data`.
+- `recommendations`: UI-ready next actions that suggest which signals should be reviewed as preferred or avoided event tags.
+
 ## Data-source doctor payload
 
 `alphasift doctor data-sources --json` emits a stable diagnostic payload for UI, agent, and operations surfaces:

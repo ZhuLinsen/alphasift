@@ -343,6 +343,7 @@ def evaluate_saved_runs(
         "portfolio_by_strategy": portfolio_by_strategy,
         "strategy_summaries": strategy_summaries,
         "dimensions": dimensions,
+        "event_signal_review": _event_signal_review(evaluations),
         "failure_review": _failure_review(
             evaluations,
             sample_limit=failure_sample_limit,
@@ -840,6 +841,149 @@ def _failure_review(
         "dimensions": dimensions,
         "recommendations": _failure_recommendations(summary, dimensions),
     }
+
+
+def _event_signal_review(evaluations: list[EvaluationResult]) -> dict[str, object]:
+    groups: dict[str, list[tuple[EvaluationResult, PickEvaluation]]] = {}
+    signal_occurrences = 0
+    for evaluation in evaluations:
+        for pick in evaluation.picks:
+            signals = [signal for signal in _event_signals(pick) if signal != "none"]
+            for signal in signals:
+                signal_occurrences += 1
+                groups.setdefault(signal, []).append((evaluation, pick))
+
+    signals = [
+        _event_signal_stats(signal, items)
+        for signal, items in groups.items()
+    ]
+    signals.sort(
+        key=lambda item: (
+            _event_signal_action_rank(str(item.get("action", ""))),
+            item.get("average_return_pct") is None,
+            -(
+                float(item["average_return_pct"])
+                if item.get("average_return_pct") is not None
+                else -999999.0
+            ),
+            -int(item.get("pick_count", 0) or 0),
+            str(item.get("signal", "")),
+        )
+    )
+    summary = {
+        "signal_count": len(signals),
+        "signal_occurrence_count": signal_occurrences,
+        "positive_signal_count": sum(1 for item in signals if item.get("action") == "prefer"),
+        "negative_signal_count": sum(1 for item in signals if item.get("action") == "avoid"),
+        "mixed_signal_count": sum(1 for item in signals if item.get("action") == "watch"),
+    }
+    return {
+        "summary": summary,
+        "signals": signals,
+        "recommendations": _event_signal_recommendations(signals),
+    }
+
+
+def _event_signal_stats(
+    signal: str,
+    items: list[tuple[EvaluationResult, PickEvaluation]],
+) -> dict[str, object]:
+    returns = [
+        float(pick.return_pct)
+        for _, pick in items
+        if pick.return_pct is not None
+    ]
+    failures = [
+        pick
+        for _, pick in items
+        if _failure_reasons(pick)
+    ]
+    strategies = _dedupe_strings(evaluation.strategy for evaluation, _ in items)
+    sample_codes = _dedupe_strings(
+        pick.code
+        for _, pick in sorted(
+            items,
+            key=lambda item: (
+                item[1].return_pct is None,
+                float(item[1].return_pct or 0),
+                item[0].strategy,
+                item[1].rank,
+            ),
+        )
+    )[:5]
+    win_rate = (
+        _safe_round(sum(1 for value in returns if value > 0) / len(returns) * 100)
+        if returns
+        else None
+    )
+    average = _safe_round(sum(returns) / len(returns)) if returns else None
+    action = _event_signal_action(average, win_rate, len(failures), len(items))
+    return {
+        "signal": signal,
+        "pick_count": len(items),
+        "evaluated_pick_count": len(returns),
+        "failure_count": len(failures),
+        "failure_rate": _safe_round(len(failures) / len(items) * 100) if items else None,
+        "average_return_pct": average,
+        "median_return_pct": _safe_round(float(pd.Series(returns).median())) if returns else None,
+        "win_rate": win_rate,
+        "best_return_pct": _safe_round(max(returns)) if returns else None,
+        "worst_return_pct": _safe_round(min(returns)) if returns else None,
+        "strategies": strategies,
+        "sample_codes": sample_codes,
+        "action": action,
+        "recommendation": _event_signal_action_text(signal, action),
+    }
+
+
+def _event_signal_action(
+    average_return_pct: float | None,
+    win_rate: float | None,
+    failure_count: int,
+    pick_count: int,
+) -> str:
+    if average_return_pct is None or win_rate is None:
+        return "insufficient_data"
+    failure_rate = failure_count / pick_count * 100 if pick_count else 0.0
+    if average_return_pct > 0 and win_rate >= 50 and failure_rate < 50:
+        return "prefer"
+    if average_return_pct < 0 or win_rate < 50 or failure_rate >= 50:
+        return "avoid"
+    return "watch"
+
+
+def _event_signal_action_text(signal: str, action: str) -> str:
+    if action == "prefer":
+        return f"Signal `{signal}` has positive follow-through; consider using it as a preferred event tag."
+    if action == "avoid":
+        return f"Signal `{signal}` has weak or negative follow-through; consider adding it to avoided_event_tags or risk penalties."
+    if action == "watch":
+        return f"Signal `{signal}` is mixed; keep collecting samples before changing strategy weights."
+    return f"Signal `{signal}` has insufficient evaluated samples."
+
+
+def _event_signal_action_rank(action: str) -> int:
+    return {
+        "avoid": 0,
+        "prefer": 1,
+        "watch": 2,
+        "insufficient_data": 3,
+    }.get(action, 4)
+
+
+def _event_signal_recommendations(signals: list[dict[str, object]]) -> list[str]:
+    recommendations: list[str] = []
+    avoid = [item for item in signals if item.get("action") == "avoid"]
+    prefer = [item for item in signals if item.get("action") == "prefer"]
+    if avoid:
+        labels = ", ".join(str(item.get("signal")) for item in avoid[:3])
+        recommendations.append(f"Review avoided-event candidates first: {labels}.")
+    if prefer:
+        labels = ", ".join(str(item.get("signal")) for item in prefer[:3])
+        recommendations.append(f"Preferred-event candidates with positive follow-through: {labels}.")
+    if not recommendations:
+        recommendations.append("No strong event-signal lessons yet; keep collecting saved runs and evaluations.")
+    return recommendations
 
 
 def _failure_samples(evaluations: list[EvaluationResult]) -> list[dict[str, object]]:

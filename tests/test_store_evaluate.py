@@ -354,6 +354,14 @@ def test_evaluate_saved_runs_aggregates_by_strategy(tmp_path, monkeypatch):
     assert result["dimensions"]["by_shape_status"]["breakout_follow_through"]["pick_count"] == 1
     assert result["dimensions"]["by_shape_tag"]["breakout_setup"]["pick_count"] == 2
     assert result["dimensions"]["by_path_status"]["ok"]["pick_count"] == 2
+    event_review = result["event_signal_review"]
+    by_signal = {item["signal"]: item for item in event_review["signals"]}
+    assert event_review["summary"]["signal_count"] >= 5
+    assert by_signal["tag:价值"]["action"] == "prefer"
+    assert by_signal["tag:价值"]["average_return_pct"] == 10.0
+    assert by_signal["risk:监管问询"]["action"] == "avoid"
+    assert by_signal["risk:监管问询"]["failure_count"] == 1
+    assert any("Review avoided-event candidates" in item for item in event_review["recommendations"])
     review = result["failure_review"]
     assert review["summary"]["failure_count"] == 1
     assert review["summary"]["negative_pick_count"] == 1
