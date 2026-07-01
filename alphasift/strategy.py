@@ -294,6 +294,8 @@ def list_strategies(strategies_dir: Path | None = None) -> list[StrategyInfo]:
             market_scope=s.screening.market_scope,
             requires_daily_features=daily_required,
             data_requirements=_strategy_data_requirements(s, daily_required=daily_required),
+            required_snapshot_fields=_required_snapshot_fields(s.screening.hard_filters),
+            required_daily_fields=_required_daily_fields(s.screening.hard_filters),
             active_filters=_active_hard_filters(s.screening.hard_filters),
             factor_weights={key: float(value) for key, value in s.screening.factor_weights.items()},
             profile_keys=_strategy_profile_keys(s.screening),
@@ -327,6 +329,74 @@ def _active_hard_filters(filters_config: HardFilterConfig) -> list[str]:
         if value != default and value is not None and value is not False:
             active.append(name)
     return active
+
+
+def _required_snapshot_fields(filters_config: HardFilterConfig) -> list[str]:
+    fields: list[str] = []
+    if filters_config.exclude_st:
+        fields.append("name")
+    if filters_config.amount_min is not None:
+        fields.append("amount")
+    if filters_config.price_min is not None or filters_config.price_max is not None:
+        fields.append("price")
+    if filters_config.market_cap_min is not None or filters_config.market_cap_max is not None:
+        fields.append("total_mv")
+    if filters_config.pe_ttm_min is not None or filters_config.pe_ttm_max is not None:
+        fields.append("pe_ratio")
+    if filters_config.pb_min is not None or filters_config.pb_max is not None:
+        fields.append("pb_ratio")
+    if filters_config.volume_ratio_min is not None:
+        fields.append("volume_ratio")
+    if filters_config.turnover_rate_min is not None:
+        fields.append("turnover_rate")
+    if filters_config.change_pct_min is not None or filters_config.change_pct_max is not None:
+        fields.append("change_pct")
+    return list(dict.fromkeys(fields))
+
+
+def _required_daily_fields(filters_config: HardFilterConfig) -> list[str]:
+    checks = [
+        ("change_60d", filters_config.change_60d_min is not None or filters_config.change_60d_max is not None),
+        ("ma_bullish", filters_config.require_ma_bullish),
+        ("price_above_ma20", filters_config.require_price_above_ma20),
+        ("signal_score", filters_config.signal_score_min is not None),
+        ("macd_status", bool(filters_config.macd_status_whitelist)),
+        ("rsi_status", bool(filters_config.rsi_status_whitelist)),
+        (
+            "breakout_20d_pct",
+            filters_config.breakout_20d_pct_min is not None
+            or filters_config.breakout_20d_pct_max is not None,
+        ),
+        ("range_20d_pct", filters_config.range_20d_pct_max is not None),
+        (
+            "volume_ratio_20d",
+            filters_config.volume_ratio_20d_min is not None
+            or filters_config.volume_ratio_20d_max is not None,
+        ),
+        ("body_pct", filters_config.body_pct_min is not None or filters_config.body_pct_max is not None),
+        (
+            "pullback_to_ma20_pct",
+            filters_config.pullback_to_ma20_pct_min is not None
+            or filters_config.pullback_to_ma20_pct_max is not None,
+        ),
+        (
+            "consolidation_days_20d",
+            filters_config.consolidation_days_20d_min is not None
+            or filters_config.consolidation_days_20d_max is not None,
+        ),
+        (
+            "volatility_20d_pct",
+            filters_config.volatility_20d_pct_min is not None
+            or filters_config.volatility_20d_pct_max is not None,
+        ),
+        (
+            "max_drawdown_20d_pct",
+            filters_config.max_drawdown_20d_pct_min is not None
+            or filters_config.max_drawdown_20d_pct_max is not None,
+        ),
+        ("atr_20_pct", filters_config.atr_20_pct_min is not None or filters_config.atr_20_pct_max is not None),
+    ]
+    return [field for field, enabled in checks if enabled]
 
 
 def _strategy_profile_keys(screening: ScreeningConfig) -> dict[str, list[str]]:

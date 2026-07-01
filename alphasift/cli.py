@@ -666,11 +666,17 @@ def _format_strategies_explain(strategies) -> str:
             filters = f"{filters},+{extra_filters}"
         profiles = ",".join(strategy.profile_keys) or "-"
         tags = ",".join(strategy.tags) or "-"
+        required_fields = _format_required_strategy_fields(
+            strategy.required_snapshot_fields,
+            strategy.required_daily_fields,
+        )
         lines.append(
             f"{strategy.name:<24} v{strategy.version:<5} [{strategy.category:<9}] "
             f"data={data:<32} daily_required={strategy.requires_daily_features!s:<5} "
             f"factors={factors:<42} filters={filters} profiles={profiles} tags={tags}"
         )
+        if required_fields:
+            lines.append(f"  required_fields={required_fields}")
         lines.append(f"  {strategy.display_name}: {strategy.description}")
     return "\n".join(lines)
 
@@ -680,6 +686,26 @@ def _format_top_factor_weights(weights: dict[str, float], *, limit: int = 4) -> 
         return "-"
     ordered = sorted(weights.items(), key=lambda item: (-float(item[1]), item[0]))[:limit]
     return ",".join(f"{name}:{float(value):.2f}" for name, value in ordered)
+
+
+def _format_required_strategy_fields(
+    snapshot_fields: list[str],
+    daily_fields: list[str],
+    *,
+    limit: int = 8,
+) -> str:
+    groups = []
+    if snapshot_fields:
+        groups.append(f"snapshot[{_format_limited_csv(snapshot_fields, limit=limit)}]")
+    if daily_fields:
+        groups.append(f"daily_k[{_format_limited_csv(daily_fields, limit=limit)}]")
+    return " ".join(groups)
+
+
+def _format_limited_csv(values: list[str], *, limit: int) -> str:
+    shown = values[:limit]
+    suffix = f",+{len(values) - limit}" if len(values) > limit else ""
+    return ",".join(shown) + suffix
 
 
 def _format_screen_explain(result) -> str:

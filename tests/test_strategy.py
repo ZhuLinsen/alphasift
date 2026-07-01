@@ -79,6 +79,23 @@ def test_strategy_info_exposes_catalog_capabilities():
 
     assert strategy.requires_daily_features is True
     assert strategy.data_requirements == ["snapshot", "daily_k", "industry_context"]
+    assert strategy.required_snapshot_fields == [
+        "name",
+        "amount",
+        "price",
+        "total_mv",
+        "pe_ratio",
+        "pb_ratio",
+        "change_pct",
+    ]
+    assert strategy.required_daily_fields == [
+        "change_60d",
+        "signal_score",
+        "range_20d_pct",
+        "volatility_20d_pct",
+        "max_drawdown_20d_pct",
+        "atr_20_pct",
+    ]
     assert strategy.factor_weights["stability"] == pytest.approx(0.30)
     assert "volatility_20d_pct_max" in strategy.active_filters
     assert "risk" in strategy.profile_keys

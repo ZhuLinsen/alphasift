@@ -77,6 +77,8 @@ def test_cli_strategies_json_exposes_catalog_metadata(monkeypatch, capsys):
     low_volatility = by_name["low_volatility_quality"]
     assert low_volatility["requires_daily_features"] is True
     assert low_volatility["data_requirements"] == ["snapshot", "daily_k", "industry_context"]
+    assert "pb_ratio" in low_volatility["required_snapshot_fields"]
+    assert "volatility_20d_pct" in low_volatility["required_daily_fields"]
     assert low_volatility["factor_weights"]["stability"] == 0.30
     assert "volatility_20d_pct_max" in low_volatility["active_filters"]
 
@@ -90,6 +92,8 @@ def test_cli_strategies_explain_shows_data_requirements(monkeypatch, capsys):
     assert "strategies=" in out
     assert "low_volatility_quality" in out
     assert "data=snapshot,daily_k,industry_context" in out
+    assert "required_fields=snapshot[" in out
+    assert "daily_k[change_60d,signal_score" in out
 
 
 def test_cli_hotspots_explain_shows_fallback_and_source_errors(monkeypatch, tmp_path, capsys):
