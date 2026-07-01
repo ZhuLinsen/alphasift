@@ -18,6 +18,7 @@ def test_disabled_strategies_are_not_listed():
     strategies = load_all_strategies(Path("strategies"))
 
     assert "balanced_alpha" in strategies
+    assert "blue_chip_income" in strategies
     assert "capital_heat" in strategies
     assert "dual_low" in strategies
     assert "low_volatility_quality" in strategies
@@ -33,6 +34,7 @@ def test_list_strategies_returns_enabled_strategies_only():
 
     assert names == [
         "balanced_alpha",
+        "blue_chip_income",
         "capital_heat",
         "dual_low",
         "low_volatility_quality",
@@ -113,6 +115,40 @@ def test_strategy_info_exposes_catalog_capabilities():
     assert "low_volatility" in strategy.style["market_regime"]
 
 
+def test_blue_chip_income_is_snapshot_only_defensive_income_strategy():
+    info_by_name = {
+        item.name: item
+        for item in list_strategies(Path("strategies"))
+    }
+
+    strategy = info_by_name["blue_chip_income"]
+
+    assert strategy.category == "income"
+    assert strategy.requires_daily_features is False
+    assert strategy.data_requirements == ["snapshot"]
+    assert strategy.required_snapshot_fields == [
+        "name",
+        "amount",
+        "price",
+        "total_mv",
+        "pe_ratio",
+        "pb_ratio",
+        "volume_ratio",
+        "turnover_rate",
+        "change_pct",
+    ]
+    assert strategy.required_daily_fields == []
+    assert strategy.factor_weights["value"] == pytest.approx(0.30)
+    assert strategy.factor_weights["stability"] == pytest.approx(0.26)
+    assert strategy.factor_weights["size"] == pytest.approx(0.12)
+    assert "income" in strategy.tags
+    assert strategy.style["risk_profile"] == "defensive"
+    assert strategy.style["holding_period"] == "watchlist"
+    assert strategy.style["execution_style"] == "income_quality"
+    assert strategy.style["capital_profile"] == "high_liquidity"
+    assert "low_rate" in strategy.style["market_regime"]
+
+
 def test_match_strategies_strictly_filters_style_preferences():
     matches = match_strategies(
         Path("strategies"),
@@ -171,6 +207,8 @@ def test_strategy_facets_are_ui_filter_ready():
 
     assert facets["risk_profile"]["query_param"] == "risk_profile"
     assert facets["data_requirement"]["multi"] is True
+    assert "blue_chip_income" in risk_values["defensive"]["strategies"]
+    assert "blue_chip_income" in data_values["snapshot"]["strategies"]
     assert "low_volatility_quality" in risk_values["defensive"]["strategies"]
     assert "volume_breakout" in data_values["daily_k"]["strategies"]
     assert "low_volatility_quality" in daily_values["true"]["strategies"]

@@ -11,7 +11,7 @@ name: my_strategy
 display_name: 我的策略
 description: 一句话描述策略目标
 version: "1.0"
-category: value     # trend / value / pattern / reversal
+category: value     # trend / value / income / quality / momentum / pattern / reversal
 tags: [value, custom]
 style:
   risk_profile: defensive
@@ -37,7 +37,7 @@ name: string              # 唯一标识（英文下划线）
 display_name: string      # 显示名称
 description: string       # 策略说明
 version: string           # 策略版本，建议每次语义变化递增
-category: string          # trend / value / pattern / reversal / framework
+category: string          # trend / value / income / quality / momentum / pattern / reversal / framework
 tags: [string]            # 可选标签，便于检索和评估分组
 style:                    # 可选，面向 UI/agent 的策略风格，不参与硬筛
   risk_profile: string    # defensive / balanced / aggressive
