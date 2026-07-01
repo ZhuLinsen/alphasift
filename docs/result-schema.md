@@ -89,6 +89,7 @@ The same commands also include `event_signal_review` for success/failure attribu
 
 - `summary`: signal count, signal occurrence count, positive/negative/mixed signal counts.
 - `signals`: one row per combined signal such as `tag:<label>`, `catalyst:<label>`, `risk:<label>`, or `post:<label>`, with sample count, evaluated count, average/median/best/worst returns, win rate, failure count/rate, sample codes, and an `action` of `prefer`, `avoid`, `watch`, or `insufficient_data`.
+- `strategy_patch_suggestions`: per-strategy review items that convert positive/negative signal evidence into reviewable `screening.event_profile.preferred_event_tags` and `avoided_event_tags` append suggestions. Each item includes `field_changes`, compact `evidence`, and a YAML fragment under `yaml_patch`; the command does not modify strategy files automatically.
 - `recommendations`: UI-ready next actions that suggest which signals should be reviewed as preferred or avoided event tags.
 
 ## Data-source doctor payload

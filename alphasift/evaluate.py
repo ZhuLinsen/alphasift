@@ -877,9 +877,12 @@ def _event_signal_review(evaluations: list[EvaluationResult]) -> dict[str, objec
         "negative_signal_count": sum(1 for item in signals if item.get("action") == "avoid"),
         "mixed_signal_count": sum(1 for item in signals if item.get("action") == "watch"),
     }
+    patch_suggestions = _event_signal_strategy_patch_suggestions(evaluations)
+    summary["patch_suggestion_count"] = len(patch_suggestions)
     return {
         "summary": summary,
         "signals": signals,
+        "strategy_patch_suggestions": patch_suggestions,
         "recommendations": _event_signal_recommendations(signals),
     }
 
@@ -984,6 +987,162 @@ def _event_signal_recommendations(signals: list[dict[str, object]]) -> list[str]
     if not recommendations:
         recommendations.append("No strong event-signal lessons yet; keep collecting saved runs and evaluations.")
     return recommendations
+
+
+def _event_signal_strategy_patch_suggestions(
+    evaluations: list[EvaluationResult],
+) -> list[dict[str, object]]:
+    groups: dict[tuple[str, str], list[tuple[EvaluationResult, PickEvaluation]]] = {}
+    for evaluation in evaluations:
+        strategy = evaluation.strategy or "unknown"
+        for pick in evaluation.picks:
+            for signal in _event_signals(pick):
+                if signal == "none":
+                    continue
+                groups.setdefault((strategy, signal), []).append((evaluation, pick))
+
+    by_strategy: dict[str, list[dict[str, object]]] = {}
+    for (strategy, signal), items in groups.items():
+        stats = _event_signal_stats(signal, items)
+        if stats.get("action") not in {"prefer", "avoid"}:
+            continue
+        if not stats.get("evaluated_pick_count"):
+            continue
+        by_strategy.setdefault(strategy, []).append(stats)
+
+    suggestions: list[dict[str, object]] = []
+    for strategy, signals in by_strategy.items():
+        signals.sort(
+            key=lambda item: (
+                _event_signal_action_rank(str(item.get("action", ""))),
+                item.get("average_return_pct") is None,
+                -(
+                    float(item["average_return_pct"])
+                    if item.get("average_return_pct") is not None
+                    else -999999.0
+                ),
+                str(item.get("signal", "")),
+            )
+        )
+        preferred = _event_signal_patch_values(
+            [item for item in signals if item.get("action") == "prefer"]
+        )
+        avoided = _event_signal_patch_values(
+            [item for item in signals if item.get("action") == "avoid"]
+        )
+        if not preferred and not avoided:
+            continue
+        field_changes = _event_signal_field_changes(preferred=preferred, avoided=avoided)
+        suggestions.append({
+            "strategy": strategy,
+            "preferred_event_tags": preferred,
+            "avoided_event_tags": avoided,
+            "field_changes": field_changes,
+            "evidence": [_event_signal_patch_evidence(item) for item in signals],
+            "yaml_patch": _event_signal_yaml_patch(preferred=preferred, avoided=avoided),
+            "recommendation": _event_signal_patch_recommendation(
+                strategy,
+                preferred=preferred,
+                avoided=avoided,
+            ),
+        })
+
+    suggestions.sort(
+        key=lambda item: (
+            -len(item.get("avoided_event_tags", []) or []),
+            -len(item.get("preferred_event_tags", []) or []),
+            str(item.get("strategy", "")),
+        )
+    )
+    return suggestions
+
+
+def _event_signal_patch_values(signals: list[dict[str, object]]) -> list[str]:
+    return _dedupe_strings(
+        _event_signal_patch_value(str(item.get("signal", "")))
+        for item in signals
+    )
+
+
+def _event_signal_patch_value(signal: str) -> str:
+    prefix, separator, label = signal.partition(":")
+    if not separator:
+        return signal
+    label = label.strip()
+    if prefix == "risk":
+        return f"风险:{label}"
+    if prefix == "catalyst":
+        return f"催化:{label}"
+    if prefix == "post":
+        return f"后验:{label}"
+    return label
+
+
+def _event_signal_field_changes(
+    *,
+    preferred: list[str],
+    avoided: list[str],
+) -> list[dict[str, object]]:
+    changes: list[dict[str, object]] = []
+    if preferred:
+        changes.append({
+            "path": "screening.event_profile.preferred_event_tags",
+            "operation": "append_unique",
+            "add": preferred,
+        })
+    if avoided:
+        changes.append({
+            "path": "screening.event_profile.avoided_event_tags",
+            "operation": "append_unique",
+            "add": avoided,
+        })
+    return changes
+
+
+def _event_signal_patch_evidence(item: dict[str, object]) -> dict[str, object]:
+    return {
+        "signal": item.get("signal"),
+        "action": item.get("action"),
+        "pick_count": item.get("pick_count"),
+        "evaluated_pick_count": item.get("evaluated_pick_count"),
+        "average_return_pct": item.get("average_return_pct"),
+        "win_rate": item.get("win_rate"),
+        "failure_count": item.get("failure_count"),
+        "failure_rate": item.get("failure_rate"),
+        "sample_codes": item.get("sample_codes", []),
+    }
+
+
+def _event_signal_yaml_patch(
+    *,
+    preferred: list[str],
+    avoided: list[str],
+) -> str:
+    lines = [
+        "screening:",
+        "  event_profile:",
+    ]
+    if preferred:
+        lines.append("    preferred_event_tags:")
+        lines.extend(f"      - {value}" for value in preferred)
+    if avoided:
+        lines.append("    avoided_event_tags:")
+        lines.extend(f"      - {value}" for value in avoided)
+    return "\n".join(lines)
+
+
+def _event_signal_patch_recommendation(
+    strategy: str,
+    *,
+    preferred: list[str],
+    avoided: list[str],
+) -> str:
+    parts: list[str] = []
+    if preferred:
+        parts.append("prefer " + ", ".join(preferred[:3]))
+    if avoided:
+        parts.append("avoid " + ", ".join(avoided[:3]))
+    return f"Review strategy `{strategy}` event_profile patch: {'; '.join(parts)}."
 
 
 def _failure_samples(evaluations: list[EvaluationResult]) -> list[dict[str, object]]:

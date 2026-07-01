@@ -1428,7 +1428,8 @@ def _format_event_signal_review_explain(
             f"occurrences={summary.get('signal_occurrence_count', 0)} "
             f"positive={summary.get('positive_signal_count', 0)} "
             f"negative={summary.get('negative_signal_count', 0)} "
-            f"mixed={summary.get('mixed_signal_count', 0)}"
+            f"mixed={summary.get('mixed_signal_count', 0)} "
+            f"patches={summary.get('patch_suggestion_count', 0)}"
         )
     ]
     signals = review.get("signals", [])
@@ -1442,6 +1443,26 @@ def _format_event_signal_review_explain(
                 f"{str(item.get('signal') or ''):<28} {str(item.get('action') or ''):<16} "
                 f"{item.get('pick_count')!s:<5} {item.get('average_return_pct')!s:<10} "
                 f"{item.get('win_rate')!s:<8} {item.get('failure_count')!s:<8} {codes}"
+            )
+    patch_suggestions = review.get("strategy_patch_suggestions", [])
+    if isinstance(patch_suggestions, list) and patch_suggestions:
+        lines.append("event_signal_strategy_patches strategy prefer avoid evidence")
+        for item in patch_suggestions[:limit]:
+            if not isinstance(item, dict):
+                continue
+            preferred = ",".join(str(value) for value in item.get("preferred_event_tags", [])[:3])
+            avoided = ",".join(str(value) for value in item.get("avoided_event_tags", [])[:3])
+            evidence_items = item.get("evidence", [])
+            if not isinstance(evidence_items, list):
+                evidence_items = []
+            evidence = ",".join(
+                str(value.get("signal", ""))
+                for value in evidence_items[:3]
+                if isinstance(value, dict)
+            )
+            lines.append(
+                f"{str(item.get('strategy') or ''):<20} "
+                f"{preferred or '-':<28} {avoided or '-':<32} {evidence or '-'}"
             )
     recommendations = review.get("recommendations", [])
     if isinstance(recommendations, list) and recommendations:

@@ -362,6 +362,19 @@ def test_evaluate_saved_runs_aggregates_by_strategy(tmp_path, monkeypatch):
     assert by_signal["risk:监管问询"]["action"] == "avoid"
     assert by_signal["risk:监管问询"]["failure_count"] == 1
     assert any("Review avoided-event candidates" in item for item in event_review["recommendations"])
+    patch_by_strategy = {
+        item["strategy"]: item
+        for item in event_review["strategy_patch_suggestions"]
+    }
+    assert event_review["summary"]["patch_suggestion_count"] == 2
+    assert patch_by_strategy["dual_low"]["preferred_event_tags"] == ["价值"]
+    assert "preferred_event_tags" in patch_by_strategy["dual_low"]["yaml_patch"]
+    assert "风险:监管问询" in patch_by_strategy["volume_breakout"]["avoided_event_tags"]
+    assert {
+        "path": "screening.event_profile.avoided_event_tags",
+        "operation": "append_unique",
+        "add": patch_by_strategy["volume_breakout"]["avoided_event_tags"],
+    } in patch_by_strategy["volume_breakout"]["field_changes"]
     review = result["failure_review"]
     assert review["summary"]["failure_count"] == 1
     assert review["summary"]["negative_pick_count"] == 1
