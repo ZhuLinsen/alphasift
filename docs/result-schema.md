@@ -62,6 +62,18 @@ The current `RunReport` schema version is `1`. Stable top-level fields:
 - `top_picks`: UI-ready pick cards with identity, scores, risk, topic, daily quality, and post-analysis fields.
 - `evaluation`: optional T+N evaluation summary and evaluated pick cards when `--evaluate` is used.
 
+## Run index metadata
+
+Use `alphasift runs --json` for a lightweight saved-run index without loading full run payloads. Current sidecar metadata schema version is `2`.
+
+Stable fields include:
+
+- identity: `run_id`, `strategy`, `market`, `strategy_version`, `strategy_category`, `created_at`
+- counts: `picks`, `snapshot_count`, `after_filter_count`
+- source status: `snapshot_source`, `source_error_count`, `degradation_count`
+- enrichment status: `llm_ranked`, `llm_coverage`, `daily_enriched`, `daily_enrich_count`, `post_analyzers`
+- paths: `path`, `report_path`
+
 ## DSA readiness
 
 DSA is optional. Core screening must continue when DSA is unavailable.

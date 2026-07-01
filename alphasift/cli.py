@@ -207,6 +207,8 @@ def main():
     # runs
     rp = sub.add_parser("runs", help="列出已保存的运行")
     rp.add_argument("--limit", type=int, default=20)
+    rp.add_argument("--strategy", default=None, help="只列出指定策略的运行")
+    rp.add_argument("--json", action="store_true", help="以 JSON 输出完整运行元数据")
 
     # report
     rep = sub.add_parser("report", help="把已保存运行生成为 Markdown/JSON 报告")
@@ -449,10 +451,19 @@ def main():
 
     elif args.command == "runs":
         config = Config.from_env()
-        for item in list_saved_runs(data_dir=config.data_dir, limit=args.limit):
+        runs = list_saved_runs(data_dir=config.data_dir, limit=args.limit, strategy=args.strategy)
+        if args.json:
+            print(json.dumps(runs, ensure_ascii=False, indent=2))
+            return
+        for item in runs:
             print(
                 f"{item['run_id']:<14} {item['strategy']:<20} "
-                f"{item['created_at']:<26} picks={item['picks']} {item['path']}"
+                f"v{item.get('strategy_version') or '-':<5} "
+                f"{item['created_at']:<26} picks={item['picks']} "
+                f"source={item.get('snapshot_source') or '-'} "
+                f"daily={item.get('daily_enriched')} "
+                f"degraded={item.get('degradation_count', 0)} "
+                f"{item['path']}"
             )
 
     elif args.command == "report":

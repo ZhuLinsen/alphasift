@@ -10,6 +10,8 @@ from alphasift.hotspot import (
     TimelineEvent,
     save_hotspots_json,
 )
+from alphasift.models import Pick, ScreenResult
+from alphasift.store import save_screen_result
 
 
 def test_write_industry_cache_metadata_supports_output_without_suffix(tmp_path):
@@ -94,6 +96,43 @@ def test_cli_strategies_explain_shows_data_requirements(monkeypatch, capsys):
     assert "data=snapshot,daily_k,industry_context" in out
     assert "required_fields=snapshot[" in out
     assert "daily_k[change_60d,signal_score" in out
+
+
+def test_cli_runs_json_filters_strategy(monkeypatch, tmp_path, capsys):
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            strategy_version="1.2",
+            strategy_category="value",
+            run_id="run_dual",
+            snapshot_source="sina",
+            daily_enriched=True,
+            post_analyzers=["scorecard"],
+            picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80)],
+        ),
+        data_dir=tmp_path,
+    )
+    save_screen_result(
+        ScreenResult(
+            strategy="volume_breakout",
+            market="cn",
+            run_id="run_breakout",
+            picks=[Pick(rank=1, code="000002", name="万科A", final_score=75, screen_score=75)],
+        ),
+        data_dir=tmp_path,
+    )
+    monkeypatch.setenv("ALPHASIFT_DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(sys, "argv", ["alphasift", "runs", "--strategy", "dual_low", "--json"])
+
+    main()
+
+    payload = json.loads(capsys.readouterr().out)
+    assert [item["run_id"] for item in payload] == ["run_dual"]
+    assert payload[0]["strategy_version"] == "1.2"
+    assert payload[0]["snapshot_source"] == "sina"
+    assert payload[0]["daily_enriched"] is True
+    assert payload[0]["post_analyzers"] == ["scorecard"]
 
 
 def test_cli_hotspots_explain_shows_fallback_and_source_errors(monkeypatch, tmp_path, capsys):

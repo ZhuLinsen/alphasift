@@ -108,11 +108,13 @@ alphasift evaluate-batch --limit 20 --explain
 为保存的运行生成复盘报告：
 
 ```bash
+alphasift runs --json
+alphasift runs --strategy low_volatility_quality --json
 alphasift report <run_id> --output data/reports/<run_id>.md
 alphasift report <run_id> --json --output data/reports/<run_id>.json
 ```
 
-默认报告是 Markdown，适合直接进入人工复盘、通知或日报；`--json` 输出稳定的 `RunReport` payload，给 Web UI、agent 或外部服务消费。加 `--evaluate` 会在报告中附带最新 T+N 评估摘要。
+`runs --json` 会输出轻量运行索引，包含策略版本、类别、数据源、LLM/日 K 状态、降级计数和建议报告路径。默认报告是 Markdown，适合直接进入人工复盘、通知或日报；`report --json` 输出稳定的 `RunReport` payload，给 Web UI、agent 或外部服务消费。加 `--evaluate` 会在报告中附带最新 T+N 评估摘要。
 
 评估时额外抓取日 K 路径，输出最大回撤和最大浮盈：
 
@@ -137,6 +139,7 @@ for p in result.picks:
 ```bash
 alphasift evaluate <run_id> --explain
 alphasift evaluate-batch --limit 20 --explain
+alphasift runs --strategy dual_low --json
 ```
 
 评估会用保存时价格与评估时最新快照价格计算 T+N 收益、胜率、缺失报价、交易成本扣减、等权组合摘要和形态后验标签。启用 `--with-price-path` 后，会额外估算最大回撤和最大浮盈。

@@ -68,6 +68,7 @@ alphasift audit
 
 # Save a run and generate a Markdown review report
 alphasift screen dual_low --no-llm --save-run
+alphasift runs --json
 alphasift report <run_id> --output data/reports/dual_low.md
 ```
 

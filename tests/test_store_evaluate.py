@@ -40,6 +40,18 @@ def test_list_saved_runs_reads_only_metadata_until_limit(tmp_path):
         strategy="dual_low",
         market="cn",
         run_id="run_metadata",
+        strategy_version="1.2",
+        strategy_category="value",
+        snapshot_count=3000,
+        after_filter_count=100,
+        snapshot_source="sina",
+        source_errors=["akshare: timeout"],
+        degradation=["used fallback"],
+        llm_ranked=True,
+        llm_coverage=0.75,
+        daily_enriched=True,
+        daily_enrich_count=20,
+        post_analyzers=["scorecard"],
         created_at="2026-04-01T09:30:00",
         picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80, price=10)],
     )
@@ -49,12 +61,26 @@ def test_list_saved_runs_reads_only_metadata_until_limit(tmp_path):
     runs = list_saved_runs(data_dir=tmp_path, limit=1)
 
     assert runs == [{
+        "schema_version": 2,
         "run_id": "run_metadata",
         "strategy": "dual_low",
         "market": "cn",
+        "strategy_version": "1.2",
+        "strategy_category": "value",
         "created_at": "2026-04-01T09:30:00",
         "picks": 1,
+        "snapshot_count": 3000,
+        "after_filter_count": 100,
+        "snapshot_source": "sina",
+        "source_error_count": 1,
+        "degradation_count": 1,
+        "llm_ranked": True,
+        "llm_coverage": 0.75,
+        "daily_enriched": True,
+        "daily_enrich_count": 20,
+        "post_analyzers": ["scorecard"],
         "path": str(path),
+        "report_path": str(path.with_suffix(".md")),
     }]
 
 
@@ -75,6 +101,10 @@ def test_list_saved_runs_falls_back_to_payload_when_metadata_missing(tmp_path):
 
     assert runs[0]["run_id"] == "run_legacy"
     assert runs[0]["picks"] == 1
+    assert runs[0]["schema_version"] == 1
+    assert runs[0]["strategy_version"] == ""
+    assert runs[0]["source_error_count"] == 0
+    assert runs[0]["report_path"].endswith("run_legacy.md")
 
 
 def test_screen_result_jsonl_contains_run_and_pick_lines():
