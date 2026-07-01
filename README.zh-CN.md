@@ -320,7 +320,7 @@ tushare → sina → efinance → akshare_em → em_datacenter
 
 ### 自定义策略
 
-可用 `alphasift strategies --json` 或 `alphasift strategies --explain` 查看策略数据依赖、活跃硬筛、因子权重和 profile 覆盖项；可用 `alphasift doctor data-sources --all-strategies --explain` 查看跨策略数据源字段覆盖矩阵。在 `strategies/` 目录添加 YAML 文件即可。参考 [docs/strategy-guide.md](docs/strategy-guide.md)。
+可用 `alphasift strategies --json` 或 `alphasift strategies --explain` 查看策略风格属性、数据依赖、活跃硬筛、因子权重和 profile 覆盖项；可用 `alphasift doctor data-sources --all-strategies --explain` 查看跨策略数据源字段覆盖矩阵。在 `strategies/` 目录添加 YAML 文件即可。参考 [docs/strategy-guide.md](docs/strategy-guide.md)。
 
 ## 已知限制
 

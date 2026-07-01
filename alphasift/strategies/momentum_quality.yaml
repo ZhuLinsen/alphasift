@@ -5,6 +5,13 @@ description: 兼顾趋势确认和基本面质量的中线候选发现
 version: "1.1"
 category: framework
 tags: [momentum, quality, trend, llm_friendly]
+style:
+  risk_profile: balanced
+  holding_period: swing
+  execution_style: trend_quality
+  market_regime: [risk_on, trend, rotation]
+  capital_profile: high_liquidity
+  ui_badge: 趋势
 
 screening:
   enabled: true

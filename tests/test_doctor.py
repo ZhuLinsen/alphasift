@@ -90,6 +90,7 @@ def test_doctor_data_sources_reports_strategy_requirements_without_live(tmp_path
 
     assert payload["status"] == "skipped"
     assert payload["strategy_requirements"]["strategy"] == "low_volatility_quality"
+    assert payload["strategy_requirements"]["style"]["risk_profile"] == "defensive"
     assert "pb_ratio" in payload["snapshot"]["required_fields"]
     assert "volatility_20d_pct" in payload["daily"]["required_fields"]
 
@@ -117,6 +118,7 @@ def test_doctor_data_sources_reports_all_strategy_coverage_without_live(tmp_path
     assert "volume_ratio" in payload["snapshot"]["required_fields"]
     assert "volatility_20d_pct" in payload["daily"]["required_fields"]
     assert coverage["low_volatility_quality"]["status"] == "skipped"
+    assert coverage["low_volatility_quality"]["style"]["holding_period"] == "swing"
     assert "pb_ratio" in coverage["low_volatility_quality"]["required_snapshot_fields"]
     assert "volatility_20d_pct" in coverage["low_volatility_quality"]["required_daily_fields"]
 

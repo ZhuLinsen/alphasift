@@ -257,9 +257,10 @@ def _strategy_requirement_payload(item) -> dict[str, Any]:
     return {
         "strategy": item.name,
         "display_name": item.display_name,
-        "category": item.category,
-        "data_requirements": list(item.data_requirements),
-        "requires_daily_features": bool(item.requires_daily_features),
+                "category": item.category,
+                "style": dict(item.style),
+                "data_requirements": list(item.data_requirements),
+                "requires_daily_features": bool(item.requires_daily_features),
         "required_snapshot_fields": list(item.required_snapshot_fields),
         "required_daily_fields": list(item.required_daily_fields),
     }
@@ -308,6 +309,7 @@ def _build_strategy_coverage(
                 "strategy": item.get("strategy", ""),
                 "display_name": item.get("display_name", ""),
                 "category": item.get("category", ""),
+                "style": dict(item.get("style", {}) or {}),
                 "data_requirements": list(item.get("data_requirements", []) or []),
                 "requires_daily_features": bool(item.get("requires_daily_features")),
                 "status": _strategy_coverage_status(

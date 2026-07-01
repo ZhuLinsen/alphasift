@@ -13,6 +13,13 @@ description: 一句话描述策略目标
 version: "1.0"
 category: value     # trend / value / pattern / reversal
 tags: [value, custom]
+style:
+  risk_profile: defensive
+  holding_period: watchlist
+  execution_style: mean_reversion
+  market_regime: [risk_off, range_bound]
+  capital_profile: medium_liquidity
+  ui_badge: 价值
 
 screening:
   enabled: true
@@ -32,6 +39,13 @@ description: string       # 策略说明
 version: string           # 策略版本，建议每次语义变化递增
 category: string          # trend / value / pattern / reversal / framework
 tags: [string]            # 可选标签，便于检索和评估分组
+style:                    # 可选，面向 UI/agent 的策略风格，不参与硬筛
+  risk_profile: string    # defensive / balanced / aggressive
+  holding_period: string  # short_term / swing / watchlist
+  execution_style: string # mean_reversion / momentum / breakout / multi_factor 等
+  market_regime: [string] # risk_on / risk_off / trend / range_bound / rotation 等
+  capital_profile: string # high_liquidity / medium_liquidity
+  ui_badge: string        # UI 中显示的短标签
 
 screening:
   enabled: bool            # 是否启用选股

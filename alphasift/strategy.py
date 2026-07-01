@@ -13,6 +13,7 @@ from alphasift.models import (
     ScreeningConfig,
     Strategy,
     StrategyInfo,
+    StrategyStyle,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ _TOP_LEVEL_KEYS = {
     "version",
     "category",
     "tags",
+    "style",
     "screening",
 }
 _SCREENING_KEYS = {
@@ -169,6 +171,14 @@ _EVENT_PROFILE_KEYS = {
     "source_weights",
     "notes",
 }
+_STYLE_KEYS = {
+    "risk_profile",
+    "holding_period",
+    "execution_style",
+    "market_regime",
+    "capital_profile",
+    "ui_badge",
+}
 _STRATEGY_DIR_CACHE: dict[
     Path,
     tuple[tuple[tuple[str, int, int, str], ...], dict[str, Strategy]],
@@ -229,6 +239,7 @@ def load_strategy(filepath: Path) -> Strategy:
         version=str(data.get("version", "1")),
         category=data.get("category", "trend"),
         tags=list(data.get("tags", []) or []),
+        style=_strategy_style(data, filepath),
         screening=screening,
     )
 
@@ -299,6 +310,7 @@ def list_strategies(strategies_dir: Path | None = None) -> list[StrategyInfo]:
             active_filters=_active_hard_filters(s.screening.hard_filters),
             factor_weights={key: float(value) for key, value in s.screening.factor_weights.items()},
             profile_keys=_strategy_profile_keys(s.screening),
+            style=_style_to_dict(s.style),
         ))
     return infos
 
@@ -412,6 +424,90 @@ def _strategy_profile_keys(screening: ScreeningConfig) -> dict[str, list[str]]:
         for name, value in profile_values.items()
         if value
     }
+
+
+def _strategy_style(data: dict, filepath: Path) -> StrategyStyle:
+    raw = data.get("style", {})
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise ValueError(f"Invalid style section in strategy file: {filepath}")
+    _raise_unknown_keys(raw, _STYLE_KEYS, f"style section of {filepath.name}")
+    inferred = _infer_strategy_style(
+        category=str(data.get("category", "trend")),
+        tags=[str(item) for item in data.get("tags", []) or []],
+    )
+    return StrategyStyle(
+        risk_profile=str(raw.get("risk_profile") or inferred.risk_profile),
+        holding_period=str(raw.get("holding_period") or inferred.holding_period),
+        execution_style=str(raw.get("execution_style") or inferred.execution_style),
+        market_regime=_string_list(raw.get("market_regime") or inferred.market_regime),
+        capital_profile=str(raw.get("capital_profile") or inferred.capital_profile),
+        ui_badge=str(raw.get("ui_badge") or inferred.ui_badge),
+    )
+
+
+def _infer_strategy_style(*, category: str, tags: list[str]) -> StrategyStyle:
+    tag_set = {tag.lower() for tag in tags}
+    if category == "value" or "defensive" in tag_set:
+        risk_profile = "defensive"
+    elif category in {"momentum", "trend"}:
+        risk_profile = "aggressive"
+    else:
+        risk_profile = "balanced"
+
+    if "short_term" in tag_set or category == "momentum":
+        holding_period = "short_term"
+    elif "daily_k" in tag_set or "trend" in tag_set:
+        holding_period = "swing"
+    else:
+        holding_period = "watchlist"
+
+    if category == "value":
+        execution_style = "mean_reversion"
+    elif category == "reversal":
+        execution_style = "reversal"
+    elif category in {"momentum", "trend"}:
+        execution_style = "trend_following"
+    else:
+        execution_style = "multi_factor"
+
+    if risk_profile == "defensive":
+        market_regime = ["risk_off", "range_bound"]
+    elif execution_style == "trend_following":
+        market_regime = ["risk_on", "trend"]
+    elif execution_style == "reversal":
+        market_regime = ["oversold_repair", "range_bound"]
+    else:
+        market_regime = ["neutral"]
+
+    return StrategyStyle(
+        risk_profile=risk_profile,
+        holding_period=holding_period,
+        execution_style=execution_style,
+        market_regime=market_regime,
+        capital_profile="medium_liquidity",
+        ui_badge=category,
+    )
+
+
+def _style_to_dict(style: StrategyStyle) -> dict[str, object]:
+    return {
+        "risk_profile": style.risk_profile,
+        "holding_period": style.holding_period,
+        "execution_style": style.execution_style,
+        "market_regime": list(style.market_regime),
+        "capital_profile": style.capital_profile,
+        "ui_badge": style.ui_badge,
+    }
+
+
+def _string_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item).strip()]
+    if isinstance(value, str):
+        return [item.strip() for item in value.split(",") if item.strip()]
+    return []
 
 
 def _validate_strategy_dir_sync(strategies_dir: Path) -> None:

@@ -5,6 +5,13 @@ description: 偏防守的质量型候选，优先选择波动较低、回撤浅�
 version: "1.0"
 category: quality
 tags: [quality, defensive, low_volatility, daily_k]
+style:
+  risk_profile: defensive
+  holding_period: swing
+  execution_style: quality_defensive
+  market_regime: [risk_off, range_bound, low_volatility]
+  capital_profile: medium_liquidity
+  ui_badge: 质量
 
 screening:
   enabled: true

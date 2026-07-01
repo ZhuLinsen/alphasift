@@ -65,6 +65,18 @@ class ScreeningConfig:
 
 
 @dataclass
+class StrategyStyle:
+    """Human/UI-facing strategy style metadata."""
+
+    risk_profile: str = ""
+    holding_period: str = ""
+    execution_style: str = ""
+    market_regime: list[str] = field(default_factory=list)
+    capital_profile: str = ""
+    ui_badge: str = ""
+
+
+@dataclass
 class Strategy:
     name: str
     display_name: str
@@ -72,6 +84,7 @@ class Strategy:
     version: str = "1"
     category: str = "trend"
     tags: list[str] = field(default_factory=list)
+    style: StrategyStyle = field(default_factory=StrategyStyle)
     screening: ScreeningConfig = field(default_factory=ScreeningConfig)
 
 
@@ -92,6 +105,7 @@ class StrategyInfo:
     active_filters: list[str] = field(default_factory=list)
     factor_weights: dict[str, float] = field(default_factory=dict)
     profile_keys: dict[str, list[str]] = field(default_factory=dict)
+    style: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass

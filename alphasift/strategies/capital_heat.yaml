@@ -5,6 +5,13 @@ description: 资金活跃、量价同步但未极端过热的短线候选
 version: "1.1"
 category: momentum
 tags: [momentum, capital_flow, short_term]
+style:
+  risk_profile: aggressive
+  holding_period: short_term
+  execution_style: momentum
+  market_regime: [risk_on, high_liquidity]
+  capital_profile: high_liquidity
+  ui_badge: 资金
 
 screening:
   enabled: true

@@ -5,6 +5,13 @@ description: 成交量放大突破关键阻力位，趋势启动信号
 version: "1.2"
 category: trend
 tags: [momentum, volume, breakout]
+style:
+  risk_profile: aggressive
+  holding_period: short_term
+  execution_style: breakout
+  market_regime: [risk_on, trend, high_volume]
+  capital_profile: high_liquidity
+  ui_badge: 突破
 
 screening:
   enabled: true

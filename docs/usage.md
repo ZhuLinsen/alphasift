@@ -30,7 +30,7 @@ alphasift strategies --explain
 alphasift strategies --json
 ```
 
-结构化输出包含策略分类、标签、数据依赖、是否需要日 K、必需 snapshot/daily 字段、活跃 hard filters、因子权重和 profile 覆盖项。
+结构化输出包含策略分类、标签、风格属性、数据依赖、是否需要日 K、必需 snapshot/daily 字段、活跃 hard filters、因子权重和 profile 覆盖项。
 
 按具体策略预检数据源字段覆盖：
 

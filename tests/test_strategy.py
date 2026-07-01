@@ -100,6 +100,10 @@ def test_strategy_info_exposes_catalog_capabilities():
     assert "volatility_20d_pct_max" in strategy.active_filters
     assert "risk" in strategy.profile_keys
     assert "low_daily_quality_score" in strategy.profile_keys["risk"]
+    assert strategy.style["risk_profile"] == "defensive"
+    assert strategy.style["holding_period"] == "swing"
+    assert strategy.style["execution_style"] == "quality_defensive"
+    assert "low_volatility" in strategy.style["market_regime"]
 
 
 def test_load_all_strategies_allows_repo_local_custom_strategy(tmp_path):
@@ -122,6 +126,7 @@ def test_load_all_strategies_allows_repo_local_custom_strategy(tmp_path):
     strategies = load_all_strategies(tmp_path)
 
     assert "custom_alpha" in strategies
+    assert strategies["custom_alpha"].style.execution_style == "trend_following"
 
 
 def test_load_all_strategies_uses_cache_until_yaml_mtime_changes(tmp_path, monkeypatch):
@@ -200,6 +205,13 @@ def test_load_strategy_accepts_rule_profiles(tmp_path):
             "name: profiled",
             "display_name: 规则配置策略",
             "description: demo",
+            "style:",
+            "  risk_profile: balanced",
+            "  holding_period: swing",
+            "  execution_style: multi_factor",
+            "  market_regime: [neutral]",
+            "  capital_profile: medium_liquidity",
+            "  ui_badge: 配置",
             "screening:",
             "  enabled: true",
             "  market_scope: [cn]",
@@ -234,6 +246,27 @@ def test_load_strategy_accepts_rule_profiles(tmp_path):
     assert strategy.screening.scorecard_profile["value_quality_bonus"] == 1.5
     assert strategy.screening.event_profile["preferred_event_tags"] == ["回购增持"]
     assert strategy.screening.event_profile["source_weights"]["announcement"] == 1.2
+    assert strategy.style.ui_badge == "配置"
+
+
+def test_load_strategy_rejects_unknown_style_key(tmp_path):
+    path = tmp_path / "broken_style.yaml"
+    path.write_text(
+        "\n".join([
+            "name: broken_style",
+            "display_name: 破损风格",
+            "description: demo",
+            "style:",
+            "  risk: high",
+            "screening:",
+            "  enabled: true",
+            "  market_scope: [cn]",
+        ]),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="style section"):
+        load_strategy(path)
 
 
 def test_load_strategy_rejects_unknown_profile_key(tmp_path):

@@ -733,6 +733,7 @@ def _format_strategies_explain(strategies) -> str:
             filters = f"{filters},+{extra_filters}"
         profiles = ",".join(strategy.profile_keys) or "-"
         tags = ",".join(strategy.tags) or "-"
+        style = _format_strategy_style(strategy.style)
         required_fields = _format_required_strategy_fields(
             strategy.required_snapshot_fields,
             strategy.required_daily_fields,
@@ -740,7 +741,7 @@ def _format_strategies_explain(strategies) -> str:
         lines.append(
             f"{strategy.name:<24} v{strategy.version:<5} [{strategy.category:<9}] "
             f"data={data:<32} daily_required={strategy.requires_daily_features!s:<5} "
-            f"factors={factors:<42} filters={filters} profiles={profiles} tags={tags}"
+            f"style={style:<40} factors={factors:<42} filters={filters} profiles={profiles} tags={tags}"
         )
         if required_fields:
             lines.append(f"  required_fields={required_fields}")
@@ -753,6 +754,20 @@ def _format_top_factor_weights(weights: dict[str, float], *, limit: int = 4) -> 
         return "-"
     ordered = sorted(weights.items(), key=lambda item: (-float(item[1]), item[0]))[:limit]
     return ",".join(f"{name}:{float(value):.2f}" for name, value in ordered)
+
+
+def _format_strategy_style(style: dict[str, object]) -> str:
+    if not style:
+        return "-"
+    regime = ",".join(str(item) for item in style.get("market_regime", []) or [])
+    parts = [
+        str(style.get("risk_profile") or "-"),
+        str(style.get("holding_period") or "-"),
+        str(style.get("execution_style") or "-"),
+    ]
+    if regime:
+        parts.append(regime)
+    return "/".join(parts)
 
 
 def _format_required_strategy_fields(

@@ -4,7 +4,7 @@
 
 ## 文件格式
 
-每个 `.yaml` 文件定义一个选股策略，包含 `screening:` 段描述筛选规则。
+每个 `.yaml` 文件定义一个选股策略，包含 `style:` 段描述 UI/agent 选策略时使用的风格属性，以及 `screening:` 段描述筛选规则。
 
 详见 [策略编写指南](../docs/strategy-guide.md)。
 

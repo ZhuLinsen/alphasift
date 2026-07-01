@@ -4,7 +4,7 @@
 
 ## 文件格式
 
-每个 `.yaml` 文件定义一个选股策略，包含 `screening:` 段描述筛选规则。
+每个 `.yaml` 文件定义一个选股策略，包含 `style:` 段描述 UI/agent 选策略时使用的风格属性，以及 `screening:` 段描述筛选规则。
 
 详见 [策略编写指南](../docs/strategy-guide.md)。
 
@@ -32,6 +32,19 @@
 | `oversold_reversal.yaml` | 超跌反转 | reversal | 跌幅可控且流动性仍在的修复候选，叠加适度活跃度确认 |
 | `balanced_alpha.yaml` | 均衡多因子 | framework | 综合估值、资金、动量、稳定性、反转和主题热度 |
 | `momentum_quality.yaml` | 趋势质量 | framework | 兼顾趋势确认、质量约束、主题热度和组合分散的中线候选发现 |
+
+## 示例策略（可选，不计入内置策略）
+
+`examples/` 子目录存放可选示例策略，不会被自动加载，也不改变内置策略列表。如需使用，将文件复制到本目录（仓库本地自定义策略机制会自动识别）：
+
+| 文件 | 名称 | 分类 | 说明 |
+|------|------|------|------|
+| `examples/dual_low_us.yaml` | Dual Low (US) | value | 美股低 PE + 低 PB 价值筛选（`market_scope: [us]`，需安装 `yfinance` 并配合 `--market us`） |
+
+```bash
+cp strategies/examples/dual_low_us.yaml strategies/
+alphasift screen dual_low_us --market us --no-llm
+```
 
 ## 运行与评估
 

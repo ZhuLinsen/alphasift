@@ -83,6 +83,9 @@ def test_cli_strategies_json_exposes_catalog_metadata(monkeypatch, capsys):
     assert "volatility_20d_pct" in low_volatility["required_daily_fields"]
     assert low_volatility["factor_weights"]["stability"] == 0.30
     assert "volatility_20d_pct_max" in low_volatility["active_filters"]
+    assert low_volatility["style"]["risk_profile"] == "defensive"
+    assert low_volatility["style"]["holding_period"] == "swing"
+    assert low_volatility["style"]["ui_badge"] == "质量"
 
 
 def test_cli_strategies_explain_shows_data_requirements(monkeypatch, capsys):
@@ -94,6 +97,7 @@ def test_cli_strategies_explain_shows_data_requirements(monkeypatch, capsys):
     assert "strategies=" in out
     assert "low_volatility_quality" in out
     assert "data=snapshot,daily_k,industry_context" in out
+    assert "style=defensive/swing/quality_defensive" in out
     assert "required_fields=snapshot[" in out
     assert "daily_k[change_60d,signal_score" in out
 
