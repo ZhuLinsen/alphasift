@@ -12,7 +12,8 @@ from urllib.parse import parse_qs, urlparse
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
 from alphasift.overview import build_overview
-from alphasift.store import list_saved_runs
+from alphasift.report import build_run_report_payload
+from alphasift.store import list_saved_runs, load_screen_result
 from alphasift.strategy import list_strategies, match_strategies
 
 
@@ -61,6 +62,18 @@ def build_api_response(
                 strategy=_single(params, "strategy") or None,
             ),
         }
+    if path == "/report":
+        run_ref = _single(params, "run")
+        if not run_ref:
+            return 400, {"error": "missing_run", "message": "Query parameter `run` is required."}
+        try:
+            run = load_screen_result(run_ref, data_dir=config.data_dir)
+        except FileNotFoundError as exc:
+            return 404, {"error": "run_not_found", "message": str(exc), "run": run_ref}
+        return 200, build_run_report_payload(
+            run,
+            max_picks=_int_param(params, "max_picks", 10),
+        )
     if path == "/doctor/data-sources":
         result = doctor_data_sources(
             config,
@@ -131,6 +144,7 @@ def _index_payload() -> dict[str, Any]:
             "/overview",
             "/strategies",
             "/runs",
+            "/report",
             "/doctor/data-sources",
         ],
     }

@@ -57,6 +57,48 @@ def test_api_overview_and_runs_are_ui_ready(tmp_path):
     assert runs["runs"][0]["run_id"] == "run_api"
 
 
+def test_api_report_returns_run_report_payload(tmp_path):
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="run_report_api",
+            snapshot_source="sina",
+            picks=[
+                Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80),
+                Pick(rank=2, code="600000", name="浦发银行", final_score=70, screen_score=70),
+            ],
+        ),
+        data_dir=tmp_path,
+    )
+
+    status, payload = build_api_response(
+        _config(tmp_path),
+        "/report",
+        query="run=run_report_api&max_picks=1",
+    )
+
+    assert status == 200
+    assert payload["object"] == "RunReport"
+    assert payload["run"]["run_id"] == "run_report_api"
+    assert len(payload["top_picks"]) == 1
+    assert payload["top_picks"][0]["code"] == "000001"
+
+
+def test_api_report_errors_are_json(tmp_path):
+    missing_param_status, missing_param = build_api_response(_config(tmp_path), "/report")
+    missing_run_status, missing_run = build_api_response(
+        _config(tmp_path),
+        "/report",
+        query="run=missing",
+    )
+
+    assert missing_param_status == 400
+    assert missing_param["error"] == "missing_run"
+    assert missing_run_status == 404
+    assert missing_run["error"] == "run_not_found"
+
+
 def test_api_strategies_supports_matching_query(tmp_path):
     config = _config(tmp_path)
 

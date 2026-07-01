@@ -126,6 +126,7 @@ Stable top-level fields:
 - `GET /overview`: same shape as `alphasift overview --json`; supports query params such as `strategy`, `runs_limit`, `live`, `risk_profile`, `holding_period`, `data_requirement`, and `match_limit`.
 - `GET /strategies`: strategy catalog, or ranked matches when style/data query params are present.
 - `GET /runs`: saved-run metadata with optional `strategy` and `limit`.
+- `GET /report?run=<run_id>`: same shape as `alphasift report <run_id> --json`; supports `max_picks`.
 - `GET /doctor/data-sources`: same shape as `doctor data-sources --json`; defaults to no live checks unless `live=true`.
 
 ## Strategy compare payload
