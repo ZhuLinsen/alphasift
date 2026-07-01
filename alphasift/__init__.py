@@ -8,6 +8,7 @@ from alphasift.evaluate import evaluate_saved_run, evaluate_saved_runs
 from alphasift.strategy import compare_strategies, list_strategies
 from alphasift.audit import audit_project
 from alphasift.overview import build_overview
+from alphasift.strategy_templates import get_strategy_template, list_strategy_templates
 
 __all__ = [
     "__version__",
@@ -16,6 +17,8 @@ __all__ = [
     "evaluate_saved_runs",
     "list_strategies",
     "compare_strategies",
+    "get_strategy_template",
+    "list_strategy_templates",
     "audit_project",
     "build_overview",
 ]

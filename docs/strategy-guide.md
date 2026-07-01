@@ -130,6 +130,24 @@ screening:
 
 `style` 不参与硬筛，但会进入 `alphasift strategies --json` 和策略匹配命令。例如 `alphasift strategies --risk-profile defensive --market-regime risk_off --strict --json` 会按这些字段返回带 `score`、`matched`、`missing` 的候选策略，方便 Web UI、agent 或通知流解释为什么选用某个策略。
 
+## 策略模板
+
+从零新增策略时，可以先用内置模板生成草稿，再按目标市场环境、数据源覆盖和风险偏好调整：
+
+```bash
+alphasift strategies --templates --explain
+alphasift strategies --template defensive_value_quality > strategies/my_defensive_value_quality.yaml
+alphasift strategies --template momentum_breakout_daily --json
+```
+
+当前模板：
+
+- `defensive_value_quality`：稳健价值质量，snapshot-only，适合从 `quality_value` / `dual_low` 延伸。
+- `momentum_breakout_daily`：日 K 放量突破，依赖 `daily_k` 和行业/主题上下文，上线前应先跑数据源 doctor。
+- `oversold_reversal_snapshot`：超跌修复，snapshot-only，适合数据源不稳定时作为低依赖反转策略起点。
+
+模板不放在 `strategies/*.yaml` 下，因此不会被当成已启用策略自动加载。输出到 `strategies/` 后请先改 `name`、`display_name` 和 `version`，再用 `alphasift doctor data-sources --strategy <name> --no-live --explain` 检查字段覆盖。
+
 ## 策略分类说明
 
 | 分类 | 适用场景 | 示例 |

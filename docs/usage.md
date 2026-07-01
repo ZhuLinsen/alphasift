@@ -61,6 +61,16 @@ alphasift strategies --compare dual_low low_volatility_quality --json
 
 JSON 输出包含 `differences` 和 `summary.compatibility_notes`，适合 UI 展示参数变更、日 K 依赖变化和数据源兼容性影响。
 
+新增策略时可以先列出模板，再把模板 YAML 输出到 `strategies/` 下改名迭代：
+
+```bash
+alphasift strategies --templates --explain
+alphasift strategies --template defensive_value_quality > strategies/my_defensive_value_quality.yaml
+alphasift strategies --template momentum_breakout_daily --json
+```
+
+模板 payload 包含策略风格、数据依赖、适用说明和可直接编辑的 YAML，便于 UI/agent 生成策略草稿，同时不会把模板本身混入启用策略目录。
+
 按具体策略预检数据源字段覆盖：
 
 ```bash
@@ -177,4 +187,4 @@ alphasift runs --strategy dual_low --json
 
 ## 自定义策略
 
-在 `strategies/` 目录添加 YAML 文件即可，文件名就是策略标识。完整写法见 [strategy-guide.md](strategy-guide.md)，内置策略说明见 [../strategies/README.md](../strategies/README.md)。
+在 `strategies/` 目录添加 YAML 文件即可，文件名就是策略标识。可用 `alphasift strategies --templates --explain` 查看起步模板。完整写法见 [strategy-guide.md](strategy-guide.md)，内置策略说明见 [../strategies/README.md](../strategies/README.md)。

@@ -106,6 +106,17 @@ Stable top-level fields:
 - `summary.changed_sections`: sections with meaningful differences.
 - `summary.compatibility_notes`: UI-ready notes such as additional data requirements or daily-feature requirement changes.
 
+## Strategy template payload
+
+`alphasift strategies --templates --json` emits a lightweight catalog for strategy authoring starts:
+
+- `name`, `display_name`, `description`, `category`, `tags`: template identity and grouping.
+- `style`: UI/agent strategy-style hints using the same fields as enabled strategies.
+- `data_requirements`: expected data dependency such as `snapshot`, `daily_k`, or `industry_context`.
+- `notes`: authoring guidance and validation reminders.
+
+`alphasift strategies --template <name> --json` returns the same fields plus `yaml`, a ready-to-edit strategy YAML body. The list endpoint intentionally omits `yaml` so UI catalogs do not carry large template text by default.
+
 ## DSA readiness
 
 DSA is optional. Core screening must continue when DSA is unavailable.

@@ -40,6 +40,11 @@ from alphasift.store import (
     screen_result_to_jsonl,
 )
 from alphasift.strategy import compare_strategies, list_strategies, match_strategies
+from alphasift.strategy_templates import (
+    get_strategy_template,
+    list_strategy_templates,
+    render_strategy_template,
+)
 
 
 def main():
@@ -161,6 +166,8 @@ def main():
     stp.add_argument("--json", action="store_true", help="以 JSON 输出完整策略目录元数据")
     stp.add_argument("--explain", action="store_true", help="输出包含数据依赖和主要因子的可读策略目录")
     stp.add_argument("--compare", nargs=2, metavar=("BASE", "TARGET"), help="对比两套策略的风格、依赖、硬筛和权重")
+    stp.add_argument("--templates", action="store_true", help="列出可复用的策略编写模板")
+    stp.add_argument("--template", default=None, help="输出指定策略模板 YAML")
     stp.add_argument("--risk-profile", default=None, help="按风险风格匹配：defensive / balanced / aggressive")
     stp.add_argument("--holding-period", default=None, help="按持有周期匹配：short_term / swing / watchlist")
     stp.add_argument("--execution-style", default=None, help="按执行风格匹配，例如 mean_reversion / breakout")
@@ -381,7 +388,34 @@ def main():
             print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
 
     elif args.command == "strategies":
-        if args.compare:
+        if args.templates and args.template:
+            parser.error("--templates cannot be combined with --template")
+        if args.templates:
+            templates = list_strategy_templates()
+            if args.json:
+                print(json.dumps(templates, ensure_ascii=False, indent=2))
+            elif args.explain:
+                print(_format_strategy_templates_explain(templates))
+            else:
+                for item in templates:
+                    tags = ",".join(str(value) for value in item.get("tags", []) or [])
+                    suffix = f" tags={tags}" if tags else ""
+                    print(
+                        f"  {str(item.get('name', '')):<28} {str(item.get('display_name', '')):<10} "
+                        f"[{str(item.get('category', '-'))}] {str(item.get('description', ''))}{suffix}"
+                    )
+        elif args.template:
+            try:
+                template = get_strategy_template(args.template, include_yaml=True)
+            except ValueError as exc:
+                parser.error(str(exc))
+            if args.json:
+                print(json.dumps(template, ensure_ascii=False, indent=2))
+            elif args.explain:
+                print(_format_strategy_template_explain(template))
+            else:
+                print(render_strategy_template(args.template), end="")
+        elif args.compare:
             try:
                 payload = compare_strategies(args.compare[0], args.compare[1])
             except ValueError as exc:
@@ -917,6 +951,46 @@ def _format_strategies_explain(strategies) -> str:
         if required_fields:
             lines.append(f"  required_fields={required_fields}")
         lines.append(f"  {strategy.display_name}: {strategy.description}")
+    return "\n".join(lines)
+
+
+def _format_strategy_templates_explain(templates: list[dict[str, object]]) -> str:
+    lines = [f"strategy_templates={len(templates)}"]
+    for template in templates:
+        style = template.get("style", {})
+        if not isinstance(style, dict):
+            style = {}
+        tags = ",".join(str(value) for value in template.get("tags", []) or []) or "-"
+        data = ",".join(str(value) for value in template.get("data_requirements", []) or []) or "-"
+        lines.append(
+            f"{str(template.get('name', '')):<28} [{str(template.get('category', '-')):<9}] "
+            f"data={data:<28} style={_format_strategy_style(style):<40} tags={tags}"
+        )
+        lines.append(f"  {template.get('display_name')}: {template.get('description')}")
+        notes = template.get("notes", []) or []
+        for note in notes:
+            lines.append(f"  note={note}")
+    return "\n".join(lines)
+
+
+def _format_strategy_template_explain(template: dict[str, object]) -> str:
+    style = template.get("style", {})
+    if not isinstance(style, dict):
+        style = {}
+    data = ",".join(str(value) for value in template.get("data_requirements", []) or []) or "-"
+    lines = [
+        f"strategy_template={template.get('name')} display_name={template.get('display_name')}",
+        (
+            f"category={template.get('category')} data={data} "
+            f"style={_format_strategy_style(style)}"
+        ),
+        f"description={template.get('description')}",
+    ]
+    notes = template.get("notes", []) or []
+    for note in notes:
+        lines.append(f"note={note}")
+    lines.append("---")
+    lines.append(str(template.get("yaml") or ""))
     return "\n".join(lines)
 
 

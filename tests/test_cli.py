@@ -189,6 +189,50 @@ def test_cli_strategies_compare_explain_shows_changed_sections(monkeypatch, caps
     assert "factor_weights:" in out
 
 
+def test_cli_strategies_templates_json_returns_lightweight_catalog(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["alphasift", "strategies", "--templates", "--json"])
+
+    main()
+
+    payload = json.loads(capsys.readouterr().out)
+    names = [item["name"] for item in payload]
+    assert "defensive_value_quality" in names
+    assert "momentum_breakout_daily" in names
+    assert "yaml" not in payload[0]
+    assert payload[1]["data_requirements"] == ["snapshot", "daily_k", "industry_context"]
+
+
+def test_cli_strategies_template_json_returns_yaml(monkeypatch, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["alphasift", "strategies", "--template", "momentum_breakout_daily", "--json"],
+    )
+
+    main()
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["name"] == "momentum_breakout_daily"
+    assert payload["style"]["execution_style"] == "breakout"
+    assert "require_price_above_ma20: true" in payload["yaml"]
+    assert "daily_k" in payload["data_requirements"]
+
+
+def test_cli_strategies_template_explain_includes_notes_and_yaml(monkeypatch, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["alphasift", "strategies", "--template", "oversold_reversal_snapshot", "--explain"],
+    )
+
+    main()
+
+    out = capsys.readouterr().out
+    assert "strategy_template=oversold_reversal_snapshot" in out
+    assert "note=适合数据源不稳定时的低依赖策略起点" in out
+    assert "name: my_oversold_reversal" in out
+
+
 def test_cli_runs_json_filters_strategy(monkeypatch, tmp_path, capsys):
     save_screen_result(
         ScreenResult(
