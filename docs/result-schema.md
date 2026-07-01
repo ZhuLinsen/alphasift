@@ -137,7 +137,7 @@ Stable top-level fields:
 - `summary`: strategy counts, daily-strategy count, data-source status, strategy-match count, recent-run count, live-check flag.
 - `strategy_groups`: strategy names grouped by category, risk profile, holding period, and data requirement.
 - `strategy_facets`: UI-ready strategy filter facets with values, counts, query params, and backing strategy names.
-- `strategy_cards`: UI-ready strategy cards that join catalog metadata, readiness state, saved-run history, saved-evaluation performance, top factors, use-case hints, and next actions.
+- `strategy_cards`: UI-ready strategy cards that join catalog metadata, readiness state, saved-run history, saved-evaluation performance, top factors, use-case hints, next actions, and lane groupings such as `needs_history`, `needs_evaluation`, `performance_leaders`, and `attention`.
 - `strategy_matches`: optional ranked strategy recommendations with `score`, `matched`, and `missing`.
 - `data_sources`: compact data-source doctor subset with `health_summary`, `freshness_summary`, `snapshot_quality`, strategy requirements, strategy coverage, and recommendations.
 - `data_sources.strategy_readiness_summary`: compact readiness rollup for strategy availability panels.

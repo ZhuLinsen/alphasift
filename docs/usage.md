@@ -48,7 +48,7 @@ curl "http://127.0.0.1:8765/data-source-history?limit=50"
 curl "http://127.0.0.1:8765/strategy-performance?limit=50"
 ```
 
-结构化输出包含策略分类、标签、风格属性、数据依赖、是否需要日 K、必需 snapshot/daily 字段、活跃 hard filters、因子权重和 profile 覆盖项。`/strategy-facets` 会把这些属性汇总成可直接驱动筛选控件的 `value/count/strategies` 列表，并标出对应 query 参数。
+结构化输出包含策略分类、标签、风格属性、数据依赖、是否需要日 K、必需 snapshot/daily 字段、活跃 hard filters、因子权重和 profile 覆盖项。`/strategy-facets` 会把这些属性汇总成可直接驱动筛选控件的 `value/count/strategies` 列表，并标出对应 query 参数。`/strategy-cards` 还会输出 `lanes`，把策略分成 `needs_history`、`needs_evaluation`、`performance_leaders` 和 `attention`，方便 UI 首屏直接渲染待跑、待评估、表现领先和需要关注的策略区块。
 
 也可以直接按风格/数据依赖匹配策略，给命令行、Web UI 或 agent 做策略选择：
 

@@ -33,6 +33,17 @@ def test_build_strategy_cards_joins_catalog_readiness_and_history(tmp_path):
         ),
         data_dir=tmp_path,
     )
+    save_screen_result(
+        ScreenResult(
+            strategy="volume_breakout",
+            market="cn",
+            strategy_category="trend",
+            run_id="run_needs_eval",
+            snapshot_source="sina",
+            picks=[Pick(rank=1, code="300001", name="特锐德", final_score=88, screen_score=88)],
+        ),
+        data_dir=tmp_path,
+    )
     save_evaluation_result(
         EvaluationResult(
             run_id="run_strategy_card",
@@ -63,6 +74,19 @@ def test_build_strategy_cards_joins_catalog_readiness_and_history(tmp_path):
     assert payload["schema_version"] == 1
     assert payload["summary"]["strategy_count"] >= 10
     assert payload["summary"]["unchecked_strategy_count"] >= 10
+    assert payload["summary"]["history_seeded_strategy_count"] == 2
+    assert payload["summary"]["evaluated_strategy_count"] == 1
+    assert payload["summary"]["needs_history_count"] >= 8
+    assert payload["summary"]["needs_evaluation_count"] == 1
+    assert payload["summary"]["performance_leader_count"] == 1
+    assert payload["summary"]["operational_attention_count"] == 1
+    assert payload["lanes"]["performance_leaders"]["cards"][0]["name"] == "dual_low"
+    assert payload["lanes"]["attention"]["cards"][0]["name"] == "dual_low"
+    assert payload["lanes"]["needs_evaluation"]["cards"][0]["name"] == "volume_breakout"
+    assert any(
+        item["name"] == "blue_chip_income"
+        for item in payload["lanes"]["needs_history"]["cards"]
+    )
     by_name = {item["name"]: item for item in payload["cards"]}
 
     dual_low = by_name["dual_low"]

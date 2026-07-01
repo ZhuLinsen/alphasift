@@ -85,11 +85,13 @@ def build_strategy_cards_from_parts(
         )
         for strategy in strategies
     ]
+    lanes = _card_lanes(cards)
     return {
         "schema_version": 1,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "strategy_filter": strategy_filter,
-        "summary": _cards_summary(cards, live_data_check=live_data_check),
+        "summary": _cards_summary(cards, lanes=lanes, live_data_check=live_data_check),
+        "lanes": lanes,
         "cards": cards,
     }
 
@@ -156,7 +158,12 @@ def _strategy_card(
     }
 
 
-def _cards_summary(cards: list[dict[str, Any]], *, live_data_check: bool) -> dict[str, Any]:
+def _cards_summary(
+    cards: list[dict[str, Any]],
+    *,
+    lanes: dict[str, dict[str, Any]],
+    live_data_check: bool,
+) -> dict[str, Any]:
     status_counts: dict[str, int] = {}
     for card in cards:
         status = str((card.get("readiness") or {}).get("status") or "unknown")
@@ -172,9 +179,126 @@ def _cards_summary(cards: list[dict[str, Any]], *, live_data_check: bool) -> dic
         "ready_strategy_count": status_counts.get("ok", 0),
         "attention_strategy_count": status_counts.get("degraded", 0) + status_counts.get("failed", 0),
         "unchecked_strategy_count": status_counts.get("skipped", 0),
+        "history_seeded_strategy_count": sum(
+            1 for card in cards if _int_value((card.get("history") or {}).get("run_count")) > 0
+        ),
+        "evaluated_strategy_count": sum(
+            1 for card in cards if _int_value((card.get("performance") or {}).get("evaluation_count")) > 0
+        ),
+        "needs_history_count": _lane_count(lanes, "needs_history"),
+        "needs_evaluation_count": _lane_count(lanes, "needs_evaluation"),
+        "performance_leader_count": _lane_count(lanes, "performance_leaders"),
+        "operational_attention_count": _lane_count(lanes, "attention"),
         "status_counts": status_counts,
         "live_data_check": bool(live_data_check),
     }
+
+
+def _card_lanes(cards: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    needs_history = [
+        card for card in cards if _int_value((card.get("history") or {}).get("run_count")) <= 0
+    ]
+    needs_evaluation = [
+        card
+        for card in cards
+        if _int_value((card.get("history") or {}).get("run_count")) > 0
+        and _int_value((card.get("performance") or {}).get("evaluation_count")) <= 0
+    ]
+    performance_leaders = [
+        card
+        for card in cards
+        if str((card.get("performance") or {}).get("outcome") or "") in {"strong", "positive"}
+    ]
+    attention = [
+        card for card in cards if _needs_attention(card)
+    ]
+    return {
+        "needs_history": _lane_payload(
+            sorted(needs_history, key=_card_name),
+            reason="no_saved_runs",
+        ),
+        "needs_evaluation": _lane_payload(
+            sorted(needs_evaluation, key=_card_name),
+            reason="runs_without_saved_evaluations",
+        ),
+        "performance_leaders": _lane_payload(
+            sorted(performance_leaders, key=_performance_card_sort_key, reverse=True),
+            reason="positive_saved_evaluation_outcome",
+        ),
+        "attention": _lane_payload(
+            sorted(attention, key=_attention_card_sort_key, reverse=True),
+            reason="readiness_source_or_performance_attention",
+        ),
+    }
+
+
+def _lane_payload(cards: list[dict[str, Any]], *, reason: str) -> dict[str, Any]:
+    return {
+        "reason": reason,
+        "count": len(cards),
+        "cards": [_compact_card(card) for card in cards[:10]],
+    }
+
+
+def _compact_card(card: dict[str, Any]) -> dict[str, Any]:
+    history = card.get("history") or {}
+    performance = card.get("performance") or {}
+    readiness = card.get("readiness") or {}
+    return {
+        "name": str(card.get("name") or ""),
+        "display_name": str(card.get("display_name") or ""),
+        "category": str(card.get("category") or ""),
+        "readiness_status": str(readiness.get("status") or "unknown"),
+        "run_count": _int_value(history.get("run_count")),
+        "evaluation_count": _int_value(performance.get("evaluation_count")),
+        "performance_score": performance.get("performance_score"),
+        "outcome": str(performance.get("outcome") or "insufficient_data"),
+        "latest_run_id": str(history.get("latest_run_id") or performance.get("latest_run_id") or ""),
+        "actions": list(card.get("actions", []) or [])[:2],
+    }
+
+
+def _needs_attention(card: dict[str, Any]) -> bool:
+    readiness = card.get("readiness") or {}
+    history = card.get("history") or {}
+    performance = card.get("performance") or {}
+    return (
+        str(readiness.get("status") or "") in {"degraded", "failed"}
+        or _int_value(history.get("source_error_count")) > 0
+        or _int_value(history.get("degradation_count")) > 0
+        or str(performance.get("outcome") or "") in {"negative", "mixed"}
+    )
+
+
+def _lane_count(lanes: dict[str, dict[str, Any]], lane_name: str) -> int:
+    return _int_value((lanes.get(lane_name) or {}).get("count"))
+
+
+def _card_name(card: dict[str, Any]) -> str:
+    return str(card.get("name") or "")
+
+
+def _performance_card_sort_key(card: dict[str, Any]) -> tuple[float, str]:
+    performance = card.get("performance") or {}
+    return (_float_value(performance.get("performance_score")), _card_name(card))
+
+
+def _attention_card_sort_key(card: dict[str, Any]) -> tuple[int, int, float, str]:
+    readiness = card.get("readiness") or {}
+    history = card.get("history") or {}
+    performance = card.get("performance") or {}
+    status_rank = {"failed": 4, "degraded": 3, "skipped": 1, "ok": 0}.get(
+        str(readiness.get("status") or ""),
+        0,
+    )
+    source_issues = _int_value(history.get("source_error_count")) + _int_value(history.get("degradation_count"))
+    performance_rank = {"negative": 3, "mixed": 2}.get(str(performance.get("outcome") or ""), 0)
+    return (
+        status_rank + performance_rank,
+        source_issues,
+        _float_value(performance.get("performance_score")),
+        _card_name(card),
+    )
 
 
 def _use_case(strategy: StrategyInfo) -> dict[str, object]:
@@ -278,6 +402,13 @@ def _int_value(value: object) -> int:
         return int(value or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def _float_value(value: object) -> float:
+    try:
+        return float(value or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _string_list(value: object) -> list[str]:
