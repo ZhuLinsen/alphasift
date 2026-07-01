@@ -361,6 +361,7 @@ def test_cli_overview_json_combines_catalog_health_and_runs(monkeypatch, tmp_pat
     assert payload["strategy_matches"][0]["name"] == "volume_breakout"
     assert payload["recent_runs"][0]["run_id"] == "run_breakout"
     assert "health_summary" in payload["data_sources"]
+    assert payload["data_sources"]["freshness_summary"]["snapshot"]["data_state"] == "not_checked"
 
 
 def test_cli_overview_explain_formats_dashboard_summary(monkeypatch, tmp_path, capsys):
@@ -385,6 +386,7 @@ def test_cli_overview_explain_formats_dashboard_summary(monkeypatch, tmp_path, c
     out = capsys.readouterr().out
     assert "overview generated_at=" in out
     assert "snapshot_health" in out
+    assert "freshness fresh_enough=False" in out
     assert "categories=" in out
     assert "strategy_matches:" in out
     assert "low_volatility_quality" in out

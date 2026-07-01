@@ -81,7 +81,7 @@ alphasift/
 
 对照同类智能投研项目，AlphaSift 后续优先补这些能力：
 
-- **数据可靠性**：已补 `tushare` 兜底、wrapper 调用超时、source-health 熔断、`health_summary` 聚合、snapshot `quality_summary` 字段异常报告与 last-good/stale fallback；下一步做多源字段对账、数据新鲜度标记和缓存命中可视化。
+- **数据可靠性**：已补 `tushare` 兜底、wrapper 调用超时、source-health 熔断、`health_summary` 聚合、`freshness_summary` 新鲜度/缓存状态摘要、snapshot `quality_summary` 字段异常报告与 last-good/stale fallback；下一步做多源字段对账和缓存命中趋势可视化。
 - **事件归因闭环**：已把 LLM tags/catalysts/risks、后置分析标签和合并事件信号纳入 `evaluate-batch/evaluate-strategies` 的维度统计、`failure_review` 与 `event_signal_review`，用于区分哪些事件信号在成功/失败样本中反复出现，并给出 prefer/avoid/watch 动作建议。
 - **回测边界**：在现有 T+N 评估上继续补持仓约束、调仓周期、逐日权益曲线和复权处理；完整量化研究可对接 Qlib 或 Backtrader。
 - **Agent 产物**：已补 `alphasift overview --json/--explain` 和 `alphasift report <run_id>`，可把策略分组、数据源健康、最近运行、next actions 和单次选股运行输出为稳定 payload，便于被通知助手、Web UI 或 MCP/HTTP 服务消费；下一步补报告模板和轻量 Web/API surface。

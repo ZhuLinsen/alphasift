@@ -74,6 +74,13 @@ def test_doctor_data_sources_aggregates_snapshot_and_daily(monkeypatch, tmp_path
     assert payload["health_summary"]["snapshot"]["quality_status"] == "ok"
     assert payload["health_summary"]["snapshot"]["selected_source"] == "sina"
     assert payload["health_summary"]["daily"]["selected_source"] == "tencent"
+    freshness = payload["freshness_summary"]
+    assert freshness["snapshot"]["data_state"] == "fresh"
+    assert freshness["daily"]["data_state"] == "fallback"
+    assert freshness["daily"]["cache_state"] == "provider_fallback"
+    assert freshness["fresh_enough"] is False
+    assert freshness["fallback_family_count"] == 1
+    assert "daily:fallback" in freshness["warnings"]
     assert "TUSHARE_TOKEN" not in json.dumps(payload, ensure_ascii=False)
 
 
@@ -109,6 +116,8 @@ def test_doctor_data_sources_reports_snapshot_quality_anomalies(monkeypatch, tmp
     assert "duplicate_code_count:1" in quality["anomalies"]
     assert "price:invalid_numeric=1" in quality["anomalies"]
     assert "price:non_positive=1" in quality["anomalies"]
+    assert payload["freshness_summary"]["snapshot"]["data_state"] == "degraded"
+    assert "snapshot:degraded" in payload["freshness_summary"]["warnings"]
     assert any("Snapshot quality anomalies detected" in item for item in payload["recommendations"])
 
 
@@ -216,9 +225,12 @@ def test_cli_doctor_data_sources_no_live_json(monkeypatch, tmp_path, capsys):
     assert payload["snapshot"]["status"] == "skipped"
     assert payload["daily"]["status"] == "skipped"
     assert "health_summary" in payload
+    assert payload["freshness_summary"]["not_checked_family_count"] == 2
+    assert payload["freshness_summary"]["fresh_enough"] is False
     assert payload["config"]["snapshot_source_priority"] == ["sina", "efinance"]
     assert saved["source_health"] == payload["source_health"]
     assert saved["health_summary"] == payload["health_summary"]
+    assert saved["freshness_summary"] == payload["freshness_summary"]
 
 
 def test_cli_doctor_data_sources_strategy_explain(monkeypatch, capsys):
@@ -246,6 +258,8 @@ def test_cli_doctor_data_sources_strategy_explain(monkeypatch, capsys):
     assert "volatility_20d_pct" in out
     assert "snapshot_health" in out
     assert "daily_health" in out
+    assert "freshness fresh_enough=False" in out
+    assert "snapshot=not_checked:not_checked" in out
 
 
 def test_cli_doctor_data_sources_all_strategies_explain(monkeypatch, capsys):

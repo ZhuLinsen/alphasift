@@ -25,7 +25,7 @@ alphasift evaluate <run_id> --explain
 
 ## UI/agent 总览
 
-`overview` 会把策略分组、策略推荐、数据源健康、策略字段覆盖、最近运行和 next actions 放到同一份 payload，适合 Web UI、通知助手或 agent 首屏使用：
+`overview` 会把策略分组、策略推荐、数据源健康、数据新鲜度/缓存状态、策略字段覆盖、最近运行和 next actions 放到同一份 payload，适合 Web UI、通知助手或 agent 首屏使用：
 
 ```bash
 alphasift overview --explain
@@ -78,7 +78,7 @@ alphasift doctor data-sources --strategy low_volatility_quality --no-live --expl
 alphasift doctor data-sources --all-strategies --no-live --explain
 ```
 
-单策略模式会列出该策略依赖的 snapshot 字段和 daily 特征字段；全策略模式会输出策略覆盖矩阵，方便 UI/API 或 agent 判断哪些策略依赖日 K、哪些字段是数据源稳定性的关键路径。去掉 `--no-live` 后会发起真实取数 smoke test，并在字段缺失、缓存过期或数据源降级时输出 `snapshot_missing`、`daily_missing`、`source_errors` 和修复建议。
+单策略模式会列出该策略依赖的 snapshot 字段和 daily 特征字段；全策略模式会输出策略覆盖矩阵，方便 UI/API 或 agent 判断哪些策略依赖日 K、哪些字段是数据源稳定性的关键路径。去掉 `--no-live` 后会发起真实取数 smoke test，并在字段缺失、缓存过期或数据源降级时输出 `snapshot_missing`、`daily_missing`、`source_errors`、`freshness_summary` 和修复建议。
 
 JSON 输出同时包含原始 `source_health` counters、聚合后的 `health_summary` 和 live snapshot 的 `quality_summary`。`health_summary` 会把 source 分成 `healthy_sources`、`failing_sources`、`disabled_sources` 和 `never_seen_sources`，用于界面展示数据源健康度、熔断状态和最近错误；`snapshot.quality_summary` 会统计重复代码、字段缺失率、非法数字和价格/成交额/市值非正等异常，避免数据源虽然返回行数但字段质量不可用。
 

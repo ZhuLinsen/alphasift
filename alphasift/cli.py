@@ -879,6 +879,7 @@ def _format_overview_explain(payload: dict) -> str:
     summary = payload.get("summary", {}) or {}
     data_sources = payload.get("data_sources", {}) or {}
     health = data_sources.get("health_summary", {}) or {}
+    freshness = data_sources.get("freshness_summary", {}) or {}
     lines = [
         (
             f"overview generated_at={payload.get('generated_at')} "
@@ -894,6 +895,8 @@ def _format_overview_explain(payload: dict) -> str:
         lines.append(_format_source_health_summary("snapshot_health", health["snapshot"]))
     if health.get("daily"):
         lines.append(_format_source_health_summary("daily_health", health["daily"]))
+    if freshness:
+        lines.append(_format_freshness_summary(freshness))
     groups = payload.get("strategy_groups", {}) or {}
     for title, key in (
         ("categories", "by_category"),
@@ -1746,6 +1749,9 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
     snapshot_health = health_summary.get("snapshot") or {}
     if snapshot_health:
         lines.append(_format_source_health_summary("snapshot_health", snapshot_health))
+    freshness = result.get("freshness_summary") or {}
+    if freshness:
+        lines.append(_format_freshness_summary(freshness))
     if daily:
         lines.append(
             "daily "
@@ -1794,6 +1800,22 @@ def _format_source_health_summary(label: str, summary: dict) -> str:
         f"disabled={_join_or_dash(summary.get('disabled_sources') or [])} "
         f"never_seen={_join_or_dash(summary.get('never_seen_sources') or [])} "
         f"errors={summary.get('error_count', 0)}"
+    )
+
+
+def _format_freshness_summary(summary: dict) -> str:
+    snapshot = summary.get("snapshot", {}) or {}
+    daily = summary.get("daily", {}) or {}
+    warnings = summary.get("warnings", []) or []
+    return (
+        "freshness "
+        f"fresh_enough={summary.get('fresh_enough')} "
+        f"snapshot={snapshot.get('data_state', '-')}:{snapshot.get('cache_state', '-')} "
+        f"daily={daily.get('data_state', '-')}:{daily.get('cache_state', '-')} "
+        f"fallbacks={summary.get('fallback_family_count', 0)} "
+        f"stale={summary.get('stale_family_count', 0)} "
+        f"unchecked={summary.get('not_checked_family_count', 0)} "
+        f"warnings={_join_or_dash(warnings)}"
     )
 
 

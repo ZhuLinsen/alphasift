@@ -100,6 +100,7 @@ The same commands also include `event_signal_review` for success/failure attribu
 - `snapshot.quality_summary`: field-quality diagnostics for live snapshot checks, including duplicate codes, checked fields, per-field missing/invalid/non-positive counts, and anomaly tokens.
 - `source_health`: raw per-source counters from in-process health guards.
 - `health_summary`: UI-ready grouping by `healthy_sources`, `failing_sources`, `disabled_sources`, `never_seen_sources`, plus `last_errors`.
+- `freshness_summary`: UI-ready snapshot/daily freshness and cache status with `data_state`, `cache_state`, fallback/stale/unchecked counters, warnings, and `fresh_enough`.
 - `strategy_requirements` / `strategy_coverage`: required fields and coverage status for one strategy or the full strategy catalog.
 - `recommendations`: next actions derived from live check status, fallback use, stale cache, and health guard state.
 
@@ -112,7 +113,7 @@ Stable top-level fields:
 - `summary`: strategy counts, daily-strategy count, data-source status, strategy-match count, recent-run count, live-check flag.
 - `strategy_groups`: strategy names grouped by category, risk profile, holding period, and data requirement.
 - `strategy_matches`: optional ranked strategy recommendations with `score`, `matched`, and `missing`.
-- `data_sources`: compact data-source doctor subset with `health_summary`, `snapshot_quality`, strategy requirements, strategy coverage, and recommendations.
+- `data_sources`: compact data-source doctor subset with `health_summary`, `freshness_summary`, `snapshot_quality`, strategy requirements, strategy coverage, and recommendations.
 - `recent_runs`: lightweight saved-run metadata from `alphasift runs --json`.
 - `next_actions`: UI-ready operational next steps.
 

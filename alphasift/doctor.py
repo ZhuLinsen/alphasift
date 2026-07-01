@@ -49,6 +49,7 @@ class DataSourcesDoctorResult:
     strategy_requirements: dict[str, Any] = field(default_factory=dict)
     strategy_coverage: list[dict[str, Any]] = field(default_factory=list)
     health_summary: dict[str, Any] = field(default_factory=dict)
+    freshness_summary: dict[str, Any] = field(default_factory=dict)
     recommendations: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -103,6 +104,7 @@ def doctor_data_sources(
     )
     strategy_coverage = _build_strategy_coverage(coverage_requirements, snapshot, daily)
     health_summary = _build_health_summary(snapshot, daily)
+    freshness_summary = _build_freshness_summary(snapshot, daily)
     recommendations = _build_recommendations(snapshot, daily)
     statuses = [snapshot.status, daily.status if daily is not None else "skipped"]
     status = _overall_status(statuses)
@@ -123,6 +125,7 @@ def doctor_data_sources(
         strategy_requirements=strategy_requirements,
         strategy_coverage=strategy_coverage,
         health_summary=health_summary,
+        freshness_summary=freshness_summary,
         recommendations=recommendations,
     )
 
@@ -499,6 +502,103 @@ def _build_health_summary(
             "missing_fields": [],
             "error_count": 0,
         },
+    }
+
+
+def _build_freshness_summary(
+    snapshot: SourceCheckResult,
+    daily: SourceCheckResult | None,
+) -> dict[str, Any]:
+    snapshot_summary = _source_freshness_summary(snapshot, family="snapshot")
+    daily_summary = (
+        _source_freshness_summary(daily, family="daily")
+        if daily is not None
+        else _skipped_freshness_summary("daily")
+    )
+    family_summaries = [snapshot_summary, daily_summary]
+    warnings = [
+        f"{item['family']}:{item['data_state']}"
+        for item in family_summaries
+        if item.get("data_state") not in {"fresh", "not_requested"}
+    ]
+    return {
+        "snapshot": snapshot_summary,
+        "daily": daily_summary,
+        "fresh_enough": not warnings,
+        "fresh_family_count": sum(1 for item in family_summaries if item.get("data_state") == "fresh"),
+        "stale_family_count": sum(1 for item in family_summaries if item.get("data_state") == "stale"),
+        "fallback_family_count": sum(1 for item in family_summaries if item.get("fallback_used")),
+        "unavailable_family_count": sum(1 for item in family_summaries if item.get("data_state") == "unavailable"),
+        "not_checked_family_count": sum(1 for item in family_summaries if item.get("data_state") == "not_checked"),
+        "warnings": warnings,
+    }
+
+
+def _source_freshness_summary(
+    result: SourceCheckResult,
+    *,
+    family: str,
+) -> dict[str, Any]:
+    quality_status = str(result.quality_summary.get("status", ""))
+    quality_anomaly_count = len(result.quality_summary.get("anomalies", []) or [])
+    if result.status == "skipped":
+        data_state = "not_checked"
+        cache_state = "not_checked"
+        recommendation = f"Run live {family} check before relying on fresh data."
+    elif result.status == "failed":
+        data_state = "unavailable"
+        cache_state = "unavailable"
+        recommendation = f"Fix {family} source errors before running live screening."
+    elif result.stale:
+        data_state = "stale"
+        cache_state = "stale_cache"
+        recommendation = f"Refresh {family} data; current result came from stale cache."
+    elif result.fallback_used:
+        data_state = "fallback"
+        cache_state = "last_good_cache" if family == "snapshot" else "provider_fallback"
+        recommendation = f"Review {family} source errors; data used a fallback path."
+    elif result.missing_fields or quality_status == "degraded":
+        data_state = "degraded"
+        cache_state = "live"
+        recommendation = f"Review {family} missing fields or quality anomalies before trusting filters."
+    else:
+        data_state = "fresh"
+        cache_state = "live"
+        recommendation = ""
+    return {
+        "family": family,
+        "status": result.status,
+        "data_state": data_state,
+        "cache_state": cache_state,
+        "selected_source": result.source,
+        "rows": result.rows,
+        "fallback_used": result.fallback_used,
+        "stale": result.stale,
+        "stale_age_hours": result.stale_age_hours,
+        "missing_fields": list(result.missing_fields),
+        "error_count": len(result.errors),
+        "quality_status": quality_status,
+        "quality_anomaly_count": quality_anomaly_count,
+        "recommendation": recommendation,
+    }
+
+
+def _skipped_freshness_summary(family: str) -> dict[str, Any]:
+    return {
+        "family": family,
+        "status": "skipped",
+        "data_state": "not_requested",
+        "cache_state": "not_requested",
+        "selected_source": "",
+        "rows": 0,
+        "fallback_used": False,
+        "stale": False,
+        "stale_age_hours": None,
+        "missing_fields": [],
+        "error_count": 0,
+        "quality_status": "",
+        "quality_anomaly_count": 0,
+        "recommendation": "",
     }
 
 
