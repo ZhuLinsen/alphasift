@@ -63,15 +63,21 @@ def test_build_strategy_run_summary_groups_saved_run_metadata(tmp_path):
     assert payload["strategy_count"] == 2
     assert payload["summary"]["total_picks"] == 4
     assert payload["summary"]["latest_run"]["run_id"] == "run_breakout"
+    assert payload["summary"]["source_error_samples"] == ["akshare: timeout"]
+    assert payload["summary"]["degradation_samples"] == ["fallback"]
     assert by_strategy["dual_low"]["run_count"] == 2
     assert by_strategy["dual_low"]["latest_run_id"] == "run_new"
     assert by_strategy["dual_low"]["total_picks"] == 3
     assert by_strategy["dual_low"]["average_picks"] == 1.5
     assert by_strategy["dual_low"]["runs_with_source_errors"] == 1
+    assert by_strategy["dual_low"]["source_error_samples"] == ["akshare: timeout"]
     assert by_strategy["dual_low"]["runs_with_degradation"] == 1
+    assert by_strategy["dual_low"]["degradation_samples"] == ["fallback"]
     assert by_strategy["dual_low"]["average_llm_coverage"] == 0.75
     assert by_strategy["dual_low"]["daily_enriched_runs"] == 1
     assert by_strategy["dual_low"]["post_analyzers"] == ["scorecard", "dsa"]
+    assert by_strategy["dual_low"]["recent_runs"][1]["source_errors"] == ["akshare: timeout"]
+    assert by_strategy["dual_low"]["recent_runs"][1]["degradation"] == ["fallback"]
 
 
 def test_build_strategy_run_summary_supports_strategy_filter(tmp_path):

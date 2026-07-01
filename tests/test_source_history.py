@@ -54,6 +54,11 @@ def test_build_data_source_history_groups_runs_by_snapshot_source(tmp_path):
     assert payload["source_count"] == 2
     assert payload["summary"]["runs_with_source_errors"] == 1
     assert payload["summary"]["source_error_rate"] == 0.3333
+    assert payload["summary"]["source_error_samples"] == ["akshare: timeout"]
+    assert payload["summary"]["degradation_samples"] == [
+        "Snapshot source fallback: last_good_cache stale",
+        "fallback",
+    ]
     assert payload["summary"]["fallback_run_count"] == 1
     assert payload["summary"]["fallback_rate"] == 0.3333
     assert payload["summary"]["latest_run"]["run_id"] == "run_cache"
@@ -65,14 +70,20 @@ def test_build_data_source_history_groups_runs_by_snapshot_source(tmp_path):
     assert by_source["sina"]["average_picks"] == 1.5
     assert by_source["sina"]["runs_with_source_errors"] == 1
     assert by_source["sina"]["source_error_rate"] == 0.5
+    assert by_source["sina"]["source_error_samples"] == ["akshare: timeout"]
     assert by_source["sina"]["runs_with_degradation"] == 1
     assert by_source["sina"]["degradation_rate"] == 0.5
+    assert by_source["sina"]["degradation_samples"] == ["fallback"]
     assert by_source["sina"]["daily_enriched_runs"] == 1
     assert by_source["sina"]["daily_enrich_count"] == 3
+    assert by_source["sina"]["recent_runs"][1]["source_errors"] == ["akshare: timeout"]
 
     assert by_source["last_good_cache"]["fallback_run_count"] == 1
     assert by_source["last_good_cache"]["degradation_rate"] == 1.0
     assert payload["watchlist"][0]["snapshot_source"] == "last_good_cache"
+    assert payload["watchlist"][0]["degradation_samples"] == [
+        "Snapshot source fallback: last_good_cache stale"
+    ]
 
 
 def test_build_data_source_history_supports_strategy_filter(tmp_path):

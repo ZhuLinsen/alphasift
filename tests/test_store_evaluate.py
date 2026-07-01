@@ -61,7 +61,7 @@ def test_list_saved_runs_reads_only_metadata_until_limit(tmp_path):
     runs = list_saved_runs(data_dir=tmp_path, limit=1)
 
     assert runs == [{
-        "schema_version": 2,
+        "schema_version": 3,
         "run_id": "run_metadata",
         "strategy": "dual_low",
         "market": "cn",
@@ -73,7 +73,9 @@ def test_list_saved_runs_reads_only_metadata_until_limit(tmp_path):
         "after_filter_count": 100,
         "snapshot_source": "sina",
         "source_error_count": 1,
+        "source_errors": ["akshare: timeout"],
         "degradation_count": 1,
+        "degradation": ["used fallback"],
         "llm_ranked": True,
         "llm_coverage": 0.75,
         "daily_enriched": True,
@@ -91,6 +93,8 @@ def test_list_saved_runs_falls_back_to_payload_when_metadata_missing(tmp_path):
             market="cn",
             run_id="run_legacy",
             created_at="2026-04-01T09:30:00",
+            source_errors=["akshare: disconnected"],
+            degradation=["used stale fallback"],
             picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80, price=10)],
         ),
         data_dir=tmp_path,
@@ -103,7 +107,10 @@ def test_list_saved_runs_falls_back_to_payload_when_metadata_missing(tmp_path):
     assert runs[0]["picks"] == 1
     assert runs[0]["schema_version"] == 1
     assert runs[0]["strategy_version"] == ""
-    assert runs[0]["source_error_count"] == 0
+    assert runs[0]["source_error_count"] == 1
+    assert runs[0]["source_errors"] == ["akshare: disconnected"]
+    assert runs[0]["degradation_count"] == 1
+    assert runs[0]["degradation"] == ["used stale fallback"]
     assert runs[0]["report_path"].endswith("run_legacy.md")
 
 

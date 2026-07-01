@@ -64,13 +64,13 @@ The current `RunReport` schema version is `1`. Stable top-level fields:
 
 ## Run index metadata
 
-Use `alphasift runs --json` for a lightweight saved-run index without loading full run payloads. Current sidecar metadata schema version is `2`.
+Use `alphasift runs --json` for a lightweight saved-run index without loading full run payloads. Current sidecar metadata schema version is `3`.
 
 Stable fields include:
 
 - identity: `run_id`, `strategy`, `market`, `strategy_version`, `strategy_category`, `created_at`
 - counts: `picks`, `snapshot_count`, `after_filter_count`
-- source status: `snapshot_source`, `source_error_count`, `degradation_count`
+- source status: `snapshot_source`, `source_error_count`, `source_errors`, `degradation_count`, `degradation`
 - enrichment status: `llm_ranked`, `llm_coverage`, `daily_enriched`, `daily_enrich_count`, `post_analyzers`
 - paths: `path`, `report_path`
 
@@ -78,15 +78,15 @@ Stable fields include:
 
 `GET /strategy-run-summary` summarizes saved-run sidecar metadata without loading full run payloads or evaluating against live quotes:
 
-- `summary`: global counts such as runs with source errors, runs with degradation, LLM-ranked runs, daily-enriched runs, total picks, and latest run.
-- `strategies`: one row per strategy with run count, latest run/report, total and average picks, snapshot sources, source-error/degradation counts, LLM/daily-enrichment coverage, post-analyzers, and recent compact run cards.
+- `summary`: global counts such as runs with source errors, runs with degradation, capped source-error/degradation samples, LLM-ranked runs, daily-enriched runs, total picks, and latest run.
+- `strategies`: one row per strategy with run count, latest run/report, total and average picks, snapshot sources, source-error/degradation counts and samples, LLM/daily-enrichment coverage, post-analyzers, and recent compact run cards.
 - Query params: `strategy` filters to one strategy and `limit` caps how many recent run metadata records are scanned.
 
 `GET /data-source-history` summarizes the same sidecar metadata by snapshot source, without live checks:
 
-- `summary`: recent run count, source-error/degradation/fallback rates, daily-enriched run count, source names, and latest compact run.
-- `snapshot_sources`: one row per snapshot source with run count, strategy coverage, latest run, total/average picks, source-error and degradation rates, fallback count, daily enrichment counts, and recent compact run cards.
-- `watchlist`: sources with any error, degradation, or last-good fallback usage, sorted by impact.
+- `summary`: recent run count, source-error/degradation/fallback rates, capped source-error/degradation samples, daily-enriched run count, source names, and latest compact run.
+- `snapshot_sources`: one row per snapshot source with run count, strategy coverage, latest run, total/average picks, source-error and degradation rates and samples, fallback count, daily enrichment counts, and recent compact run cards.
+- `watchlist`: sources with any error, degradation, or last-good fallback usage, sorted by impact and carrying capped issue samples.
 - Query params: `strategy` filters to one strategy and `limit` caps scanned metadata records.
 
 ## Evaluation failure review payload

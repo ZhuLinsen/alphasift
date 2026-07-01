@@ -191,7 +191,9 @@ def _history_payload(history: dict[str, Any]) -> dict[str, Any]:
         "total_picks": _int_value(history.get("total_picks")),
         "average_picks": history.get("average_picks"),
         "source_error_count": _int_value(history.get("source_error_count")),
+        "source_error_samples": _string_list(history.get("source_error_samples", []))[:5],
         "degradation_count": _int_value(history.get("degradation_count")),
+        "degradation_samples": _string_list(history.get("degradation_samples", []))[:5],
         "llm_ranked_runs": _int_value(history.get("llm_ranked_runs")),
         "daily_enriched_runs": _int_value(history.get("daily_enriched_runs")),
         "recent_runs": list(history.get("recent_runs", []) or [])[:3],
@@ -233,6 +235,14 @@ def _int_value(value: object) -> int:
         return int(value or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def _string_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item)]
+    if isinstance(value, str) and value:
+        return [item.strip() for item in value.split(",") if item.strip()]
+    return []
 
 
 def strategy_cards_to_jsonable(payload: dict[str, Any]) -> dict[str, Any]:

@@ -69,9 +69,11 @@ def _source_summary(runs: list[dict[str, object]]) -> dict[str, object]:
         "runs_with_source_errors": len(source_error_runs),
         "source_error_count": sum(_int_value(item.get("source_error_count")) for item in ordered),
         "source_error_rate": _rate(len(source_error_runs), len(ordered)),
+        "source_error_samples": _sample_values(ordered, "source_errors"),
         "runs_with_degradation": len(degraded_runs),
         "degradation_count": sum(_int_value(item.get("degradation_count")) for item in ordered),
         "degradation_rate": _rate(len(degraded_runs), len(ordered)),
+        "degradation_samples": _sample_values(ordered, "degradation"),
         "fallback_run_count": sum(
             1 for item in ordered if str(item.get("snapshot_source") or "") == "last_good_cache"
         ),
@@ -82,6 +84,7 @@ def _source_summary(runs: list[dict[str, object]]) -> dict[str, object]:
 
 
 def _history_summary(runs: list[dict[str, object]]) -> dict[str, object]:
+    ordered = sorted(runs, key=_run_sort_key, reverse=True)
     error_runs = [item for item in runs if _int_value(item.get("source_error_count")) > 0]
     degraded_runs = [item for item in runs if _int_value(item.get("degradation_count")) > 0]
     fallback_runs = [
@@ -90,13 +93,15 @@ def _history_summary(runs: list[dict[str, object]]) -> dict[str, object]:
     return {
         "runs_with_source_errors": len(error_runs),
         "source_error_rate": _rate(len(error_runs), len(runs)),
+        "source_error_samples": _sample_values(ordered, "source_errors"),
         "runs_with_degradation": len(degraded_runs),
         "degradation_rate": _rate(len(degraded_runs), len(runs)),
+        "degradation_samples": _sample_values(ordered, "degradation"),
         "fallback_run_count": len(fallback_runs),
         "fallback_rate": _rate(len(fallback_runs), len(runs)),
         "daily_enriched_runs": sum(1 for item in runs if bool(item.get("daily_enriched"))),
         "snapshot_sources": _unique_values(item.get("snapshot_source") for item in runs),
-        "latest_run": _compact_run(max(runs, key=_run_sort_key)) if runs else {},
+        "latest_run": _compact_run(ordered[0]) if ordered else {},
     }
 
 
@@ -117,6 +122,8 @@ def _watchlist(source_rows: list[dict[str, object]]) -> list[dict[str, object]]:
                     "fallback_run_count": item.get("fallback_run_count", 0),
                     "latest_run_id": item.get("latest_run_id", ""),
                     "strategies": item.get("strategies", []),
+                    "source_error_samples": item.get("source_error_samples", []),
+                    "degradation_samples": item.get("degradation_samples", []),
                 }
             )
     rows.sort(
@@ -138,13 +145,35 @@ def _compact_run(item: dict[str, object]) -> dict[str, object]:
         "picks": _int_value(item.get("picks")),
         "snapshot_source": str(item.get("snapshot_source") or ""),
         "source_error_count": _int_value(item.get("source_error_count")),
+        "source_errors": _sample_list(item.get("source_errors"), limit=3),
         "degradation_count": _int_value(item.get("degradation_count")),
+        "degradation": _sample_list(item.get("degradation"), limit=3),
         "report_path": str(item.get("report_path") or ""),
     }
 
 
 def _unique_values(values) -> list[str]:
     return list(dict.fromkeys(str(value) for value in values if str(value or "")))
+
+
+def _sample_values(
+    runs: list[dict[str, object]],
+    field: str,
+    *,
+    limit: int = 5,
+) -> list[str]:
+    values: list[str] = []
+    for item in runs:
+        values.extend(_sample_list(item.get(field), limit=limit))
+    return list(dict.fromkeys(values))[:limit]
+
+
+def _sample_list(value: object, *, limit: int) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item)][:limit]
+    if isinstance(value, str) and value:
+        return [item.strip() for item in value.split(",") if item.strip()][:limit]
+    return []
 
 
 def _average(values) -> float | None:

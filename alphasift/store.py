@@ -10,6 +10,8 @@ from pathlib import Path
 from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
 
 _RUN_METADATA_SUFFIX = ".meta"
+_RUN_SOURCE_ERROR_SAMPLE_LIMIT = 5
+_RUN_DEGRADATION_SAMPLE_LIMIT = 8
 
 
 def save_screen_result(
@@ -100,7 +102,7 @@ def list_saved_runs(
 def _write_screen_result_metadata(result: ScreenResult, output_path: Path) -> None:
     metadata_path = _run_metadata_path(output_path)
     metadata = {
-        "schema_version": 2,
+        "schema_version": 3,
         "run_id": result.run_id or output_path.stem,
         "strategy": result.strategy,
         "market": result.market,
@@ -112,7 +114,9 @@ def _write_screen_result_metadata(result: ScreenResult, output_path: Path) -> No
         "after_filter_count": result.after_filter_count,
         "snapshot_source": result.snapshot_source,
         "source_error_count": len(result.source_errors),
+        "source_errors": list(result.source_errors)[:_RUN_SOURCE_ERROR_SAMPLE_LIMIT],
         "degradation_count": len(result.degradation),
+        "degradation": list(result.degradation)[:_RUN_DEGRADATION_SAMPLE_LIMIT],
         "llm_ranked": bool(result.llm_ranked),
         "llm_coverage": result.llm_coverage,
         "daily_enriched": bool(result.daily_enriched),
@@ -171,7 +175,9 @@ def _normalize_run_metadata(data: dict, path: Path) -> dict[str, object]:
         "after_filter_count": int(_metadata_value(data, "after_filter_count", 0) or 0),
         "snapshot_source": data.get("snapshot_source", ""),
         "source_error_count": int(_metadata_value(data, "source_error_count", _list_count(data.get("source_errors"))) or 0),
+        "source_errors": _string_list(data.get("source_errors", []))[:_RUN_SOURCE_ERROR_SAMPLE_LIMIT],
         "degradation_count": int(_metadata_value(data, "degradation_count", _list_count(data.get("degradation"))) or 0),
+        "degradation": _string_list(data.get("degradation", []))[:_RUN_DEGRADATION_SAMPLE_LIMIT],
         "llm_ranked": bool(data.get("llm_ranked", False)),
         "llm_coverage": data.get("llm_coverage"),
         "daily_enriched": bool(data.get("daily_enriched", False)),

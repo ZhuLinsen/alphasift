@@ -65,8 +65,10 @@ def _strategy_summary(runs: list[dict[str, object]]) -> dict[str, object]:
         "snapshot_sources": _unique_values(item.get("snapshot_source") for item in ordered),
         "runs_with_source_errors": sum(1 for item in ordered if _int_value(item.get("source_error_count")) > 0),
         "source_error_count": sum(_int_value(item.get("source_error_count")) for item in ordered),
+        "source_error_samples": _sample_values(ordered, "source_errors"),
         "runs_with_degradation": sum(1 for item in ordered if _int_value(item.get("degradation_count")) > 0),
         "degradation_count": sum(_int_value(item.get("degradation_count")) for item in ordered),
+        "degradation_samples": _sample_values(ordered, "degradation"),
         "llm_ranked_runs": sum(1 for item in ordered if bool(item.get("llm_ranked"))),
         "average_llm_coverage": _average(llm_values),
         "daily_enriched_runs": sum(1 for item in ordered if bool(item.get("daily_enriched"))),
@@ -77,13 +79,16 @@ def _strategy_summary(runs: list[dict[str, object]]) -> dict[str, object]:
 
 
 def _run_history_summary(runs: list[dict[str, object]]) -> dict[str, object]:
+    ordered = sorted(runs, key=_run_sort_key, reverse=True)
     return {
         "runs_with_source_errors": sum(1 for item in runs if _int_value(item.get("source_error_count")) > 0),
+        "source_error_samples": _sample_values(ordered, "source_errors"),
         "runs_with_degradation": sum(1 for item in runs if _int_value(item.get("degradation_count")) > 0),
+        "degradation_samples": _sample_values(ordered, "degradation"),
         "llm_ranked_runs": sum(1 for item in runs if bool(item.get("llm_ranked"))),
         "daily_enriched_runs": sum(1 for item in runs if bool(item.get("daily_enriched"))),
         "total_picks": sum(_int_value(item.get("picks")) for item in runs),
-        "latest_run": _compact_run(max(runs, key=_run_sort_key)) if runs else {},
+        "latest_run": _compact_run(ordered[0]) if ordered else {},
     }
 
 
@@ -95,7 +100,9 @@ def _compact_run(item: dict[str, object]) -> dict[str, object]:
         "picks": _int_value(item.get("picks")),
         "snapshot_source": str(item.get("snapshot_source") or ""),
         "source_error_count": _int_value(item.get("source_error_count")),
+        "source_errors": _sample_list(item.get("source_errors"), limit=3),
         "degradation_count": _int_value(item.get("degradation_count")),
+        "degradation": _sample_list(item.get("degradation"), limit=3),
         "report_path": str(item.get("report_path") or ""),
     }
 
@@ -111,6 +118,26 @@ def _unique_post_analyzers(runs: list[dict[str, object]]) -> list[str]:
 
 def _unique_values(values) -> list[str]:
     return list(dict.fromkeys(str(value) for value in values if str(value or "")))
+
+
+def _sample_values(
+    runs: list[dict[str, object]],
+    field: str,
+    *,
+    limit: int = 5,
+) -> list[str]:
+    values: list[str] = []
+    for item in runs:
+        values.extend(_sample_list(item.get(field), limit=limit))
+    return list(dict.fromkeys(values))[:limit]
+
+
+def _sample_list(value: object, *, limit: int) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item)][:limit]
+    if isinstance(value, str) and value:
+        return [item.strip() for item in value.split(",") if item.strip()][:limit]
+    return []
 
 
 def _average(values) -> float | None:

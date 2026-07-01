@@ -28,6 +28,7 @@ def test_build_strategy_cards_joins_catalog_readiness_and_history(tmp_path):
             run_id="run_strategy_card",
             snapshot_source="sina",
             source_errors=["sina: timeout"],
+            degradation=["Snapshot source fallback: sina unavailable"],
             picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80)],
         ),
         data_dir=tmp_path,
@@ -45,6 +46,10 @@ def test_build_strategy_cards_joins_catalog_readiness_and_history(tmp_path):
     assert dual_low["history"]["run_count"] == 1
     assert dual_low["history"]["latest_run_id"] == "run_strategy_card"
     assert dual_low["history"]["source_error_count"] == 1
+    assert dual_low["history"]["source_error_samples"] == ["sina: timeout"]
+    assert dual_low["history"]["degradation_samples"] == [
+        "Snapshot source fallback: sina unavailable"
+    ]
     assert dual_low["data"]["requirements"] == ["snapshot"]
     assert dual_low["scoring"]["top_factors"][0] == {"name": "value", "weight": 0.34}
     assert (
