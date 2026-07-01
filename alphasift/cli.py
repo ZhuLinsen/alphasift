@@ -1278,6 +1278,10 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
         lines.append("snapshot_missing=" + ",".join(str(item) for item in snapshot.get("missing_fields") or []))
     if snapshot.get("errors"):
         lines.append("snapshot_errors=" + " | ".join(str(item) for item in snapshot.get("errors") or []))
+    health_summary = result.get("health_summary") or {}
+    snapshot_health = health_summary.get("snapshot") or {}
+    if snapshot_health:
+        lines.append(_format_source_health_summary("snapshot_health", snapshot_health))
     if daily:
         lines.append(
             "daily "
@@ -1291,6 +1295,9 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
             lines.append("daily_missing=" + ",".join(str(item) for item in daily.get("missing_fields") or []))
         if daily.get("errors"):
             lines.append("daily_errors=" + " | ".join(str(item) for item in daily.get("errors") or []))
+        daily_health = health_summary.get("daily") or {}
+        if daily_health:
+            lines.append(_format_source_health_summary("daily_health", daily_health))
     lines.append(f"tushare_configured={config.get('tushare_configured')} live_checks={config.get('live_checks')}")
     recommendations = result.get("recommendations") or []
     if recommendations:
@@ -1312,6 +1319,22 @@ def _format_data_sources_doctor_explain(result: dict) -> str:
                 parts.append("daily_missing=" + ",".join(item.get("daily_missing_fields") or []))
             lines.append(" ".join(parts))
     return "\n".join(lines)
+
+
+def _format_source_health_summary(label: str, summary: dict) -> str:
+    return (
+        f"{label} "
+        f"available={summary.get('available_source_count', 0)} "
+        f"healthy={_join_or_dash(summary.get('healthy_sources') or [])} "
+        f"failing={_join_or_dash(summary.get('failing_sources') or [])} "
+        f"disabled={_join_or_dash(summary.get('disabled_sources') or [])} "
+        f"never_seen={_join_or_dash(summary.get('never_seen_sources') or [])} "
+        f"errors={summary.get('error_count', 0)}"
+    )
+
+
+def _join_or_dash(values: list[str]) -> str:
+    return ",".join(str(item) for item in values) if values else "-"
 
 
 def _format_dsa_readiness_explain(result: dict) -> str:

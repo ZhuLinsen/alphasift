@@ -147,7 +147,7 @@ tushare -> sina -> efinance -> akshare_em -> em_datacenter
 | `em_datacenter` | data.eastmoney.com | 选股器 API，非交易时段可用 |
 | `tushare` | Tushare Pro `daily` + `daily_basic` | 最近交易日数据，需 `TUSHARE_TOKEN`，非实时 |
 
-周末或节假日 push2 接口不可用时，会自动降级到 `em_datacenter`。EastMoney 直连接口通过共享重试会话、串行限流和随机抖动访问，减少连接抖动和连续降级时的突发请求；这一点参考了 `a-stock-data` 对东财 `em_get()` 的防封建议。AlphaSift 对 efinance、AkShare、Baostock、Tushare、yfinance 这类第三方 wrapper 调用增加了 caller-side 超时；直接 HTTP 源继续使用请求级 timeout。重复失败的数据源会进入短期健康度熔断，后续运行会临时跳过该源；日 K live 源全失败时可读取过期但结构有效的 history cache，并用 `daily_stale/source_errors` 标记降级。如果某个数据源缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。所有实时源失败时可读取 `snapshot.last_good.json`，并标记 `fallback_used/stale/stale_age_hours/source_errors`；如设置 `SNAPSHOT_FALLBACK_MAX_AGE_HOURS`，超过该年龄的缓存会被拒绝，避免长期重复使用过旧快照。
+周末或节假日 push2 接口不可用时，会自动降级到 `em_datacenter`。EastMoney 直连接口通过共享重试会话、串行限流和随机抖动访问，减少连接抖动和连续降级时的突发请求；这一点参考了 `a-stock-data` 对东财 `em_get()` 的防封建议。AlphaSift 对 efinance、AkShare、Baostock、Tushare、yfinance 这类第三方 wrapper 调用增加了 caller-side 超时；直接 HTTP 源继续使用请求级 timeout。重复失败的数据源会进入短期健康度熔断，后续运行会临时跳过该源；`doctor data-sources` 会同时输出原始 `source_health` counters 和面向 UI/agent 的 `health_summary`，按 healthy/failing/disabled/never_seen 分组展示。日 K live 源全失败时可读取过期但结构有效的 history cache，并用 `daily_stale/source_errors` 标记降级。如果某个数据源缺少当前策略必需字段，例如 PB，系统会跳过该源继续尝试后续来源。所有实时源失败时可读取 `snapshot.last_good.json`，并标记 `fallback_used/stale/stale_age_hours/source_errors`；如设置 `SNAPSHOT_FALLBACK_MAX_AGE_HOURS`，超过该年龄的缓存会被拒绝，避免长期重复使用过旧快照。
 
 ### 数据源能力矩阵
 

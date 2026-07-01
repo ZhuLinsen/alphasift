@@ -45,6 +45,7 @@ class DataSourcesDoctorResult:
     daily: SourceCheckResult | None = None
     strategy_requirements: dict[str, Any] = field(default_factory=dict)
     strategy_coverage: list[dict[str, Any]] = field(default_factory=list)
+    health_summary: dict[str, Any] = field(default_factory=dict)
     recommendations: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -98,6 +99,7 @@ def doctor_data_sources(
         else None
     )
     strategy_coverage = _build_strategy_coverage(coverage_requirements, snapshot, daily)
+    health_summary = _build_health_summary(snapshot, daily)
     recommendations = _build_recommendations(snapshot, daily)
     statuses = [snapshot.status, daily.status if daily is not None else "skipped"]
     status = _overall_status(statuses)
@@ -117,6 +119,7 @@ def doctor_data_sources(
         daily=daily,
         strategy_requirements=strategy_requirements,
         strategy_coverage=strategy_coverage,
+        health_summary=health_summary,
         recommendations=recommendations,
     )
 
@@ -257,10 +260,10 @@ def _strategy_requirement_payload(item) -> dict[str, Any]:
     return {
         "strategy": item.name,
         "display_name": item.display_name,
-                "category": item.category,
-                "style": dict(item.style),
-                "data_requirements": list(item.data_requirements),
-                "requires_daily_features": bool(item.requires_daily_features),
+        "category": item.category,
+        "style": dict(item.style),
+        "data_requirements": list(item.data_requirements),
+        "requires_daily_features": bool(item.requires_daily_features),
         "required_snapshot_fields": list(item.required_snapshot_fields),
         "required_daily_fields": list(item.required_daily_fields),
     }
@@ -363,6 +366,81 @@ def _overall_status(statuses: list[str]) -> str:
     return "failed"
 
 
+def _build_health_summary(
+    snapshot: SourceCheckResult,
+    daily: SourceCheckResult | None,
+) -> dict[str, Any]:
+    return {
+        "snapshot": _source_family_health_summary(snapshot),
+        "daily": _source_family_health_summary(daily) if daily is not None else {
+            "status": "skipped",
+            "requested_sources": [],
+            "selected_source": "",
+            "available_source_count": 0,
+            "healthy_sources": [],
+            "failing_sources": [],
+            "disabled_sources": [],
+            "never_seen_sources": [],
+            "last_errors": [],
+            "fallback_used": False,
+            "stale": False,
+            "missing_fields": [],
+            "error_count": 0,
+        },
+    }
+
+
+def _source_family_health_summary(result: SourceCheckResult) -> dict[str, Any]:
+    health = result.health or {}
+    requested_sources = list(dict.fromkeys([*result.sources, *health.keys()]))
+    healthy_sources: list[str] = []
+    failing_sources: list[str] = []
+    disabled_sources: list[str] = []
+    never_seen_sources: list[str] = []
+    last_errors: list[dict[str, Any]] = []
+
+    for source in requested_sources:
+        state = health.get(source, {}) or {}
+        successes = float(state.get("successes", 0.0))
+        failures = float(state.get("failures", 0.0))
+        total_failures = float(state.get("total_failures", 0.0))
+        disabled = bool(state.get("disabled", False))
+        last_error = str(state.get("last_error", ""))
+        if disabled:
+            disabled_sources.append(source)
+        elif failures > 0:
+            failing_sources.append(source)
+        elif successes > 0:
+            healthy_sources.append(source)
+        elif total_failures == 0:
+            never_seen_sources.append(source)
+        if last_error:
+            last_errors.append({
+                "source": source,
+                "error": last_error,
+                "failures": failures,
+                "total_failures": total_failures,
+                "disabled": disabled,
+                "cooldown_remaining_seconds": float(state.get("cooldown_remaining_seconds", 0.0)),
+            })
+
+    return {
+        "status": result.status,
+        "requested_sources": requested_sources,
+        "selected_source": result.source,
+        "available_source_count": len(requested_sources) - len(disabled_sources),
+        "healthy_sources": healthy_sources,
+        "failing_sources": failing_sources,
+        "disabled_sources": disabled_sources,
+        "never_seen_sources": never_seen_sources,
+        "last_errors": last_errors,
+        "fallback_used": result.fallback_used,
+        "stale": result.stale,
+        "missing_fields": list(result.missing_fields),
+        "error_count": len(result.errors),
+    }
+
+
 def _build_recommendations(
     snapshot: SourceCheckResult,
     daily: SourceCheckResult | None,
@@ -372,7 +450,6 @@ def _build_recommendations(
         recommendations.append(
             "Live data-source checks were skipped: rerun without --no-live before relying on fresh screening."
         )
-        return recommendations
     if snapshot.status == "failed":
         recommendations.append(
             "Snapshot failed: check network access and SNAPSHOT_SOURCE_PRIORITY; attach this doctor output to issue #18."
@@ -390,8 +467,27 @@ def _build_recommendations(
             recommendations.append(
                 "Daily K-line used stale cache: refresh network-backed sources before relying on fresh technical filters."
             )
+    recommendations.extend(_source_health_recommendations("Snapshot", snapshot))
+    if daily is not None:
+        recommendations.extend(_source_health_recommendations("Daily K-line", daily))
     if not recommendations:
         recommendations.append("Data sources look usable for a basic AlphaSift run.")
+    return recommendations
+
+
+def _source_health_recommendations(label: str, result: SourceCheckResult) -> list[str]:
+    summary = _source_family_health_summary(result)
+    recommendations: list[str] = []
+    disabled = summary.get("disabled_sources", []) or []
+    failing = summary.get("failing_sources", []) or []
+    if disabled:
+        recommendations.append(
+            f"{label} health guard disabled sources: {','.join(disabled)}; wait for cooldown or lower their priority."
+        )
+    if failing:
+        recommendations.append(
+            f"{label} sources have recent failures: {','.join(failing)}; inspect health_summary.last_errors."
+        )
     return recommendations
 
 

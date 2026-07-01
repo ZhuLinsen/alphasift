@@ -50,6 +50,8 @@ alphasift doctor data-sources --all-strategies --no-live --explain
 
 单策略模式会列出该策略依赖的 snapshot 字段和 daily 特征字段；全策略模式会输出策略覆盖矩阵，方便 UI/API 或 agent 判断哪些策略依赖日 K、哪些字段是数据源稳定性的关键路径。去掉 `--no-live` 后会发起真实取数 smoke test，并在字段缺失、缓存过期或数据源降级时输出 `snapshot_missing`、`daily_missing`、`source_errors` 和修复建议。
 
+JSON 输出同时包含原始 `source_health` counters 和聚合后的 `health_summary`，把 source 分成 `healthy_sources`、`failing_sources`、`disabled_sources` 和 `never_seen_sources`，用于界面展示数据源健康度、熔断状态和最近错误。
+
 ## 常用场景
 
 使用 LLM 横向排序：

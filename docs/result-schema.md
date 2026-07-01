@@ -74,6 +74,16 @@ Stable fields include:
 - enrichment status: `llm_ranked`, `llm_coverage`, `daily_enriched`, `daily_enrich_count`, `post_analyzers`
 - paths: `path`, `report_path`
 
+## Data-source doctor payload
+
+`alphasift doctor data-sources --json` emits a stable diagnostic payload for UI, agent, and operations surfaces:
+
+- `snapshot` / `daily`: status, selected source, row count, stale/fallback flags, required fields, missing fields, raw errors.
+- `source_health`: raw per-source counters from in-process health guards.
+- `health_summary`: UI-ready grouping by `healthy_sources`, `failing_sources`, `disabled_sources`, `never_seen_sources`, plus `last_errors`.
+- `strategy_requirements` / `strategy_coverage`: required fields and coverage status for one strategy or the full strategy catalog.
+- `recommendations`: next actions derived from live check status, fallback use, stale cache, and health guard state.
+
 ## DSA readiness
 
 DSA is optional. Core screening must continue when DSA is unavailable.

@@ -69,7 +69,35 @@ def test_doctor_data_sources_aggregates_snapshot_and_daily(monkeypatch, tmp_path
     assert payload["daily"]["source"] == "tencent"
     assert payload["daily"]["fallback_used"] is True
     assert "source_health" in payload
+    assert "health_summary" in payload
+    assert payload["health_summary"]["snapshot"]["selected_source"] == "sina"
+    assert payload["health_summary"]["daily"]["selected_source"] == "tencent"
     assert "TUSHARE_TOKEN" not in json.dumps(payload, ensure_ascii=False)
+
+
+def test_doctor_data_sources_health_summary_reports_disabled_sources(monkeypatch, tmp_path):
+    _SOURCE_HEALTH.clear()
+    monkeypatch.setattr("alphasift.snapshot.time.monotonic", lambda: 100.0)
+    _record_source_failure("sina", "timeout")
+    _record_source_failure("sina", "timeout")
+    _record_source_failure("sina", "timeout")
+    config = Config(
+        snapshot_source_priority=["sina", "efinance"],
+        daily_source="auto",
+        fallback_snapshot_path=tmp_path / "snapshot.last_good.json",
+        daily_history_cache_dir=tmp_path / "daily_history",
+    )
+
+    result = doctor_data_sources(config, run_live=False)
+    payload = result.to_dict()
+
+    snapshot_summary = payload["health_summary"]["snapshot"]
+    assert snapshot_summary["disabled_sources"] == ["sina"]
+    assert snapshot_summary["never_seen_sources"] == ["efinance"]
+    assert snapshot_summary["available_source_count"] == 1
+    assert snapshot_summary["last_errors"][0]["source"] == "sina"
+    assert "Snapshot health guard disabled sources: sina" in " | ".join(payload["recommendations"])
+    _SOURCE_HEALTH.clear()
 
 
 def test_doctor_data_sources_reports_strategy_requirements_without_live(tmp_path):
@@ -150,8 +178,10 @@ def test_cli_doctor_data_sources_no_live_json(monkeypatch, tmp_path, capsys):
     assert payload["status"] == "skipped"
     assert payload["snapshot"]["status"] == "skipped"
     assert payload["daily"]["status"] == "skipped"
+    assert "health_summary" in payload
     assert payload["config"]["snapshot_source_priority"] == ["sina", "efinance"]
     assert saved["source_health"] == payload["source_health"]
+    assert saved["health_summary"] == payload["health_summary"]
 
 
 def test_cli_doctor_data_sources_strategy_explain(monkeypatch, capsys):
@@ -177,6 +207,8 @@ def test_cli_doctor_data_sources_strategy_explain(monkeypatch, capsys):
     assert "pb_ratio" in out
     assert "daily_required=" in out
     assert "volatility_20d_pct" in out
+    assert "snapshot_health" in out
+    assert "daily_health" in out
 
 
 def test_cli_doctor_data_sources_all_strategies_explain(monkeypatch, capsys):
