@@ -26,6 +26,8 @@ def test_api_health_and_index(tmp_path):
     assert status == 200
     assert "/overview" in index["endpoints"]
     assert "/result-schema" in index["endpoints"]
+    assert "/strategy" in index["endpoints"]
+    assert "/strategy-compare" in index["endpoints"]
     assert "/strategy-facets" in index["endpoints"]
     assert "/strategy-templates" in index["endpoints"]
     assert health_status == 200
@@ -134,6 +136,71 @@ def test_api_strategy_facets_returns_filter_values(tmp_path):
     assert facets["tag"]["multi"] is True
     assert "daily_k" in data_values
     assert "volume_breakout" in data_values["daily_k"]["strategies"]
+
+
+def test_api_strategy_detail_returns_one_strategy(tmp_path):
+    status, payload = build_api_response(
+        _config(tmp_path),
+        "/strategy",
+        query="name=low_volatility_quality",
+    )
+
+    assert status == 200
+    assert payload["schema_version"] == 1
+    assert payload["strategy"]["name"] == "low_volatility_quality"
+    assert payload["strategy"]["style"]["risk_profile"] == "defensive"
+    assert "daily_k" in payload["strategy"]["data_requirements"]
+    assert "volatility_20d_pct" in payload["strategy"]["required_daily_fields"]
+
+
+def test_api_strategy_detail_errors_are_json(tmp_path):
+    missing_status, missing = build_api_response(_config(tmp_path), "/strategy")
+    unknown_status, unknown = build_api_response(
+        _config(tmp_path),
+        "/strategy",
+        query="name=missing",
+    )
+
+    assert missing_status == 400
+    assert missing["error"] == "missing_strategy_name"
+    assert unknown_status == 404
+    assert unknown["error"] == "strategy_not_found"
+    assert unknown["name"] == "missing"
+
+
+def test_api_strategy_compare_returns_diff_payload(tmp_path):
+    status, payload = build_api_response(
+        _config(tmp_path),
+        "/strategy-compare",
+        query="base=dual_low&target=low_volatility_quality",
+    )
+
+    assert status == 200
+    assert payload["schema_version"] == 1
+    comparison = payload["comparison"]
+    assert comparison["base"]["name"] == "dual_low"
+    assert comparison["target"]["name"] == "low_volatility_quality"
+    assert "daily_k" in comparison["differences"]["data_requirements"]["added"]
+    assert "daily_feature_requirement_changed" in comparison["summary"]["compatibility_notes"]
+
+
+def test_api_strategy_compare_errors_are_json(tmp_path):
+    missing_status, missing = build_api_response(
+        _config(tmp_path),
+        "/strategy-compare",
+        query="base=dual_low",
+    )
+    unknown_status, unknown = build_api_response(
+        _config(tmp_path),
+        "/strategy-compare",
+        query="base=dual_low&target=missing",
+    )
+
+    assert missing_status == 400
+    assert missing["error"] == "missing_strategy_compare_params"
+    assert unknown_status == 404
+    assert unknown["error"] == "strategy_not_found"
+    assert unknown["target"] == "missing"
 
 
 def test_api_result_schema_returns_machine_readable_contract(tmp_path):

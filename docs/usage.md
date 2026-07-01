@@ -35,7 +35,7 @@ alphasift serve --host 127.0.0.1 --port 8765
 
 默认不会发起网络请求，只读取当前进程的 source-health 和本地 run 索引；需要真实数据源 smoke check 时加 `--live-data-check`。
 
-`alphasift serve` 会启动只读本地 JSON API，方便 UI、agent 或外部编排层直接消费稳定 payload。默认监听 `127.0.0.1:8765`，可用端点包括 `/health`、`/result-schema`、`/overview`、`/strategies`、`/strategy-facets`、`/strategy-templates`、`/strategy-template?name=<template_name>`、`/runs`、`/report?run=<run_id>` 和 `/doctor/data-sources`。HTTP API 默认也不做 live 数据源检查；需要时给 `/overview?live=true` 或 `/doctor/data-sources?live=true`。
+`alphasift serve` 会启动只读本地 JSON API，方便 UI、agent 或外部编排层直接消费稳定 payload。默认监听 `127.0.0.1:8765`，可用端点包括 `/health`、`/result-schema`、`/overview`、`/strategies`、`/strategy?name=<strategy_name>`、`/strategy-compare?base=<base>&target=<target>`、`/strategy-facets`、`/strategy-templates`、`/strategy-template?name=<template_name>`、`/runs`、`/report?run=<run_id>` 和 `/doctor/data-sources`。HTTP API 默认也不做 live 数据源检查；需要时给 `/overview?live=true` 或 `/doctor/data-sources?live=true`。
 
 策略目录也可以输出更完整的能力描述，方便 UI、agent 或外部系统选择合适策略：
 
@@ -61,9 +61,11 @@ alphasift strategies --risk-profile aggressive --data-requirement daily_k --limi
 ```bash
 alphasift strategies --compare dual_low low_volatility_quality --explain
 alphasift strategies --compare dual_low low_volatility_quality --json
+curl "http://127.0.0.1:8765/strategy?name=low_volatility_quality"
+curl "http://127.0.0.1:8765/strategy-compare?base=dual_low&target=low_volatility_quality"
 ```
 
-JSON 输出包含 `differences` 和 `summary.compatibility_notes`，适合 UI 展示参数变更、日 K 依赖变化和数据源兼容性影响。
+JSON 输出包含 `differences` 和 `summary.compatibility_notes`，适合 UI 展示参数变更、日 K 依赖变化和数据源兼容性影响。HTTP API 返回同一份对比结构，方便前端从策略详情页直接进入 diff 审核。
 
 新增策略时可以先列出模板，再把模板 YAML 输出到 `strategies/` 下改名迭代：
 

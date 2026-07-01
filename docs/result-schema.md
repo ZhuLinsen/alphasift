@@ -127,6 +127,8 @@ Stable top-level fields:
 - `GET /result-schema`: same shape as `screen_result_schema()`; UI-ready field groups and non-goals for `ScreenResult` consumers.
 - `GET /overview`: same shape as `alphasift overview --json`; supports query params such as `strategy`, `runs_limit`, `live`, `risk_profile`, `holding_period`, `data_requirement`, and `match_limit`.
 - `GET /strategies`: strategy catalog, or ranked matches when style/data query params are present.
+- `GET /strategy?name=<strategy_name>`: one strategy metadata card with style, data requirements, required fields, active filters, factor weights, and profile keys.
+- `GET /strategy-compare?base=<strategy>&target=<strategy>`: same diff payload as `alphasift strategies --compare <base> <target> --json`.
 - `GET /strategy-facets`: strategy filter facets for UI controls, including category, tag, style, data requirement, daily requirement, and required-field dimensions.
 - `GET /strategy-templates`: lightweight strategy authoring template catalog without YAML bodies.
 - `GET /strategy-template?name=<template_name>`: one strategy authoring template; supports `include_yaml=false`.
@@ -136,7 +138,7 @@ Stable top-level fields:
 
 ## Strategy compare payload
 
-`alphasift strategies --compare <base> <target> --json` emits a stable diff payload for strategy review screens:
+`alphasift strategies --compare <base> <target> --json` and `GET /strategy-compare?base=<base>&target=<target>` emit a stable diff payload for strategy review screens:
 
 - `base` / `target`: compact strategy summaries with version, category, tags, style, data requirements, active filters, factor weights, and profile keys.
 - `differences`: sectioned diffs for identity, tags, style, data requirements, required fields, active filters, hard-filter values, factor weights, and profile keys.

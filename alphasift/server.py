@@ -15,7 +15,7 @@ from alphasift.overview import build_overview
 from alphasift.report import build_run_report_payload
 from alphasift.result_schema import screen_result_schema
 from alphasift.store import list_saved_runs, load_screen_result
-from alphasift.strategy import list_strategies, match_strategies, strategy_facets
+from alphasift.strategy import compare_strategies, list_strategies, match_strategies, strategy_facets
 from alphasift.strategy_templates import get_strategy_template, list_strategy_templates
 
 
@@ -57,6 +57,39 @@ def build_api_response(
             "schema_version": 1,
             "strategies": [asdict(item) for item in list_strategies(config.strategies_dir)],
         }
+    if path == "/strategy":
+        strategy_name = _single(params, "name")
+        if not strategy_name:
+            return 400, {
+                "error": "missing_strategy_name",
+                "message": "Query parameter `name` is required.",
+            }
+        strategy = _find_strategy(config, strategy_name)
+        if strategy is None:
+            return 404, {
+                "error": "strategy_not_found",
+                "message": f"Strategy '{strategy_name}' not found.",
+                "name": strategy_name,
+            }
+        return 200, {"schema_version": 1, "strategy": asdict(strategy)}
+    if path == "/strategy-compare":
+        base_name = _single(params, "base")
+        target_name = _single(params, "target")
+        if not base_name or not target_name:
+            return 400, {
+                "error": "missing_strategy_compare_params",
+                "message": "Query parameters `base` and `target` are required.",
+            }
+        try:
+            comparison = compare_strategies(base_name, target_name, config.strategies_dir)
+        except ValueError as exc:
+            return 404, {
+                "error": "strategy_not_found",
+                "message": str(exc),
+                "base": base_name,
+                "target": target_name,
+            }
+        return 200, {"schema_version": 1, "comparison": comparison}
     if path == "/strategy-facets":
         return 200, strategy_facets(config.strategies_dir)
     if path == "/strategy-templates":
@@ -171,6 +204,8 @@ def _index_payload() -> dict[str, Any]:
             "/result-schema",
             "/overview",
             "/strategies",
+            "/strategy",
+            "/strategy-compare",
             "/strategy-facets",
             "/strategy-templates",
             "/strategy-template",
@@ -210,6 +245,13 @@ def _has_match_criteria(criteria: dict[str, Any]) -> bool:
             "category",
         )
     ) or criteria.get("daily_required") is not None or bool(criteria.get("strict"))
+
+
+def _find_strategy(config: Config, strategy_name: str) -> Any | None:
+    for item in list_strategies(config.strategies_dir):
+        if item.name == strategy_name:
+            return item
+    return None
 
 
 def _single(params: dict[str, list[str]], key: str) -> str:
