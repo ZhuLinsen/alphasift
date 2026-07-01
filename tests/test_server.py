@@ -1,0 +1,96 @@
+from pathlib import Path
+
+from alphasift.config import Config
+from alphasift.models import Pick, ScreenResult
+from alphasift.server import build_api_response
+from alphasift.store import save_screen_result
+
+
+def _config(tmp_path):
+    return Config(
+        strategies_dir=Path("strategies"),
+        data_dir=tmp_path,
+        snapshot_source_priority=["sina"],
+        daily_source="auto",
+        fallback_snapshot_path=tmp_path / "snapshot.last_good.json",
+        daily_history_cache_dir=tmp_path / "daily_history",
+    )
+
+
+def test_api_health_and_index(tmp_path):
+    config = _config(tmp_path)
+
+    status, index = build_api_response(config, "/")
+    health_status, health = build_api_response(config, "/health")
+
+    assert status == 200
+    assert "/overview" in index["endpoints"]
+    assert health_status == 200
+    assert health == {"status": "ok", "service": "alphasift", "schema_version": 1}
+
+
+def test_api_overview_and_runs_are_ui_ready(tmp_path):
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="run_api",
+            snapshot_source="sina",
+            picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80)],
+        ),
+        data_dir=tmp_path,
+    )
+    config = _config(tmp_path)
+
+    status, overview = build_api_response(
+        config,
+        "/overview",
+        query="risk_profile=defensive&holding_period=swing&match_limit=1&runs_limit=1",
+    )
+    runs_status, runs = build_api_response(config, "/runs", query="strategy=dual_low&limit=1")
+
+    assert status == 200
+    assert overview["summary"]["strategy_match_count"] == 1
+    assert overview["strategy_matches"][0]["name"] == "low_volatility_quality"
+    assert overview["recent_runs"][0]["run_id"] == "run_api"
+    assert runs_status == 200
+    assert runs["runs"][0]["run_id"] == "run_api"
+
+
+def test_api_strategies_supports_matching_query(tmp_path):
+    config = _config(tmp_path)
+
+    status, payload = build_api_response(
+        config,
+        "/strategies",
+        query="risk_profile=aggressive&data_requirement=daily_k&limit=1",
+    )
+
+    assert status == 200
+    assert payload["schema_version"] == 1
+    assert payload["strategies"][0]["name"] == "volume_breakout"
+    assert "data_requirement:daily_k" in payload["strategies"][0]["matched"]
+
+
+def test_api_doctor_defaults_to_no_live(tmp_path):
+    config = _config(tmp_path)
+
+    status, payload = build_api_response(
+        config,
+        "/doctor/data-sources",
+        query="strategy=low_volatility_quality&no_daily=true",
+    )
+
+    assert status == 200
+    assert payload["status"] == "skipped"
+    assert payload["config"]["live_checks"] is False
+    assert payload["strategy_requirements"]["strategy"] == "low_volatility_quality"
+    assert payload["freshness_summary"]["snapshot"]["data_state"] == "not_checked"
+
+
+def test_api_unknown_route_returns_endpoint_index(tmp_path):
+    status, payload = build_api_response(_config(tmp_path), "/missing")
+
+    assert status == 404
+    assert payload["error"] == "not_found"
+    assert "/doctor/data-sources" in payload["available_endpoints"]

@@ -31,6 +31,7 @@ from alphasift.report import (
     report_payload_to_json,
     write_run_report,
 )
+from alphasift.server import serve_api
 from alphasift.store import (
     evaluation_result_to_jsonl,
     list_saved_runs,
@@ -261,6 +262,11 @@ def main():
     op.add_argument("--output", default=None, help="额外写出 overview JSON")
     op.add_argument("--json", action="store_true", help="以 JSON 输出")
     op.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
+
+    # serve
+    svp = sub.add_parser("serve", help="启动只读本地 JSON API，供 UI/agent 消费")
+    svp.add_argument("--host", default="127.0.0.1", help="监听地址，默认 127.0.0.1")
+    svp.add_argument("--port", type=int, default=8765, help="监听端口，默认 8765")
 
     # report
     rep = sub.add_parser("report", help="把已保存运行生成为 Markdown/JSON 报告")
@@ -603,6 +609,10 @@ def main():
             print(_format_overview_explain(payload))
         else:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
+
+    elif args.command == "serve":
+        config = Config.from_env()
+        serve_api(config, host=args.host, port=args.port)
 
     elif args.command == "report":
         config = Config.from_env()

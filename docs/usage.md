@@ -30,9 +30,12 @@ alphasift evaluate <run_id> --explain
 ```bash
 alphasift overview --explain
 alphasift overview --risk-profile aggressive --data-requirement daily_k --match-limit 2 --json
+alphasift serve --host 127.0.0.1 --port 8765
 ```
 
 默认不会发起网络请求，只读取当前进程的 source-health 和本地 run 索引；需要真实数据源 smoke check 时加 `--live-data-check`。
+
+`alphasift serve` 会启动只读本地 JSON API，方便 UI、agent 或外部编排层直接消费稳定 payload。默认监听 `127.0.0.1:8765`，可用端点包括 `/health`、`/overview`、`/strategies`、`/runs` 和 `/doctor/data-sources`。HTTP API 默认也不做 live 数据源检查；需要时给 `/overview?live=true` 或 `/doctor/data-sources?live=true`。
 
 策略目录也可以输出更完整的能力描述，方便 UI、agent 或外部系统选择合适策略：
 
