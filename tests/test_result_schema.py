@@ -14,6 +14,10 @@ def test_screen_result_schema_matches_core_dataclass_fields():
     assert "degradation" in top_level_fields
     assert "snapshot_source" in top_level_fields
     assert "source_errors" in top_level_fields
+    assert "llm_rank_status" in top_level_fields
+    assert "llm_matched_count" in top_level_fields
+    assert "llm_requested_count" in top_level_fields
+    assert "llm_repair_status" in top_level_fields
     assert "risk_flags" in pick_schema_fields
     assert "daily_quality_flags" in pick_schema_fields
     assert "post_analysis_status" in pick_schema_fields

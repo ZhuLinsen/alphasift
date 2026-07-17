@@ -102,7 +102,7 @@ def list_saved_runs(
 def _write_screen_result_metadata(result: ScreenResult, output_path: Path) -> None:
     metadata_path = _run_metadata_path(output_path)
     metadata = {
-        "schema_version": 3,
+        "schema_version": 4,
         "run_id": result.run_id or output_path.stem,
         "strategy": result.strategy,
         "market": result.market,
@@ -119,6 +119,10 @@ def _write_screen_result_metadata(result: ScreenResult, output_path: Path) -> No
         "degradation": list(result.degradation)[:_RUN_DEGRADATION_SAMPLE_LIMIT],
         "llm_ranked": bool(result.llm_ranked),
         "llm_coverage": result.llm_coverage,
+        "llm_rank_status": result.llm_rank_status,
+        "llm_matched_count": result.llm_matched_count,
+        "llm_requested_count": result.llm_requested_count,
+        "llm_repair_status": result.llm_repair_status,
         "daily_enriched": bool(result.daily_enriched),
         "daily_enrich_count": result.daily_enrich_count,
         "post_analyzers": list(result.post_analyzers),
@@ -162,6 +166,16 @@ def _normalize_run_metadata(data: dict, path: Path) -> dict[str, object]:
             pick_count = int(picks)
         except (TypeError, ValueError):
             pick_count = 0
+    llm_ranked = bool(data.get("llm_ranked", False))
+    llm_coverage = data.get("llm_coverage")
+    llm_rank_status = str(data.get("llm_rank_status") or "").strip()
+    if not llm_rank_status:
+        if llm_ranked:
+            llm_rank_status = "complete" if llm_coverage == 1.0 else "partial"
+        elif llm_coverage is not None:
+            llm_rank_status = "fallback"
+        else:
+            llm_rank_status = "disabled"
     return {
         "schema_version": int(_metadata_value(data, "schema_version", 1) or 1),
         "run_id": data.get("run_id", path.stem),
@@ -178,8 +192,12 @@ def _normalize_run_metadata(data: dict, path: Path) -> dict[str, object]:
         "source_errors": _string_list(data.get("source_errors", []))[:_RUN_SOURCE_ERROR_SAMPLE_LIMIT],
         "degradation_count": int(_metadata_value(data, "degradation_count", _list_count(data.get("degradation"))) or 0),
         "degradation": _string_list(data.get("degradation", []))[:_RUN_DEGRADATION_SAMPLE_LIMIT],
-        "llm_ranked": bool(data.get("llm_ranked", False)),
-        "llm_coverage": data.get("llm_coverage"),
+        "llm_ranked": llm_ranked,
+        "llm_coverage": llm_coverage,
+        "llm_rank_status": llm_rank_status,
+        "llm_matched_count": int(_metadata_value(data, "llm_matched_count", 0) or 0),
+        "llm_requested_count": int(_metadata_value(data, "llm_requested_count", 0) or 0),
+        "llm_repair_status": str(data.get("llm_repair_status") or "not_run"),
         "daily_enriched": bool(data.get("daily_enriched", False)),
         "daily_enrich_count": int(_metadata_value(data, "daily_enrich_count", 0) or 0),
         "post_analyzers": _string_list(data.get("post_analyzers", [])),

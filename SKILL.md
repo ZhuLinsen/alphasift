@@ -94,6 +94,10 @@ evaluate_saved_runs(limit=20)
 - `llm_selection_logic`
 - `llm_portfolio_risk`
 - `llm_coverage`
+- `llm_rank_status`
+- `llm_matched_count`
+- `llm_requested_count`
+- `llm_repair_status`
 - `post_analyzers`
 - `daily_enriched`
 - `risk_enabled`

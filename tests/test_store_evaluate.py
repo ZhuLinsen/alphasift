@@ -35,6 +35,22 @@ def test_save_and_load_screen_result(tmp_path):
     assert loaded.saved_path == str(path)
 
 
+def test_load_legacy_screen_result_derives_llm_quality_status(tmp_path):
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir(parents=True)
+    path = runs_dir / "legacy_llm.json"
+    path.write_text(
+        '{"strategy":"dual_low","market":"cn","run_id":"legacy_llm",'
+        '"llm_ranked":true,"llm_coverage":0.75,"picks":[]}',
+        encoding="utf-8",
+    )
+
+    loaded = load_screen_result("legacy_llm", data_dir=tmp_path)
+
+    assert loaded.llm_rank_status == "partial"
+    assert loaded.llm_repair_status == "not_run"
+
+
 def test_list_saved_runs_reads_only_metadata_until_limit(tmp_path):
     result = ScreenResult(
         strategy="dual_low",
@@ -49,6 +65,10 @@ def test_list_saved_runs_reads_only_metadata_until_limit(tmp_path):
         degradation=["used fallback"],
         llm_ranked=True,
         llm_coverage=0.75,
+        llm_rank_status="partial",
+        llm_matched_count=3,
+        llm_requested_count=4,
+        llm_repair_status="clean",
         daily_enriched=True,
         daily_enrich_count=20,
         post_analyzers=["scorecard"],
@@ -61,7 +81,7 @@ def test_list_saved_runs_reads_only_metadata_until_limit(tmp_path):
     runs = list_saved_runs(data_dir=tmp_path, limit=1)
 
     assert runs == [{
-        "schema_version": 3,
+        "schema_version": 4,
         "run_id": "run_metadata",
         "strategy": "dual_low",
         "market": "cn",
@@ -78,6 +98,10 @@ def test_list_saved_runs_reads_only_metadata_until_limit(tmp_path):
         "degradation": ["used fallback"],
         "llm_ranked": True,
         "llm_coverage": 0.75,
+        "llm_rank_status": "partial",
+        "llm_matched_count": 3,
+        "llm_requested_count": 4,
+        "llm_repair_status": "clean",
         "daily_enriched": True,
         "daily_enrich_count": 20,
         "post_analyzers": ["scorecard"],

@@ -122,6 +122,10 @@ def _run_summary(result: ScreenResult) -> dict[str, Any]:
         "pick_count": len(result.picks),
         "llm_ranked": result.llm_ranked,
         "llm_coverage": result.llm_coverage,
+        "llm_rank_status": result.llm_rank_status,
+        "llm_matched_count": result.llm_matched_count,
+        "llm_requested_count": result.llm_requested_count,
+        "llm_repair_status": result.llm_repair_status,
         "post_analyzers": list(result.post_analyzers),
         "saved_path": result.saved_path,
     }
@@ -136,6 +140,16 @@ def _summary_cards(
         _card("After Filter", result.after_filter_count, _count_status(result.after_filter_count)),
         _card("Picks", len(result.picks), _count_status(len(result.picks))),
         _card("LLM Ranked", result.llm_ranked, "ok" if result.llm_ranked else "skipped"),
+        _card(
+            "LLM Rank Status",
+            result.llm_rank_status,
+            "ok" if result.llm_rank_status == "complete" else "skipped" if result.llm_rank_status == "disabled" else "degraded",
+        ),
+        _card(
+            "LLM Coverage",
+            f"{result.llm_matched_count}/{result.llm_requested_count}",
+            "ok" if result.llm_rank_status == "complete" else "skipped" if result.llm_rank_status == "disabled" else "degraded",
+        ),
         _card("Daily Enriched", result.daily_enriched, "ok" if result.daily_enriched else "skipped"),
         _card(
             "Degradation",

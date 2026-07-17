@@ -7,9 +7,11 @@ from alphasift.ranker import (
     _build_litellm_attempts,
     _build_ranking_prompt,
     _call_llm,
+    _effective_ranking_max_tokens,
     _parse_ranking_response,
     _parse_ranking_response_detail,
     rank_candidates,
+    rank_candidates_with_metadata,
 )
 
 
@@ -205,6 +207,170 @@ def test_rank_candidates_blends_screen_and_llm_scores(monkeypatch):
     assert [p.code for p in ranked] == ["600000", "000001"]
     assert ranked[0].final_score == 80.0
     assert ranked[1].final_score == 72.0
+
+
+def _ranking_picks(count=6):
+    return [
+        Pick(
+            rank=index + 1,
+            code=f"{index + 1:06d}",
+            name=f"候选{index + 1}",
+            final_score=90 - index,
+            screen_score=90 - index,
+            industry="测试",
+        )
+        for index in range(count)
+    ]
+
+
+def _ranking_json(codes):
+    return json.dumps({
+        "ranked": [
+            {"code": code, "llm_score": 90 - index, "reason": "排序", "risk": "波动"}
+            for index, code in enumerate(codes)
+        ]
+    })
+
+
+def test_ranking_token_budget_scales_with_candidates_and_is_capped():
+    assert _effective_ranking_max_tokens(2048, 6) == 3328
+    assert _effective_ranking_max_tokens(6000, 6) == 6000
+    assert _effective_ranking_max_tokens(20_000, 6) == 8192
+    assert _effective_ranking_max_tokens(None, 30) == 8192
+
+
+def test_incomplete_ranking_uses_one_compact_retry_and_selects_complete_result(monkeypatch):
+    picks = _ranking_picks()
+    calls = []
+    responses = iter([
+        json.dumps({
+            "market_view": "首轮市场判断",
+            "selection_logic": "首轮选择逻辑",
+            "portfolio_risk": "首轮组合风险",
+            "ranked": json.loads(_ranking_json([pick.code for pick in picks[:4]]))["ranked"],
+        }),
+        _ranking_json([pick.code for pick in picks]),
+    ])
+
+    def fake_call(prompt, *args, **kwargs):
+        calls.append((prompt, kwargs))
+        return next(responses)
+
+    monkeypatch.setattr("alphasift.ranker._call_llm", fake_call)
+
+    result = rank_candidates_with_metadata(
+        picks,
+        ranking_hints="价值优先",
+        llm_api_key="key",
+        llm_model="model",
+        context="市场偏防守；DSA 数据可用",
+        max_tokens=2048,
+    )
+
+    assert len(calls) == 2
+    assert calls[0][1]["max_tokens"] == 3328
+    assert calls[1][1]["max_tokens"] == 3328
+    assert "必须为以下每个候选代码各返回一次且仅一次" in calls[1][0]
+    assert "市场偏防守；DSA 数据可用" in calls[1][0]
+    assert "dsa_context=" in calls[1][0]
+    assert result.ranked is True
+    assert result.rank_status == "complete"
+    assert result.coverage == 1.0
+    assert result.matched_count == 6
+    assert result.requested_count == 6
+    assert result.repair_status == "retry_clean"
+    assert result.market_view == "首轮市场判断"
+    assert result.selection_logic == "首轮选择逻辑"
+    assert result.portfolio_risk == "首轮组合风险"
+
+
+def test_repaired_complete_response_retries_and_prefers_clean_result(monkeypatch):
+    picks = _ranking_picks(2)
+    repaired = _ranking_json([pick.code for pick in picks])[:-1] + ",}"
+    responses = iter([repaired, _ranking_json([pick.code for pick in picks])])
+    monkeypatch.setattr("alphasift.ranker._call_llm", lambda *args, **kwargs: next(responses))
+
+    result = rank_candidates_with_metadata(
+        picks,
+        ranking_hints="demo",
+        llm_api_key="key",
+        llm_model="model",
+    )
+
+    assert result.rank_status == "complete"
+    assert result.repair_status == "retry_clean"
+    assert result.errors == []
+
+
+def test_partial_ranking_above_threshold_is_explicit(monkeypatch):
+    picks = _ranking_picks()
+    partial = _ranking_json([pick.code for pick in picks[:4]])
+    monkeypatch.setattr("alphasift.ranker._call_llm", lambda *args, **kwargs: partial)
+
+    result = rank_candidates_with_metadata(
+        picks,
+        ranking_hints="demo",
+        llm_api_key="key",
+        llm_model="model",
+        min_coverage=0.60,
+    )
+
+    assert result.ranked is True
+    assert result.rank_status == "partial"
+    assert result.matched_count == 4
+    assert result.requested_count == 6
+    assert result.coverage == 4 / 6
+    assert all(pick.llm_score is None for pick in result.picks if pick.code in {"000005", "000006"})
+    assert all(pick.final_score == pick.screen_score for pick in result.picks if pick.code in {"000005", "000006"})
+
+
+def test_compact_retry_failure_keeps_usable_initial_partial_result(monkeypatch):
+    picks = _ranking_picks()
+    calls = 0
+
+    def fake_call(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return _ranking_json([pick.code for pick in picks[:4]])
+        raise TimeoutError("retry timeout")
+
+    monkeypatch.setattr("alphasift.ranker._call_llm", fake_call)
+
+    result = rank_candidates_with_metadata(
+        picks,
+        ranking_hints="demo",
+        llm_api_key="key",
+        llm_model="model",
+        min_coverage=0.60,
+    )
+
+    assert result.ranked is True
+    assert result.rank_status == "partial"
+    assert result.repair_status == "retry_failed"
+    assert any(error.startswith("retry_error:") for error in result.errors)
+
+
+def test_ranking_below_threshold_falls_back_without_mutating_candidates(monkeypatch):
+    picks = _ranking_picks()
+    partial = _ranking_json([pick.code for pick in picks[:3]])
+    monkeypatch.setattr("alphasift.ranker._call_llm", lambda *args, **kwargs: partial)
+
+    result = rank_candidates_with_metadata(
+        picks,
+        ranking_hints="demo",
+        llm_api_key="key",
+        llm_model="model",
+        min_coverage=0.60,
+    )
+
+    assert result.picks is picks
+    assert result.ranked is False
+    assert result.rank_status == "fallback"
+    assert result.coverage == 0.5
+    assert result.matched_count == 3
+    assert result.requested_count == 6
+    assert all(pick.llm_score is None for pick in picks)
 
 
 def test_call_llm_sets_generation_bounds_and_disables_sdk_retries(monkeypatch):

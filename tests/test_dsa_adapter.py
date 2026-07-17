@@ -48,6 +48,10 @@ def test_screen_returns_stable_dsa_contract(monkeypatch):
             run_id="run123",
             llm_ranked=True,
             llm_coverage=1.0,
+            llm_rank_status="complete",
+            llm_matched_count=3,
+            llm_requested_count=3,
+            llm_repair_status="retry_clean",
             llm_market_view="market ok",
             picks=[
                 Pick(
@@ -88,6 +92,10 @@ def test_screen_returns_stable_dsa_contract(monkeypatch):
     assert payload["run_id"] == "run123"
     assert payload["llm_ranked"] is True
     assert payload["llm_coverage"] == 1.0
+    assert payload["llm_rank_status"] == "complete"
+    assert payload["llm_matched_count"] == 3
+    assert payload["llm_requested_count"] == 3
+    assert payload["llm_repair_status"] == "retry_clean"
     assert payload["candidate_count"] == 1
     assert payload["warnings"] == ["fallback used"]
     assert payload["source_errors"] == ["source timeout"]

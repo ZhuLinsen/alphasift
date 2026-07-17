@@ -1339,7 +1339,9 @@ def _format_screen_explain(result) -> str:
         f"run_id={result.run_id} strategy={result.strategy} market={result.market}",
         (
             f"snapshot={result.snapshot_count} after_filter={result.after_filter_count} "
-            f"source={result.snapshot_source or '-'} llm_ranked={result.llm_ranked}"
+            f"source={result.snapshot_source or '-'} llm_ranked={result.llm_ranked} "
+            f"llm_rank_status={result.llm_rank_status} "
+            f"llm_coverage={result.llm_matched_count}/{result.llm_requested_count}"
         ),
     ]
     if result.post_analyzers:

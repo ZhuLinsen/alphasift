@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+from copy import deepcopy
 from dataclasses import dataclass
 
 from alphasift.models import Pick
@@ -23,6 +24,9 @@ def _normalize_code(value: object) -> str:
 logger = logging.getLogger(__name__)
 _DEFAULT_RANKING_PROMPT_MAX_CHARS = 24_000
 _PROMPT_TRIM_MARKER = "[prompt_trimmed]"
+_RANKING_TOKEN_BASE = 1024
+_RANKING_TOKEN_PER_CANDIDATE = 384
+_RANKING_TOKEN_CAP = 8192
 
 
 @dataclass
@@ -33,6 +37,8 @@ class RankingParseResult:
     market_view: str = ""
     selection_logic: str = ""
     portfolio_risk: str = ""
+    matched_count: int = 0
+    repair_count: int = 0
 
 
 @dataclass
@@ -44,6 +50,10 @@ class LLMRankingResult:
     portfolio_risk: str = ""
     coverage: float = 0.0
     errors: list[str] | None = None
+    rank_status: str = ""
+    matched_count: int = 0
+    requested_count: int = 0
+    repair_status: str = "not_run"
 
     def __post_init__(self) -> None:
         if self.errors is None:
@@ -131,62 +141,139 @@ def rank_candidates_with_metadata(
         degradation=degradation,
     )
 
+    effective_max_tokens = _effective_ranking_max_tokens(max_tokens, len(candidates))
+
     try:
-        last_errors: list[str] = []
-        parsed: RankingParseResult | None = None
-        for attempt in range(max_retries + 1):
-            attempt_prompt = prompt
-            if attempt:
-                attempt_prompt += (
-                    "\n\n上一次输出没有满足结构化覆盖率要求。"
-                    "请重新返回严格 JSON，并覆盖尽可能多的候选代码。"
+        response = _call_llm(
+            prompt,
+            llm_api_key,
+            llm_model,
+            llm_base_url,
+            fallback_models=fallback_models or [],
+            temperature=temperature,
+            json_mode=json_mode,
+            silent=silent,
+            channels=channels or [],
+            config_path=config_path,
+            timeout_sec=timeout_sec,
+            max_tokens=effective_max_tokens,
+        )
+        attempts = [_parse_ranking_response_detail(response, deepcopy(candidates))]
+        retry_error = ""
+        first = attempts[0]
+        if max_retries > 0 and (first.coverage < 1.0 or first.repair_count > 0):
+            try:
+                retry_response = _call_llm(
+                    _build_compact_retry_prompt(candidates, ranking_hints, context),
+                    llm_api_key,
+                    llm_model,
+                    llm_base_url,
+                    fallback_models=fallback_models or [],
+                    temperature=temperature,
+                    json_mode=json_mode,
+                    silent=silent,
+                    channels=channels or [],
+                    config_path=config_path,
+                    timeout_sec=timeout_sec,
+                    max_tokens=effective_max_tokens,
                 )
-            response = _call_llm(
-                attempt_prompt,
-                llm_api_key,
-                llm_model,
-                llm_base_url,
-                fallback_models=fallback_models or [],
-                temperature=temperature,
-                json_mode=json_mode,
-                silent=silent,
-                channels=channels or [],
-                config_path=config_path,
-                timeout_sec=timeout_sec,
-                max_tokens=max_tokens,
-            )
-            parsed = _parse_ranking_response_detail(response, candidates)
-            last_errors = parsed.errors
-            if parsed.coverage >= min_coverage:
-                break
-        if parsed is None or parsed.coverage < min_coverage:
-            raise ValueError(
+                attempts.append(_parse_ranking_response_detail(retry_response, deepcopy(candidates)))
+            except Exception as exc:
+                retry_error = f"retry_error:{exc}"
+                logger.warning("Compact LLM ranking retry failed: %s", exc)
+
+        selected_index, parsed = max(
+            enumerate(attempts),
+            key=lambda item: (item[1].coverage, -item[1].repair_count, -item[0]),
+        )
+        selected_errors = list(parsed.errors)
+        if retry_error:
+            selected_errors.append(retry_error)
+        repair_status = (
+            "retry_failed"
+            if retry_error
+            else _ranking_repair_status(parsed, retried=selected_index > 0)
+        )
+        if parsed.coverage < min_coverage:
+            threshold_error = (
                 "LLM ranking response coverage below threshold: "
-                f"{0 if parsed is None else parsed.coverage:.2f}; "
-                f"errors={last_errors}"
+                f"{parsed.coverage:.2f} < {min_coverage:.2f}"
             )
+            return LLMRankingResult(
+                picks=candidates,
+                ranked=False,
+                coverage=parsed.coverage,
+                errors=[*selected_errors, threshold_error],
+                rank_status="fallback",
+                matched_count=parsed.matched_count,
+                requested_count=len(candidates),
+                repair_status=repair_status,
+            )
+
         ranked = parsed.picks
         for i, pick in enumerate(ranked):
             pick.rank = i + 1
-            if pick.llm_score is None:
-                pick.llm_score = 100.0 - i * (100.0 / max(len(ranked), 1))
             weight = min(max(rank_weight, 0.0), 1.0)
-            pick.final_score = pick.screen_score * (1 - weight) + (pick.llm_score or 0) * weight
+            pick.final_score = (
+                pick.screen_score
+                if pick.llm_score is None
+                else pick.screen_score * (1 - weight) + pick.llm_score * weight
+            )
         ranked.sort(key=lambda item: item.final_score, reverse=True)
         for i, pick in enumerate(ranked, start=1):
             pick.rank = i
         return LLMRankingResult(
             picks=ranked,
             ranked=True,
-            market_view=parsed.market_view,
-            selection_logic=parsed.selection_logic,
-            portfolio_risk=parsed.portfolio_risk,
+            market_view=parsed.market_view or first.market_view,
+            selection_logic=parsed.selection_logic or first.selection_logic,
+            portfolio_risk=parsed.portfolio_risk or first.portfolio_risk,
             coverage=parsed.coverage,
-            errors=parsed.errors,
+            errors=selected_errors,
+            rank_status="complete" if parsed.matched_count == len(candidates) else "partial",
+            matched_count=parsed.matched_count,
+            requested_count=len(candidates),
+            repair_status=repair_status,
         )
     except Exception as e:
         logger.warning("LLM ranking failed, falling back to screen_score: %s", e)
-        return LLMRankingResult(picks=candidates, errors=[str(e)])
+        return LLMRankingResult(
+            picks=candidates,
+            errors=[str(e)],
+            rank_status="fallback",
+            requested_count=len(candidates),
+            repair_status="failed",
+        )
+
+
+def _effective_ranking_max_tokens(configured: int | None, candidate_count: int) -> int:
+    required = _RANKING_TOKEN_BASE + _RANKING_TOKEN_PER_CANDIDATE * max(0, int(candidate_count))
+    try:
+        configured_value = max(0, int(configured or 0))
+    except (TypeError, ValueError):
+        configured_value = 0
+    return min(_RANKING_TOKEN_CAP, max(configured_value, required))
+
+
+def _build_compact_retry_prompt(candidates: list[Pick], ranking_hints: str, context: str) -> str:
+    rows = "\n".join(_format_candidate_for_prompt(pick, detail="compact") for pick in candidates)
+    hints = safe_text(ranking_hints, max_len=800) or "无额外排序提示"
+    compact_context = safe_text(context, max_len=1200) or "无额外市场上下文"
+    codes = ", ".join(str(pick.code) for pick in candidates)
+    return f"""请仅返回严格 JSON，不要 Markdown，不要解释。
+必须为以下每个候选代码各返回一次且仅一次：{codes}
+格式：{{"ranked":[{{"code":"代码","llm_score":0-100,"reason":"简短理由","risk":"简短风险"}}]}}
+策略提示：{hints}
+市场上下文：{compact_context}
+候选：
+{rows}
+"""
+
+
+def _ranking_repair_status(parsed: RankingParseResult, *, retried: bool) -> str:
+    if parsed.repair_count > 0:
+        return "retry_repaired" if retried else "repaired"
+    return "retry_clean" if retried else "clean"
 
 
 def _build_ranking_prompt(
@@ -652,6 +739,7 @@ def _parse_ranking_response_detail(response: str, candidates: list[Pick]) -> Ran
     # Append any candidates not mentioned by LLM
     ranked.extend(code_to_pick.values())
     coverage = matched / max(len(candidates), 1)
+    repair_count = sum(1 for error in errors if error.startswith("json_repaired:"))
     return RankingParseResult(
         ranked,
         coverage,
@@ -659,6 +747,8 @@ def _parse_ranking_response_detail(response: str, candidates: list[Pick]) -> Ran
         market_view=market_view,
         selection_logic=selection_logic,
         portfolio_risk=portfolio_risk,
+        matched_count=matched,
+        repair_count=repair_count,
     )
 
 
