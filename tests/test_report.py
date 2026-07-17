@@ -22,6 +22,10 @@ def _sample_run() -> ScreenResult:
         run_id="run_report",
         llm_ranked=True,
         llm_coverage=0.8,
+        llm_rank_status="partial",
+        llm_matched_count=4,
+        llm_requested_count=5,
+        llm_repair_status="clean",
         degradation=["Daily K-line source health: tushare missing token"],
         snapshot_source="sina",
         source_errors=["akshare: timeout"],
@@ -88,6 +92,9 @@ def test_build_run_report_payload_and_markdown():
     assert payload["object"] == "RunReport"
     assert payload["run"]["strategy"] == "low_volatility_quality"
     assert payload["source_health"]["snapshot_source"] == "sina"
+    assert payload["run"]["llm_rank_status"] == "partial"
+    assert payload["run"]["llm_matched_count"] == 4
+    assert payload["run"]["llm_requested_count"] == 5
     assert payload["top_picks"][0]["final_score"] == 82.3457
     assert payload["evaluation"]["average_return_pct"] == 2.5
     assert "# AlphaSift Run Report" in markdown

@@ -242,5 +242,9 @@ def test_screen_applies_dsa_provider_context_before_llm_ranking(monkeypatch):
     assert captured["dsa_news"][0]["title"] == "贵州茅台最新公告"
     assert "DSA新闻" in captured["dsa_summary"]
     assert result.llm_ranked is True
+    assert result.llm_rank_status == "complete"
+    assert result.llm_matched_count == 1
+    assert result.llm_requested_count == 1
+    assert result.llm_repair_status == "not_run"
     assert result.picks[0].dsa_context["quote"]["price"] == 1688.0
     assert any("DSA provider context applied 1 of 1 candidates" in item for item in result.degradation)

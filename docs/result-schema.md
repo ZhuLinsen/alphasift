@@ -17,6 +17,7 @@ Consumers should treat these top-level fields as stable integration points:
 - `strategy`, `market`, `strategy_version`, `strategy_category`
 - `snapshot_count`, `after_filter_count`, `picks`, `run_id`, `created_at`
 - `llm_ranked`, `llm_coverage`, `llm_parse_errors`
+- `llm_rank_status` (`complete|partial|fallback|disabled`), `llm_matched_count`, `llm_requested_count`, `llm_repair_status` (`clean|repaired|retry_clean|retry_repaired|retry_failed|failed|not_run`)
 - `degradation`, `snapshot_source`, `source_errors`
 - `deep_analysis_requested`, `post_analyzers`
 - `daily_enriched`, `daily_enrich_count`
@@ -64,14 +65,14 @@ The current `RunReport` schema version is `1`. Stable top-level fields:
 
 ## Run index metadata
 
-Use `alphasift runs --json` for a lightweight saved-run index without loading full run payloads. Current sidecar metadata schema version is `3`.
+Use `alphasift runs --json` for a lightweight saved-run index without loading full run payloads. Current sidecar metadata schema version is `4`.
 
 Stable fields include:
 
 - identity: `run_id`, `strategy`, `market`, `strategy_version`, `strategy_category`, `created_at`
 - counts: `picks`, `snapshot_count`, `after_filter_count`
 - source status: `snapshot_source`, `source_error_count`, `source_errors`, `degradation_count`, `degradation`
-- enrichment status: `llm_ranked`, `llm_coverage`, `daily_enriched`, `daily_enrich_count`, `post_analyzers`
+- enrichment status: `llm_ranked`, `llm_coverage`, `llm_rank_status`, `llm_matched_count`, `llm_requested_count`, `llm_repair_status`, `daily_enriched`, `daily_enrich_count`, `post_analyzers`
 - paths: `path`, `report_path`
 
 ## Strategy run summary payload

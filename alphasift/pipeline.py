@@ -320,6 +320,10 @@ def screen(
     llm_portfolio_risk = ""
     llm_coverage: float | None = None
     llm_parse_errors: list[str] = []
+    llm_rank_status = "disabled"
+    llm_matched_count = 0
+    llm_requested_count = 0
+    llm_repair_status = "not_run"
     if use_llm and config.has_llm_config():
         candidate_context_rows: list[dict[str, object]] = []
         event_source_weights = _event_source_weights(screening.event_profile)
@@ -402,7 +406,15 @@ def screen(
         llm_portfolio_risk = llm_result.portfolio_risk
         llm_coverage = llm_result.coverage
         llm_parse_errors = llm_result.errors
-        llm_ranked = any(p.llm_score is not None for p in picks)
+        llm_ranked = llm_result.ranked
+        llm_requested_count = llm_result.requested_count or len(picks)
+        llm_matched_count = llm_result.matched_count
+        if llm_ranked and llm_matched_count == 0 and llm_coverage is not None:
+            llm_matched_count = round(llm_coverage * llm_requested_count)
+        llm_rank_status = llm_result.rank_status or (
+            "complete" if llm_ranked and llm_coverage == 1.0 else "partial" if llm_ranked else "fallback"
+        )
+        llm_repair_status = llm_result.repair_status
         if not llm_ranked:
             degradation.append("LLM ranking failed: fell back to screen_score")
             for i, p in enumerate(picks):
@@ -466,6 +478,10 @@ def screen(
         llm_portfolio_risk=llm_portfolio_risk,
         llm_coverage=llm_coverage,
         llm_parse_errors=llm_parse_errors,
+        llm_rank_status=llm_rank_status,
+        llm_matched_count=llm_matched_count,
+        llm_requested_count=llm_requested_count,
+        llm_repair_status=llm_repair_status,
         degradation=degradation,
         snapshot_source=snapshot_source,
         source_errors=source_errors,

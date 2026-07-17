@@ -172,7 +172,7 @@ AlphaSift is designed to reuse LiteLLM-style configuration used by `daily_stock_
 | `LITELLM_CONFIG` | No | LiteLLM Router YAML file | - |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | For LLM ranking | Provider API key | - |
 | `OPENAI_BASE_URL` / `OLLAMA_API_BASE` | No | OpenAI-compatible or Ollama endpoint | - |
-| `LLM_MAX_TOKENS` | No | Max tokens requested from LLM ranking; keeps local servers from generating unbounded output after client timeout | `2048` |
+| `LLM_MAX_TOKENS` | No | Base max tokens for LLM ranking; the effective bound scales to `max(configured, 1024 + 384 × candidates)` and is capped at `8192` | `2048` |
 | `LLM_CONTEXT` | No | Extra market/theme context for LLM ranking | - |
 | `LLM_CANDIDATE_CONTEXT_ENABLED` | No | Fetch candidate news/announcements/fund-flow context by default | `false` |
 | `INDUSTRY_MAP_FILES` | No | Local code-to-industry/concepts/board-heat files | - |

@@ -212,6 +212,10 @@ class ScreenResult:
     llm_portfolio_risk: str = ""
     llm_coverage: float | None = None
     llm_parse_errors: list[str] = field(default_factory=list)
+    llm_rank_status: str = "disabled"
+    llm_matched_count: int = 0
+    llm_requested_count: int = 0
+    llm_repair_status: str = "not_run"
     degradation: list[str] = field(default_factory=list)
     snapshot_source: str = ""
     source_errors: list[str] = field(default_factory=list)
@@ -224,6 +228,12 @@ class ScreenResult:
     portfolio_concentration_notes: list[str] = field(default_factory=list)
     saved_path: str = ""
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
+
+    def __post_init__(self) -> None:
+        if self.llm_rank_status == "disabled" and self.llm_ranked:
+            self.llm_rank_status = "complete" if self.llm_coverage == 1.0 else "partial"
+        elif self.llm_rank_status == "disabled" and self.llm_coverage is not None:
+            self.llm_rank_status = "fallback"
 
 
 @dataclass

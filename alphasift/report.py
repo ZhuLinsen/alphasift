@@ -122,6 +122,10 @@ def _run_summary(result: ScreenResult) -> dict[str, Any]:
         "pick_count": len(result.picks),
         "llm_ranked": result.llm_ranked,
         "llm_coverage": result.llm_coverage,
+        "llm_rank_status": result.llm_rank_status,
+        "llm_matched_count": result.llm_matched_count,
+        "llm_requested_count": result.llm_requested_count,
+        "llm_repair_status": result.llm_repair_status,
         "post_analyzers": list(result.post_analyzers),
         "saved_path": result.saved_path,
     }
