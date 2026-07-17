@@ -263,6 +263,7 @@ def test_incomplete_ranking_uses_one_compact_retry_and_selects_complete_result(m
         ranking_hints="价值优先",
         llm_api_key="key",
         llm_model="model",
+        context="市场偏防守；DSA 数据可用",
         max_tokens=2048,
     )
 
@@ -270,6 +271,8 @@ def test_incomplete_ranking_uses_one_compact_retry_and_selects_complete_result(m
     assert calls[0][1]["max_tokens"] == 3328
     assert calls[1][1]["max_tokens"] == 3328
     assert "必须为以下每个候选代码各返回一次且仅一次" in calls[1][0]
+    assert "市场偏防守；DSA 数据可用" in calls[1][0]
+    assert "dsa_context=" in calls[1][0]
     assert result.ranked is True
     assert result.rank_status == "complete"
     assert result.coverage == 1.0

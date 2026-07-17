@@ -164,7 +164,7 @@ def rank_candidates_with_metadata(
         if max_retries > 0 and (first.coverage < 1.0 or first.repair_count > 0):
             try:
                 retry_response = _call_llm(
-                    _build_compact_retry_prompt(candidates, ranking_hints),
+                    _build_compact_retry_prompt(candidates, ranking_hints, context),
                     llm_api_key,
                     llm_model,
                     llm_base_url,
@@ -255,17 +255,16 @@ def _effective_ranking_max_tokens(configured: int | None, candidate_count: int) 
     return min(_RANKING_TOKEN_CAP, max(configured_value, required))
 
 
-def _build_compact_retry_prompt(candidates: list[Pick], ranking_hints: str) -> str:
-    rows = "\n".join(
-        f"- code={pick.code}; name={pick.name}; screen_score={pick.screen_score:.2f}; industry={pick.industry or '-'}"
-        for pick in candidates
-    )
+def _build_compact_retry_prompt(candidates: list[Pick], ranking_hints: str, context: str) -> str:
+    rows = "\n".join(_format_candidate_for_prompt(pick, detail="compact") for pick in candidates)
     hints = safe_text(ranking_hints, max_len=800) or "无额外排序提示"
+    compact_context = safe_text(context, max_len=1200) or "无额外市场上下文"
     codes = ", ".join(str(pick.code) for pick in candidates)
     return f"""请仅返回严格 JSON，不要 Markdown，不要解释。
 必须为以下每个候选代码各返回一次且仅一次：{codes}
 格式：{{"ranked":[{{"code":"代码","llm_score":0-100,"reason":"简短理由","risk":"简短风险"}}]}}
 策略提示：{hints}
+市场上下文：{compact_context}
 候选：
 {rows}
 """

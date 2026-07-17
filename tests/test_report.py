@@ -95,6 +95,8 @@ def test_build_run_report_payload_and_markdown():
     assert payload["run"]["llm_rank_status"] == "partial"
     assert payload["run"]["llm_matched_count"] == 4
     assert payload["run"]["llm_requested_count"] == 5
+    assert any(card["label"] == "LLM Rank Status" and card["value"] == "partial" for card in payload["summary_cards"])
+    assert any(card["label"] == "LLM Coverage" and card["value"] == "4/5" for card in payload["summary_cards"])
     assert payload["top_picks"][0]["final_score"] == 82.3457
     assert payload["evaluation"]["average_return_pct"] == 2.5
     assert "# AlphaSift Run Report" in markdown
