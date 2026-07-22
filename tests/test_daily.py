@@ -604,6 +604,60 @@ def test_fetch_daily_history_auto_falls_back_from_tencent_to_sina(monkeypatch):
     assert result.attrs["source_errors"][0].startswith("tencent after 1 attempts")
 
 
+def test_fetch_daily_history_skips_unadjusted_sina_when_adjusted_is_required(monkeypatch):
+    calls = []
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"code": 0, "data": {}}
+
+    class FakeAkshare:
+        @staticmethod
+        def stock_zh_a_hist(**kwargs):
+            return pd.DataFrame({
+                "日期": ["2026-04-29"],
+                "开盘": [10.0],
+                "最高": [10.6],
+                "最低": [9.9],
+                "收盘": [10.5],
+                "成交量": [1000],
+            })
+
+    def fake_get(url, **kwargs):
+        calls.append(url)
+        return FakeResponse()
+
+    monkeypatch.delenv("TUSHARE_TOKEN", raising=False)
+    monkeypatch.delenv("TUSHARE_API_TOKEN", raising=False)
+    monkeypatch.setattr("alphasift.daily.requests.get", fake_get)
+    monkeypatch.setitem(sys.modules, "akshare", FakeAkshare)
+
+    result = fetch_daily_history(
+        "000001",
+        source="auto",
+        retries=0,
+        require_adjusted=True,
+    )
+
+    assert len(calls) == 1
+    assert "fqkline" in calls[0]
+    assert result.attrs["daily_source"] == "akshare"
+    assert result.attrs["daily_adjustment"] == "qfq"
+
+
+def test_fetch_daily_history_rejects_explicit_unadjusted_source_when_adjusted_is_required():
+    with pytest.raises(RuntimeError, match="adjusted daily history required"):
+        fetch_daily_history(
+            "000001",
+            source="sina",
+            retries=0,
+            require_adjusted=True,
+        )
+
+
 def test_enrich_daily_features_keeps_successful_rows_when_one_fetch_fails(monkeypatch):
     candidates = pd.DataFrame([
         {"code": "000001", "name": "平安银行"},

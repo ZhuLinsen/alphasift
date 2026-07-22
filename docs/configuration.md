@@ -78,7 +78,7 @@ TUSHARE_TOKEN=...
 | `DSA_FORCE_REFRESH` | 否 | 是否强制 DSA 忽略缓存 | `false` |
 | `DSA_NOTIFY` | 否 | 是否允许 DSA 发送外部通知 | `false` |
 | `DAILY_ENRICH_ENABLED` | 否 | 是否默认对 L1 后 Top N 候选补充日 K 特征 | `false` |
-| `DAILY_ENRICH_MAX_CANDIDATES` | 否 | 日 K 增强最多处理候选数 | `100` |
+| `DAILY_ENRICH_MAX_CANDIDATES` | 否 | 全局日 K 增强候选上限；可被策略或显式调用参数覆盖 | `100` |
 | `DAILY_LOOKBACK_DAYS` | 否 | 日 K 特征回看天数 | `120` |
 | `DAILY_SOURCE` | 否 | 日 K 数据源：`auto`、`tencent`、`sina`、`akshare`、`baostock` 或 `tushare`；`auto` 有 Tushare token 时使用 `tushare,tencent,sina,akshare,baostock`，否则使用 `tencent,sina,akshare,baostock` | `auto` |
 | `DAILY_FETCH_RETRIES` | 否 | 单只候选日 K 拉取失败后的重试次数 | `2` |
@@ -157,6 +157,12 @@ tushare -> sina -> efinance -> akshare_em -> em_datacenter
 | 全市场快照 | 有 token: `tushare,sina,efinance,akshare_em,em_datacenter`；无 token: `sina,efinance,akshare_em,em_datacenter` | 价格、涨跌幅、成交额、市值、PE/PB、换手率 |
 | 候选级上下文 | `news,fund_flow,announcement,quote` | 新闻、资金流、公告、腾讯行情估值/换手率 |
 | 失败降级 | source health 熔断 + daily history cache + snapshot last-good cache | stale/fallback/source_errors 元数据 |
+
+日 K 结果同时记录 `daily_source`、`daily_adjustment`、`daily_as_of`、`daily_fetched_at`。依赖价格路径的 `main_wave_v2` 只接受明确可确认的复权历史；未复权、复权方式未知、少于 60 根、缺失或非法 OHLCV、重复交易日以及 stale history 都会令候选失去主升浪评分资格。
+
+`main_wave_v2` 还启用全市场护栏：快照至少 4000 行、证券代码有效且唯一、日 K 必须覆盖快照硬筛后的全部候选。该策略内置 `daily_enrich_max_candidates: 6000`，无需把全局 `DAILY_ENRICH_MAX_CANDIDATES` 从默认 100 调大。上限优先级为显式函数/CLI 参数 > 策略配置 > 全局配置；显式传入过低上限仍会 fail-closed。全量历史行情请求成本较高，运行时仍需预留数据源配额和时间。
+
+主升浪情绪面使用公告、资金流、新闻和行情变化构造 0–100 分的可审计证据。无证据时明确标记不可用；达到策略最低置信度后，情绪只在 LLM 重排之后对 `final_score` 做有上限的修正，再进入风险层。`main_wave_v2` 的最大修正为 `±3`，不会改写原始 50 分或折算 100 分。
 
 ## L3 后置分析器
 

@@ -216,9 +216,19 @@ def test_screen_applies_dsa_provider_context_before_llm_ranking(monkeypatch):
 
     monkeypatch.setattr("alphasift.pipeline.rank_candidates_with_metadata", fake_ranker)
 
-    def get_candidate_context(stock_code: str, stock_name: str = ""):
+    def get_candidate_context(
+        stock_code: str,
+        stock_name: str = "",
+        *,
+        include_news: bool = False,
+        include_fundamentals: bool = False,
+        mode: str = "",
+    ):
         assert stock_code == "600519"
         assert stock_name == "贵州茅台"
+        assert include_news is True
+        assert include_fundamentals is True
+        assert mode == "pre_rank_light"
         return {
             "enriched": True,
             "quote": {"price": 1688.0, "change_pct": 1.2, "amount": 100_000_000.0},
@@ -234,7 +244,15 @@ def test_screen_applies_dsa_provider_context_before_llm_ranking(monkeypatch):
         "dual_low",
         max_output=1,
         use_llm=True,
-        context={"dsa": {"get_candidate_context": get_candidate_context}},
+        context={
+            "dsa": {
+                "get_candidate_context": get_candidate_context,
+                "include_news": True,
+                "include_fundamentals": True,
+                "mode": "pre_rank_light",
+                "max_candidates": 8,
+            }
+        },
         config=config,
     )
 
@@ -244,3 +262,51 @@ def test_screen_applies_dsa_provider_context_before_llm_ranking(monkeypatch):
     assert result.llm_ranked is True
     assert result.picks[0].dsa_context["quote"]["price"] == 1688.0
     assert any("DSA provider context applied 1 of 1 candidates" in item for item in result.degradation)
+
+
+def test_screen_expands_candidate_pool_to_dsa_context_minimum(monkeypatch):
+    config = _make_config()
+    config.llm_candidate_multiplier = 2
+    config.llm_max_candidates = 12
+    config.risk_enabled = False
+
+    df = pd.DataFrame([
+        {
+            "code": f"600{index:03d}",
+            "name": f"候选{index}",
+            "price": 10.0 + index,
+            "change_pct": 1.0,
+            "amount": 200_000_000,
+            "total_mv": 10_000_000_000,
+            "pe_ratio": 10.0,
+            "pb_ratio": 1.0,
+            "screen_score": 100.0 - index,
+        }
+        for index in range(12)
+    ])
+    enriched_codes: list[str] = []
+
+    monkeypatch.setattr("alphasift.pipeline.fetch_snapshot_with_fallback", lambda sources, **kwargs: df)
+    monkeypatch.setattr("alphasift.pipeline.apply_hard_filters", lambda frame, filters: frame)
+    monkeypatch.setattr("alphasift.pipeline.compute_screen_scores", lambda frame, cfg: frame)
+
+    def get_candidate_context(stock_code: str, *_args, **_kwargs):
+        enriched_codes.append(stock_code)
+        return {"enriched": True, "quote": {"price": 10.0}}
+
+    result = screen(
+        "dual_low",
+        max_output=3,
+        use_llm=False,
+        context={
+            "dsa": {
+                "get_candidate_context": get_candidate_context,
+                "max_candidates": 8,
+            }
+        },
+        config=config,
+    )
+
+    assert len(enriched_codes) == 8
+    assert len(result.picks) == 3
+    assert any("DSA provider context applied 8 of 8 candidates" in item for item in result.degradation)

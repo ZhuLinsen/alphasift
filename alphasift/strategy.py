@@ -42,6 +42,13 @@ _SCREENING_KEYS = {
     "event_profile",
     "ranking_hints",
     "max_output",
+    "universe_min_count",
+    "require_unique_codes",
+    "require_full_daily_coverage",
+    "daily_enrich_max_candidates",
+    "sentiment_weight",
+    "sentiment_min_confidence",
+    "sentiment_max_delta",
 }
 _HARD_FILTER_KEYS = set(HardFilterConfig.__dataclass_fields__.keys())
 _SCORING_PROFILE_KEYS = {
@@ -230,6 +237,13 @@ def load_strategy(filepath: Path) -> Strategy:
         ),
         ranking_hints=screening_data.get("ranking_hints", ""),
         max_output=screening_data.get("max_output", 5),
+        universe_min_count=screening_data.get("universe_min_count"),
+        require_unique_codes=screening_data.get("require_unique_codes", False),
+        require_full_daily_coverage=screening_data.get("require_full_daily_coverage", False),
+        daily_enrich_max_candidates=screening_data.get("daily_enrich_max_candidates"),
+        sentiment_weight=screening_data.get("sentiment_weight", 0.0),
+        sentiment_min_confidence=screening_data.get("sentiment_min_confidence", 0.45),
+        sentiment_max_delta=screening_data.get("sentiment_max_delta", 5.0),
     )
 
     return Strategy(
@@ -850,6 +864,8 @@ def _required_daily_fields(filters_config: HardFilterConfig) -> list[str]:
             or filters_config.max_drawdown_20d_pct_max is not None,
         ),
         ("atr_20_pct", filters_config.atr_20_pct_min is not None or filters_config.atr_20_pct_max is not None),
+        ("main_wave_eligible", filters_config.require_main_wave_eligible),
+        ("main_wave_score", filters_config.main_wave_score_min is not None),
     ]
     return [field for field, enabled in checks if enabled]
 

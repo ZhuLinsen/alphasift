@@ -38,6 +38,7 @@ def test_list_strategies_returns_enabled_strategies_only():
         "capital_heat",
         "dual_low",
         "low_volatility_quality",
+        "main_wave_v2",
         "momentum_quality",
         "oversold_reversal",
         "quality_value",
@@ -61,6 +62,16 @@ def test_dual_low_strategy_uses_dynamic_snapshot_signals():
     assert screening.factor_weights["activity"] > 0
     assert screening.factor_weights["reversal"] > 0
     assert sum(screening.factor_weights.values()) == pytest.approx(1.0)
+
+
+def test_main_wave_strategy_declares_full_market_capacity_and_bounded_sentiment():
+    screening = load_strategy(Path("strategies/main_wave_v2.yaml")).screening
+
+    assert screening.daily_enrich_max_candidates == 6000
+    assert screening.require_full_daily_coverage is True
+    assert screening.sentiment_weight == pytest.approx(0.10)
+    assert screening.sentiment_min_confidence == pytest.approx(0.45)
+    assert screening.sentiment_max_delta == pytest.approx(3.0)
 
 
 def test_builtin_strategy_factor_weights_are_normalized_and_diversified():
@@ -173,10 +184,10 @@ def test_match_strategies_ranks_partial_matches():
         limit=2,
     )
 
-    assert [item["name"] for item in matches] == ["volume_breakout", "capital_heat"]
-    assert matches[0]["score"] > matches[1]["score"]
+    assert [item["name"] for item in matches] == ["main_wave_v2", "volume_breakout"]
+    assert matches[0]["score"] == matches[1]["score"]
     assert "data_requirement:daily_k" in matches[0]["matched"]
-    assert "data_requirement:daily_k" in matches[1]["missing"]
+    assert "data_requirement:daily_k" in matches[1]["matched"]
 
 
 def test_strategy_facets_are_ui_filter_ready():

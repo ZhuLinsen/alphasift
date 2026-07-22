@@ -121,9 +121,9 @@ def test_build_overview_includes_strategy_matches(tmp_path):
     )
 
     assert payload["summary"]["strategy_match_count"] == 1
-    assert payload["strategy_matches"][0]["name"] == "volume_breakout"
+    assert payload["strategy_matches"][0]["name"] == "main_wave_v2"
     assert "data_requirement:daily_k" in payload["strategy_matches"][0]["matched"]
-    assert any("volume_breakout" in item for item in payload["next_actions"])
+    assert any("main_wave_v2" in item for item in payload["next_actions"])
 
 
 def test_build_overview_strategy_cards_follow_strategy_filter(tmp_path):

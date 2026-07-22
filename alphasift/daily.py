@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import os
@@ -16,6 +16,11 @@ import pandas as pd
 import requests
 
 from alphasift.source_guard import call_with_timeout, parse_source_timeout_seconds
+from alphasift.main_wave import (
+    compute_main_wave_features,
+    is_explicitly_unadjusted,
+    normalize_adjustment,
+)
 
 _DAILY_FEATURE_DEFAULTS = {
     "daily_data_points": pd.NA,
@@ -42,9 +47,28 @@ _DAILY_FEATURE_DEFAULTS = {
     "daily_quality_score": pd.NA,
     "daily_quality_flags": "",
     "daily_source": "",
+    "daily_adjustment": "unknown",
+    "daily_as_of": "",
+    "daily_fetched_at": "",
+    "main_wave_eligible": False,
+    "main_wave_ineligible_reasons": "daily_fetch_failed",
+    "main_wave_raw_score": 0.0,
+    "main_wave_raw_max_score": 50.0,
+    "main_wave_score": 0.0,
+    "main_wave_max_score": 100.0,
+    "main_wave_hit_count": 0,
+    "main_wave_rules": None,
+    "main_wave_near_low_score": 0.0,
+    "main_wave_volume_contraction_score": 0.0,
+    "main_wave_doji_cluster_score": 0.0,
+    "main_wave_limit_up_test_score": 0.0,
+    "main_wave_upward_gap_score": 0.0,
+    "main_wave_volume_doubling_score": 0.0,
+    "main_wave_bullish_streak_score": 0.0,
+    "main_wave_ma_alignment_score": 0.0,
 }
 _DAILY_ENRICH_MAX_WORKERS = 1
-_DAILY_HISTORY_CACHE_VERSION = 1
+_DAILY_HISTORY_CACHE_VERSION = 2
 _DAILY_HISTORY_CACHE_TTL_SECONDS = 24 * 60 * 60
 _SOURCE_HEALTH_FAILURE_THRESHOLD = 3
 _SOURCE_HEALTH_COOLDOWN_SECONDS = 5 * 60
@@ -66,6 +90,7 @@ def enrich_daily_features(
     cache_dir: str | Path | None = None,
     cache_ttl_seconds: float | None = None,
     max_workers: int | None = None,
+    require_adjusted: bool = False,
 ) -> pd.DataFrame:
     """Attach daily technical features to the first ``max_rows`` candidates.
 
@@ -76,6 +101,12 @@ def enrich_daily_features(
         return df.copy()
 
     result = df.copy()
+    if "main_wave_rules" not in result.columns:
+        result["main_wave_rules"] = pd.Series(
+            [None] * len(result),
+            index=result.index,
+            dtype=object,
+        )
     daily_errors: list[str] = []
     daily_source_counts: dict[str, int] = {}
     daily_quality_flag_counts: dict[str, int] = {}
@@ -83,16 +114,17 @@ def enrich_daily_features(
     daily_source_health: dict[str, object] = {}
     success_count = 0
     selected_index = list(result.index[:max_rows])
-    fetch_requests: list[tuple[object, str]] = []
+    fetch_requests: list[tuple[object, str, str]] = []
     for idx in selected_index:
         raw_code = str(result.at[idx, "code"] if "code" in result.columns else "").strip()
         if not raw_code:
             continue
         code = raw_code.zfill(6) if raw_code.isdigit() else raw_code
-        fetch_requests.append((idx, code))
+        name = str(result.at[idx, "name"] if "name" in result.columns else "").strip()
+        fetch_requests.append((idx, code, name))
 
-    def fetch_one(request: tuple[object, str]) -> tuple[object, dict[str, object], str | None, dict[str, object]]:
-        idx, code = request
+    def fetch_one(request: tuple[object, str, str]) -> tuple[object, dict[str, object], str | None, dict[str, object]]:
+        idx, code, name = request
         try:
             hist = fetch_daily_history(
                 code,
@@ -101,11 +133,15 @@ def enrich_daily_features(
                 retries=fetch_retries,
                 cache_dir=cache_dir,
                 cache_ttl_seconds=cache_ttl_seconds,
+                require_adjusted=require_adjusted,
             )
+            hist.attrs.setdefault("security_code", code)
+            hist.attrs.setdefault("security_name", name)
             features = compute_daily_features(hist)
             features["daily_source"] = str(hist.attrs.get("daily_source", ""))
             metadata = {
                 "daily_source": features["daily_source"],
+                "daily_adjustment": features.get("daily_adjustment", "unknown"),
                 "daily_quality_flags": features.get("daily_quality_flags", ""),
                 "daily_source_order_notes": list(hist.attrs.get("daily_source_order_notes", []) or []),
                 "daily_source_health": dict(hist.attrs.get("daily_source_health", {}) or {}),
@@ -164,6 +200,7 @@ def fetch_daily_history(
     retries: int = 2,
     cache_dir: str | Path | None = None,
     cache_ttl_seconds: float | None = None,
+    require_adjusted: bool = False,
 ) -> pd.DataFrame:
     """Fetch daily history for one stock code.
 
@@ -191,6 +228,13 @@ def fetch_daily_history(
     else:
         raise ValueError(f"Unsupported daily source: {source}")
 
+    if require_adjusted:
+        sources = tuple(item for item in sources if _daily_source_can_adjust(item))
+        if not sources:
+            raise RuntimeError(
+                f"adjusted daily history required but source {src!r} cannot provide it"
+            )
+
     cache_path = None
     if cache_dir is not None:
         cache_path = _daily_history_cache_path(
@@ -200,7 +244,12 @@ def fetch_daily_history(
             lookback_days=normalized_lookback_days,
         )
         cached = _read_daily_history_cache(cache_path, ttl_seconds=cache_ttl_seconds)
-        if cached is not None:
+        if cached is not None and (
+            not require_adjusted
+            or normalize_adjustment(cached.attrs.get("daily_adjustment")) in {
+                "qfq", "hfq", "auto_adjusted", "split_adjusted"
+            }
+        ):
             return cached
 
     attempts = max(int(retries), 0) + 1
@@ -252,8 +301,19 @@ def fetch_daily_history(
                         normalized_code,
                         lookback_days=normalized_lookback_days,
                     )
-                _record_source_success(current, rows=len(result))
                 result.attrs["daily_source"] = current
+                result.attrs["daily_adjustment"] = _daily_adjustment_for_source(current, result)
+                if require_adjusted and normalize_adjustment(
+                    result.attrs["daily_adjustment"]
+                ) not in {"qfq", "hfq", "auto_adjusted", "split_adjusted"}:
+                    last_error = RuntimeError(
+                        "adjusted daily history required, got "
+                        f"{result.attrs['daily_adjustment']}"
+                    )
+                    break
+                _record_source_success(current, rows=len(result))
+                result.attrs["daily_as_of"] = _daily_frame_as_of(result)
+                result.attrs["daily_fetched_at"] = datetime.now(timezone.utc).isoformat()
                 result.attrs["daily_requested_source"] = src
                 result.attrs["daily_source_order"] = list(sources)
                 result.attrs["daily_source_order_notes"] = list(source_order_notes)
@@ -282,7 +342,12 @@ def fetch_daily_history(
             ttl_seconds=cache_ttl_seconds,
             allow_stale=True,
         )
-        if stale is not None:
+        if stale is not None and (
+            not require_adjusted
+            or normalize_adjustment(stale.attrs.get("daily_adjustment")) in {
+                "qfq", "hfq", "auto_adjusted", "split_adjusted"
+            }
+        ):
             stale.attrs["daily_stale"] = True
             stale.attrs["daily_source_order"] = list(sources)
             stale.attrs["daily_source_order_notes"] = list(source_order_notes)
@@ -309,6 +374,40 @@ def _normalize_daily_code(value: object) -> str:
 
 def _normalize_daily_source(source: str | None) -> str:
     return (source or "akshare").strip().lower()
+
+
+def _daily_adjustment_for_source(source: str, frame: pd.DataFrame) -> str:
+    explicit = normalize_adjustment(frame.attrs.get("daily_adjustment"))
+    if explicit != "unknown":
+        return explicit
+    if source in {"tencent", "akshare", "baostock"}:
+        return "qfq"
+    if source == "tushare":
+        return normalize_adjustment(os.getenv("TUSHARE_DAILY_ADJ", "qfq"))
+    if source == "yfinance":
+        return "auto_adjusted"
+    if source == "sina":
+        return "none"
+    return "unknown"
+
+
+def _daily_source_can_adjust(source: str) -> bool:
+    if source in {"tencent", "akshare", "baostock", "yfinance"}:
+        return True
+    if source == "tushare":
+        return _normalize_tushare_adj(os.getenv("TUSHARE_DAILY_ADJ", "qfq")) is not None
+    return False
+
+
+def _daily_frame_as_of(frame: pd.DataFrame) -> str:
+    date_column = next(
+        (column for column in ("date", "日期", "trade_date") if column in frame.columns),
+        None,
+    )
+    if date_column is None or frame.empty:
+        return ""
+    values = frame[date_column].dropna().astype(str)
+    return str(values.iloc[-1])[:10] if not values.empty else ""
 
 
 def _normalize_max_workers(value: int | None) -> int:
@@ -468,7 +567,17 @@ def _read_daily_history_cache(
         df = pd.DataFrame(data, columns=columns)
         metadata = payload.get("metadata")
         if isinstance(metadata, dict):
-            for key in ("daily_source", "daily_requested_source", "daily_source_order", "daily_source_order_notes", "source_errors", "daily_source_health"):
+            for key in (
+                "daily_source",
+                "daily_adjustment",
+                "daily_as_of",
+                "daily_fetched_at",
+                "daily_requested_source",
+                "daily_source_order",
+                "daily_source_order_notes",
+                "source_errors",
+                "daily_source_health",
+            ):
                 if key in metadata:
                     df.attrs[key] = metadata[key]
         if is_stale:
@@ -497,6 +606,9 @@ def _write_daily_history_cache(
             },
             "metadata": {
                 "daily_source": df.attrs.get("daily_source", source),
+                "daily_adjustment": df.attrs.get("daily_adjustment", "unknown"),
+                "daily_as_of": df.attrs.get("daily_as_of", ""),
+                "daily_fetched_at": df.attrs.get("daily_fetched_at", ""),
                 "daily_requested_source": df.attrs.get("daily_requested_source", source),
                 "daily_source_order": list(df.attrs.get("daily_source_order", [])),
                 "daily_source_order_notes": list(df.attrs.get("daily_source_order_notes", [])),
@@ -841,8 +953,15 @@ def _is_baostock_network_outage(error_code: object, error_msg: object) -> bool:
     return code in {"10002007"} or "网络" in message or "接收" in message
 
 
-def compute_daily_features(hist: pd.DataFrame) -> dict[str, object]:
-    """Compute compact trend/reversal features from a daily K-line DataFrame."""
+def compute_daily_features(
+    hist: pd.DataFrame,
+    *,
+    code: str = "",
+    name: str = "",
+) -> dict[str, object]:
+    """Compute compact trend/reversal and auditable main-wave features."""
+    code = code or str(hist.attrs.get("security_code") or "")
+    name = name or str(hist.attrs.get("security_name") or "")
     df = _normalize_daily_history(hist)
     if df.empty:
         raise RuntimeError("daily history is empty after normalization")
@@ -858,25 +977,56 @@ def compute_daily_features(hist: pd.DataFrame) -> dict[str, object]:
     last_ma5 = _last_float(ma5)
     last_ma20 = _last_float(ma20)
     last_ma60 = _last_float(ma60)
+    adjustment = normalize_adjustment(hist.attrs.get("daily_adjustment"))
+    daily_as_of = str(hist.attrs.get("daily_as_of") or _daily_frame_as_of(df))
+    daily_fetched_at = str(hist.attrs.get("daily_fetched_at") or "")
+    unadjusted = is_explicitly_unadjusted(adjustment)
     shape = _compute_shape_features(df, last_close=last_close, last_ma20=last_ma20)
+    if unadjusted:
+        shape = _suppress_untrusted_price_features(shape)
     quality = _compute_daily_quality(hist, df)
 
     lookback_idx = max(0, len(close) - 61)
     base_close = float(close.iloc[lookback_idx])
     change_60d = (last_close / base_close - 1.0) * 100 if base_close > 0 else None
 
-    macd_status = _compute_macd_status(close)
-    rsi_value = _compute_rsi(close)
-    rsi_status = _classify_rsi(rsi_value)
-    ma_bullish = _is_true(last_ma5 is not None and last_ma20 is not None and last_ma60 is not None
-                          and last_ma5 >= last_ma20 >= last_ma60)
-    price_above_ma20 = _is_true(last_ma20 is not None and last_close >= last_ma20)
-    signal_score = _compute_signal_score(
-        change_60d=change_60d,
-        ma_bullish=ma_bullish,
-        price_above_ma20=price_above_ma20,
-        macd_status=macd_status,
-        rsi_status=rsi_status,
+    if unadjusted:
+        change_60d = None
+        last_ma5 = None
+        last_ma20 = None
+        last_ma60 = None
+        macd_status = ""
+        rsi_value = None
+        rsi_status = ""
+        ma_bullish = None
+        price_above_ma20 = None
+        signal_score = None
+    else:
+        macd_status = _compute_macd_status(close)
+        rsi_value = _compute_rsi(close)
+        rsi_status = _classify_rsi(rsi_value)
+        ma_bullish = _is_true(last_ma5 is not None and last_ma20 is not None and last_ma60 is not None
+                              and last_ma5 >= last_ma20 >= last_ma60)
+        price_above_ma20 = _is_true(last_ma20 is not None and last_close >= last_ma20)
+        signal_score = _compute_signal_score(
+            change_60d=change_60d,
+            ma_bullish=ma_bullish,
+            price_above_ma20=price_above_ma20,
+            macd_status=macd_status,
+            rsi_status=rsi_status,
+        )
+
+    # The legacy feature path fills missing OHLC fields with close for
+    # compatibility. Main-wave evidence must validate the raw OHLCV shape
+    # before that fallback, otherwise incomplete bars could look eligible.
+    main_wave_df = _normalize_main_wave_history(hist)
+    main_wave = compute_main_wave_features(
+        main_wave_df,
+        code=code,
+        name=name,
+        adjustment=adjustment,
+        stale=bool(hist.attrs.get("daily_stale")),
+        as_of=daily_as_of,
     )
 
     return {
@@ -890,9 +1040,14 @@ def compute_daily_features(hist: pd.DataFrame) -> dict[str, object]:
         "macd_status": macd_status,
         "rsi_status": rsi_status,
         "rsi14": None if rsi_value is None else round(float(rsi_value), 4),
-        "signal_score": round(float(signal_score), 4),
+        "signal_score": None if signal_score is None else round(float(signal_score), 4),
+        "daily_source": str(hist.attrs.get("daily_source") or hist.attrs.get("source") or ""),
+        "daily_adjustment": adjustment,
+        "daily_as_of": daily_as_of,
+        "daily_fetched_at": daily_fetched_at,
         **shape,
         **quality,
+        **main_wave,
     }
 
 
@@ -920,6 +1075,26 @@ def _normalize_daily_history(hist: pd.DataFrame) -> pd.DataFrame:
             df[col] = df["close"]
         else:
             df[col] = df[col].fillna(df["close"])
+    return df
+
+
+def _normalize_main_wave_history(hist: pd.DataFrame) -> pd.DataFrame:
+    """Normalize names/numbers for main-wave validation without filling gaps."""
+    rename_map = {
+        "日期": "date",
+        "收盘": "close",
+        "开盘": "open",
+        "最高": "high",
+        "最低": "low",
+        "成交量": "volume",
+        "成交额": "amount",
+    }
+    df = hist.rename(columns=rename_map).copy()
+    if "date" in df.columns:
+        df = df.sort_values("date")
+    for col in ("open", "high", "low", "close", "volume"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
     return df
 
 
@@ -980,10 +1155,31 @@ def _compute_daily_quality(raw: pd.DataFrame, normalized: pd.DataFrame) -> dict[
         score -= min(len(source_errors) * 5, 20)
         flags.append("fallback_errors")
 
+    if is_explicitly_unadjusted(raw.attrs.get("daily_adjustment")):
+        score -= 40
+        flags.append("unadjusted_price_history")
+
     return {
         "daily_quality_score": round(max(score, 0.0), 4),
         "daily_quality_flags": ";".join(flags),
     }
+
+
+def _suppress_untrusted_price_features(features: dict[str, object]) -> dict[str, object]:
+    result = dict(features)
+    for key in (
+        "prev_high_20d",
+        "range_20d_pct",
+        "breakout_20d_pct",
+        "body_pct",
+        "pullback_to_ma20_pct",
+        "consolidation_days_20d",
+        "volatility_20d_pct",
+        "max_drawdown_20d_pct",
+        "atr_20_pct",
+    ):
+        result[key] = None
+    return result
 
 
 def _compute_shape_features(

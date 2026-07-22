@@ -50,6 +50,13 @@ style:                    # 可选，面向 UI/agent 的策略风格，不参与
 screening:
   enabled: bool            # 是否启用选股
   market_scope: [string]   # 适用市场，当前仅 [cn]
+  universe_min_count: int  # 可选，快照股票池最少行数，不满足时显式失败
+  require_unique_codes: bool  # 可选，要求证券代码非空、合法且唯一
+  require_full_daily_coverage: bool  # 可选，要求日 K 覆盖全部快照硬筛候选
+  daily_enrich_max_candidates: int  # 可选，策略级日 K 候选上限
+  sentiment_weight: float           # 可选，情绪面对 final_score 的权重，默认 0
+  sentiment_min_confidence: float   # 可选，应用情绪修正的最低置信度，默认 0.45
+  sentiment_max_delta: float        # 可选，情绪面对 final_score 的最大绝对修正
 
   hard_filters:            # L1 硬筛条件（全部可选，不填则不筛）
     exclude_st: bool       # 排除 ST
@@ -73,6 +80,8 @@ screening:
     signal_score_min: int      # 最低信号得分
     macd_status_whitelist: [string]  # MACD 状态白名单
     rsi_status_whitelist: [string]   # RSI 状态白名单
+    require_main_wave_eligible: bool # 要求具备主升浪八规则评分资格
+    main_wave_score_min: float       # 主升浪折算百分制最低分
 
   tech_weight: float       # 技术分数权重，0-1，默认 0.35
   factor_weights:          # 可选，多因子评分权重；配置后优先于 tech_weight
@@ -84,6 +93,14 @@ screening:
     stability: float       # 稳定性
     size: float            # 市值容量
     theme_heat: float      # 主题/板块热度，可选软因子
+    main_wave_near_low: float
+    main_wave_volume_contraction: float
+    main_wave_doji_cluster: float
+    main_wave_limit_up_test: float
+    main_wave_upward_gap: float
+    main_wave_volume_doubling: float
+    main_wave_bullish_streak: float
+    main_wave_ma_alignment: float
 
   scoring_profile:         # 可选，覆盖 L1 因子评分曲线中的默认参数
     momentum_chase_start_pct: float
@@ -210,6 +227,23 @@ alphasift strategies --template momentum_breakout_daily --json
 - `consolidation_days_20d_min` / `consolidation_days_20d_max`
 
 如果策略配置了这些条件，pipeline 会先做快照字段硬筛，再对 Top N 候选拉取日 K 并计算特征，最后执行日 K 硬筛。这样能开放 `shrink_pullback` 这类策略，同时避免对全市场逐只拉取历史行情。
+
+`main_wave_v2` 是例外：它将八条规则作为确定性全市场扫描，配置了 `universe_min_count: 4000`、`require_unique_codes: true` 和 `require_full_daily_coverage: true`。八规则原始权重为 `8+8+4+6+6+6+4+8=50`，同时按两倍折算为 100 分用于排序。逐项规则证据会原样进入候选结果，LLM 只能解释这些证据，不能补猜缺失行情。
+
+该策略内置 `daily_enrich_max_candidates: 6000`，通常无需修改全局 `DAILY_ENRICH_MAX_CANDIDATES=100`。日 K 上限的优先级为显式函数/CLI 参数、策略 YAML、全局环境变量；若显式传入的上限小于全量覆盖目标，扫描会继续 fail-closed。
+
+## 情绪面
+
+情绪面只分析进入候选上下文阶段的 Top-K，不对 4000 多只股票逐只抓新闻。当前确定性评估按公告、资金流、新闻、行情变化提取有来源的正负事件，来源可靠性依次降低；无法识别证据时返回 `sentiment_available=false` 和空分数，不会伪造中性 50 分。
+
+情绪分本身为 0–100 分，和主升浪原始 `x/50`、折算 `x/100` 是不同口径。只有置信度达到 `sentiment_min_confidence` 时才按下面公式修正综合 `final_score`：
+
+```text
+delta = clamp((sentiment_score - 50) * sentiment_weight * confidence,
+              -sentiment_max_delta, +sentiment_max_delta)
+```
+
+处理顺序为 LLM 重排、情绪修正、独立风险层、组合分散层、L3 后置分析。`main_wave_v2` 使用权重 `0.10`、最低置信度 `0.45`、最大修正 `±3`；它只改变 `final_score` 和最终排序，不改写八规则分数与证据。其他策略默认 `sentiment_weight: 0`，因此保持原有排序行为。
 
 ## 版本与评估
 

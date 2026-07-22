@@ -46,6 +46,8 @@ class HardFilterConfig:
     max_drawdown_20d_pct_max: float | None = None
     atr_20_pct_min: float | None = None
     atr_20_pct_max: float | None = None
+    require_main_wave_eligible: bool = False
+    main_wave_score_min: float | None = None
 
 
 @dataclass
@@ -62,6 +64,13 @@ class ScreeningConfig:
     event_profile: dict[str, Any] = field(default_factory=dict)
     ranking_hints: str = ""
     max_output: int = 5
+    universe_min_count: int | None = None
+    require_unique_codes: bool = False
+    require_full_daily_coverage: bool = False
+    daily_enrich_max_candidates: int | None = None
+    sentiment_weight: float = 0.0
+    sentiment_min_confidence: float = 0.45
+    sentiment_max_delta: float = 5.0
 
 
 @dataclass
@@ -158,6 +167,27 @@ class Pick:
     daily_quality_score: float | None = None
     daily_quality_flags: str = ""
     daily_source: str = ""
+    daily_adjustment: str = "unknown"
+    daily_as_of: str = ""
+    daily_fetched_at: str = ""
+    main_wave_eligible: bool = False
+    main_wave_ineligible_reasons: str = ""
+    main_wave_raw_score: float | None = None
+    main_wave_raw_max_score: float = 50.0
+    main_wave_score: float | None = None
+    main_wave_max_score: float = 100.0
+    main_wave_hit_count: int = 0
+    main_wave_rules: list[dict[str, Any]] = field(default_factory=list)
+    sentiment_available: bool = False
+    sentiment_score: float | None = None
+    sentiment_label: str = "unavailable"
+    sentiment_confidence: float = 0.0
+    sentiment_source_count: int = 0
+    sentiment_positive_events: list[str] = field(default_factory=list)
+    sentiment_negative_events: list[str] = field(default_factory=list)
+    sentiment_evidence: list[dict[str, Any]] = field(default_factory=list)
+    sentiment_as_of: str = ""
+    sentiment_score_delta: float = 0.0
     factor_scores: dict[str, float] = field(default_factory=dict)
     llm_confidence: float | None = None
     llm_sector: str = ""
@@ -222,6 +252,7 @@ class ScreenResult:
     risk_enabled: bool = True
     portfolio_diversity_enabled: bool = True
     portfolio_concentration_notes: list[str] = field(default_factory=list)
+    universe_audit: dict[str, Any] = field(default_factory=dict)
     saved_path: str = ""
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
 

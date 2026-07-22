@@ -34,6 +34,8 @@ _DAILY_FILTER_DEFAULTS = {
     "max_drawdown_20d_pct_max": None,
     "atr_20_pct_min": None,
     "atr_20_pct_max": None,
+    "require_main_wave_eligible": False,
+    "main_wave_score_min": None,
 }
 
 
@@ -96,6 +98,8 @@ def apply_hard_filters(df: pd.DataFrame, filters: HardFilterConfig) -> pd.DataFr
     mask = _filter_max(result, mask, ["max_drawdown_20d_pct"], filters.max_drawdown_20d_pct_max)
     mask = _filter_min(result, mask, ["atr_20_pct"], filters.atr_20_pct_min)
     mask = _filter_max(result, mask, ["atr_20_pct"], filters.atr_20_pct_max)
+    mask = _filter_bool_true(result, mask, "main_wave_eligible", filters.require_main_wave_eligible)
+    mask = _filter_min(result, mask, ["main_wave_score"], filters.main_wave_score_min)
 
     return result.loc[mask].copy()
 
@@ -181,6 +185,12 @@ def hard_filter_rejection_summary(
     record_max("max_drawdown_20d_pct_max", ["max_drawdown_20d_pct"], filters.max_drawdown_20d_pct_max)
     record_min("atr_20_pct_min", ["atr_20_pct"], filters.atr_20_pct_min)
     record_max("atr_20_pct_max", ["atr_20_pct"], filters.atr_20_pct_max)
+    if filters.require_main_wave_eligible:
+        record(
+            "require_main_wave_eligible",
+            _filter_bool_true(df, mask, "main_wave_eligible", True),
+        )
+    record_min("main_wave_score_min", ["main_wave_score"], filters.main_wave_score_min)
 
     return diagnostics
 
@@ -281,6 +291,13 @@ def hard_filter_waterfall(
     record_max("max_drawdown_20d_pct_max", ["max_drawdown_20d_pct"], filters.max_drawdown_20d_pct_max)
     record_min("atr_20_pct_min", ["atr_20_pct"], filters.atr_20_pct_min)
     record_max("atr_20_pct_max", ["atr_20_pct"], filters.atr_20_pct_max)
+    if filters.require_main_wave_eligible:
+        record(
+            "require_main_wave_eligible",
+            _filter_bool_true(df, mask, "main_wave_eligible", True),
+            ["main_wave_eligible"],
+        )
+    record_min("main_wave_score_min", ["main_wave_score"], filters.main_wave_score_min)
 
     return steps
 
@@ -312,6 +329,8 @@ def requires_daily_features(filters: HardFilterConfig) -> bool:
         filters.max_drawdown_20d_pct_max is not None,
         filters.atr_20_pct_min is not None,
         filters.atr_20_pct_max is not None,
+        filters.require_main_wave_eligible,
+        filters.main_wave_score_min is not None,
     ])
 
 

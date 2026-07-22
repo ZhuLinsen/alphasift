@@ -16,20 +16,30 @@ from alphasift.models import Pick
 logger = logging.getLogger(__name__)
 
 DSA_PROVIDER_MAX_CANDIDATES = 5
+DSA_PROVIDER_HARD_MAX_CANDIDATES = 16
 
 
 def apply_dsa_provider_context(
     picks: list[Pick],
     context: dict[str, Any] | None,
     *,
-    max_candidates: int = DSA_PROVIDER_MAX_CANDIDATES,
+    max_candidates: int | None = None,
 ) -> list[str]:
     """Attach DSA context to top candidates before LLM ranking."""
     provider = _extract_provider_context(context)
     if not picks or not provider:
         return []
 
-    limit = min(len(picks), max(max_candidates, 0))
+    configured_limit = (
+        max_candidates
+        if max_candidates is not None
+        else provider.get("max_candidates", DSA_PROVIDER_MAX_CANDIDATES)
+    )
+    try:
+        requested_limit = max(int(configured_limit), 0)
+    except (TypeError, ValueError):
+        requested_limit = DSA_PROVIDER_MAX_CANDIDATES
+    limit = min(len(picks), requested_limit, DSA_PROVIDER_HARD_MAX_CANDIDATES)
     if limit <= 0:
         return []
 
@@ -75,7 +85,7 @@ def _extract_provider_context(context: dict[str, Any] | None) -> dict[str, Any]:
 def _fetch_candidate_context(provider: dict[str, Any], pick: Pick) -> dict[str, Any]:
     candidate_getter = provider.get("get_candidate_context")
     if callable(candidate_getter):
-        payload = _call_candidate_getter(candidate_getter, pick)
+        payload = _call_candidate_getter(candidate_getter, pick, provider)
         return payload if isinstance(payload, dict) else {}
 
     quote = _call_optional_provider(provider.get("get_realtime_quote"), pick.code)
@@ -90,11 +100,25 @@ def _fetch_candidate_context(provider: dict[str, Any], pick: Pick) -> dict[str, 
     }
 
 
-def _call_candidate_getter(getter: Callable[..., Any], pick: Pick) -> Any:
+def _call_candidate_getter(
+    getter: Callable[..., Any],
+    pick: Pick,
+    provider: dict[str, Any],
+) -> Any:
+    kwargs: dict[str, Any] = {}
+    if "include_news" in provider:
+        kwargs["include_news"] = bool(provider.get("include_news"))
+    if "include_fundamentals" in provider:
+        kwargs["include_fundamentals"] = bool(provider.get("include_fundamentals"))
+    if provider.get("mode"):
+        kwargs["mode"] = str(provider["mode"])
     try:
-        return getter(pick.code, pick.name)
+        return getter(pick.code, pick.name, **kwargs)
     except TypeError:
-        return getter(pick.code)
+        try:
+            return getter(pick.code, pick.name)
+        except TypeError:
+            return getter(pick.code)
 
 
 def _call_optional_provider(provider: Any, stock_code: str) -> dict[str, Any]:

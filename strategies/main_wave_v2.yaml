@@ -1,0 +1,45 @@
+name: main_wave_v2
+display_name: 主升浪候选 V2
+description: 基于前复权日 K 的八条件主升浪候选评分，保留逐项证据和原始 50 分口径
+version: "1.0"
+category: momentum
+tags:
+  - a_share
+  - daily_k
+  - main_wave
+  - deterministic
+  - adjusted_price
+style:
+  risk_profile: aggressive
+  holding_period: swing
+  execution_style: setup_confirmation
+  market_regime:
+    - risk_on
+    - trending
+  capital_profile: liquid_equities
+  ui_badge: 主升浪
+screening:
+  enabled: true
+  market_scope:
+    - cn
+  universe_min_count: 4000
+  require_unique_codes: true
+  require_full_daily_coverage: true
+  daily_enrich_max_candidates: 6000
+  sentiment_weight: 0.10
+  sentiment_min_confidence: 0.45
+  sentiment_max_delta: 3.0
+  hard_filters:
+    exclude_st: true
+    require_main_wave_eligible: true
+  factor_weights:
+    main_wave_near_low: 0.16
+    main_wave_volume_contraction: 0.16
+    main_wave_doji_cluster: 0.08
+    main_wave_limit_up_test: 0.12
+    main_wave_upward_gap: 0.12
+    main_wave_volume_doubling: 0.12
+    main_wave_bullish_streak: 0.08
+    main_wave_ma_alignment: 0.16
+  ranking_hints: 只解释结构化规则证据和有来源的情绪证据；不得补猜缺失行情，也不得把候选分数表述为买入指令
+  max_output: 8

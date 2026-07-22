@@ -8,7 +8,7 @@ from alphasift.result_schema import screen_result_schema
 schema = screen_result_schema()
 ```
 
-The current schema version is `1`.
+The current schema version is `2`.
 
 ## Stable top-level fields
 
@@ -21,6 +21,7 @@ Consumers should treat these top-level fields as stable integration points:
 - `deep_analysis_requested`, `post_analyzers`
 - `daily_enriched`, `daily_enrich_count`
 - `risk_enabled`, `portfolio_diversity_enabled`, `portfolio_concentration_notes`
+- `universe_audit`: minimum universe, code validity/uniqueness, daily coverage, stage counts, and final audit status
 
 ## Stable pick fields
 
@@ -30,7 +31,9 @@ Important UI/API fields on each pick include:
 - factor diagnostics: `factor_scores`, `ranking_reason`
 - risk: `risk_summary`, `risk_score`, `risk_level`, `risk_flags`, `portfolio_penalty`, `portfolio_flags`
 - topic/source context: `industry`, `concepts`, `board_heat_score`, `board_heat_summary`
-- daily quality: `daily_quality_score`, `daily_quality_flags`, `daily_source`
+- daily quality: `daily_quality_score`, `daily_quality_flags`, `daily_source`, `daily_adjustment`, `daily_as_of`, `daily_fetched_at`
+- main-wave V2: `main_wave_eligible`, `main_wave_ineligible_reasons`, `main_wave_raw_score`, `main_wave_raw_max_score`, `main_wave_score`, `main_wave_max_score`, `main_wave_hit_count`, `main_wave_rules`
+- sentiment: `sentiment_available`, `sentiment_score`, `sentiment_label`, `sentiment_confidence`, `sentiment_source_count`, `sentiment_positive_events`, `sentiment_negative_events`, `sentiment_evidence`, `sentiment_as_of`, `sentiment_score_delta`
 - post-analysis: `post_analysis_status`, `post_analysis_summaries`, `post_analysis_score_deltas`, `post_analysis_tags`
 - optional DSA context: `dsa_context`, `dsa_news`, `dsa_analysis_summary`
 - optional DSA deep analysis: `deep_analysis_status`, `deep_analysis_query_id`, `deep_analysis_summary`, `deep_analysis_error`, `deep_analysis_signal_score`, `deep_analysis_sentiment_score`, `deep_analysis_operation_advice`, `deep_analysis_trend_prediction`, `deep_analysis_risk_flags`
@@ -39,7 +42,9 @@ Important UI/API fields on each pick include:
 
 For upstream UI / DSA / agent integrations, use these field groups:
 
-- source health: `snapshot_source`, `source_errors`, `daily_source`, `daily_quality_flags`
+- source health: `snapshot_source`, `source_errors`, `daily_source`, `daily_adjustment`, `daily_as_of`, `daily_quality_flags`
+- main wave: original `x/50`, normalized `x/100`, `n/8` hits, and eight rule evidence objects
+- sentiment: source-backed score/label, confidence, positive/negative event categories, evidence snippets, and bounded composite-score delta; unavailable data remains unavailable
 - filter/source degradation: `degradation`
 - risk flags: `risk_level`, `risk_flags`, `portfolio_flags`, `risk_summary`
 - watch items / invalidators: `llm_watch_items`, `llm_invalidators`, `deep_analysis_operation_advice`
@@ -61,6 +66,14 @@ The current `RunReport` schema version is `1`. Stable top-level fields:
 - `source_health`: snapshot source, source errors, degradation notes, daily enrichment status.
 - `top_picks`: UI-ready pick cards with identity, scores, risk, topic, daily quality, and post-analysis fields.
 - `evaluation`: optional T+N evaluation summary and evaluated pick cards when `--evaluate` is used.
+
+## Main-wave V2 score and evidence
+
+The eight deterministic rules shown in the source video form a 50-point module. AlphaSift preserves the original `main_wave_raw_score / 50` and also emits the proportional `main_wave_score / 100` used for ranking. Each item in `main_wave_rules` carries its observed value, operator, threshold, match state, score, lookback window, as-of date, and supporting evidence.
+
+Only explicitly adjusted history (`qfq`, `hfq`, `auto_adjusted`, or `split_adjusted`) with at least 60 complete, valid, non-stale OHLCV bars is eligible. Unknown/unadjusted data, invalid OHLC, duplicate dates, and incomplete history fail closed with explicit reasons.
+
+For `main_wave_v2`, `universe_audit` enforces at least 4000 A-share snapshot rows, valid unique security codes, and complete daily-history coverage. A partial scan raises an explicit error instead of being represented as a full-market result.
 
 ## Run index metadata
 

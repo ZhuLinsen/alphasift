@@ -71,6 +71,14 @@ def test_screen_returns_stable_dsa_contract(monkeypatch):
                     },
                     dsa_news=[{"title": "贵州茅台公告"}],
                     dsa_analysis_summary="DSA新闻: 贵州茅台公告",
+                    sentiment_available=True,
+                    sentiment_score=68.0,
+                    sentiment_label="positive",
+                    sentiment_confidence=0.72,
+                    sentiment_source_count=2,
+                    sentiment_positive_events=["回购增持"],
+                    sentiment_evidence=[{"source": "announcement", "category": "回购增持"}],
+                    sentiment_score_delta=1.3,
                     post_analysis_summaries={"scorecard": "Local scorecard: value_quality"},
                 )
             ],
@@ -102,6 +110,10 @@ def test_screen_returns_stable_dsa_contract(monkeypatch):
     assert payload["candidates"][0]["dsa_context"]["enriched"] is True
     assert payload["candidates"][0]["dsa_news"][0]["title"] == "贵州茅台公告"
     assert payload["candidates"][0]["dsa_analysis_summary"] == "DSA新闻: 贵州茅台公告"
+    assert payload["candidates"][0]["sentiment_available"] is True
+    assert payload["candidates"][0]["sentiment_score"] == 68.0
+    assert payload["candidates"][0]["sentiment_label"] == "positive"
+    assert payload["candidates"][0]["sentiment_positive_events"] == ["回购增持"]
 
 
 def test_status_is_fail_open(monkeypatch):

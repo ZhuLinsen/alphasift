@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from alphasift.config import Config
 from alphasift.pipeline import _daily_source_health_notes, _sort_screened_candidates, screen
@@ -102,6 +103,166 @@ def test_pipeline_enriches_daily_features_for_daily_strategy(monkeypatch):
     assert any("require_ma_bullish removed 1" in item for item in result.degradation)
     assert any("Snapshot hard-filter waterfall:" in item for item in result.degradation)
     assert any("Daily hard-filter waterfall:" in item for item in result.degradation)
+    assert result.universe_audit["counts_monotonic"] is True
+    assert result.universe_audit["candidate_codes_unique"] is True
+    assert result.universe_audit["daily_coverage_complete"] is True
+    assert result.universe_audit["status"] == "ok"
+
+
+def _main_wave_snapshot(count: int = 4000) -> pd.DataFrame:
+    frame = pd.DataFrame({
+        "code": [f"{index:06d}" for index in range(1, count + 1)],
+        "name": [f"样本{index}" for index in range(1, count + 1)],
+        "price": [10.0] * count,
+        "change_pct": [0.0] * count,
+        "amount": [100_000_000.0] * count,
+        "turnover_rate": [1.0] * count,
+        "volume_ratio": [1.0] * count,
+        "pe_ratio": [12.0] * count,
+        "pb_ratio": [1.2] * count,
+        "total_mv": [10_000_000_000.0] * count,
+    })
+    frame.attrs["snapshot_source"] = "test"
+    return frame
+
+
+def _main_wave_config(*, daily_limit: int = 4000) -> Config:
+    return Config(
+        llm_api_key="",
+        snapshot_source_priority=["test"],
+        strategies_dir=Path("strategies"),
+        daily_enrich_max_candidates=daily_limit,
+        risk_enabled=False,
+    )
+
+
+def test_main_wave_rejects_snapshot_below_full_market_minimum(monkeypatch):
+    snapshot = _main_wave_snapshot(3999)
+    monkeypatch.setattr(
+        "alphasift.pipeline.fetch_snapshot_with_fallback",
+        lambda sources, **kwargs: snapshot,
+    )
+
+    with pytest.raises(RuntimeError, match="rows=3999, minimum_required=4000"):
+        screen(
+            "main_wave_v2",
+            use_llm=False,
+            post_analyzers=[],
+            config=_main_wave_config(),
+        )
+
+
+@pytest.mark.parametrize("invalid_code", ["", "ABC"])
+def test_main_wave_rejects_empty_or_invalid_cn_security_codes(monkeypatch, invalid_code):
+    snapshot = _main_wave_snapshot()
+    snapshot.loc[0, "code"] = invalid_code
+    monkeypatch.setattr(
+        "alphasift.pipeline.fetch_snapshot_with_fallback",
+        lambda sources, **kwargs: snapshot,
+    )
+
+    with pytest.raises(RuntimeError, match="invalid_rows=1"):
+        screen(
+            "main_wave_v2",
+            use_llm=False,
+            post_analyzers=[],
+            config=_main_wave_config(),
+        )
+
+
+def test_main_wave_rejects_duplicate_security_codes(monkeypatch):
+    snapshot = _main_wave_snapshot()
+    snapshot.loc[1, "code"] = snapshot.loc[0, "code"]
+    monkeypatch.setattr(
+        "alphasift.pipeline.fetch_snapshot_with_fallback",
+        lambda sources, **kwargs: snapshot,
+    )
+
+    with pytest.raises(RuntimeError, match="duplicate_rows=1"):
+        screen(
+            "main_wave_v2",
+            use_llm=False,
+            post_analyzers=[],
+            config=_main_wave_config(),
+        )
+
+
+def test_main_wave_strategy_daily_limit_overrides_global_default(monkeypatch):
+    snapshot = _main_wave_snapshot()
+    captured: dict[str, int] = {}
+
+    def fake_enrich(frame, **kwargs):
+        captured["max_rows"] = kwargs["max_rows"]
+        enriched = frame.copy()
+        enriched.attrs["daily_success_count"] = len(enriched)
+        return enriched
+
+    def fake_score(frame, _screening):
+        scored = frame.copy()
+        scored["screen_score"] = 50.0
+        return scored
+
+    monkeypatch.setattr(
+        "alphasift.pipeline.fetch_snapshot_with_fallback",
+        lambda sources, **kwargs: snapshot,
+    )
+    monkeypatch.setattr("alphasift.pipeline.enrich_daily_features", fake_enrich)
+    monkeypatch.setattr("alphasift.pipeline.apply_hard_filters", lambda frame, _filters: frame)
+    monkeypatch.setattr("alphasift.pipeline.hard_filter_rejection_summary", lambda *args, **kwargs: [])
+    monkeypatch.setattr("alphasift.pipeline.compute_screen_scores", fake_score)
+
+    result = screen(
+        "main_wave_v2",
+        max_output=1,
+        use_llm=False,
+        collect_llm_candidate_context=False,
+        post_analyzers=[],
+        config=_main_wave_config(daily_limit=100),
+    )
+
+    assert captured["max_rows"] == 4000
+    assert result.daily_enrich_count == 4000
+    assert result.universe_audit["daily_coverage_complete"] is True
+
+
+def test_main_wave_explicit_low_daily_limit_still_fails_closed(monkeypatch):
+    snapshot = _main_wave_snapshot()
+    monkeypatch.setattr(
+        "alphasift.pipeline.fetch_snapshot_with_fallback",
+        lambda sources, **kwargs: snapshot,
+    )
+
+    with pytest.raises(RuntimeError, match="configured limit is too low"):
+        screen(
+            "main_wave_v2",
+            use_llm=False,
+            daily_enrich_max_candidates=100,
+            post_analyzers=[],
+            config=_main_wave_config(daily_limit=100),
+        )
+
+
+def test_main_wave_rejects_incomplete_daily_coverage(monkeypatch):
+    snapshot = _main_wave_snapshot()
+
+    def fake_enrich(frame, **kwargs):
+        enriched = frame.copy()
+        enriched.attrs["daily_success_count"] = len(enriched) - 1
+        return enriched
+
+    monkeypatch.setattr(
+        "alphasift.pipeline.fetch_snapshot_with_fallback",
+        lambda sources, **kwargs: snapshot,
+    )
+    monkeypatch.setattr("alphasift.pipeline.enrich_daily_features", fake_enrich)
+
+    with pytest.raises(RuntimeError, match="succeeded=3999, target=4000"):
+        screen(
+            "main_wave_v2",
+            use_llm=False,
+            post_analyzers=[],
+            config=_main_wave_config(),
+        )
 
 
 def test_daily_source_health_notes_prioritize_severe_states_and_limit_noise():

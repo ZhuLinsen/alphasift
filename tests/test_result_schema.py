@@ -14,8 +14,13 @@ def test_screen_result_schema_matches_core_dataclass_fields():
     assert "degradation" in top_level_fields
     assert "snapshot_source" in top_level_fields
     assert "source_errors" in top_level_fields
+    assert "universe_audit" in top_level_fields
     assert "risk_flags" in pick_schema_fields
     assert "daily_quality_flags" in pick_schema_fields
+    assert "daily_adjustment" in pick_schema_fields
+    assert "main_wave_rules" in pick_schema_fields
+    assert "sentiment_score" in pick_schema_fields
+    assert "sentiment_evidence" in pick_schema_fields
     assert "post_analysis_status" in pick_schema_fields
     assert "deep_analysis_status" in pick_schema_fields
 
@@ -34,7 +39,12 @@ def test_result_schema_declares_ui_card_groups_and_non_goals():
     assert "risk" in ui_card_fields
     assert "watch" in ui_card_fields
     assert "post_analysis" in ui_card_fields
+    assert "main_wave" in ui_card_fields
+    assert "sentiment" in ui_card_fields
     assert "daily_quality_flags" in ui_card_fields["source_health"]
+    assert "daily_adjustment" in ui_card_fields["source_health"]
+    assert "main_wave_raw_score" in ui_card_fields["main_wave"]
+    assert "sentiment_score_delta" in ui_card_fields["sentiment"]
     assert "risk_flags" in ui_card_fields["risk"]
     assert any("does not execute trades" in item for item in non_goals)
     assert any("DSA is optional" in item for item in non_goals)

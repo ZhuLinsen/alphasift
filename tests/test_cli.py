@@ -145,10 +145,10 @@ def test_cli_strategies_explain_matches_data_requirements(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "strategy_matches=2" in out
     assert "criteria=risk_profile=aggressive;data_requirements=daily_k;limit=2" in out
+    assert "main_wave_v2" in out
     assert "volume_breakout" in out
     assert "matched=risk_profile:aggressive,data_requirement:daily_k" in out
-    assert "capital_heat" in out
-    assert "missing=data_requirement:daily_k" in out
+    assert "missing=-" in out
 
 
 def test_cli_strategies_compare_json_shows_parameter_diffs(monkeypatch, capsys):
@@ -382,7 +382,7 @@ def test_cli_overview_json_combines_catalog_health_and_runs(monkeypatch, tmp_pat
     payload = json.loads(capsys.readouterr().out)
     assert payload["schema_version"] == 1
     assert payload["summary"]["strategy_match_count"] == 1
-    assert payload["strategy_matches"][0]["name"] == "volume_breakout"
+    assert payload["strategy_matches"][0]["name"] == "main_wave_v2"
     assert payload["recent_runs"][0]["run_id"] == "run_breakout"
     assert payload["data_source_history"]["snapshot_sources"][0]["snapshot_source"] == "sina"
     assert payload["performance_summary"]["leaderboard"][0]["strategy"] == "volume_breakout"

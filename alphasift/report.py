@@ -28,6 +28,7 @@ def build_run_report_payload(
         "run": _run_summary(result),
         "summary_cards": _summary_cards(result, evaluation),
         "source_health": _source_health_summary(result),
+        "universe_audit": dict(result.universe_audit),
         "top_picks": [_pick_card(pick) for pick in _sorted_picks(result.picks)[:max_picks]],
     }
     if evaluation is not None:
@@ -70,6 +71,20 @@ def render_run_report_markdown(payload: dict[str, Any]) -> str:
         lines.append("- source_errors: " + "; ".join(str(item) for item in source["source_errors"]))
     if source.get("degradation"):
         lines.append("- degradation: " + "; ".join(str(item) for item in source["degradation"]))
+
+    universe = payload.get("universe_audit", {}) or {}
+    if universe:
+        lines.extend([
+            "",
+            "## Universe Audit",
+            "",
+            f"- status: {_fmt(universe.get('status'))}",
+            f"- snapshot_count: {_fmt(universe.get('snapshot_count'))}",
+            f"- unique_code_count: {_fmt(universe.get('unique_code_count'))}",
+            f"- daily_coverage: {_fmt(universe.get('daily_success_count'))}/{_fmt(universe.get('daily_coverage_target_count'))}",
+            f"- counts_monotonic: {_fmt(universe.get('counts_monotonic'))}",
+            f"- candidate_codes_unique: {_fmt(universe.get('candidate_codes_unique'))}",
+        ])
 
     lines.extend([
         "",
@@ -124,6 +139,7 @@ def _run_summary(result: ScreenResult) -> dict[str, Any]:
         "llm_coverage": result.llm_coverage,
         "post_analyzers": list(result.post_analyzers),
         "saved_path": result.saved_path,
+        "universe_audit": dict(result.universe_audit),
     }
 
 
@@ -137,6 +153,11 @@ def _summary_cards(
         _card("Picks", len(result.picks), _count_status(len(result.picks))),
         _card("LLM Ranked", result.llm_ranked, "ok" if result.llm_ranked else "skipped"),
         _card("Daily Enriched", result.daily_enriched, "ok" if result.daily_enriched else "skipped"),
+        _card(
+            "Sentiment Evidence",
+            sum(1 for pick in result.picks if pick.sentiment_available),
+            "ok" if any(pick.sentiment_available for pick in result.picks) else "unavailable",
+        ),
         _card(
             "Degradation",
             len(result.degradation),
@@ -185,6 +206,27 @@ def _pick_card(pick: Pick) -> dict[str, Any]:
         "daily_quality_score": _round_value(pick.daily_quality_score),
         "daily_quality_flags": pick.daily_quality_flags,
         "daily_source": pick.daily_source,
+        "daily_adjustment": pick.daily_adjustment,
+        "daily_as_of": pick.daily_as_of,
+        "daily_fetched_at": pick.daily_fetched_at,
+        "main_wave_eligible": pick.main_wave_eligible,
+        "main_wave_ineligible_reasons": pick.main_wave_ineligible_reasons,
+        "main_wave_raw_score": _round_value(pick.main_wave_raw_score),
+        "main_wave_raw_max_score": _round_value(pick.main_wave_raw_max_score),
+        "main_wave_score": _round_value(pick.main_wave_score),
+        "main_wave_max_score": _round_value(pick.main_wave_max_score),
+        "main_wave_hit_count": pick.main_wave_hit_count,
+        "main_wave_rules": [dict(rule) for rule in pick.main_wave_rules],
+        "sentiment_available": pick.sentiment_available,
+        "sentiment_score": _round_value(pick.sentiment_score),
+        "sentiment_label": pick.sentiment_label,
+        "sentiment_confidence": _round_value(pick.sentiment_confidence),
+        "sentiment_source_count": pick.sentiment_source_count,
+        "sentiment_positive_events": list(pick.sentiment_positive_events),
+        "sentiment_negative_events": list(pick.sentiment_negative_events),
+        "sentiment_evidence": [dict(item) for item in pick.sentiment_evidence],
+        "sentiment_as_of": pick.sentiment_as_of,
+        "sentiment_score_delta": _round_value(pick.sentiment_score_delta),
         "signal_score": _round_value(pick.signal_score),
         "change_60d": _round_value(pick.change_60d),
         "volatility_20d_pct": _round_value(pick.volatility_20d_pct),
@@ -286,6 +328,15 @@ def _render_evaluation_markdown(evaluation: dict[str, Any]) -> list[str]:
 
 def _pick_notes(pick: dict[str, Any]) -> str:
     notes = []
+    if pick.get("sentiment_available"):
+        sentiment = f"sentiment={_fmt(pick.get('sentiment_score'))}/{_fmt(pick.get('sentiment_label'))}"
+        events = [
+            *(pick.get("sentiment_positive_events") or []),
+            *(pick.get("sentiment_negative_events") or []),
+        ]
+        if events:
+            sentiment += "(" + ",".join(str(item) for item in events[:4]) + ")"
+        notes.append(sentiment)
     if pick.get("daily_quality_flags"):
         notes.append(f"daily={pick['daily_quality_flags']}")
     if pick.get("risk_flags"):

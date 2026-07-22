@@ -28,6 +28,15 @@ def _sample_run() -> ScreenResult:
         post_analyzers=["scorecard"],
         daily_enriched=True,
         daily_enrich_count=12,
+        universe_audit={
+            "status": "ok",
+            "snapshot_count": 3000,
+            "unique_code_count": 3000,
+            "daily_success_count": 12,
+            "daily_coverage_target_count": 12,
+            "counts_monotonic": True,
+            "candidate_codes_unique": True,
+        },
         created_at="2026-07-01T09:30:00",
         picks=[
             Pick(
@@ -44,6 +53,29 @@ def _sample_run() -> ScreenResult:
                 daily_quality_score=91.2,
                 daily_quality_flags="ok",
                 daily_source="tencent",
+                daily_adjustment="qfq",
+                daily_as_of="2026-07-01",
+                main_wave_eligible=True,
+                main_wave_raw_score=42.0,
+                main_wave_score=84.0,
+                main_wave_hit_count=6,
+                main_wave_rules=[{"id": "near_60d_low", "matched": True}],
+                sentiment_available=True,
+                sentiment_score=68.0,
+                sentiment_label="positive",
+                sentiment_confidence=0.72,
+                sentiment_source_count=2,
+                sentiment_positive_events=["回购增持"],
+                sentiment_evidence=[
+                    {
+                        "source": "announcement",
+                        "polarity": "positive",
+                        "category": "回购增持",
+                        "text": "公司公告回购方案",
+                    }
+                ],
+                sentiment_as_of="2026-07-01",
+                sentiment_score_delta=1.3,
                 risk_level="medium",
                 risk_flags=["valuation_watch"],
                 portfolio_flags=["sector_cap"],
@@ -88,11 +120,17 @@ def test_build_run_report_payload_and_markdown():
     assert payload["object"] == "RunReport"
     assert payload["run"]["strategy"] == "low_volatility_quality"
     assert payload["source_health"]["snapshot_source"] == "sina"
+    assert payload["universe_audit"]["status"] == "ok"
     assert payload["top_picks"][0]["final_score"] == 82.3457
+    assert payload["top_picks"][0]["main_wave_raw_score"] == 42.0
+    assert payload["top_picks"][0]["sentiment_score"] == 68.0
+    assert payload["top_picks"][0]["sentiment_score_delta"] == 1.3
     assert payload["evaluation"]["average_return_pct"] == 2.5
     assert "# AlphaSift Run Report" in markdown
     assert "low_volatility_quality" in markdown
     assert "valuation_watch" in markdown
+    assert "sentiment=68.0/positive" in markdown
+    assert "## Universe Audit" in markdown
     assert "## Evaluation" in markdown
 
 

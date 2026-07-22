@@ -244,7 +244,7 @@ def test_api_strategies_supports_matching_query(tmp_path):
 
     assert status == 200
     assert payload["schema_version"] == 1
-    assert payload["strategies"][0]["name"] == "volume_breakout"
+    assert payload["strategies"][0]["name"] == "main_wave_v2"
     assert "data_requirement:daily_k" in payload["strategies"][0]["matched"]
 
 

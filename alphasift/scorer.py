@@ -15,6 +15,14 @@ _FACTOR_COLUMNS = {
     "size": "factor_size_score",
     "theme_heat": "factor_theme_heat_score",
     "topic_alignment": "factor_topic_alignment_score",
+    "main_wave_near_low": "factor_main_wave_near_low_score",
+    "main_wave_volume_contraction": "factor_main_wave_volume_contraction_score",
+    "main_wave_doji_cluster": "factor_main_wave_doji_cluster_score",
+    "main_wave_limit_up_test": "factor_main_wave_limit_up_test_score",
+    "main_wave_upward_gap": "factor_main_wave_upward_gap_score",
+    "main_wave_volume_doubling": "factor_main_wave_volume_doubling_score",
+    "main_wave_bullish_streak": "factor_main_wave_bullish_streak_score",
+    "main_wave_ma_alignment": "factor_main_wave_ma_alignment_score",
 }
 _DEFAULT_SCORING_PROFILE = {
     "momentum_base": 60.0,
@@ -146,6 +154,14 @@ def _compute_factor_scores(df: pd.DataFrame, config: ScreeningConfig | None = No
         "size": _compute_size_score(df),
         "theme_heat": _compute_theme_heat_score(df, profile),
         "topic_alignment": _compute_topic_alignment_score(df, profile),
+        "main_wave_near_low": _direct_score(df, "main_wave_near_low_score"),
+        "main_wave_volume_contraction": _direct_score(df, "main_wave_volume_contraction_score"),
+        "main_wave_doji_cluster": _direct_score(df, "main_wave_doji_cluster_score"),
+        "main_wave_limit_up_test": _direct_score(df, "main_wave_limit_up_test_score"),
+        "main_wave_upward_gap": _direct_score(df, "main_wave_upward_gap_score"),
+        "main_wave_volume_doubling": _direct_score(df, "main_wave_volume_doubling_score"),
+        "main_wave_bullish_streak": _direct_score(df, "main_wave_bullish_streak_score"),
+        "main_wave_ma_alignment": _direct_score(df, "main_wave_ma_alignment_score"),
     }
 
 
@@ -155,6 +171,12 @@ def _scoring_profile(config: ScreeningConfig) -> dict[str, float]:
         if key in profile:
             profile[key] = float(value)
     return profile
+
+
+def _direct_score(df: pd.DataFrame, column: str) -> pd.Series:
+    if column not in df.columns:
+        return pd.Series(0.0, index=df.index)
+    return pd.to_numeric(df[column], errors="coerce").fillna(0.0).clip(0, 100)
 
 
 def _compute_snapshot_score(df: pd.DataFrame) -> pd.Series:

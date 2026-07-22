@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-SCREEN_RESULT_SCHEMA_VERSION = 1
+SCREEN_RESULT_SCHEMA_VERSION = 2
 
 SCREEN_RESULT_SCHEMA: dict[str, object] = {
     "schema_version": SCREEN_RESULT_SCHEMA_VERSION,
@@ -30,6 +30,7 @@ SCREEN_RESULT_SCHEMA: dict[str, object] = {
         "risk_enabled",
         "portfolio_diversity_enabled",
         "portfolio_concentration_notes",
+        "universe_audit",
         "created_at",
     ],
     "pick_fields": [
@@ -53,6 +54,27 @@ SCREEN_RESULT_SCHEMA: dict[str, object] = {
         "daily_quality_score",
         "daily_quality_flags",
         "daily_source",
+        "daily_adjustment",
+        "daily_as_of",
+        "daily_fetched_at",
+        "main_wave_eligible",
+        "main_wave_ineligible_reasons",
+        "main_wave_raw_score",
+        "main_wave_raw_max_score",
+        "main_wave_score",
+        "main_wave_max_score",
+        "main_wave_hit_count",
+        "main_wave_rules",
+        "sentiment_available",
+        "sentiment_score",
+        "sentiment_label",
+        "sentiment_confidence",
+        "sentiment_source_count",
+        "sentiment_positive_events",
+        "sentiment_negative_events",
+        "sentiment_evidence",
+        "sentiment_as_of",
+        "sentiment_score_delta",
         "post_analysis_status",
         "post_analysis_summaries",
         "post_analysis_score_deltas",
@@ -76,7 +98,30 @@ SCREEN_RESULT_SCHEMA: dict[str, object] = {
             "snapshot_source",
             "source_errors",
             "daily_source",
+            "daily_adjustment",
+            "daily_as_of",
             "daily_quality_flags",
+        ],
+        "main_wave": [
+            "main_wave_eligible",
+            "main_wave_raw_score",
+            "main_wave_raw_max_score",
+            "main_wave_score",
+            "main_wave_max_score",
+            "main_wave_hit_count",
+            "main_wave_rules",
+        ],
+        "sentiment": [
+            "sentiment_available",
+            "sentiment_score",
+            "sentiment_label",
+            "sentiment_confidence",
+            "sentiment_source_count",
+            "sentiment_positive_events",
+            "sentiment_negative_events",
+            "sentiment_evidence",
+            "sentiment_as_of",
+            "sentiment_score_delta",
         ],
         "risk": ["risk_level", "risk_flags", "portfolio_flags", "risk_summary"],
         "watch": [

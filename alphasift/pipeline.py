@@ -26,12 +26,14 @@ from alphasift.normalize import (
     safe_bool as _safe_bool,
     safe_float as _safe_float,
     safe_int as _safe_int,
+    safe_string_list as _safe_string_list,
     safe_text,
 )
 from alphasift.post_analysis import normalize_post_analyzers, run_post_analyzers
 from alphasift.ranker import rank_candidates_with_metadata
 from alphasift.risk import apply_portfolio_overlay, apply_risk_overlay
 from alphasift.scorer import compute_screen_scores, factor_score_columns
+from alphasift.sentiment import apply_sentiment_overlay
 from alphasift.snapshot import fetch_snapshot_with_fallback
 from alphasift.strategy import load_all_strategies
 
@@ -125,7 +127,12 @@ def screen(
     )
     daily_needed = requires_daily_features(screening.hard_filters)
     daily_requested = config.daily_enrich_enabled if daily_enrich is None else daily_enrich
-    daily_limit = daily_enrich_max_candidates or config.daily_enrich_max_candidates
+    if daily_enrich_max_candidates is not None:
+        daily_limit = daily_enrich_max_candidates
+    elif screening.daily_enrich_max_candidates is not None:
+        daily_limit = screening.daily_enrich_max_candidates
+    else:
+        daily_limit = config.daily_enrich_max_candidates
     snapshot_filters = without_daily_filters(screening.hard_filters) if daily_needed else screening.hard_filters
 
     # 2. Fetch snapshot
@@ -158,6 +165,25 @@ def screen(
         )
         degradation.extend(f"Industry/concepts enrichment: {item}" for item in industry_notes)
     snapshot_count = len(snapshot_df)
+    universe_audit = _build_universe_audit(
+        snapshot_df,
+        market=market,
+        minimum_count=screening.universe_min_count,
+    )
+    if not bool(universe_audit["minimum_count_met"]):
+        raise RuntimeError(
+            "Snapshot universe is incomplete for this strategy: "
+            f"rows={snapshot_count}, minimum_required={screening.universe_min_count}"
+        )
+    if screening.require_unique_codes and (
+        not bool(universe_audit["codes_unique"])
+        or not bool(universe_audit["codes_valid"])
+    ):
+        raise RuntimeError(
+            "Snapshot universe contains invalid or duplicate security codes: "
+            f"invalid_rows={universe_audit['invalid_code_rows']}, "
+            f"duplicate_rows={universe_audit['duplicate_code_rows']}"
+        )
     snapshot_source = str(snapshot_df.attrs.get("snapshot_source", ""))
     source_errors = [str(item) for item in snapshot_df.attrs.get("source_errors", [])]
     degradation.extend(f"Snapshot source fallback: {item}" for item in source_errors)
@@ -181,6 +207,7 @@ def screen(
             )
     df = apply_hard_filters(snapshot_df, snapshot_filters)
     after_filter_count = len(df)
+    _record_universe_stage(universe_audit, "snapshot_hard_filter", after_filter_count)
 
     if df.empty:
         return ScreenResult(
@@ -198,13 +225,21 @@ def screen(
             daily_enriched=False,
             risk_enabled=config.risk_enabled,
             portfolio_diversity_enabled=config.portfolio_diversity_enabled,
+            universe_audit=_finalize_universe_audit(universe_audit, pick_codes=[]),
         )
 
     daily_enriched = False
     daily_enrich_count = 0
     if daily_needed or daily_requested:
         provisional = _sort_screened_candidates(compute_screen_scores(df, screening), screening)
+        universe_audit["daily_coverage_target_count"] = len(provisional)
+        if screening.require_full_daily_coverage and daily_limit < len(provisional):
+            raise RuntimeError(
+                "Strategy requires full daily K-line coverage but the configured limit is too low: "
+                f"target={len(provisional)}, DAILY_ENRICH_MAX_CANDIDATES={daily_limit}"
+            )
         enrich_count = min(daily_limit, len(provisional))
+        universe_audit["daily_attempted_count"] = enrich_count
         daily_candidates = provisional.head(enrich_count)
         try:
             enriched = enrich_daily_features(
@@ -214,10 +249,27 @@ def screen(
                 source=config.daily_source,
                 fetch_retries=config.daily_fetch_retries,
                 max_workers=config.daily_fetch_max_workers,
+                require_adjusted=_requires_adjusted_daily(screening),
             )
             daily_enriched = True
             daily_errors = [str(item) for item in enriched.attrs.get("daily_errors", [])]
             daily_enrich_count = int(enriched.attrs.get("daily_success_count", len(enriched)))
+            universe_audit["daily_success_count"] = daily_enrich_count
+            target_count = int(universe_audit.get("daily_coverage_target_count") or 0)
+            universe_audit["daily_coverage_ratio"] = round(
+                daily_enrich_count / target_count,
+                6,
+            ) if target_count else 1.0
+            universe_audit["daily_coverage_complete"] = (
+                daily_enrich_count == target_count
+            )
+            if screening.require_full_daily_coverage and not bool(
+                universe_audit["daily_coverage_complete"]
+            ):
+                raise RuntimeError(
+                    "Strategy requires full daily K-line coverage but some rows failed: "
+                    f"succeeded={daily_enrich_count}, target={target_count}"
+                )
             daily_source_counts = dict(enriched.attrs.get("daily_source_counts", {}) or {})
             daily_quality_flag_counts = dict(enriched.attrs.get("daily_quality_flag_counts", {}) or {})
             daily_source_order_notes = [str(item) for item in enriched.attrs.get("daily_source_order_notes", [])]
@@ -261,6 +313,7 @@ def screen(
                 )
                 df = apply_hard_filters(enriched, screening.hard_filters)
                 after_filter_count = len(df)
+                _record_universe_stage(universe_audit, "daily_hard_filter", after_filter_count)
                 if daily_filter_rejections:
                     degradation.append(
                         "Daily hard-filter rejections: "
@@ -293,25 +346,78 @@ def screen(
             daily_enrich_count=daily_enrich_count,
             risk_enabled=config.risk_enabled,
             portfolio_diversity_enabled=config.portfolio_diversity_enabled,
+            universe_audit=_finalize_universe_audit(universe_audit, pick_codes=[]),
         )
 
     # 4. Compute screen_score
     df = _sort_screened_candidates(compute_screen_scores(df, screening), screening)
 
     # 5. Take Top K for LLM ranking
+    host_candidate_minimum = _host_candidate_minimum(context)
     top_k = min(
-        max(output_count * config.llm_candidate_multiplier, output_count),
+        max(
+            output_count * config.llm_candidate_multiplier,
+            output_count,
+            host_candidate_minimum,
+        ),
         config.llm_max_candidates,
         len(df),
     )
     df_top = df.head(top_k)
 
     # 6. Build Pick list
-    picks = _df_to_picks(df_top)
+    picks = _deduplicate_picks(_df_to_picks(df_top))
 
     # 6.5. Host-provided candidate context, e.g. DSA realtime quote,
     # fundamentals, and news. This runs before LLM ranking so L2 can use it.
     degradation.extend(apply_dsa_provider_context(picks, context))
+
+    # 6.6. Collect external context once for both deterministic sentiment and
+    # optional LLM ranking. This remains Top-K only; it never fans out across
+    # the full snapshot universe.
+    candidate_context_rows: list[dict[str, object]] = []
+    event_source_weights = _event_source_weights(screening.event_profile)
+    context_collection_setting = (
+        config.llm_candidate_context_enabled
+        if collect_llm_candidate_context is None
+        else collect_llm_candidate_context
+    )
+    should_collect_candidate_context = bool(context_collection_setting) or (
+        screening.sentiment_weight > 0 and collect_llm_candidate_context is not False
+    )
+    if should_collect_candidate_context:
+        candidate_context_rows, candidate_context_errors = collect_candidate_context(
+            df_top,
+            max_rows=(
+                candidate_context_max_candidates
+                or config.llm_candidate_context_max_candidates
+            ),
+            providers=(
+                candidate_context_providers
+                if candidate_context_providers is not None
+                else config.llm_candidate_context_providers
+            ),
+            news_limit=config.llm_candidate_context_news_limit,
+            announcement_limit=config.llm_candidate_context_announcement_limit,
+            cache_dir=(
+                config.data_dir / "candidate_context"
+                if config.llm_candidate_context_cache_enabled
+                else None
+            ),
+            cache_ttl_hours=config.llm_candidate_context_cache_ttl_hours,
+            source_weights=event_source_weights,
+        )
+        degradation.append(
+            f"Candidate context collected rows={len(candidate_context_rows)}"
+        )
+        if candidate_context_errors:
+            sample = " | ".join(candidate_context_errors[:5])
+            suffix = (
+                f" | +{len(candidate_context_errors) - 5} more"
+                if len(candidate_context_errors) > 5
+                else ""
+            )
+            degradation.append(f"Candidate context row errors: {sample}{suffix}")
 
     # 7. L2 LLM ranking
     llm_ranked = False
@@ -321,46 +427,6 @@ def screen(
     llm_coverage: float | None = None
     llm_parse_errors: list[str] = []
     if use_llm and config.has_llm_config():
-        candidate_context_rows: list[dict[str, object]] = []
-        event_source_weights = _event_source_weights(screening.event_profile)
-        should_collect_candidate_context = (
-            config.llm_candidate_context_enabled
-            if collect_llm_candidate_context is None
-            else collect_llm_candidate_context
-        )
-        if should_collect_candidate_context:
-            candidate_context_rows, candidate_context_errors = collect_candidate_context(
-                df_top,
-                max_rows=(
-                    candidate_context_max_candidates
-                    or config.llm_candidate_context_max_candidates
-                ),
-                providers=(
-                    candidate_context_providers
-                    if candidate_context_providers is not None
-                    else config.llm_candidate_context_providers
-                ),
-                news_limit=config.llm_candidate_context_news_limit,
-                announcement_limit=config.llm_candidate_context_announcement_limit,
-                cache_dir=(
-                    config.data_dir / "candidate_context"
-                    if config.llm_candidate_context_cache_enabled
-                    else None
-                ),
-                cache_ttl_hours=config.llm_candidate_context_cache_ttl_hours,
-                source_weights=event_source_weights,
-            )
-            degradation.append(
-                f"Candidate context collected rows={len(candidate_context_rows)}"
-            )
-            if candidate_context_errors:
-                sample = " | ".join(candidate_context_errors[:5])
-                suffix = (
-                    f" | +{len(candidate_context_errors) - 5} more"
-                    if len(candidate_context_errors) > 5
-                    else ""
-                )
-                degradation.append(f"Candidate context row errors: {sample}{suffix}")
         llm_context_degradation: list[str] = []
         effective_context = build_llm_context(
             base_context=llm_context if llm_context is not None else config.llm_context,
@@ -415,6 +481,17 @@ def screen(
             p.rank = i + 1
             p.final_score = p.screen_score
 
+    # 7.5. Deterministic sentiment overlay. Technical and main-wave scores stay
+    # unchanged; only the composite final_score receives a bounded adjustment.
+    picks, sentiment_degradation = apply_sentiment_overlay(
+        picks,
+        context_rows=candidate_context_rows,
+        weight=screening.sentiment_weight,
+        min_confidence=screening.sentiment_min_confidence,
+        max_delta=screening.sentiment_max_delta,
+    )
+    degradation.extend(sentiment_degradation)
+
     # 8. Independent risk overlay
     if config.risk_enabled:
         picks, risk_degradation = apply_risk_overlay(
@@ -438,6 +515,7 @@ def screen(
 
     # 10. Trim to max_output
     picks = picks[:output_count]
+    _record_universe_stage(universe_audit, "output", len(picks))
 
     # 11. Optional L3 post-analysis, DSA is only one possible analyzer.
     if analyzer_names:
@@ -476,6 +554,10 @@ def screen(
         risk_enabled=config.risk_enabled,
         portfolio_diversity_enabled=config.portfolio_diversity_enabled,
         portfolio_concentration_notes=portfolio_concentration_notes,
+        universe_audit=_finalize_universe_audit(
+            universe_audit,
+            pick_codes=[pick.code for pick in picks],
+        ),
     )
 
 
@@ -535,9 +617,148 @@ def _df_to_picks(df: pd.DataFrame) -> list[Pick]:
             daily_quality_score=_safe_float(row.get("daily_quality_score")),
             daily_quality_flags=_safe_text(row.get("daily_quality_flags")),
             daily_source=_safe_text(row.get("daily_source")),
+            daily_adjustment=_safe_text(row.get("daily_adjustment")) or "unknown",
+            daily_as_of=_safe_text(row.get("daily_as_of")),
+            daily_fetched_at=_safe_text(row.get("daily_fetched_at")),
+            main_wave_eligible=bool(_safe_bool(row.get("main_wave_eligible"))),
+            main_wave_ineligible_reasons=_safe_text(row.get("main_wave_ineligible_reasons")),
+            main_wave_raw_score=_safe_float(row.get("main_wave_raw_score")),
+            main_wave_raw_max_score=_safe_float(row.get("main_wave_raw_max_score")) or 50.0,
+            main_wave_score=_safe_float(row.get("main_wave_score")),
+            main_wave_max_score=_safe_float(row.get("main_wave_max_score")) or 100.0,
+            main_wave_hit_count=_safe_int(row.get("main_wave_hit_count")) or 0,
+            main_wave_rules=_safe_rule_evidence(row.get("main_wave_rules")),
+            sentiment_available=bool(_safe_bool(row.get("sentiment_available"))),
+            sentiment_score=_safe_float(row.get("sentiment_score")),
+            sentiment_label=_safe_text(row.get("sentiment_label")) or "unavailable",
+            sentiment_confidence=_safe_float(row.get("sentiment_confidence")) or 0.0,
+            sentiment_source_count=_safe_int(row.get("sentiment_source_count")) or 0,
+            sentiment_positive_events=_safe_string_list(row.get("sentiment_positive_events")),
+            sentiment_negative_events=_safe_string_list(row.get("sentiment_negative_events")),
+            sentiment_evidence=_safe_rule_evidence(row.get("sentiment_evidence")),
+            sentiment_as_of=_safe_text(row.get("sentiment_as_of")),
+            sentiment_score_delta=_safe_float(row.get("sentiment_score_delta")) or 0.0,
             factor_scores=factor_scores,
         ))
     return picks
+
+
+def _safe_rule_evidence(value: object) -> list[dict[str, object]]:
+    if not isinstance(value, list):
+        return []
+    return [dict(item) for item in value if isinstance(item, dict)]
+
+
+def _requires_adjusted_daily(screening) -> bool:
+    hard_filters = screening.hard_filters
+    if hard_filters.require_main_wave_eligible or hard_filters.main_wave_score_min is not None:
+        return True
+    return any(
+        str(name).startswith("main_wave_") and (_safe_float(weight) or 0.0) > 0
+        for name, weight in screening.factor_weights.items()
+    )
+
+
+def _host_candidate_minimum(context: dict[str, object] | None) -> int:
+    """Honor a host's pre-rank context window when sizing the LLM pool."""
+    if not isinstance(context, dict):
+        return 0
+    provider = context.get("dsa")
+    if not isinstance(provider, dict):
+        return 0
+    try:
+        return max(int(provider.get("max_candidates", 0)), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _deduplicate_picks(picks: list[Pick]) -> list[Pick]:
+    unique: list[Pick] = []
+    seen: set[str] = set()
+    for pick in picks:
+        if not pick.code or pick.code in seen:
+            continue
+        seen.add(pick.code)
+        pick.rank = len(unique) + 1
+        unique.append(pick)
+    return unique
+
+
+def _build_universe_audit(
+    frame: pd.DataFrame,
+    *,
+    market: str,
+    minimum_count: int | None,
+) -> dict[str, object]:
+    code_column = next(
+        (column for column in ("code", "代码", "证券代码") if column in frame.columns),
+        None,
+    )
+    if code_column is None:
+        normalized_codes = pd.Series([""] * len(frame), index=frame.index, dtype=object)
+    else:
+        normalized_codes = frame[code_column].map(
+            lambda value: normalize_code(value, allow_ticker=market == "us")
+        )
+    valid_codes = normalized_codes[normalized_codes.astype(str).str.len() > 0]
+    invalid_code_rows = int(len(frame) - len(valid_codes))
+    duplicate_code_rows = int(len(valid_codes) - valid_codes.nunique())
+    minimum_required = int(minimum_count) if minimum_count is not None else None
+    minimum_met = minimum_required is None or len(frame) >= minimum_required
+    return {
+        "market": market,
+        "snapshot_count": len(frame),
+        "unique_code_count": int(valid_codes.nunique()),
+        "invalid_code_rows": invalid_code_rows,
+        "duplicate_code_rows": duplicate_code_rows,
+        "codes_valid": invalid_code_rows == 0,
+        "codes_unique": duplicate_code_rows == 0,
+        "minimum_required_count": minimum_required,
+        "minimum_count_met": minimum_met,
+        "daily_coverage_target_count": 0,
+        "daily_attempted_count": 0,
+        "daily_success_count": 0,
+        "daily_coverage_ratio": None,
+        "daily_coverage_complete": None,
+        "stages": [{"stage": "snapshot", "count": len(frame)}],
+    }
+
+
+def _record_universe_stage(audit: dict[str, object], stage: str, count: int) -> None:
+    stages = audit.setdefault("stages", [])
+    if isinstance(stages, list):
+        stages.append({"stage": stage, "count": int(count)})
+
+
+def _finalize_universe_audit(
+    audit: dict[str, object],
+    *,
+    pick_codes: list[str],
+) -> dict[str, object]:
+    result = dict(audit)
+    stages = [dict(item) for item in audit.get("stages", []) if isinstance(item, dict)]
+    counts = [int(item.get("count") or 0) for item in stages]
+    result["stages"] = stages
+    result["counts_monotonic"] = all(
+        current >= following
+        for current, following in zip(counts, counts[1:])
+    )
+    normalized_picks = [str(code) for code in pick_codes if str(code)]
+    result["candidate_codes_unique"] = len(normalized_picks) == len(set(normalized_picks))
+    checks = [
+        bool(result.get("minimum_count_met")),
+        bool(result.get("codes_valid")),
+        bool(result.get("codes_unique")),
+        bool(result.get("counts_monotonic")),
+        bool(result.get("candidate_codes_unique")),
+    ]
+    if not all(checks):
+        result["status"] = "failed"
+    elif result.get("daily_coverage_complete") is False:
+        result["status"] = "degraded"
+    else:
+        result["status"] = "ok"
+    return result
 
 
 def _sort_screened_candidates(df: pd.DataFrame, screening=None) -> pd.DataFrame:
