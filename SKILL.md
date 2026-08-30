@@ -19,7 +19,7 @@ description: "自动选股 Skill。Use when: 用户要按策略筛选 A 股、�
 
 ## Preconditions
 
-- 当前只支持 `market="cn"`
+- 默认 `market="cn"`；`market="us"` 也可用（yfinance 快照 + 日K，无 hotspot/board_heat/tushare 等 CN 专属数据源），但需使用声明了 `market_scope` 含 `us` 的策略，目前为 `us_momentum_quality`
 - 需要先在仓库根目录安装包：`pip install -e .`
 - 如需 LLM 排序，可设置 `LITELLM_MODEL`、`LLM_CHANNELS`、`LITELLM_CONFIG` 或旧变量 `LLM_API_KEY/LLM_MODEL/LLM_BASE_URL`
 - 可直接复用 `daily_stock_analysis` 的 LiteLLM 配置字段，包括 `OPENAI_*`、`GEMINI_*`、`DEEPSEEK_API_KEY`、`OLLAMA_API_BASE`

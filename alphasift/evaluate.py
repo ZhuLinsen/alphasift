@@ -42,10 +42,14 @@ def evaluate_saved_run(
 
     run = load_screen_result(run_ref, data_dir=config.data_dir)
     if current_snapshot is None:
+        # Must fetch the snapshot for the run's own market — a CN-default
+        # snapshot can't resolve US tickers (or vice versa), which silently
+        # marks every pick "missing" instead of evaluating it.
         current_snapshot = fetch_snapshot_with_fallback(
             config.snapshot_source_priority,
             fallback_snapshot_path=config.fallback_snapshot_path,
             fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
+            market=run.market,
         )
     if cost_bps is None:
         cost_bps = config.evaluation_cost_bps
@@ -67,11 +71,17 @@ def evaluate_saved_run(
     path_errors: list[str] = []
     effective_price_paths = _normalize_price_path_mapping(price_paths)
     if with_price_path:
+        # Same market-aware default as pipeline.py: config.daily_source's
+        # "auto" chain is CN-only and cannot resolve US tickers.
+        effective_daily_source = (
+            "yfinance" if run.market == "us" and config.daily_source in ("auto", "")
+            else config.daily_source
+        )
         fetched_paths, path_errors = _fetch_price_paths(
             run,
             existing=effective_price_paths,
             lookback_days=price_path_lookback_days,
-            source=config.daily_source,
+            source=effective_daily_source,
             retries=config.daily_fetch_retries,
             max_workers=config.daily_fetch_max_workers,
             cache_dir=_daily_history_cache_dir(config),
@@ -242,6 +252,7 @@ def evaluate_saved_runs(
     current_snapshot: pd.DataFrame | None = None,
     limit: int = 20,
     strategy: str | None = None,
+    market: str = "cn",
     cost_bps: float | None = None,
     follow_through_pct: float | None = None,
     failed_breakout_pct: float | None = None,
@@ -249,7 +260,13 @@ def evaluate_saved_runs(
     price_path_lookback_days: int | None = None,
     failure_sample_limit: int = 5,
 ) -> dict[str, object]:
-    """Evaluate multiple saved runs with one current snapshot and aggregate stats."""
+    """Evaluate multiple saved runs with one current snapshot and aggregate stats.
+
+    A batch evaluates runs from a single market at a time: all runs share one
+    freshly-fetched snapshot, and a CN snapshot can't resolve US tickers (or
+    vice versa), so mixed-market batches would silently mark every pick from
+    the other market "missing". Runs are filtered to `market` accordingly.
+    """
     if config is None:
         config = Config.from_env()
     if current_snapshot is None:
@@ -257,6 +274,7 @@ def evaluate_saved_runs(
             config.snapshot_source_priority,
             fallback_snapshot_path=config.fallback_snapshot_path,
             fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
+            market=market,
         )
     if cost_bps is None:
         cost_bps = config.evaluation_cost_bps
@@ -273,6 +291,7 @@ def evaluate_saved_runs(
         data_dir=config.data_dir,
         limit=max(int(limit), 1),
         strategy=strategy,
+        market=market,
     )
 
     evaluations: list[EvaluationResult] = []
@@ -374,6 +393,7 @@ def evaluate_saved_runs_by_windows(
     current_snapshot: pd.DataFrame | None = None,
     limit: int = 20,
     strategy: str | None = None,
+    market: str = "cn",
     cost_bps: float | None = None,
     follow_through_pct: float | None = None,
     failed_breakout_pct: float | None = None,
@@ -395,6 +415,7 @@ def evaluate_saved_runs_by_windows(
                 current_snapshot=current_snapshot,
                 limit=limit,
                 strategy=strategy,
+                market=market,
                 cost_bps=cost_bps,
                 follow_through_pct=follow_through_pct,
                 failed_breakout_pct=failed_breakout_pct,
