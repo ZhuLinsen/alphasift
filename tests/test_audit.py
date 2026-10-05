@@ -6,9 +6,9 @@ from alphasift.audit import audit_project
 def test_audit_reports_profile_coverage_for_builtin_strategies():
     result = audit_project(Path("strategies"))
 
-    assert result["strategy_count"] == 10
-    assert result["profile_coverage"]["scoring_profile"]["configured"] == 10
-    assert result["profile_coverage"]["risk_profile"]["configured"] == 10
+    assert result["strategy_count"] == 11
+    assert result["profile_coverage"]["scoring_profile"]["configured"] == 11
+    assert result["profile_coverage"]["risk_profile"]["configured"] == 11
     assert result["profile_coverage"]["portfolio_profile"]["configured"] == 10
     assert result["profile_coverage"]["scorecard_profile"]["configured"] == 10
     assert result["project_gaps"]

@@ -204,6 +204,7 @@ def main():
     ebp = sub.add_parser("evaluate-batch", help="批量评估最近保存的选股结果并按策略聚合")
     ebp.add_argument("--limit", type=int, default=20, help="最多评估最近 N 个 run")
     ebp.add_argument("--strategy", default=None, help="只评估指定策略")
+    ebp.add_argument("--market", default="cn", help="只评估指定市场的 run（cn / us），批量共用一个快照，市场必须一致")
     ebp.add_argument("--output", default=None, help="额外写出批量评估 JSON 到指定路径")
     ebp.add_argument("--json", action="store_true", help="以 JSON 输出")
     ebp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
@@ -225,6 +226,7 @@ def main():
     esp = sub.add_parser("evaluate-strategies", help="生成策略级评估 summary")
     esp.add_argument("--limit", type=int, default=20, help="最多评估最近 N 个 run")
     esp.add_argument("--strategy", default=None, help="只评估指定策略")
+    esp.add_argument("--market", default="cn", help="只评估指定市场的 run（cn / us），批量共用一个快照，市场必须一致")
     esp.add_argument("--output", default=None, help="额外写出策略评估 JSON 到指定路径")
     esp.add_argument("--json", action="store_true", help="以 JSON 输出")
     esp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
@@ -488,7 +490,6 @@ def main():
             failed_breakout_pct=args.failed_breakout_pct,
             with_price_path=args.with_price_path or None,
             price_path_lookback_days=args.price_path_lookback_days,
-            failure_sample_limit=args.failure_samples,
         )
         if args.save:
             save_evaluation_result(result, data_dir=config.data_dir)
@@ -507,6 +508,7 @@ def main():
             config=config,
             limit=args.limit,
             strategy=args.strategy,
+            market=args.market,
             cost_bps=args.cost_bps,
             follow_through_pct=args.follow_through_pct,
             failed_breakout_pct=args.failed_breakout_pct,
@@ -551,6 +553,7 @@ def main():
                 config=config,
                 limit=args.limit,
                 strategy=args.strategy,
+                market=args.market,
                 cost_bps=args.cost_bps,
                 follow_through_pct=args.follow_through_pct,
                 failed_breakout_pct=args.failed_breakout_pct,
@@ -561,6 +564,7 @@ def main():
                 config=config,
                 limit=args.limit,
                 strategy=args.strategy,
+                market=args.market,
                 cost_bps=args.cost_bps,
                 follow_through_pct=args.follow_through_pct,
                 failed_breakout_pct=args.failed_breakout_pct,

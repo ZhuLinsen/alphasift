@@ -26,6 +26,7 @@ def test_disabled_strategies_are_not_listed():
     assert "oversold_reversal" in strategies
     assert "quality_value" in strategies
     assert "shrink_pullback" in strategies
+    assert "us_momentum_quality" in strategies
     assert "volume_breakout" in strategies
 
 
@@ -42,6 +43,7 @@ def test_list_strategies_returns_enabled_strategies_only():
         "oversold_reversal",
         "quality_value",
         "shrink_pullback",
+        "us_momentum_quality",
         "volume_breakout",
     ]
 

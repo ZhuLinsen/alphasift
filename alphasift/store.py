@@ -79,6 +79,7 @@ def list_saved_runs(
     data_dir: Path,
     limit: int = 20,
     strategy: str | None = None,
+    market: str | None = None,
 ) -> list[dict[str, object]]:
     runs_dir = data_dir / "runs"
     if not runs_dir.is_dir():
@@ -92,6 +93,8 @@ def list_saved_runs(
         if metadata is None:
             continue
         if strategy and metadata.get("strategy") != strategy:
+            continue
+        if market and metadata.get("market") != market:
             continue
         items.append(metadata)
         if len(items) >= limit:

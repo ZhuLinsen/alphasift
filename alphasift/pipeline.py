@@ -66,7 +66,8 @@ def screen(
 
     Args:
         strategy: Strategy name (matches a YAML file in strategies/).
-        market: Market scope, currently only "cn".
+        market: Market scope, "cn" or "us". A strategy must declare the
+            market in its own market_scope to be runnable against it.
         max_output: Override max output count from strategy.
         use_llm: Whether to use LLM for L2 ranking.
         llm_context: Optional market/news/theme context supplied to the LLM ranker.
@@ -206,12 +207,19 @@ def screen(
         provisional = _sort_screened_candidates(compute_screen_scores(df, screening), screening)
         enrich_count = min(daily_limit, len(provisional))
         daily_candidates = provisional.head(enrich_count)
+        # config.daily_source's "auto" chain (tushare/tencent/sina/akshare/baostock)
+        # is CN-only and cannot resolve US tickers, so default US runs to the
+        # yfinance adapter unless the caller explicitly configured a source.
+        effective_daily_source = (
+            "yfinance" if market == "us" and config.daily_source in ("auto", "")
+            else config.daily_source
+        )
         try:
             enriched = enrich_daily_features(
                 daily_candidates,
                 max_rows=enrich_count,
                 lookback_days=config.daily_lookback_days,
-                source=config.daily_source,
+                source=effective_daily_source,
                 fetch_retries=config.daily_fetch_retries,
                 max_workers=config.daily_fetch_max_workers,
             )
