@@ -79,8 +79,11 @@ def fetch_yahoo_snapshot(
     rows: dict[str, dict[str, object]] = {}
     errors: list[str] = []
     for sector in YAHOO_SECTORS:
+        # Each sector is paged by market cap, up to ``limit`` rows of its own.
+        # The global top-``limit`` is then cut after all sectors are in, so a
+        # large early sector cannot crowd out Technology or Utilities.
         offset = 0
-        while len(rows) < limit:
+        while offset < limit:
             if budget is not None and time.monotonic() - started > budget:
                 raise TimeoutError(
                     f"yahoo_screener exceeded {budget:.0f}s budget for market {spec.id} "
@@ -118,6 +121,7 @@ def fetch_yahoo_snapshot(
     df.attrs["market"] = spec.id
     df.attrs["currency"] = spec.currency
     df.attrs["source_errors"] = [f"yahoo_screener sector {item}" for item in errors]
+    df.attrs["partial"] = bool(errors)
     logger.info("Yahoo screener snapshot for %s: %d rows", spec.id, len(df))
     return df
 
@@ -125,14 +129,14 @@ def fetch_yahoo_snapshot(
 def _sector_query(spec: MarketSpec, sector: str, floor: float):
     from yfinance import EquityQuery
 
-    return EquityQuery(
-        "and",
-        [
-            EquityQuery("eq", ["region", spec.yahoo_region]),
-            EquityQuery("eq", ["sector", sector]),
-            EquityQuery("gt", ["intradaymarketcap", floor]),
-        ],
-    )
+    clauses = [
+        EquityQuery("eq", ["region", spec.yahoo_region]),
+        EquityQuery("eq", ["sector", sector]),
+        EquityQuery("gt", ["intradaymarketcap", floor]),
+    ]
+    if spec.yahoo_exchanges:
+        clauses.append(EquityQuery("is-in", ["exchange", *spec.yahoo_exchanges]))
+    return EquityQuery("and", clauses)
 
 
 def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
@@ -202,3 +206,37 @@ def _num(value: object) -> float | None:
 def _int_env(name: str, default: int) -> int:
     raw = os.getenv(name, "").strip()
     return max(1, int(raw)) if raw else default
+
+
+def fetch_yahoo_quotes(symbols: list[str], *, download=None) -> pd.DataFrame:
+    """Latest close for specific Yahoo symbols, outside the screener universe.
+
+    Evaluation needs current prices for saved picks even after they drop
+    below the market's universe floor; the screener would no longer return
+    them and they would be counted as missing instead of as losses.
+    """
+    symbols = [str(item).strip().upper() for item in symbols if str(item).strip()]
+    if not symbols:
+        return pd.DataFrame(columns=["code", "price"])
+    if download is None:
+        import yfinance as yf
+
+        download = yf.download
+    data = download(
+        symbols,
+        period="5d",
+        auto_adjust=False,
+        group_by="ticker",
+        progress=False,
+        threads=True,
+    )
+    rows = []
+    for symbol in symbols:
+        try:
+            frame = data[symbol] if isinstance(data.columns, pd.MultiIndex) else data
+            close = pd.to_numeric(frame["Close"], errors="coerce").dropna()
+        except (KeyError, TypeError):
+            continue
+        if not close.empty and float(close.iloc[-1]) > 0:
+            rows.append({"code": symbol, "price": float(close.iloc[-1])})
+    return pd.DataFrame(rows, columns=["code", "price"])

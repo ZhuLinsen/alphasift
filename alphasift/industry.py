@@ -12,10 +12,17 @@ from pathlib import Path
 import pandas as pd
 
 from alphasift.normalize import (
-    normalize_code as _normalize_code,
+    normalize_code,
     safe_float as _safe_float,
     safe_text as _safe_text,
 )
+
+
+def _normalize_code(value: object) -> str:
+    # Structured code fields only; keeps 0700.HK / AAPL from collapsing into
+    # A-share-looking digits (000700) and picking up the wrong mapping.
+    return normalize_code(value, allow_ticker=True)
+
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _AKSHARE_BOARD_CACHE_SCHEMA = "v1"

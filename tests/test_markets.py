@@ -169,3 +169,162 @@ def test_yahoo_rows_drop_preferred_and_clear_adr_pb():
         "Financial Services",
     )
     assert h_share["pb_ratio"] == 0.59
+
+
+def test_industry_map_does_not_cross_match_foreign_codes(tmp_path):
+    from alphasift.industry import enrich_industry_concepts
+
+    mapping = tmp_path / "map.csv"
+    mapping.write_text("code,industry\n000700,A股行业\n0700.HK,Internet\n", encoding="utf-8")
+    df = pd.DataFrame({"code": ["0700.HK", "7203.T", "000700"], "name": ["Tencent", "Toyota", "某A股"]})
+
+    result, _ = enrich_industry_concepts(df, map_files=[mapping])
+
+    assert result["industry"].tolist() == ["Internet", "", "A股行业"]
+
+
+def test_llm_candidate_identity_keeps_non_cn_tickers():
+    from alphasift.context import summarize_candidate_identity
+
+    df = pd.DataFrame({"code": ["AAPL", "0700.HK", "600519"], "name": ["Apple", "Tencent", "贵州茅台"]})
+
+    text = summarize_candidate_identity(df)
+
+    assert "AAPL" in text and "0700.HK" in text and "600519" in text
+
+
+def test_us_query_restricts_to_listed_exchanges():
+    from alphasift.snapshot_yahoo import _sector_query
+
+    us = _sector_query(get_market("us"), "Energy", 1e9)
+    hk = _sector_query(get_market("hk"), "Energy", 8e9)
+
+    exchange_ops = [op for op in us.operands if op.operands[0] == "exchange"]
+    assert len(exchange_ops) == 1
+    assert "PNK" not in exchange_ops[0].operands and "NYQ" in exchange_ops[0].operands
+    assert not [op for op in hk.operands if op.operands[0] == "exchange"]
+    assert get_market("hk").universe_min_market_cap == 8e9
+
+
+def test_st_diagnostics_match_filter_for_non_cjk_names():
+    from alphasift.filter import hard_filter_rejection_summary, hard_filter_waterfall
+
+    df = pd.DataFrame(
+        {"code": ["COST", "STE", "000002"], "name": ["COST", "STERIS plc", "*ST金泰"], "price": [1.0] * 3}
+    )
+    filters = HardFilterConfig(exclude_st=True)
+
+    assert len(apply_hard_filters(df, filters)) == 2
+    assert hard_filter_rejection_summary(df, filters) == ["exclude_st removed 1 (3->2)"]
+    step = hard_filter_waterfall(df, filters)[0]
+    assert (step["filter"], step["removed"]) == ("exclude_st", 1)
+
+
+def test_us_ticker_env_reaches_legacy_adapter_as_env_universe(monkeypatch):
+    import alphasift.snapshot_us as snapshot_us
+
+    seen = {}
+
+    def fake_fetch(tickers=None, *, universe_source="auto", max_workers=8):
+        seen["universe"] = universe_source
+        return pd.DataFrame([{"code": "AAPL", "name": "Apple", "price": 200.0}])
+
+    monkeypatch.setenv("ALPHASIFT_US_TICKERS", "AAPL")
+    monkeypatch.setattr(snapshot_us, "fetch_us_snapshot", fake_fetch)
+
+    df = snapshot.fetch_snapshot_with_fallback([], market="us", fallback_snapshot_path=None)
+
+    assert seen["universe"] == "env"
+    assert df.attrs["snapshot_source"] == "yfinance_tickers"
+
+
+def test_row_cap_keeps_largest_names_across_all_sectors():
+    def fake_screen(query, size, offset, sortField, sortAsc):
+        sector = [op for op in query.operands if op.operands[0] == "sector"][0].operands[1]
+        if sector == "Basic Materials":
+            quotes = [_quote(f"{1000 + i}.HK", 1e10 - i) for i in range(offset + 1, offset + 4)]
+            return {"total": 1000, "quotes": quotes}
+        if sector == "Utilities":
+            return {"total": 1, "quotes": [_quote("0002.HK", 9e11)]}
+        return {"total": 0, "quotes": []}
+
+    df = fetch_yahoo_snapshot("hk", screen=fake_screen, max_rows=3)
+
+    assert df["code"].tolist()[0] == "0002.HK"
+    assert len(df) == 3
+
+
+def test_partial_snapshot_does_not_replace_last_good_cache(monkeypatch, tmp_path):
+    full = pd.DataFrame([{"code": c, "name": c, "price": 1.0} for c in ("0005.HK", "0700.HK")])
+    monkeypatch.setattr(snapshot, "fetch_yahoo_snapshot", lambda market: full.copy())
+    cn_cache = tmp_path / "snapshot.last_good.json"
+    snapshot.fetch_snapshot_with_fallback([], market="hk", fallback_snapshot_path=cn_cache)
+    hk_cache = tmp_path / "snapshot.hk.last_good.json"
+    before = hk_cache.read_text(encoding="utf-8")
+
+    partial = full.head(1).copy()
+    partial.attrs.update(partial=True, source_errors=["yahoo_screener sector Technology: 429"])
+    monkeypatch.setattr(snapshot, "fetch_yahoo_snapshot", lambda market: partial.copy())
+    live = snapshot.fetch_snapshot_with_fallback([], market="hk", fallback_snapshot_path=cn_cache)
+
+    assert live["code"].tolist() == ["0005.HK"]
+    assert "yahoo_screener sector Technology: 429" in live.attrs["source_errors"]
+    assert hk_cache.read_text(encoding="utf-8") == before
+
+
+def test_fetch_yahoo_quotes_reads_last_close():
+    from alphasift.snapshot_yahoo import fetch_yahoo_quotes
+
+    index = pd.date_range("2026-11-02", periods=2)
+    data = pd.concat(
+        {
+            "0700.HK": pd.DataFrame({"Close": [400.0, 410.0]}, index=index),
+            "9999.HK": pd.DataFrame({"Close": [float("nan")] * 2}, index=index),
+        },
+        axis=1,
+    )
+
+    quotes = fetch_yahoo_quotes(["0700.hk", "9999.HK"], download=lambda *a, **k: data)
+
+    assert quotes.to_dict("records") == [{"code": "0700.HK", "price": 410.0}]
+
+
+def test_evaluate_prices_picks_that_left_the_screener_universe(monkeypatch, tmp_path):
+    import alphasift.evaluate as evaluate
+    from alphasift.config import Config
+    from alphasift.models import Pick, ScreenResult
+    from alphasift.store import save_screen_result
+
+    save_screen_result(
+        ScreenResult(
+            strategy="global_value",
+            market="hk",
+            run_id="hk1",
+            picks=[
+                Pick(rank=1, code="0005.HK", name="HSBC", final_score=80, screen_score=80, price=100),
+                Pick(rank=2, code="1234.HK", name="Small", final_score=70, screen_score=70, price=10),
+            ],
+        ),
+        data_dir=tmp_path,
+    )
+    universe = pd.DataFrame([{"code": "0005.HK", "price": 110.0}])
+    requested = []
+
+    def fake_quotes(symbols):
+        requested.append(list(symbols))
+        return pd.DataFrame([{"code": "1234.HK", "price": 8.0}])
+
+    monkeypatch.setattr(evaluate, "fetch_snapshot_with_fallback", lambda *a, **k: universe.copy())
+    monkeypatch.setattr(evaluate, "fetch_yahoo_quotes", fake_quotes)
+
+    result = evaluate.evaluate_saved_runs(
+        config=Config(llm_api_key="", data_dir=tmp_path),
+        market="HK",
+        cost_bps=0,
+        with_price_path=False,
+    )
+
+    assert requested == [["1234.HK"]]
+    assert result["summary"]["run_count"] == 1
+    # 0005.HK +10%, 1234.HK -20% (no longer missing): average -5%.
+    assert result["summary"]["average_return_pct"] == -5.0

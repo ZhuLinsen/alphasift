@@ -29,6 +29,10 @@ class MarketSpec:
     # Universe floor in local currency, roughly USD 1B. It keeps the screener
     # pull small and liquid; strategies can filter further.
     universe_min_market_cap: float = 0.0
+    # Yahoo exchange codes to keep; empty means every exchange in the region.
+    # The US region is half OTC pink sheets (unsponsored foreign ordinaries
+    # like BMWKY), which crowd out listed names under the row cap.
+    yahoo_exchanges: tuple[str, ...] = ()
     # A-share conventions (ST names, limit-up boards, EastMoney industries).
     cn_rules: bool = False
 
@@ -37,7 +41,12 @@ MARKETS: dict[str, MarketSpec] = {
     spec.id: spec
     for spec in (
         MarketSpec("cn", "China A-shares", "CNY", "Asia/Shanghai", cn_rules=True),
-        MarketSpec("us", "United States", "USD", "America/New_York", "us", (), 1e9),
+        MarketSpec(
+            "us", "United States", "USD", "America/New_York", "us", (),
+            # Nasdaq GS/GM/CM, NYSE, NYSE American, NYSE Arca, Cboe BZX.
+            yahoo_exchanges=("NMS", "NGM", "NCM", "NYQ", "ASE", "PCX", "BTS"),
+            universe_min_market_cap=1e9,
+        ),
         MarketSpec("hk", "Hong Kong", "HKD", "Asia/Hong_Kong", "hk", ("HK",), 8e9),
         MarketSpec("jp", "Japan", "JPY", "Asia/Tokyo", "jp", ("T",), 1.5e11),
         MarketSpec("kr", "South Korea", "KRW", "Asia/Seoul", "kr", ("KS", "KQ"), 1.4e12),

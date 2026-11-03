@@ -153,6 +153,12 @@ def screen(
         else config.industry_provider
     )
     effective_industry_provider = str(effective_industry_provider or "none").strip().lower()
+    if market != "cn" and effective_industry_provider not in {"", "none", "off", "false"}:
+        # Board providers (akshare / eastmoney) only know A-share codes.
+        degradation.append(
+            f"Industry provider {effective_industry_provider} skipped: A-share only (market={market})"
+        )
+        effective_industry_provider = "none"
     if effective_industry_map_files or effective_industry_provider not in {"", "none", "off", "false"}:
         snapshot_df, industry_notes = enrich_industry_concepts(
             snapshot_df,

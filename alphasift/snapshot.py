@@ -204,7 +204,12 @@ def _fetch_yahoo_market_snapshot(
         df.attrs["fallback_used"] = False
         df.attrs["stale"] = False
         df.attrs["stale_age_hours"] = None
-        _write_last_good_snapshot(fallback_snapshot_path, df)
+        if df.attrs.get("partial"):
+            # Some sectors failed: use the live rows, but keep the complete
+            # last-good cache instead of replacing it with a partial universe.
+            logger.warning("Snapshot for market %s is partial; last-good cache kept", spec.id)
+        else:
+            _write_last_good_snapshot(fallback_snapshot_path, df)
         return df
 
     cached = _read_last_good_snapshot(
@@ -223,7 +228,10 @@ def _fetch_yahoo_market_snapshot(
 def _fetch_us_legacy_snapshot() -> pd.DataFrame:
     from alphasift.snapshot_us import fetch_us_snapshot
 
-    df = fetch_us_snapshot()
+    # An explicit ALPHASIFT_US_TICKERS list wins; "auto" would try the S&P 500
+    # scrape first and ignore it whenever Wikipedia is reachable.
+    universe = "env" if os.getenv("ALPHASIFT_US_TICKERS", "").strip() else "auto"
+    df = fetch_us_snapshot(universe_source=universe)
     df.attrs["snapshot_source"] = "yfinance_tickers"
     return df
 
