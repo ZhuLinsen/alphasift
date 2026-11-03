@@ -12,6 +12,7 @@ from alphasift.candidate_context import collect_candidate_context
 from alphasift.context import build_llm_context
 from alphasift.daily import enrich_daily_features
 from alphasift.dsa_provider import apply_dsa_provider_context
+from alphasift.markets import get_market
 from alphasift.filter import (
     apply_hard_filters,
     hard_filter_rejection_summary,
@@ -70,7 +71,7 @@ def screen(
 
     Args:
         strategy: Strategy name (matches a YAML file in strategies/).
-        market: Market scope, "cn" or "us". A strategy must declare the
+        market: Market id from ``alphasift.markets`` (cn, us, hk, jp, kr, tw, in). A strategy must declare the
             market in its own market_scope to be runnable against it.
         max_output: Override max output count from strategy.
         use_llm: Whether to use LLM for L2 ranking.
@@ -99,8 +100,7 @@ def screen(
     if config is None:
         config = Config.from_env()
 
-    if market not in ("cn", "us"):
-        raise ValueError(f"Unsupported market: {market!r} (supported: cn, us)")
+    market = get_market(market).id
 
     run_id = uuid.uuid4().hex[:12]
     degradation: list[str] = []
@@ -232,10 +232,10 @@ def screen(
         enrich_count = min(daily_limit, len(provisional))
         daily_candidates = provisional.head(enrich_count)
         # config.daily_source's "auto" chain (tushare/tencent/sina/akshare/baostock)
-        # is CN-only and cannot resolve US tickers, so default US runs to the
-        # yfinance adapter unless the caller explicitly configured a source.
+        # is CN-only and cannot resolve Yahoo symbols, so default non-CN runs to
+        # the yfinance adapter unless the caller explicitly configured a source.
         effective_daily_source = (
-            "yfinance" if market == "us" and config.daily_source in ("auto", "")
+            "yfinance" if market != "cn" and config.daily_source in ("auto", "")
             else config.daily_source
         )
         try:
@@ -360,7 +360,12 @@ def screen(
             if collect_llm_candidate_context is None
             else collect_llm_candidate_context
         )
-        if should_collect_candidate_context:
+        if should_collect_candidate_context and market != "cn":
+            # News/announcement/fund-flow providers are A-share (EastMoney) only.
+            degradation.append(
+                f"Candidate context skipped: providers support market cn only (market={market})"
+            )
+        elif should_collect_candidate_context:
             candidate_context_rows, candidate_context_errors = collect_candidate_context(
                 df_top,
                 max_rows=(

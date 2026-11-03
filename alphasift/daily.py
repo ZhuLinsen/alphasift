@@ -15,6 +15,7 @@ import time
 import pandas as pd
 import requests
 
+from alphasift.markets import has_foreign_yahoo_suffix
 from alphasift.source_guard import call_with_timeout, parse_source_timeout_seconds
 
 _DAILY_FEATURE_DEFAULTS = {
@@ -303,6 +304,8 @@ def _normalize_daily_code(value: object) -> str:
         text = text[:-2]
     if text.isdigit():
         return text.zfill(6)[-6:]
+    if has_foreign_yahoo_suffix(text):
+        return text.upper()
     digits = "".join(ch for ch in text if ch.isdigit())
     return digits.zfill(6)[-6:] if digits else text
 

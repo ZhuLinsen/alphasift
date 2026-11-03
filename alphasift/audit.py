@@ -166,8 +166,8 @@ def _known_project_gaps() -> list[dict[str, str]]:
         {
             "severity": "gap",
             "area": "market_scope",
-            "message": "当前主链只支持 A 股，尚未抽象港股/美股字段映射和交易日历。",
-            "recommendation": "在字段标准化稳定后再扩展多市场，不要先把 L1 规则泛化过度。",
+            "message": "A 股之外的美股/港股/日本/韩国/台湾/印度通过 Yahoo 筛选器接入，但还没有按交易所日历计算 T+N、没有跨币种的金额阈值，韩国缺少 PE/PB。",
+            "recommendation": "引入 exchange_calendars 计算各市场交易日，为策略增加按市场覆盖的金额阈值，再考虑台湾交易所官方 OpenAPI 等更完整的数据源。",
         },
         {
             "severity": "gap",

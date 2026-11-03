@@ -6,6 +6,12 @@ from __future__ import annotations
 import math
 import re
 
+def _has_foreign_yahoo_suffix(text: str) -> bool:
+    from alphasift.markets import has_foreign_yahoo_suffix
+
+    return has_foreign_yahoo_suffix(text)
+
+
 _NULL_TEXT_VALUES = {"", "nan", "none", "<na>", "na", "null"}
 
 # US-style ticker: ASCII letters/digits with optional dot/dash separators,
@@ -44,6 +50,9 @@ def normalize_code(value: object, *, width: int = 6, allow_ticker: bool = False)
         text = text[:-2]
     if text.isdigit():
         return text.zfill(width)[-width:]
+    if allow_ticker and _has_foreign_yahoo_suffix(text):
+        # 005930.KS / 0700.HK / 7203.T: the suffix is the market, keep it.
+        return text.upper()
     match = re.search(r"(?<!\d)(\d{6})(?!\d)", text)
     if match:
         return match.group(1)

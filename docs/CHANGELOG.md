@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- 多市场支持：新增市场注册表 `alphasift/markets.py`，`--market` 支持 `cn / us / hk / jp / kr / tw / in`。非 A 股通过 Yahoo 筛选器按 11 个板块拉取全市场快照（带板块、PE/PB、市值、币种），海外服务器和 CI 上可用；美股默认从 S&P 500 + 逐只请求改为筛选器，`ALPHASIFT_US_TICKERS` 仍走原逐只路径
+- 新增 `global_value` 多市场低估值策略（美/港/日/台/印），不使用与币种相关的绝对金额阈值，按板块硬性分散
+- 修复非 A 股代码被截断：`005930.KS` 不再被归一化为 `005930`，日 K 模块不再把 `0700.HK` 变成 `000700`
+- `exclude_st` 只作用于含中文的名称，美股 COST / STERIS 等不再被误判为 ST；候选级新闻/公告/资金流上下文仅在 A 股启用
+- 各市场的 last-good 快照缓存分开存放（`snapshot.<market>.last_good.json`）
 - `sina`/`em_datacenter` 分页拉取现在受 `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC`（默认 60 秒）总时长约束，每页读超时随剩余预算收缩、连接超时 5 秒；海外服务器首次运行从约 4 分钟降到约 70 秒
 - 新增 `portfolio_profile.mode: hard_cap`：保证 Top N 中同一行业桶不超过 `max_same_bucket`，候选不足时才回补；`dual_low` 升级到 1.3 并启用硬上限，新增"基建"桶。实测前 5 名从 3 只银行 + 2 只建筑变为 2 只银行 + 2 只基建 + 1 只航运
 - 修复 `--no-llm` 等场景下组合分散度控制静默失效：`em_datacenter` 快照现在带回行业字段；其他数据源缺行业时自动用东财行业映射补全（`INDUSTRY_AUTO_BACKFILL`，缓存 7 天）；完全没有行业标签时会在 `degradation` 中明确提示。实测 `dual_low` 前 5 名从 5 只银行变为 3 只银行 + 2 只建筑股

@@ -73,9 +73,9 @@ def evaluate_saved_run(
     effective_price_paths = _normalize_price_path_mapping(price_paths)
     if with_price_path:
         # Same market-aware default as pipeline.py: config.daily_source's
-        # "auto" chain is CN-only and cannot resolve US tickers.
+        # "auto" chain is CN-only and cannot resolve Yahoo symbols.
         effective_daily_source = (
-            "yfinance" if run.market == "us" and config.daily_source in ("auto", "")
+            "yfinance" if run.market != "cn" and config.daily_source in ("auto", "")
             else config.daily_source
         )
         fetched_paths, path_errors = _fetch_price_paths(

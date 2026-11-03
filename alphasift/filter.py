@@ -55,7 +55,11 @@ def apply_hard_filters(df: pd.DataFrame, filters: HardFilterConfig) -> pd.DataFr
             raise SnapshotFieldMissingError(
                 "Missing required snapshot column for exclude_st filter: name"
             )
-        mask &= ~result[name_col].str.contains(r"ST|退", na=False)
+        # ST / 退市 tags are an A-share naming convention. Only apply them to
+        # names with CJK characters so tickers like COST or STERIS survive.
+        names = result[name_col].astype("string")
+        has_cjk = names.str.contains(r"[\u4e00-\u9fff]", na=False)
+        mask &= ~(has_cjk & names.str.contains(r"ST|退", na=False))
 
     # Numeric filters — each is optional
     mask = _filter_min(result, mask, ["amount", "成交额"], filters.amount_min)
