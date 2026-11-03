@@ -52,7 +52,8 @@ def test_dual_low_strategy_uses_dynamic_snapshot_signals():
     strat = load_strategy(Path("strategies/dual_low.yaml"))
     screening = strat.screening
 
-    assert strat.version == "1.2"
+    assert strat.version == "1.3"
+    assert screening.portfolio_profile["mode"] == "hard_cap"
     assert "dynamic_signal" in strat.tags
     assert screening.hard_filters.pe_ttm_min == 0
     assert screening.hard_filters.pb_min == 0

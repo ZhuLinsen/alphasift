@@ -138,7 +138,8 @@ _RISK_PROFILE_KEYS = {
     "fallback_daily_errors_points",
     "fetch_failed_daily_points",
 }
-_PORTFOLIO_PROFILE_KEYS = {"max_same_bucket", "concentration_penalty", "buckets"}
+_PORTFOLIO_PROFILE_KEYS = {"mode", "max_same_bucket", "concentration_penalty", "buckets"}
+_PORTFOLIO_MODES = {"soft", "hard_cap"}
 _SCORECARD_PROFILE_KEYS = {
     "value_quality_value_min",
     "value_quality_stability_min",
@@ -219,9 +220,7 @@ def load_strategy(filepath: Path) -> Strategy:
         risk_profile=_optional_mapping(
             screening_data, "risk_profile", filepath, allowed_keys=_RISK_PROFILE_KEYS
         ),
-        portfolio_profile=_optional_mapping(
-            screening_data, "portfolio_profile", filepath, allowed_keys=_PORTFOLIO_PROFILE_KEYS
-        ),
+        portfolio_profile=_portfolio_profile(screening_data, filepath),
         scorecard_profile=_optional_mapping(
             screening_data, "scorecard_profile", filepath, allowed_keys=_SCORECARD_PROFILE_KEYS
         ),
@@ -1037,6 +1036,19 @@ def _raise_unknown_keys(data: dict, allowed_keys: set[str], context: str) -> Non
         raise ValueError(
             f"Unknown keys in {context}: {', '.join(unknown_keys)}"
         )
+
+
+def _portfolio_profile(screening_data: dict, filepath: Path) -> dict:
+    profile = _optional_mapping(
+        screening_data, "portfolio_profile", filepath, allowed_keys=_PORTFOLIO_PROFILE_KEYS
+    )
+    mode = str(profile.get("mode", "soft")).strip().lower()
+    if mode not in _PORTFOLIO_MODES:
+        raise ValueError(
+            f"Invalid portfolio_profile.mode in {filepath.name}: {profile.get('mode')!r} "
+            f"(expected one of: {', '.join(sorted(_PORTFOLIO_MODES))})"
+        )
+    return profile
 
 
 def _optional_mapping(

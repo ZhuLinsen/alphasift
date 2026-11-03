@@ -2,7 +2,7 @@
 name: dual_low
 display_name: 双低选股
 description: 偏稳健的低估值筛选策略，叠加当日活跃度与形态确认，避免长期只命中静态低估值票
-version: "1.2"
+version: "1.3"
 category: value
 tags: [value, defensive, low_valuation, dynamic_signal]
 style:
@@ -55,12 +55,14 @@ screening:
     high_turnover_rate: 8.0
     low_llm_confidence: 0.45
   portfolio_profile:
+    mode: hard_cap
     max_same_bucket: 2
     concentration_penalty: 3.0
     buckets:
       金融: [券商, 银行, 保险]
       地产链: [地产, 房地产, 建材, 家居, 物业]
       周期: [钢铁, 煤炭, 有色, 化工]
+      基建: [建筑, 基础建设, 基建, 工程建设]
   scorecard_profile:
     value_quality_value_min: 72.0
     value_quality_stability_min: 65.0

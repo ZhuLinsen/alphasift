@@ -93,14 +93,24 @@ def apply_portfolio_overlay(
     concentration_penalty: float = 4.0,
     profile: dict[str, object] | None = None,
 ) -> tuple[list[Pick], list[str]]:
-    """Penalize repeated LLM sectors so Top N is not only one crowded trade."""
+    """Penalize repeated sectors so Top N is not only one crowded trade.
+
+    ``portfolio_profile.mode`` selects how strict this is:
+
+    - ``soft`` (default): bounded score penalties; a large score gap can still
+      leave several picks from one bucket at the top.
+    - ``hard_cap``: after penalties, picks beyond ``max_same_bucket`` per bucket
+      move behind every within-cap pick, so they only reach Top N when there
+      are not enough alternatives. Unlabelled picks are not capped.
+    """
     if not picks:
         return picks, []
 
     portfolio_profile = profile or {}
     max_same_sector = max(int(portfolio_profile.get("max_same_bucket", max_same_sector)), 1)
     penalty_step = max(float(portfolio_profile.get("concentration_penalty", concentration_penalty)), 0.0)
-    if penalty_step == 0:
+    hard_cap = str(portfolio_profile.get("mode", "soft")).strip().lower() == "hard_cap"
+    if penalty_step == 0 and not hard_cap:
         return picks, []
 
     ordered = sorted(picks, key=lambda item: item.final_score, reverse=True)
@@ -128,8 +138,6 @@ def apply_portfolio_overlay(
         bucket_penalties.setdefault(bucket, []).append((pick.code, sector, penalty))
 
     ordered.sort(key=lambda item: item.final_score, reverse=True)
-    for i, pick in enumerate(ordered, start=1):
-        pick.rank = i
     notes = [
         (
             f"Portfolio concentration bucket={bucket}: "
@@ -138,7 +146,47 @@ def apply_portfolio_overlay(
         )
         for bucket, items in bucket_penalties.items()
     ]
+    if hard_cap:
+        ordered, cap_notes = _apply_bucket_hard_cap(
+            ordered,
+            max_same_bucket=max_same_sector,
+            buckets=portfolio_profile.get("buckets"),
+        )
+        notes.extend(cap_notes)
+    for i, pick in enumerate(ordered, start=1):
+        pick.rank = i
     return ordered, notes
+
+
+def _apply_bucket_hard_cap(
+    ordered: list[Pick],
+    *,
+    max_same_bucket: int,
+    buckets: object = None,
+) -> tuple[list[Pick], list[str]]:
+    within: list[Pick] = []
+    overflow: list[Pick] = []
+    counts: dict[str, int] = {}
+    deferred: dict[str, list[str]] = {}
+    for pick in ordered:
+        sector = _canonical_sector(_pick_sector(pick))
+        if not sector:
+            within.append(pick)
+            continue
+        bucket = _portfolio_bucket(sector, pick.llm_theme, buckets=buckets)
+        counts[bucket] = counts.get(bucket, 0) + 1
+        if counts[bucket] <= max_same_bucket:
+            within.append(pick)
+            continue
+        flag = f"portfolio_sector_cap:{bucket}"
+        pick.portfolio_flags = _unique([*pick.portfolio_flags, flag])
+        overflow.append(pick)
+        deferred.setdefault(bucket, []).append(pick.code)
+    notes = [
+        f"Portfolio hard cap bucket={bucket}: max={max_same_bucket}, deferred={','.join(codes)}"
+        for bucket, codes in deferred.items()
+    ]
+    return within + overflow, notes
 
 
 def assess_pick_risk(
