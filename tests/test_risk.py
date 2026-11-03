@@ -1,5 +1,9 @@
 from alphasift.models import Pick
-from alphasift.risk import apply_portfolio_overlay, apply_risk_overlay
+from alphasift.risk import (
+    PORTFOLIO_DIVERSITY_SKIPPED_NOTE,
+    apply_portfolio_overlay,
+    apply_risk_overlay,
+)
 
 
 def test_risk_overlay_penalizes_and_flags_hot_candidates():
@@ -168,7 +172,7 @@ def test_portfolio_overlay_ignores_missing_llm_sector():
     result, notes = apply_portfolio_overlay(picks, concentration_penalty=5)
 
     assert [pick.final_score for pick in result] == [90, 88]
-    assert notes == []
+    assert notes == [PORTFOLIO_DIVERSITY_SKIPPED_NOTE]
 
 
 def test_portfolio_overlay_uses_industry_when_llm_sector_missing():

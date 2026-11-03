@@ -30,7 +30,11 @@ from alphasift.normalize import (
 )
 from alphasift.post_analysis import normalize_post_analyzers, run_post_analyzers
 from alphasift.ranker import rank_candidates_with_metadata
-from alphasift.risk import apply_portfolio_overlay, apply_risk_overlay
+from alphasift.risk import (
+    PORTFOLIO_DIVERSITY_SKIPPED_NOTE,
+    apply_portfolio_overlay,
+    apply_risk_overlay,
+)
 from alphasift.scorer import compute_screen_scores, factor_score_columns
 from alphasift.snapshot import fetch_snapshot_with_fallback
 from alphasift.strategy import load_all_strategies
@@ -136,6 +140,7 @@ def screen(
         fallback_snapshot_path=config.fallback_snapshot_path,
         fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
         market=market,
+        source_health_path=config.source_health_path,
     )
     effective_industry_map_files = (
         list(industry_map_files)
@@ -148,6 +153,14 @@ def screen(
         else config.industry_provider
     )
     effective_industry_provider = str(effective_industry_provider or "none").strip().lower()
+    if (
+        market == "cn"
+        and config.industry_auto_backfill
+        and not effective_industry_map_files
+        and effective_industry_provider in {"", "none", "off", "false"}
+        and _industry_coverage(snapshot_df) < _INDUSTRY_BACKFILL_MIN_COVERAGE
+    ):
+        effective_industry_provider = "eastmoney"
     if effective_industry_map_files or effective_industry_provider not in {"", "none", "off", "false"}:
         snapshot_df, industry_notes = enrich_industry_concepts(
             snapshot_df,
@@ -161,6 +174,7 @@ def screen(
     snapshot_count = len(snapshot_df)
     snapshot_source = str(snapshot_df.attrs.get("snapshot_source", ""))
     source_errors = [str(item) for item in snapshot_df.attrs.get("source_errors", [])]
+    degradation.extend(str(item) for item in snapshot_df.attrs.get("source_order_notes", []))
     degradation.extend(f"Snapshot source fallback: {item}" for item in source_errors)
     if bool(snapshot_df.attrs.get("fallback_used")):
         stale_age = snapshot_df.attrs.get("stale_age_hours")
@@ -443,6 +457,8 @@ def screen(
             concentration_penalty=config.portfolio_concentration_penalty,
             profile=screening.portfolio_profile,
         )
+        if PORTFOLIO_DIVERSITY_SKIPPED_NOTE in portfolio_concentration_notes:
+            degradation.append(PORTFOLIO_DIVERSITY_SKIPPED_NOTE)
 
     # 10. Trim to max_output
     picks = picks[:output_count]
@@ -680,3 +696,14 @@ def _format_filter_waterfall(steps: list[dict[str, object]], *, limit: int = 8) 
 
 def _safe_text(v: object) -> str:
     return safe_text(v, max_len=120)
+
+
+_INDUSTRY_BACKFILL_MIN_COVERAGE = 0.5
+
+
+def _industry_coverage(df: pd.DataFrame) -> float:
+    """Share of snapshot rows that carry a non-empty industry label."""
+    if df.empty or "industry" not in df.columns:
+        return 0.0
+    labels = df["industry"].fillna("").astype(str).str.strip()
+    return float((labels != "").mean())

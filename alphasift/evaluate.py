@@ -49,6 +49,7 @@ def evaluate_saved_run(
             config.snapshot_source_priority,
             fallback_snapshot_path=config.fallback_snapshot_path,
             fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
+            source_health_path=config.source_health_path,
             market=run.market,
         )
     if cost_bps is None:
@@ -274,6 +275,7 @@ def evaluate_saved_runs(
             config.snapshot_source_priority,
             fallback_snapshot_path=config.fallback_snapshot_path,
             fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
+            source_health_path=config.source_health_path,
             market=market,
         )
     if cost_bps is None:

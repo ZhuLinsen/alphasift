@@ -81,6 +81,11 @@ def apply_risk_overlay(
     return kept, degradation
 
 
+PORTFOLIO_DIVERSITY_SKIPPED_NOTE = (
+    "Portfolio diversity skipped: no candidate has an industry or LLM sector label"
+)
+
+
 def apply_portfolio_overlay(
     picks: list[Pick],
     *,
@@ -100,7 +105,7 @@ def apply_portfolio_overlay(
 
     ordered = sorted(picks, key=lambda item: item.final_score, reverse=True)
     if not any(_canonical_sector(_pick_sector(pick)) for pick in ordered):
-        return ordered, []
+        return ordered, [PORTFOLIO_DIVERSITY_SKIPPED_NOTE]
 
     bucket_counts: dict[str, int] = {}
     bucket_penalties: dict[str, list[tuple[str, str, float]]] = {}

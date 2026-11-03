@@ -67,18 +67,27 @@ def fetch_snapshot_with_fallback(
     fallback_snapshot_path: str | Path | None = None,
     fallback_max_age_hours: float | None = None,
     market: str = "cn",
+    source_health_path: str | Path | None = None,
 ) -> pd.DataFrame:
-    """Try live sources, optionally falling back to the last-good snapshot."""
+    """Try live sources, optionally falling back to the last-good snapshot.
+
+    When ``source_health_path`` is set, per-source outcomes are persisted there
+    so the next process tries recently healthy sources first. CLI runs are one
+    process each, so in-memory health alone never helps them.
+    """
     if market == "us":
         return _fetch_us_snapshot_with_fallback(required_columns)
 
     errors = []
     required = required_columns or []
+    persisted_health = _load_persisted_source_health(source_health_path)
+    sources, order_notes = _order_sources_by_persisted_health(sources, persisted_health)
     for source in sources:
         disabled_reason = _source_disabled_reason(source)
         if disabled_reason:
             errors.append(f"{source}: {disabled_reason}")
             continue
+        started = time.monotonic()
         try:
             df = fetch_cn_snapshot(source)
             if not df.empty:
@@ -87,22 +96,35 @@ def fetch_snapshot_with_fallback(
                     errors.append(
                         f"{source}: missing required columns {','.join(missing)}"
                     )
+                    _record_persisted_outcome(
+                        persisted_health, source, ok=False, started=started,
+                        error=f"missing required columns {','.join(missing)}",
+                    )
                     continue
                 df.attrs.setdefault("snapshot_source", source)
                 df.attrs["source_errors"] = list(errors)
+                df.attrs["source_order_notes"] = list(order_notes)
                 df.attrs["fallback_used"] = False
                 df.attrs["stale"] = False
                 df.attrs["stale_age_hours"] = None
                 _write_last_good_snapshot(fallback_snapshot_path, df)
                 _record_source_success(source, rows=len(df))
+                _record_persisted_outcome(persisted_health, source, ok=True, started=started)
+                _save_persisted_source_health(source_health_path, persisted_health)
                 logger.info("Snapshot fetched from %s: %d rows", source, len(df))
                 return df
             errors.append(f"{source}: returned empty data")
             _record_source_failure(source, "returned empty data")
+            _record_persisted_outcome(
+                persisted_health, source, ok=False, started=started, error="returned empty data",
+            )
         except Exception as e:
             errors.append(f"{source}: {e}")
             _record_source_failure(source, e)
+            _record_persisted_outcome(persisted_health, source, ok=False, started=started, error=e)
             logger.warning("Snapshot source %s failed: %s", source, e)
+
+    _save_persisted_source_health(source_health_path, persisted_health)
 
     cached = _read_last_good_snapshot(
         fallback_snapshot_path,
@@ -195,6 +217,102 @@ def _record_source_failure(source: str, error: object | None = None) -> None:
             state["last_error"] = " ".join(str(error).split())
         if failures >= _SOURCE_HEALTH_FAILURE_THRESHOLD:
             state["disabled_until"] = now + _SOURCE_HEALTH_COOLDOWN_SECONDS
+
+
+_PERSISTED_HEALTH_VERSION = 1
+_PERSISTED_FAILURE_TTL_SECONDS = 6 * 60 * 60
+
+
+def _load_persisted_source_health(path: str | Path | None) -> dict[str, dict[str, object]]:
+    if path is None:
+        return {}
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(payload, dict) or payload.get("version") != _PERSISTED_HEALTH_VERSION:
+        return {}
+    sources = payload.get("sources")
+    if not isinstance(sources, dict):
+        return {}
+    return {str(k): dict(v) for k, v in sources.items() if isinstance(v, dict)}
+
+
+def _save_persisted_source_health(
+    path: str | Path | None,
+    health: dict[str, dict[str, object]],
+) -> None:
+    if path is None:
+        return
+    target = Path(path)
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(target.suffix + ".tmp")
+        tmp.write_text(
+            json.dumps({"version": _PERSISTED_HEALTH_VERSION, "sources": health}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        tmp.replace(target)
+    except OSError as exc:
+        logger.debug("Could not persist snapshot source health to %s: %s", target, exc)
+
+
+def _record_persisted_outcome(
+    health: dict[str, dict[str, object]],
+    source: str,
+    *,
+    ok: bool,
+    started: float,
+    error: object | None = None,
+) -> None:
+    state = health.setdefault(source, {})
+    now = time.time()
+    state["last_duration_sec"] = round(time.monotonic() - started, 2)
+    if ok:
+        state["last_success_at"] = now
+        state["consecutive_failures"] = 0
+        state.pop("last_error", None)
+    else:
+        state["last_failure_at"] = now
+        state["consecutive_failures"] = int(state.get("consecutive_failures", 0) or 0) + 1
+        if error is not None:
+            state["last_error"] = " ".join(str(error).split())[:300]
+
+
+def _order_sources_by_persisted_health(
+    sources: list[str],
+    health: dict[str, dict[str, object]],
+    *,
+    now: float | None = None,
+) -> tuple[list[str], list[str]]:
+    """Move sources whose latest attempt failed recently behind the others.
+
+    Demoted sources are still tried, only later, so a recovered source comes
+    back automatically once its failure ages out of the TTL window.
+    """
+    if not health:
+        return list(sources), []
+    current = time.time() if now is None else now
+    healthy: list[str] = []
+    demoted: list[str] = []
+    for source in sources:
+        state = health.get(source) or {}
+        last_failure = float(state.get("last_failure_at", 0) or 0)
+        last_success = float(state.get("last_success_at", 0) or 0)
+        recently_failing = (
+            int(state.get("consecutive_failures", 0) or 0) > 0
+            and last_failure > last_success
+            and current - last_failure < _PERSISTED_FAILURE_TTL_SECONDS
+        )
+        (demoted if recently_failing else healthy).append(source)
+    if not demoted or not healthy:
+        return list(sources), []
+    ordered = healthy + demoted
+    note = (
+        "Snapshot source order adjusted by recent health: "
+        f"{','.join(ordered)} (recently failed: {','.join(demoted)})"
+    )
+    return ordered, [note]
 
 
 def snapshot_source_health_snapshot(
@@ -411,7 +529,9 @@ def _fetch_em_datacenter() -> pd.DataFrame:
     url = "https://data.eastmoney.com/dataapi/xuangu/list"
     all_items = []
     page = 1
-    page_size = 500
+    # 2000 rows per page keeps a full A-share pull to ~3 throttled requests.
+    # The endpoint rejects much larger pages (6000 returned a non-JSON body).
+    page_size = 2000
 
     while True:
         params = {
@@ -421,7 +541,7 @@ def _fetch_em_datacenter() -> pd.DataFrame:
             "p": str(page),
             "sty": "SECUCODE,SECURITY_CODE,SECURITY_NAME_ABBR,NEW_PRICE,"
                    "CHANGE_RATE,VOLUME_RATIO,DEAL_AMOUNT,TURNOVERRATE,"
-                   "PE9,PBNEWMRQ,TOTAL_MARKET_CAP,CIRCULATION_MARKET_CAP",
+                   "PE9,PBNEWMRQ,TOTAL_MARKET_CAP,CIRCULATION_MARKET_CAP,INDUSTRY",
             "filter": '(MARKET+in+("上交所主板","深交所主板","深交所创业板","上交所科创板","北交所"))',
             "source": "SELECT_SECURITIES",
             "client": "WEB",

@@ -149,9 +149,11 @@ $ alphasift screen dual_low --no-llm
 | `LLM_CANDIDATE_CONTEXT_CACHE_TTL_HOURS` | 否 | 候选上下文缓存有效小时数 | `24` |
 | `INDUSTRY_MAP_FILES` | 否 | 本地 code->industry/concepts/board_heat 映射 CSV/JSON/JSONL，逗号分隔 | - |
 | `INDUSTRY_PROVIDER` | 否 | 可选行业/概念/板块热度 provider，如 `akshare`；默认关闭 | `none` |
+| `INDUSTRY_AUTO_BACKFILL` | 否 | A 股快照缺少行业字段时，自动用东财行业映射补全（本地缓存 7 天），保证组合分散度控制生效 | `true` |
 | `INDUSTRY_PROVIDER_MAX_BOARDS` | 否 | provider 模式最多反查板块数 | `80` |
 | `SNAPSHOT_SOURCE_PRIORITY` | 否 | 数据源优先级（逗号分隔）；不设置时若配置了 Tushare token 会优先 `tushare` | 无 token: `sina,efinance,akshare_em,em_datacenter` |
 | `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` | 否 | last-good 快照缓存最大可接受年龄；为空/`none` 表示不限制 | - |
+| `ALPHASIFT_SOURCE_HEALTH_PATH` | 否 | 跨运行记录快照数据源成败的文件；最近 6 小时内失败过的源会排到后面再试。设为 `off` 关闭 | `$ALPHASIFT_DATA_DIR/source_health.json` |
 | `ALPHASIFT_SOURCE_CALL_TIMEOUT_SEC` | 否 | 第三方 wrapper 数据源调用的全局等待超时；`0`/`off` 表示关闭 | - |
 | `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | 否 | 快照 wrapper 源 `efinance`/`akshare_em`/`tushare` 的调用超时 | `60` |
 | `ALPHASIFT_DAILY_CALL_TIMEOUT_SEC` | 否 | 日 K wrapper 源 `akshare`/`baostock`/`tushare`/`yfinance` 的调用超时 | `20` |

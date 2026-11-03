@@ -177,8 +177,10 @@ AlphaSift is designed to reuse LiteLLM-style configuration used by `daily_stock_
 | `LLM_CANDIDATE_CONTEXT_ENABLED` | No | Fetch candidate news/announcements/fund-flow context by default | `false` |
 | `INDUSTRY_MAP_FILES` | No | Local code-to-industry/concepts/board-heat files | - |
 | `INDUSTRY_PROVIDER` | No | Optional board/industry provider such as `akshare` | `none` |
+| `INDUSTRY_AUTO_BACKFILL` | No | Backfill A-share industry labels from an EastMoney map (cached for 7 days) when the snapshot source has none, so portfolio diversity control stays active | `true` |
 | `SNAPSHOT_SOURCE_PRIORITY` | No | Snapshot source order | Depends on Tushare token |
 | `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` | No | Max acceptable age for last-good snapshot fallback; empty disables the guard | - |
+| `ALPHASIFT_SOURCE_HEALTH_PATH` | No | File that records snapshot source outcomes across runs; sources that failed in the last 6 hours are tried last. Set to `off` to disable | `$ALPHASIFT_DATA_DIR/source_health.json` |
 | `ALPHASIFT_SOURCE_CALL_TIMEOUT_SEC` | No | Global caller-side timeout for third-party wrapper data-source calls; `0`/`off` disables | - |
 | `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | No | Snapshot wrapper timeout for `efinance`/`akshare_em`/`tushare` | `60` |
 | `ALPHASIFT_DAILY_CALL_TIMEOUT_SEC` | No | Daily wrapper timeout for `akshare`/`baostock`/`tushare`/`yfinance` | `20` |
