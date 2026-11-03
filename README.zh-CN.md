@@ -155,7 +155,7 @@ $ alphasift screen dual_low --no-llm
 | `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` | 否 | last-good 快照缓存最大可接受年龄；为空/`none` 表示不限制 | - |
 | `ALPHASIFT_SOURCE_HEALTH_PATH` | 否 | 跨运行记录快照数据源成败的文件；最近 6 小时内失败过的源会排到后面再试。设为 `off` 关闭 | `$ALPHASIFT_DATA_DIR/source_health.json` |
 | `ALPHASIFT_SOURCE_CALL_TIMEOUT_SEC` | 否 | 第三方 wrapper 数据源调用的全局等待超时；`0`/`off` 表示关闭 | - |
-| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | 否 | 快照 wrapper 源 `efinance`/`akshare_em`/`tushare` 的调用超时 | `60` |
+| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | 否 | 单个快照源的时间预算：`efinance`/`akshare_em`/`tushare` 的调用超时，以及 `sina`/`em_datacenter` 分页拉取的总时长上限 | `60` |
 | `ALPHASIFT_DAILY_CALL_TIMEOUT_SEC` | 否 | 日 K wrapper 源 `akshare`/`baostock`/`tushare`/`yfinance` 的调用超时 | `20` |
 | `ALPHASIFT_EASTMONEY_MIN_INTERVAL_SEC` | 否 | 东财直连 HTTP 请求最小串行间隔 | `1.0` |
 | `ALPHASIFT_EASTMONEY_JITTER_SEC` | 否 | 每次东财直连请求额外加入的随机抖动 | `0.3` |

@@ -182,7 +182,7 @@ AlphaSift is designed to reuse LiteLLM-style configuration used by `daily_stock_
 | `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` | No | Max acceptable age for last-good snapshot fallback; empty disables the guard | - |
 | `ALPHASIFT_SOURCE_HEALTH_PATH` | No | File that records snapshot source outcomes across runs; sources that failed in the last 6 hours are tried last. Set to `off` to disable | `$ALPHASIFT_DATA_DIR/source_health.json` |
 | `ALPHASIFT_SOURCE_CALL_TIMEOUT_SEC` | No | Global caller-side timeout for third-party wrapper data-source calls; `0`/`off` disables | - |
-| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | No | Snapshot wrapper timeout for `efinance`/`akshare_em`/`tushare` | `60` |
+| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | No | Per-source snapshot time budget: caller-side timeout for `efinance`/`akshare_em`/`tushare`, and a total pagination budget for `sina`/`em_datacenter` | `60` |
 | `ALPHASIFT_DAILY_CALL_TIMEOUT_SEC` | No | Daily wrapper timeout for `akshare`/`baostock`/`tushare`/`yfinance` | `20` |
 | `ALPHASIFT_EASTMONEY_MIN_INTERVAL_SEC` | No | Minimum interval for direct Eastmoney HTTP calls | `1.0` |
 | `ALPHASIFT_EASTMONEY_JITTER_SEC` | No | Random jitter added to the Eastmoney interval | `0.3` |

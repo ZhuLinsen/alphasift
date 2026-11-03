@@ -30,6 +30,7 @@ _EM_REQUEST_JITTER_SECONDS = 0.3
 _SOURCE_HEALTH_FAILURE_THRESHOLD = 3
 _SOURCE_HEALTH_COOLDOWN_SECONDS = 5 * 60
 _SNAPSHOT_CALL_TIMEOUT_SECONDS = 60.0
+_DIRECT_CONNECT_TIMEOUT_SECONDS = 5.0
 _EM_SESSION: requests.Session | None = None
 _EM_LAST_REQUEST_AT = 0.0
 _EM_LOCK = threading.Lock()
@@ -177,6 +178,33 @@ def _snapshot_call_timeout_seconds() -> float | None:
         "ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC",
         default=_SNAPSHOT_CALL_TIMEOUT_SECONDS,
     )
+
+
+class _PageBudget:
+    """Cooperative wall-clock budget for paged direct-HTTP snapshot sources.
+
+    Wrapper sources run under ``call_with_timeout``; sina and em_datacenter
+    page through plain requests instead, so they check this before each page
+    and cap each request's read timeout by the remaining time.
+    """
+
+    def __init__(self, source: str, *, per_request_timeout: float):
+        self.source = source
+        self.per_request_timeout = per_request_timeout
+        self.budget = _snapshot_call_timeout_seconds()
+        self.started = time.monotonic()
+        self.pages = 0
+
+    def request_timeout(self) -> tuple[float, float]:
+        if self.budget is None:
+            return (_DIRECT_CONNECT_TIMEOUT_SECONDS, self.per_request_timeout)
+        remaining = self.budget - (time.monotonic() - self.started)
+        if remaining <= 0:
+            raise TimeoutError(
+                f"{self.source} exceeded {self.budget:.0f}s snapshot budget after {self.pages} pages"
+            )
+        read = max(min(self.per_request_timeout, remaining), 1.0)
+        return (min(_DIRECT_CONNECT_TIMEOUT_SECONDS, read), read)
 
 
 def _source_disabled_reason(source: str) -> str | None:
@@ -512,7 +540,9 @@ def _fetch_sina() -> pd.DataFrame:
     page = 1
     page_size = 80
     all_items = []
+    budget = _PageBudget("sina", per_request_timeout=15.0)
     while True:
+        request_timeout = budget.request_timeout()
         resp = requests.get(
             url,
             params={
@@ -528,8 +558,9 @@ def _fetch_sina() -> pd.DataFrame:
                 "User-Agent": "Mozilla/5.0",
                 "Referer": "https://vip.stock.finance.sina.com.cn/mkt/",
             },
-            timeout=15,
+            timeout=request_timeout,
         )
+        budget.pages += 1
         resp.raise_for_status()
         items = resp.json()
         if not isinstance(items, list):
@@ -557,6 +588,7 @@ def _fetch_em_datacenter() -> pd.DataFrame:
     """
     url = "https://data.eastmoney.com/dataapi/xuangu/list"
     all_items = []
+    budget = _PageBudget("em_datacenter", per_request_timeout=30.0)
     page = 1
     # 2000 rows per page keeps a full A-share pull to ~3 throttled requests.
     # The endpoint rejects much larger pages (6000 returned a non-JSON body).
@@ -580,7 +612,8 @@ def _fetch_em_datacenter() -> pd.DataFrame:
             "Referer": "https://data.eastmoney.com/xuangu/",
         }
 
-        resp = _eastmoney_get(url, params=params, headers=headers, timeout=30)
+        resp = _eastmoney_get(url, params=params, headers=headers, timeout=budget.request_timeout())
+        budget.pages += 1
         data = resp.json()
 
         if not data.get("success"):
