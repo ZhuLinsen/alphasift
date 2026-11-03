@@ -81,6 +81,7 @@ def fetch_snapshot_with_fallback(
     errors = []
     required = required_columns or []
     persisted_health = _load_persisted_source_health(source_health_path)
+    touched: set[str] = set()
     sources, order_notes = _order_sources_by_persisted_health(sources, persisted_health)
     for source in sources:
         disabled_reason = _source_disabled_reason(source)
@@ -93,12 +94,10 @@ def fetch_snapshot_with_fallback(
             if not df.empty:
                 missing = _missing_required_columns(df, required)
                 if missing:
+                    # A strategy-specific capability gap, not an outage: do not
+                    # demote the source for strategies that don't need the column.
                     errors.append(
                         f"{source}: missing required columns {','.join(missing)}"
-                    )
-                    _record_persisted_outcome(
-                        persisted_health, source, ok=False, started=started,
-                        error=f"missing required columns {','.join(missing)}",
                     )
                     continue
                 df.attrs.setdefault("snapshot_source", source)
@@ -110,7 +109,8 @@ def fetch_snapshot_with_fallback(
                 _write_last_good_snapshot(fallback_snapshot_path, df)
                 _record_source_success(source, rows=len(df))
                 _record_persisted_outcome(persisted_health, source, ok=True, started=started)
-                _save_persisted_source_health(source_health_path, persisted_health)
+                touched.add(source)
+                _save_persisted_source_health(source_health_path, persisted_health, touched)
                 logger.info("Snapshot fetched from %s: %d rows", source, len(df))
                 return df
             errors.append(f"{source}: returned empty data")
@@ -118,13 +118,15 @@ def fetch_snapshot_with_fallback(
             _record_persisted_outcome(
                 persisted_health, source, ok=False, started=started, error="returned empty data",
             )
+            touched.add(source)
         except Exception as e:
             errors.append(f"{source}: {e}")
             _record_source_failure(source, e)
             _record_persisted_outcome(persisted_health, source, ok=False, started=started, error=e)
+            touched.add(source)
             logger.warning("Snapshot source %s failed: %s", source, e)
 
-    _save_persisted_source_health(source_health_path, persisted_health)
+    _save_persisted_source_health(source_health_path, persisted_health, touched)
 
     cached = _read_last_good_snapshot(
         fallback_snapshot_path,
@@ -224,6 +226,10 @@ _PERSISTED_FAILURE_TTL_SECONDS = 6 * 60 * 60
 
 
 def _load_persisted_source_health(path: str | Path | None) -> dict[str, dict[str, object]]:
+    """Read persisted health, dropping malformed entries.
+
+    Health is advisory: a corrupt or hand-edited file must never block a run.
+    """
     if path is None:
         return {}
     try:
@@ -235,21 +241,44 @@ def _load_persisted_source_health(path: str | Path | None) -> dict[str, dict[str
     sources = payload.get("sources")
     if not isinstance(sources, dict):
         return {}
-    return {str(k): dict(v) for k, v in sources.items() if isinstance(v, dict)}
+    cleaned: dict[str, dict[str, object]] = {}
+    for name, raw in sources.items():
+        if not isinstance(raw, dict):
+            continue
+        try:
+            entry: dict[str, object] = {
+                "last_success_at": float(raw.get("last_success_at", 0) or 0),
+                "last_failure_at": float(raw.get("last_failure_at", 0) or 0),
+                "consecutive_failures": int(raw.get("consecutive_failures", 0) or 0),
+            }
+            if raw.get("last_duration_sec") is not None:
+                entry["last_duration_sec"] = float(raw["last_duration_sec"])
+        except (TypeError, ValueError):
+            continue
+        if raw.get("last_error"):
+            entry["last_error"] = str(raw["last_error"])[:300]
+        cleaned[str(name)] = entry
+    return cleaned
 
 
 def _save_persisted_source_health(
     path: str | Path | None,
     health: dict[str, dict[str, object]],
+    touched: set[str] | None = None,
 ) -> None:
+    """Write health atomically, keeping other runs' updates for untouched sources."""
     if path is None:
         return
     target = Path(path)
+    merged = _load_persisted_source_health(target)
+    for name in (touched if touched is not None else health.keys()):
+        if name in health:
+            merged[name] = health[name]
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_suffix(target.suffix + ".tmp")
+        tmp = target.with_name(f".{target.name}.{os.getpid()}.{time.time_ns()}.tmp")
         tmp.write_text(
-            json.dumps({"version": _PERSISTED_HEALTH_VERSION, "sources": health}, ensure_ascii=False, indent=2),
+            json.dumps({"version": _PERSISTED_HEALTH_VERSION, "sources": merged}, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         tmp.replace(target)
@@ -557,11 +586,12 @@ def _fetch_em_datacenter() -> pd.DataFrame:
         if not data.get("success"):
             raise RuntimeError(f"em_datacenter API error: {data.get('message', 'unknown')}")
 
-        items = data["result"]["data"]
+        result = data.get("result") or {}
+        items = result.get("data") or []
         all_items.extend(items)
 
-        total_count = data["result"]["count"]
-        if page * page_size >= total_count:
+        total_count = int(result.get("count") or 0)
+        if not items or page * page_size >= total_count:
             break
         page += 1
 

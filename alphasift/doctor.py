@@ -165,6 +165,7 @@ def _check_snapshot_sources(
             fallback_snapshot_path=config.fallback_snapshot_path,
             fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
             market="cn",
+            source_health_path=config.source_health_path,
         )
     except Exception as exc:  # noqa: BLE001 - doctor must aggregate failures.
         return SourceCheckResult(

@@ -153,14 +153,6 @@ def screen(
         else config.industry_provider
     )
     effective_industry_provider = str(effective_industry_provider or "none").strip().lower()
-    if (
-        market == "cn"
-        and config.industry_auto_backfill
-        and not effective_industry_map_files
-        and effective_industry_provider in {"", "none", "off", "false"}
-        and _industry_coverage(snapshot_df) < _INDUSTRY_BACKFILL_MIN_COVERAGE
-    ):
-        effective_industry_provider = "eastmoney"
     if effective_industry_map_files or effective_industry_provider not in {"", "none", "off", "false"}:
         snapshot_df, industry_notes = enrich_industry_concepts(
             snapshot_df,
@@ -171,10 +163,28 @@ def screen(
             provider_cache_ttl_hours=config.industry_provider_cache_ttl_hours,
         )
         degradation.extend(f"Industry/concepts enrichment: {item}" for item in industry_notes)
+    elif (
+        market == "cn"
+        and config.industry_auto_backfill
+        and _industry_coverage(snapshot_df) < _INDUSTRY_BACKFILL_MIN_COVERAGE
+    ):
+        # Routine backfill is not a degradation; only report it when the run
+        # still lacks industry labels afterwards.
+        snapshot_df, industry_notes = enrich_industry_concepts(
+            snapshot_df,
+            provider="eastmoney",
+            provider_cache_dir=config.industry_provider_cache_dir,
+        )
+        if _industry_coverage(snapshot_df) < _INDUSTRY_BACKFILL_MIN_COVERAGE:
+            degradation.extend(f"Industry auto-backfill: {item}" for item in industry_notes)
+        else:
+            for item in industry_notes:
+                logger.info("Industry auto-backfill: %s", item)
     snapshot_count = len(snapshot_df)
     snapshot_source = str(snapshot_df.attrs.get("snapshot_source", ""))
     source_errors = [str(item) for item in snapshot_df.attrs.get("source_errors", [])]
-    degradation.extend(str(item) for item in snapshot_df.attrs.get("source_order_notes", []))
+    for item in snapshot_df.attrs.get("source_order_notes", []):
+        logger.info("%s", item)
     degradation.extend(f"Snapshot source fallback: {item}" for item in source_errors)
     if bool(snapshot_df.attrs.get("fallback_used")):
         stale_age = snapshot_df.attrs.get("stale_age_hours")

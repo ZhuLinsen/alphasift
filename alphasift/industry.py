@@ -359,12 +359,14 @@ def _fetch_eastmoney_industry_rows() -> dict[str, dict[str, object]]:
         data = resp.json()
         if not data.get("success"):
             raise RuntimeError(f"eastmoney industry API error: {data.get('message', 'unknown')}")
-        for item in data["result"]["data"]:
+        result = data.get("result") or {}
+        items = result.get("data") or []
+        for item in items:
             code = _normalize_code(item.get("SECURITY_CODE"))
             industry = _safe_text(item.get("INDUSTRY"))
             if code and industry:
                 mapping[code] = {"industry": industry}
-        if page * page_size >= int(data["result"]["count"]):
+        if not items or page * page_size >= int(result.get("count") or 0):
             break
         page += 1
     if not mapping:

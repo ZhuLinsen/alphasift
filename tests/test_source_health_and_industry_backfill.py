@@ -6,7 +6,8 @@ import pandas as pd
 
 import alphasift.industry as industry
 import alphasift.snapshot as snapshot
-from alphasift.config import Config
+from alphasift.config import Config, _resolve_source_health_path
+from alphasift.industry import _fetch_eastmoney_industry_rows as _real_eastmoney_rows
 from alphasift.pipeline import _industry_coverage, screen
 from alphasift.snapshot import _order_sources_by_persisted_health, fetch_snapshot_with_fallback
 
@@ -167,8 +168,20 @@ def test_screen_backfills_missing_industry_and_restores_diversity(monkeypatch, t
     result = screen("dual_low", use_llm=False, config=_screen_config(tmp_path))
 
     assert all(pick.industry for pick in result.picks)
+    # A successful routine backfill must not mark the run as degraded.
     assert not any("Portfolio diversity skipped" in item for item in result.degradation)
-    assert any("eastmoney industry map fetched" in item for item in result.degradation)
+    assert not any("Industry" in item for item in result.degradation)
+
+
+def test_screen_reports_failed_backfill_as_degradation(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "alphasift.pipeline.fetch_snapshot_with_fallback", lambda sources, **kwargs: _snapshot_rows()
+    )
+
+    result = screen("dual_low", use_llm=False, config=_screen_config(tmp_path))
+
+    assert any("Industry auto-backfill: eastmoney industry provider failed" in item for item in result.degradation)
+    assert any("Portfolio diversity skipped" in item for item in result.degradation)
 
 
 def test_screen_reports_skipped_diversity_when_backfill_disabled(monkeypatch, tmp_path):
@@ -184,3 +197,113 @@ def test_screen_reports_skipped_diversity_when_backfill_disabled(monkeypatch, tm
 
     assert result.picks
     assert any("Portfolio diversity skipped" in item for item in result.degradation)
+
+
+def test_missing_required_columns_does_not_demote_source(monkeypatch, tmp_path):
+    def fake_fetch(source):
+        df = _snapshot_rows()
+        if source == "sina":
+            df = df.drop(columns=["volume_ratio"])
+        return df
+
+    monkeypatch.setattr(snapshot, "fetch_cn_snapshot", fake_fetch)
+    monkeypatch.setattr(snapshot, "_SOURCE_HEALTH", {})
+    health_path = tmp_path / "source_health.json"
+
+    result = fetch_snapshot_with_fallback(
+        ["sina", "em_datacenter"],
+        required_columns=["volume_ratio"],
+        fallback_snapshot_path=None,
+        source_health_path=health_path,
+    )
+
+    assert result.attrs["source_errors"] == ["sina: missing required columns volume_ratio"]
+    saved = json.loads(health_path.read_text(encoding="utf-8"))
+    assert "sina" not in saved["sources"]
+    assert list(tmp_path.glob("*.tmp")) == []
+
+
+def test_malformed_health_file_fails_open(monkeypatch, tmp_path):
+    health_path = tmp_path / "source_health.json"
+    health_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "sources": {
+                    "sina": {"last_failure_at": "invalid", "consecutive_failures": 2},
+                    "efinance": "not-a-dict",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    calls = []
+
+    def fake_fetch(source):
+        calls.append(source)
+        return _snapshot_rows()
+
+    monkeypatch.setattr(snapshot, "fetch_cn_snapshot", fake_fetch)
+
+    result = fetch_snapshot_with_fallback(
+        ["sina", "efinance"], fallback_snapshot_path=None, source_health_path=health_path
+    )
+
+    assert calls == ["sina"]
+    assert not result.empty
+
+
+def test_save_merges_other_runs_updates(monkeypatch, tmp_path):
+    health_path = tmp_path / "source_health.json"
+    # Another process recorded efinance after this run loaded the file.
+    other = {"efinance": {"consecutive_failures": 1, "last_failure_at": time.time()}}
+    health_path.write_text(json.dumps({"version": 1, "sources": other}), encoding="utf-8")
+
+    mine = {"sina": {"consecutive_failures": 0, "last_success_at": time.time()}}
+    snapshot._save_persisted_source_health(health_path, mine, {"sina"})
+
+    saved = json.loads(health_path.read_text(encoding="utf-8"))["sources"]
+    assert set(saved) == {"sina", "efinance"}
+    assert saved["efinance"]["consecutive_failures"] == 1
+
+
+def test_eastmoney_industry_rows_stop_on_empty_page(monkeypatch):
+    pages = []
+
+    class FakeResponse:
+        def __init__(self, payload):
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    def fake_get(url, params=None, **kwargs):
+        pages.append(params["p"])
+        if params["p"] == "1":
+            return FakeResponse(
+                {"success": True, "result": {"count": 9000, "data": [{"SECURITY_CODE": "000001", "INDUSTRY": "银行"}]}}
+            )
+        return FakeResponse({"success": True, "result": {"count": 9000, "data": None}})
+
+    monkeypatch.setattr(snapshot, "_eastmoney_get", fake_get)
+
+    mapping = _real_eastmoney_rows()
+    assert mapping == {"000001": {"industry": "银行"}}
+    assert pages == ["1", "2"]
+
+
+def test_config_defaults_enable_health_and_backfill(monkeypatch, tmp_path):
+    monkeypatch.delenv("ALPHASIFT_SOURCE_HEALTH_PATH", raising=False)
+    monkeypatch.delenv("INDUSTRY_AUTO_BACKFILL", raising=False)
+    monkeypatch.setenv("ALPHASIFT_DATA_DIR", str(tmp_path))
+
+    config = Config.from_env()
+
+    assert config.source_health_path == tmp_path / "source_health.json"
+    assert config.industry_auto_backfill is True
+
+
+def test_source_health_path_can_be_disabled(monkeypatch, tmp_path):
+    for value in ("off", "none", "0", ""):
+        monkeypatch.setenv("ALPHASIFT_SOURCE_HEALTH_PATH", value)
+        assert _resolve_source_health_path(tmp_path) is None
