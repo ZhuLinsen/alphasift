@@ -553,8 +553,12 @@ def test_evaluate_saved_runs_by_windows_measures_true_t_plus_n_against_benchmark
             ]
         )
 
+    entry_close = {"000001": 10.0, "600000": 20.0}
+
     def fake_fetch_daily_history(code, **kwargs):
-        return bars(stock_paths[code])
+        # The entry session (03-31) closes at the pick price.
+        entry = pd.DataFrame([{"日期": "2026-03-31", "收盘": entry_close[code], "最高": entry_close[code], "最低": entry_close[code]}])
+        return pd.concat([entry, bars(stock_paths[code])], ignore_index=True)
 
     def fake_benchmark(market, *, lookback_days):
         # Index closes 100 on the entry session (03-31), then +1% by T+3.

@@ -106,7 +106,7 @@ screening:
     fetch_failed_daily_points: float
 
   portfolio_profile:       # 可选，控制行业/主题集中度
-    mode: soft | hard_cap  # soft（默认）只扣分；hard_cap 保证 Top N 中同一桶不超过 max_same_bucket（候选不足时才回补）
+    mode: soft | hard_cap  # soft（默认）只扣分；hard_cap 让 Top N 优先选不超过 max_same_bucket 的同桶股票（候选不足时用超出的补足；无行业标签的不受限）
     max_same_bucket: int
     concentration_penalty: float
     buckets:

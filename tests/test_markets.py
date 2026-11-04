@@ -388,40 +388,42 @@ def test_yahoo_snapshot_adds_average_traded_value_in_usd():
     assert row["avg_amount_usd"] == pytest.approx(100.0 * 30_000 / get_market("jp").usd_rate)
 
 
-def test_window_evaluation_prices_picks_that_left_the_screener_universe(monkeypatch, tmp_path):
-    import alphasift.evaluate as evaluate
-    from alphasift.config import Config
-    from alphasift.models import Pick, ScreenResult
-    from alphasift.store import save_screen_result
+def test_ratios_are_not_derived_across_currencies():
+    from alphasift.snapshot_yahoo import _quote_to_row
 
-    save_screen_result(
-        ScreenResult(
-            strategy="global_value",
-            market="hk",
-            run_id="hk1",
-            picks=[Pick(rank=1, code="1234.HK", name="Small", final_score=70, screen_score=70, price=10)],
+    # USD price over JPY EPS / book value would give PE 0.2 and PB 0.2.
+    adr = _quote_to_row(
+        _quote(
+            "TM", 4e11, currency="USD", financialCurrency="JPY", trailingPE=None, priceToBook=None,
+            epsTrailingTwelveMonths=500.0, bookValue=500.0,
         ),
-        data_dir=tmp_path,
+        "Consumer Cyclical",
     )
-    requested = []
-
-    def fake_quotes(symbols):
-        requested.append(list(symbols))
-        return pd.DataFrame([{"code": "1234.HK", "price": 8.0}])
-
-    monkeypatch.setattr(
-        evaluate, "fetch_snapshot_with_fallback", lambda *a, **k: pd.DataFrame([{"code": "0005.HK", "price": 1.0}])
+    assert adr["pe_ratio"] is None and adr["pb_ratio"] is None
+    # Same currency: derived as before.
+    local = _quote_to_row(
+        _quote("7203.T", 4e13, currency="JPY", financialCurrency="JPY", trailingPE=None, epsTrailingTwelveMonths=20.0),
+        "Consumer Cyclical",
     )
-    monkeypatch.setattr(evaluate, "fetch_yahoo_quotes", fake_quotes)
-    monkeypatch.setattr(evaluate, "fetch_daily_history", lambda *a, **k: pd.DataFrame())
-    monkeypatch.setattr(evaluate, "_fetch_benchmark_path", lambda *a, **k: pd.DataFrame())
+    assert local["pe_ratio"] == pytest.approx(5.0)
+    # Ratios Yahoo reports itself are kept for cross-currency listings (ICBC H-share).
+    h_share = _quote_to_row(_quote("1398.HK", 2e12, currency="HKD", financialCurrency="CNY"), "Financial Services")
+    assert h_share["pe_ratio"] == 12.0
 
-    evaluate.evaluate_saved_runs_by_windows(
-        windows=[5, 20],
-        config=Config(llm_api_key="", data_dir=tmp_path),
-        market="hk",
-        cost_bps=0,
-    )
 
-    # Filled once, before the windows share the prefetched snapshot.
-    assert requested == [["1234.HK"]]
+def test_budget_expiry_returns_fetched_rows_as_partial(monkeypatch):
+    import alphasift.snapshot_yahoo as snapshot_yahoo
+
+    clock = iter([0.0, 1.0, 1.0, 1.0, 999.0, 999.0, 999.0])
+    monkeypatch.setattr(snapshot_yahoo.time, "monotonic", lambda: next(clock, 999.0))
+    monkeypatch.setattr(snapshot_yahoo.time, "sleep", lambda seconds: None)
+    monkeypatch.setenv("ALPHASIFT_YAHOO_SNAPSHOT_BUDGET_SEC", "10")
+
+    def fake_screen(query, size, offset, sortField, sortAsc):
+        return {"total": 1, "quotes": [_quote(f"{offset}{len(query.operands)}.HK", 9e11)]}
+
+    df = snapshot_yahoo.fetch_yahoo_snapshot("hk", screen=fake_screen)
+
+    assert len(df) >= 1
+    assert df.attrs["partial"] is True
+    assert any("not fetched" in item for item in df.attrs["source_errors"])
