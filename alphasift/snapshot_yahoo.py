@@ -7,8 +7,9 @@ typically 5-30 pages of 250 rows at ~0.3s each.
 
 Field notes:
 - ``amount`` is price x volume, an estimate of traded value.
-  ``avg_amount`` uses the 10-day average volume instead, so it does not
-  depend on the time of day; ``avg_amount_usd`` converts it at the market's
+  ``avg_amount`` is the current price x the 10-day average volume (3-month
+  when missing), an estimate whose volume part does not depend on the time
+  of day; ``avg_amount_usd`` converts it at the market's
   approximate ``usd_rate`` for cross-market liquidity floors.
 - ``volume_ratio`` is today's volume over the 10-day average. During the
   session it reflects a partial day, like the A-share intraday volume ratio.
@@ -260,6 +261,11 @@ def _drop_secondary_listings(df: pd.DataFrame, spec: MarketSpec) -> pd.DataFrame
     (RELIANCE.BO) under the same symbol; without this every company would be
     screened, and could be picked, twice. The listing with more average
     traded value (normally NSE) is kept.
+
+    This matches symbols, not company identity: a BSE listing under a
+    numeric scrip code would not be paired. KRX (KS/KQ) and TWSE/TPEx
+    (TW/TWO) codes are unique across their two boards, so nothing collapses
+    there.
     """
     if len(spec.yahoo_suffixes) < 2 or df.empty:
         return df

@@ -13,7 +13,8 @@ class HardFilterConfig:
     price_min: float | None = None
     price_max: float | None = None
     amount_min: float | None = None
-    # 10-day average traded value in USD; comparable across markets.
+    # Estimated daily traded value in USD (current price x 10-day average
+    # volume, 3-month if missing); comparable across markets.
     avg_amount_usd_min: float | None = None
     market_cap_min: float | None = None
     market_cap_max: float | None = None
