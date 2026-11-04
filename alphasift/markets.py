@@ -35,23 +35,52 @@ class MarketSpec:
     yahoo_exchanges: tuple[str, ...] = ()
     # A-share conventions (ST names, limit-up boards, EastMoney industries).
     cn_rules: bool = False
+    # Local regular-session open (HH:MM). A run created before the open was
+    # priced off the previous close, so that day's bar is entirely post-entry.
+    session_open: str = "09:30"
+    # Local regular-session close (HH:MM). Today's bar only counts as a
+    # completed T+N bar once the session has closed.
+    session_close: str = "15:00"
+    # Index used as the T+N evaluation benchmark. CN uses Tencent's index
+    # K-line (Yahoo's 000300.SS history is broken); others use Yahoo.
+    benchmark: str = ""
+    benchmark_name: str = ""
 
 
 MARKETS: dict[str, MarketSpec] = {
     spec.id: spec
     for spec in (
-        MarketSpec("cn", "China A-shares", "CNY", "Asia/Shanghai", cn_rules=True),
+        MarketSpec(
+            "cn", "China A-shares", "CNY", "Asia/Shanghai", cn_rules=True,
+            benchmark="sh000300", benchmark_name="CSI 300",
+        ),
         MarketSpec(
             "us", "United States", "USD", "America/New_York", "us", (),
             # Nasdaq GS/GM/CM, NYSE, NYSE American, NYSE Arca, Cboe BZX.
             yahoo_exchanges=("NMS", "NGM", "NCM", "NYQ", "ASE", "PCX", "BTS"),
             universe_min_market_cap=1e9,
+            session_close="16:00", benchmark="SPY", benchmark_name="S&P 500 (SPY)",
         ),
-        MarketSpec("hk", "Hong Kong", "HKD", "Asia/Hong_Kong", "hk", ("HK",), 8e9),
-        MarketSpec("jp", "Japan", "JPY", "Asia/Tokyo", "jp", ("T",), 1.5e11),
-        MarketSpec("kr", "South Korea", "KRW", "Asia/Seoul", "kr", ("KS", "KQ"), 1.4e12),
-        MarketSpec("tw", "Taiwan", "TWD", "Asia/Taipei", "tw", ("TW", "TWO"), 3e10),
-        MarketSpec("in", "India", "INR", "Asia/Kolkata", "in", ("NS", "BO"), 8.5e10),
+        MarketSpec(
+            "hk", "Hong Kong", "HKD", "Asia/Hong_Kong", "hk", ("HK",), 8e9,
+            session_close="16:00", benchmark="^HSI", benchmark_name="Hang Seng",
+        ),
+        MarketSpec(
+            "jp", "Japan", "JPY", "Asia/Tokyo", "jp", ("T",), 1.5e11,
+            session_open="09:00", session_close="15:30", benchmark="^N225", benchmark_name="Nikkei 225",
+        ),
+        MarketSpec(
+            "kr", "South Korea", "KRW", "Asia/Seoul", "kr", ("KS", "KQ"), 1.4e12,
+            session_open="09:00", session_close="15:30", benchmark="^KS11", benchmark_name="KOSPI",
+        ),
+        MarketSpec(
+            "tw", "Taiwan", "TWD", "Asia/Taipei", "tw", ("TW", "TWO"), 3e10,
+            session_open="09:00", session_close="13:30", benchmark="^TWII", benchmark_name="TAIEX",
+        ),
+        MarketSpec(
+            "in", "India", "INR", "Asia/Kolkata", "in", ("NS", "BO"), 8.5e10,
+            session_open="09:15", session_close="15:30", benchmark="^NSEI", benchmark_name="Nifty 50",
+        ),
     )
 }
 

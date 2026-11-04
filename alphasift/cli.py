@@ -242,7 +242,10 @@ def main():
     esp.add_argument(
         "--window",
         default=None,
-        help="用逗号分隔多个窗口对价格路径进行滚动回看，例如 5,10,20；和 --price-path-lookback-days 互斥",
+        help=(
+            "逗号分隔的 T+N 交易日窗口，例如 5,10,20：按入场后第 N 个交易日收盘计算收益，"
+            "并与所在市场基准指数同期收益对比；未满 N 日的记为 pending。和 --price-path-lookback-days 互斥"
+        ),
     )
 
     # runs
@@ -1472,7 +1475,10 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
     if result.get("strategy_summaries", []) and isinstance(result.get("strategy_summaries"), list):
         sample = result["strategy_summaries"][0]
         if isinstance(sample, dict) and sample.get("window_summaries") is not None:
-            lines.append("strategy windows avg_return median_return win_rate max_dd max_runup failed_follow missing")
+            lines.append(
+                "strategy windows T+N: ret=avg return, bench=benchmark, excess=ret-bench, "
+                "beat=% picks beating benchmark, win, dd, runup, pending, missing"
+            )
         else:
             lines.append(
                 "strategy runs picks avg_return median_return win_rate max_dd max_runup outcome shapes"
@@ -1490,13 +1496,17 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
                 window_days = window.get("window_days", "-")
                 line_parts.append(
                     (
-                        f"{window_days}d:" 
+                        f"T+{window_days}:"
                         f"ret={window.get('average_return_pct')!s} "
+                        f"bench={window.get('average_benchmark_return_pct')!s} "
+                        f"excess={window.get('average_excess_return_pct')!s} "
+                        f"beat={window.get('beat_benchmark_rate')!s} "
                         f"win={window.get('win_rate')!s} "
                         f"dd={window.get('average_max_drawdown_pct')!s} "
                         f"runup={window.get('average_max_runup_pct')!s} "
                         f"f={window.get('failed_breakout_count', 0)} "
                         f"t={window.get('breakout_follow_through_count', 0)} "
+                        f"pending={window.get('pending_count', 0)} "
                         f"m={window.get('missing_count', 0)}; "
                     )
                 )

@@ -252,6 +252,10 @@ class PickEvaluation:
     path_end_return_pct: float | None = None
     max_drawdown_pct: float | None = None
     max_runup_pct: float | None = None
+    # Set only for fixed-horizon (T+N) evaluation.
+    horizon_days: int | None = None
+    benchmark_return_pct: float | None = None
+    excess_return_pct: float | None = None
 
 
 @dataclass
@@ -271,3 +275,9 @@ class EvaluationResult:
     missing_codes: list[str] = field(default_factory=list)
     degradation: list[str] = field(default_factory=list)
     saved_path: str = ""
+    # Fixed-horizon (T+N) evaluation against the market benchmark.
+    horizon_days: int | None = None
+    benchmark: str = ""
+    benchmark_return_pct: float | None = None
+    average_excess_return_pct: float | None = None
+    pending_count: int = 0

@@ -830,6 +830,11 @@ def _to_tushare_code(code: str) -> str:
 
 
 def _to_tencent_code(code: str) -> str:
+    text = str(code).strip().lower()
+    # Already-prefixed symbols (e.g. the sh000300 index) pass through; a bare
+    # 000300 would otherwise be routed to Shenzhen.
+    if len(text) == 8 and text[:2] in {"sh", "sz", "bj"} and text[2:].isdigit():
+        return text
     raw = str(code).strip().zfill(6)
     if raw.startswith(("4", "8", "920")):
         return f"bj{raw}"
