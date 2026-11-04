@@ -14,6 +14,8 @@ extra namespace prefix is needed.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 
 @dataclass(frozen=True)
@@ -113,3 +115,36 @@ def has_foreign_yahoo_suffix(code: str) -> bool:
     """True for symbols like ``0700.HK`` or ``005930.KS`` that must keep their suffix."""
     head, sep, suffix = (code or "").rpartition(".")
     return bool(sep and head and suffix.upper() in FOREIGN_YAHOO_SUFFIXES)
+
+
+# Daily bars are final some time after the close; vendors can lag a little.
+_CLOSE_SETTLE_SECONDS = 30 * 60
+
+
+def seconds_since_settled_close(market: str, now: datetime | None = None) -> float:
+    """Seconds since the latest session close settled, or 0 during the session.
+
+    A daily history fetched after that point cannot change until the next
+    open, so screening may reuse it. Weekends step back to Friday; exchange
+    holidays are not known here, which only makes the window shorter (a
+    Tuesday after a Monday holiday treats Monday's close as the latest).
+    """
+    spec = get_market(market)
+    tz = ZoneInfo(spec.timezone)
+    local = (now or datetime.now(tz)).astimezone(tz)
+    open_h, open_m = (int(part) for part in spec.session_open.split(":"))
+    close_h, close_m = (int(part) for part in spec.session_close.split(":"))
+    day = local.date()
+    if local.weekday() < 5:
+        if time(open_h, open_m) <= local.time() < time(close_h, close_m):
+            return 0.0
+        if local.time() < time(open_h, open_m):
+            day -= timedelta(days=1)
+    else:
+        day -= timedelta(days=1)
+    while day.weekday() >= 5:
+        day -= timedelta(days=1)
+    settled = datetime.combine(day, time(close_h, close_m), tzinfo=tz) + timedelta(
+        seconds=_CLOSE_SETTLE_SECONDS
+    )
+    return max((local - settled).total_seconds(), 0.0)

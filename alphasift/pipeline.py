@@ -12,7 +12,7 @@ from alphasift.candidate_context import collect_candidate_context
 from alphasift.context import build_llm_context
 from alphasift.daily import enrich_daily_features
 from alphasift.dsa_provider import apply_dsa_provider_context
-from alphasift.markets import get_market
+from alphasift.markets import get_market, seconds_since_settled_close
 from alphasift.filter import (
     apply_hard_filters,
     hard_filter_rejection_summary,
@@ -252,6 +252,13 @@ def screen(
                 source=effective_daily_source,
                 fetch_retries=config.daily_fetch_retries,
                 max_workers=config.daily_fetch_max_workers,
+                # Reuse histories fetched after the latest settled close (they
+                # cannot change before the next open); never during the session.
+                cache_dir=config.daily_history_cache_dir,
+                cache_ttl_seconds=min(
+                    seconds_since_settled_close(market),
+                    float(config.daily_history_cache_ttl_hours) * 3600.0,
+                ),
             )
             daily_enriched = True
             daily_errors = [str(item) for item in enriched.attrs.get("daily_errors", [])]

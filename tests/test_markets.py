@@ -425,3 +425,24 @@ def test_window_evaluation_prices_picks_that_left_the_screener_universe(monkeypa
 
     # Filled once, before the windows share the prefetched snapshot.
     assert requested == [["1234.HK"]]
+
+
+def test_seconds_since_settled_close_is_zero_in_session_and_counts_from_last_close():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from alphasift.markets import seconds_since_settled_close
+
+    sh = ZoneInfo("Asia/Shanghai")
+    # Wednesday 2026-11-04.
+    assert seconds_since_settled_close("cn", datetime(2026, 11, 4, 10, 0, tzinfo=sh)) == 0.0
+    assert seconds_since_settled_close("cn", datetime(2026, 11, 4, 15, 10, tzinfo=sh)) == 0.0  # settling
+    assert seconds_since_settled_close("cn", datetime(2026, 11, 4, 16, 30, tzinfo=sh)) == 3600.0
+    # Before Thursday's open: Wednesday's close (15:30 settled) is the latest.
+    assert seconds_since_settled_close("cn", datetime(2026, 11, 5, 8, 30, tzinfo=sh)) == 17 * 3600.0
+    # Saturday and Monday pre-open both count from Friday's close.
+    assert seconds_since_settled_close("cn", datetime(2026, 11, 7, 15, 30, tzinfo=sh)) == 24 * 3600.0
+    assert seconds_since_settled_close("cn", datetime(2026, 11, 9, 9, 0, tzinfo=sh)) == (2 * 24 + 17.5) * 3600.0
+    # Other markets use their own clock: 22:00 Shanghai is 09:00 New York, before the open.
+    ny_pre_open = datetime(2026, 11, 4, 22, 0, tzinfo=sh)
+    assert seconds_since_settled_close("us", ny_pre_open) == 16.5 * 3600.0  # since Tuesday 16:30 NY

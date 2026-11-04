@@ -231,3 +231,39 @@ def test_sort_screened_candidates_keeps_default_tie_breakers_without_weights():
     sorted_df = _sort_screened_candidates(df, ScreeningConfig())
 
     assert list(sorted_df["code"]) == ["300001", "000001", "600000"]
+
+
+def test_screening_reuses_daily_history_only_outside_the_session(monkeypatch, tmp_path):
+    import alphasift.pipeline as pipeline
+
+    df = pd.DataFrame(
+        [{"code": "000001", "name": "平安银行", "price": 10.0, "change_pct": 1.0, "amount": 5e8,
+          "volume_ratio": 1.0, "turnover_rate": 1.0, "total_mv": 2e11, "circ_mv": 2e11,
+          "pe_ratio": 5.0, "pb_ratio": 0.6, "industry": "银行"}]
+    )
+    seen = []
+
+    def fake_enrich(frame, **kwargs):
+        seen.append(kwargs)
+        raise RuntimeError("stop after recording the cache settings")
+
+    monkeypatch.setattr(pipeline, "fetch_snapshot_with_fallback", lambda sources, **kwargs: df)
+    monkeypatch.setattr(pipeline, "enrich_daily_features", fake_enrich)
+    config = Config(
+        llm_api_key="",
+        snapshot_source_priority=["test"],
+        strategies_dir=Path("strategies"),
+        risk_enabled=False,
+        daily_history_cache_dir=tmp_path,
+        daily_history_cache_ttl_hours=24,
+    )
+    for since_close in (0.0, 3600.0, 3 * 86400.0):
+        monkeypatch.setattr(pipeline, "seconds_since_settled_close", lambda market, value=since_close: value)
+        try:
+            screen("shrink_pullback", use_llm=False, config=config)
+        except RuntimeError:
+            pass
+
+    assert [item["cache_dir"] for item in seen] == [tmp_path] * 3
+    # In session: never reuse; after the close: only what was fetched since; capped by config.
+    assert [item["cache_ttl_seconds"] for item in seen] == [0.0, 3600.0, 24 * 3600.0]
