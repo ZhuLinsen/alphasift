@@ -7,8 +7,9 @@ typically 5-30 pages of 250 rows at ~0.3s each.
 
 Field notes:
 - ``amount`` is price x volume, an estimate of traded value.
-  ``avg_amount`` uses the 10-day average volume instead, so it does not
-  depend on the time of day; ``avg_amount_usd`` converts it at the market's
+  ``avg_amount`` is the current price x the 10-day average volume (3-month
+  when missing), an estimate whose volume part does not depend on the time
+  of day; ``avg_amount_usd`` converts it at the market's
   approximate ``usd_rate`` for cross-market liquidity floors.
 - ``volume_ratio`` is today's volume over the 10-day average. During the
   session it reflects a partial day, like the A-share intraday volume ratio.
@@ -89,17 +90,23 @@ def fetch_yahoo_snapshot(
     sector_row_cap = limit * max(1, len(spec.yahoo_suffixes))
     rows: dict[str, dict[str, object]] = {}
     errors: list[str] = []
-    for sector in YAHOO_SECTORS:
+    timed_out = False
+    for sector_index, sector in enumerate(YAHOO_SECTORS):
         # Each sector is paged by market cap, up to ``limit`` rows of its own.
         # The global top-``limit`` is then cut after all sectors are in, so a
         # large early sector cannot crowd out Technology or Utilities.
         offset = 0
         while offset < sector_row_cap:
             if budget is not None and time.monotonic() - started > budget:
-                raise TimeoutError(
-                    f"yahoo_screener exceeded {budget:.0f}s budget for market {spec.id} "
-                    f"after {len(rows)} rows"
+                # Keep what was fetched, marked partial: the caller then uses
+                # it without replacing the complete last-good cache, instead of
+                # dropping it and switching to a different universe.
+                skipped = ", ".join(YAHOO_SECTORS[sector_index:])
+                errors.append(
+                    f"budget {budget:.0f}s exceeded after {len(rows)} rows; not fetched: {skipped}"
                 )
+                timed_out = True
+                break
             try:
                 payload = screen(
                     _sector_query(spec, sector, floor),
@@ -121,6 +128,8 @@ def fetch_yahoo_snapshot(
             if not quotes or offset >= total:
                 break
             time.sleep(_PAGE_PAUSE_SECONDS)
+        if timed_out:
+            break
 
     if not rows:
         detail = "; ".join(errors[:3]) or "no rows above the universe floor"
@@ -134,10 +143,15 @@ def fetch_yahoo_snapshot(
     if spec.id == "kr" and kr_valuation_enabled():
         # Yahoo has no PE/PB for Korean listings; Naver fills them within
         # what is left of the snapshot budget (at most 60s).
-        remaining = 60.0 if budget is None else max(5.0, min(60.0, budget - (time.monotonic() - started)))
-        df, valuation_errors = enrich_kr_valuation(df, budget_seconds=remaining)
-        # A mostly unvalued frame must not replace a valued last-good cache.
-        valuation_incomplete = float(df.attrs.get("valuation_coverage", 1.0)) < _MIN_VALUATION_COVERAGE
+        remaining = 60.0 if budget is None else min(60.0, budget - (time.monotonic() - started))
+        if remaining <= 0:
+            # The snapshot budget is spent; do not run past it.
+            valuation_errors = ["naver_valuation skipped: snapshot budget exhausted"]
+            valuation_incomplete = True
+        else:
+            df, valuation_errors = enrich_kr_valuation(df, budget_seconds=remaining)
+            # A mostly unvalued frame must not replace a valued last-good cache.
+            valuation_incomplete = float(df.attrs.get("valuation_coverage", 1.0)) < _MIN_VALUATION_COVERAGE
     df.attrs["snapshot_source"] = "yahoo_screener"
     df.attrs["market"] = spec.id
     df.attrs["currency"] = spec.currency
@@ -179,16 +193,20 @@ def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
     avg_volume = _num(quote.get("averageDailyVolume10Day")) or _num(quote.get("averageDailyVolume3Month"))
     shares = _num(quote.get("sharesOutstanding"))
     market_cap = _num(quote.get("marketCap"))
+    trading_currency = str(quote.get("currency") or "")
+    financial_currency = str(quote.get("financialCurrency") or trading_currency)
+    # EPS and book value are in the reporting currency. Dividing a USD price
+    # by JPY EPS gives a meaningless (tiny) ratio that would rank first in a
+    # low-PE screen, so only derive ratios when the currencies match.
+    same_currency = not financial_currency or not trading_currency or financial_currency == trading_currency
     pe = _num(quote.get("trailingPE"))
-    if pe is None:
+    if pe is None and same_currency:
         eps = _num(quote.get("epsTrailingTwelveMonths"))
         pe = price / eps if eps else None
     pb = _num(quote.get("priceToBook"))
-    if pb is None:
+    if pb is None and same_currency:
         book = _num(quote.get("bookValue"))
         pb = price / book if book and book > 0 else None
-    trading_currency = str(quote.get("currency") or "")
-    financial_currency = str(quote.get("financialCurrency") or trading_currency)
     if (
         pb is not None
         and pb < _CROSS_CURRENCY_MIN_PB
@@ -243,6 +261,11 @@ def _drop_secondary_listings(df: pd.DataFrame, spec: MarketSpec) -> pd.DataFrame
     (RELIANCE.BO) under the same symbol; without this every company would be
     screened, and could be picked, twice. The listing with more average
     traded value (normally NSE) is kept.
+
+    This matches symbols, not company identity: a BSE listing under a
+    numeric scrip code would not be paired. KRX (KS/KQ) and TWSE/TPEx
+    (TW/TWO) codes are unique across their two boards, so nothing collapses
+    there.
     """
     if len(spec.yahoo_suffixes) < 2 or df.empty:
         return df

@@ -169,3 +169,40 @@ def test_enrich_keeps_existing_pe_when_only_pb_is_missing():
 
     assert result.loc[0, ["pe_ratio", "pb_ratio"]].tolist() == [7.0, 2.51]
     assert errors == []
+
+
+def test_coverage_counts_usable_ratios_not_http_successes():
+    df = pd.DataFrame({"code": ["005930.KS", "000660.KS"], "pe_ratio": [None, None], "pb_ratio": [None, None]})
+
+    # A changed payload: every response succeeds but carries no ratio.
+    result, errors = enrich_kr_valuation(df, fetch=lambda code: {"per": None, "pbr": None})
+
+    assert result.attrs["valuation_coverage"] == 0.0
+    assert any("no PER/PBR" in item for item in errors)
+
+    # A loss-maker has PBR but no PER: that still counts as covered.
+    result, errors = enrich_kr_valuation(df, fetch=lambda code: {"per": None, "pbr": 1.2})
+    assert result.attrs["valuation_coverage"] == 1.0
+    assert errors == []
+
+
+def test_exhausted_snapshot_budget_skips_naver_instead_of_running_past_it(monkeypatch):
+    calls = []
+
+    def enrich(df, **kwargs):
+        calls.append(kwargs)
+        return df, []
+
+    clock = iter([0.0, 1.0, 1.0] + [50.0] * 200)
+    monkeypatch.setattr(snapshot_yahoo, "enrich_kr_valuation", enrich)
+    monkeypatch.setattr(snapshot_yahoo.time, "monotonic", lambda: next(clock, 50.0))
+    monkeypatch.setenv("ALPHASIFT_YAHOO_SNAPSHOT_BUDGET_SEC", "10")
+
+    df = snapshot_yahoo.fetch_yahoo_snapshot(
+        "kr",
+        screen=lambda *a, **k: {"total": 1, "quotes": [_kr_quote("005930.KS", 1e15)]},
+    )
+
+    assert calls == []
+    assert df.attrs["partial"] is True
+    assert any("budget exhausted" in item for item in df.attrs["source_errors"])

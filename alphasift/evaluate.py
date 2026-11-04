@@ -59,12 +59,8 @@ def evaluate_saved_run(
         # Must fetch the snapshot for the run's own market — a CN-default
         # snapshot can't resolve US tickers (or vice versa), which silently
         # marks every pick "missing" instead of evaluating it.
-        current_snapshot = fetch_snapshot_with_fallback(
-            config.snapshot_source_priority,
-            fallback_snapshot_path=config.fallback_snapshot_path,
-            fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
-            source_health_path=config.source_health_path,
-            market=run.market,
+        current_snapshot = _fetch_current_snapshot(
+            config, run.market, optional=horizon_days is not None
         )
         current_snapshot = _fill_missing_quotes(
             current_snapshot, run.market, [pick.code for pick in run.picks]
@@ -351,13 +347,7 @@ def evaluate_saved_runs(
     market = get_market(market).id  # saved runs store the lowercase id
     fetched_snapshot = current_snapshot is None
     if current_snapshot is None:
-        current_snapshot = fetch_snapshot_with_fallback(
-            config.snapshot_source_priority,
-            fallback_snapshot_path=config.fallback_snapshot_path,
-            fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
-            source_health_path=config.source_health_path,
-            market=market,
-        )
+        current_snapshot = _fetch_current_snapshot(config, market, optional=horizon_days is not None)
     if cost_bps is None:
         cost_bps = config.evaluation_cost_bps
     if follow_through_pct is None:
@@ -504,25 +494,7 @@ def evaluate_saved_runs_by_windows(
 
     if current_snapshot is None:
         # One live snapshot for every window instead of one per window.
-        market_id = get_market(market).id
-        current_snapshot = fetch_snapshot_with_fallback(
-            config.snapshot_source_priority,
-            fallback_snapshot_path=config.fallback_snapshot_path,
-            fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
-            source_health_path=config.source_health_path,
-            market=market_id,
-        )
-        # evaluate_saved_runs only fills prices for picks that left the
-        # screener universe when it fetched the snapshot itself.
-        run_items = list_saved_runs(
-            data_dir=config.data_dir,
-            limit=max(int(limit), 1),
-            strategy=strategy,
-            market=market_id,
-        )
-        current_snapshot = _fill_missing_quotes(
-            current_snapshot, market_id, _saved_pick_codes(run_items, config)
-        )
+        current_snapshot = _fetch_current_snapshot(config, get_market(market).id, optional=True)
     window_results: list[dict[str, Any]] = []
     benchmark_paths: dict[str, pd.DataFrame] = {}
     for window_days in normalized_windows:
@@ -559,6 +531,8 @@ def evaluate_saved_runs_by_windows(
                     "evaluated_pick_count": summary.get("evaluated_pick_count", 0),
                     "pending_count": summary.get("pending_count", 0),
                     "benchmark": summary.get("benchmark", ""),
+                    "benchmark_pick_count": summary.get("benchmark_pick_count", 0),
+                    "average_matched_return_pct": summary.get("average_matched_return_pct"),
                     "average_benchmark_return_pct": summary.get("average_benchmark_return_pct"),
                     "average_excess_return_pct": summary.get("average_excess_return_pct"),
                     "beat_benchmark_rate": summary.get("beat_benchmark_rate"),
@@ -602,6 +576,30 @@ def evaluate_saved_runs_by_windows(
         "window_reviews": window_reviews,
         "with_price_path": True,
     }
+
+
+def _fetch_current_snapshot(config: Config, market: str, *, optional: bool) -> pd.DataFrame:
+    """Live snapshot for current prices.
+
+    T+N returns come from historical closes; the current price is only shown
+    alongside. With ``optional`` a snapshot outage leaves it empty instead
+    of failing an evaluation whose windows have already completed.
+    """
+    try:
+        return fetch_snapshot_with_fallback(
+            config.snapshot_source_priority,
+            fallback_snapshot_path=config.fallback_snapshot_path,
+            fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
+            source_health_path=config.source_health_path,
+            market=market,
+        )
+    except Exception as exc:
+        if not optional:
+            raise
+        empty = pd.DataFrame(columns=["code", "price"])
+        empty.attrs["snapshot_source"] = ""
+        empty.attrs["source_errors"] = [f"current snapshot unavailable (T+N uses historical closes): {exc}"]
+        return empty
 
 
 def _fill_missing_quotes(
@@ -753,8 +751,8 @@ def _price_path_metrics(
     T+N); fewer bars than N means the window has not elapsed yet ("pending").
     The T+N return is close-to-close from the entry session's close in the
     same history, so it shares the benchmark's start and the history's
-    split/dividend adjustment; the saved (possibly intraday, unadjusted)
-    pick price is only the fallback. Without a horizon, the window runs from
+    split/dividend adjustment; without that close the pick is reported as
+    ``no_entry_close`` rather than measured from the saved pick price. Without a horizon, the window runs from
     the saved entry price to the latest bar.
     """
     empty = {
@@ -774,10 +772,18 @@ def _price_path_metrics(
     if df.empty:
         return {**empty, "path_status": "no_path"}
     cutoff = entry_cutoff_date(created_at, market)
-    if horizon_days and cutoff is not None and "date" in df.columns:
-        entry_bars = df[df["date"].dt.normalize() <= pd.Timestamp(cutoff)]
-        if not entry_bars.empty and float(entry_bars["close"].iloc[-1]) > 0:
-            entry_price = float(entry_bars["close"].iloc[-1])
+    if horizon_days:
+        # T+N is close-to-close within one history. Without the entry
+        # session's close the saved pick price (intraday, unadjusted) would
+        # be compared with adjusted closes, so report it instead of guessing.
+        entry_bars = (
+            df[df["date"].dt.normalize() <= pd.Timestamp(cutoff)]
+            if cutoff is not None and "date" in df.columns
+            else df.iloc[0:0]
+        )
+        if entry_bars.empty or not float(entry_bars["close"].iloc[-1]) > 0:
+            return {**empty, "path_status": "no_entry_close"}
+        entry_price = float(entry_bars["close"].iloc[-1])
     df = _filter_path_after_entry(df, cutoff)
     # Only sessions that had closed when the history was fetched count; a bar
     # cached mid-session is not a close even after the session ends.
@@ -1059,13 +1065,19 @@ def _aggregate_evaluations(evaluations: list[EvaluationResult]) -> dict[str, obj
         for pick in evaluation.picks
         if pick.excess_return_pct is not None
     ]
-    # Pick-weighted like the return and excess averages, so ret - bench == excess.
-    benchmark_returns = [
-        float(pick.benchmark_return_pct)
+    # Benchmark and excess cover only picks with benchmark data for their own
+    # window. The matched return average is over the same picks, so
+    # matched_return - bench == excess even when coverage is partial; the
+    # all-pick average_return_pct can differ from it.
+    matched = [
+        (float(pick.return_pct), float(pick.benchmark_return_pct))
         for evaluation in evaluations
         for pick in evaluation.picks
-        if pick.excess_return_pct is not None and pick.benchmark_return_pct is not None
+        if pick.excess_return_pct is not None
+        and pick.benchmark_return_pct is not None
+        and pick.return_pct is not None
     ]
+    benchmark_returns = [bench for _, bench in matched]
     benchmarks = sorted({evaluation.benchmark for evaluation in evaluations if evaluation.benchmark})
     benchmark_errors = _dedupe_strings(
         item
@@ -1093,6 +1105,10 @@ def _aggregate_evaluations(evaluations: list[EvaluationResult]) -> dict[str, obj
         "benchmark": ",".join(benchmarks),
         # Why bench/excess are empty when they are: fetch failures, short history.
         "benchmark_errors": benchmark_errors,
+        "benchmark_pick_count": len(matched),
+        "average_matched_return_pct": (
+            _safe_round(sum(ret for ret, _ in matched) / len(matched)) if matched else None
+        ),
         "average_benchmark_return_pct": (
             _safe_round(sum(benchmark_returns) / len(benchmark_returns)) if benchmark_returns else None
         ),
@@ -1182,6 +1198,8 @@ def _strategy_summaries(evaluations: list[EvaluationResult]) -> list[dict[str, o
             "average_max_runup_pct": aggregate["average_max_runup_pct"],
             "pending_count": aggregate["pending_count"],
             "benchmark": aggregate["benchmark"],
+            "benchmark_pick_count": aggregate["benchmark_pick_count"],
+            "average_matched_return_pct": aggregate["average_matched_return_pct"],
             "average_benchmark_return_pct": aggregate["average_benchmark_return_pct"],
             "average_excess_return_pct": aggregate["average_excess_return_pct"],
             "benchmark_errors": aggregate["benchmark_errors"],

@@ -42,20 +42,20 @@ def test_pipeline_enriches_daily_features_for_daily_strategy(monkeypatch):
         enriched = frame.copy()
         for idx, row in enriched.iterrows():
             is_target = row["code"] == "000001"
-            enriched.at[idx, "ma_bullish"] = is_target
-            enriched.at[idx, "price_above_ma20"] = True
-            enriched.at[idx, "signal_score"] = 72 if is_target else 80
-            enriched.at[idx, "change_60d"] = 12 if is_target else 10
-            enriched.at[idx, "macd_status"] = "bullish"
-            enriched.at[idx, "rsi_status"] = "neutral"
-            enriched.at[idx, "volume_ratio_20d"] = 1.0 if is_target else 1.8
-            enriched.at[idx, "pullback_to_ma20_pct"] = 4 if is_target else 12
-            enriched.at[idx, "volatility_20d_pct"] = 25 if is_target else 60
-            enriched.at[idx, "max_drawdown_20d_pct"] = -5 if is_target else -18
-            enriched.at[idx, "atr_20_pct"] = 3 if is_target else 9
-            enriched.at[idx, "daily_quality_score"] = 100 if is_target else 70
-            enriched.at[idx, "daily_quality_flags"] = "" if is_target else "fallback_errors"
-            enriched.at[idx, "daily_source"] = "tencent"
+            enriched.loc[idx, "ma_bullish"] = is_target
+            enriched.loc[idx, "price_above_ma20"] = True
+            enriched.loc[idx, "signal_score"] = 72 if is_target else 80
+            enriched.loc[idx, "change_60d"] = 12 if is_target else 10
+            enriched.loc[idx, "macd_status"] = "bullish"
+            enriched.loc[idx, "rsi_status"] = "neutral"
+            enriched.loc[idx, "volume_ratio_20d"] = 1.0 if is_target else 1.8
+            enriched.loc[idx, "pullback_to_ma20_pct"] = 4 if is_target else 12
+            enriched.loc[idx, "volatility_20d_pct"] = 25 if is_target else 60
+            enriched.loc[idx, "max_drawdown_20d_pct"] = -5 if is_target else -18
+            enriched.loc[idx, "atr_20_pct"] = 3 if is_target else 9
+            enriched.loc[idx, "daily_quality_score"] = 100 if is_target else 70
+            enriched.loc[idx, "daily_quality_flags"] = "" if is_target else "fallback_errors"
+            enriched.loc[idx, "daily_source"] = "tencent"
         enriched.attrs["daily_success_count"] = len(enriched)
         enriched.attrs["daily_source_counts"] = {"tencent": 2}
         enriched.attrs["daily_quality_flag_counts"] = {"fallback_errors": 1}

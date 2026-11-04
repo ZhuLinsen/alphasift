@@ -45,7 +45,16 @@ def enrich_kr_valuation(
     """Fill missing ``pe_ratio`` / ``pb_ratio`` on KR rows. Returns (frame, errors)."""
     if df.empty or "code" not in df.columns:
         return df, []
-    fetch = fetch or fetch_naver_valuation
+    session = None
+    if fetch is None:
+        # One pooled session: a cold KR snapshot makes ~250 requests.
+        session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(pool_maxsize=max(1, int(max_workers)))
+        session.mount("https://", adapter)
+
+        def fetch(code: str) -> dict[str, float | None]:
+            return fetch_naver_valuation(code, session=session)
+
     result = df.copy()
     for column in ("pe_ratio", "pb_ratio"):
         if column not in result.columns:
@@ -74,6 +83,8 @@ def enrich_kr_valuation(
         # Queued requests are dropped; in-flight ones finish in the background
         # (bounded by the request timeout) without holding up the snapshot.
         pool.shutdown(wait=False, cancel_futures=True)
+        if session is not None:
+            session.close()
 
     filled = 0
     for idx in result.index[missing]:
@@ -85,13 +96,22 @@ def enrich_kr_valuation(
                 result.at[idx, column] = item[key]
                 filled += 1
 
-    result.attrs["valuation_coverage"] = round(len(values) / len(codes), 4)
+    # Coverage counts listings that got a usable ratio, not HTTP successes:
+    # a changed payload returning N/A everywhere must not look complete.
+    # PBR is present for nearly every listing; PER is absent for losses.
+    usable = sum(
+        1 for item in values.values() if item and (item.get("per") is not None or item.get("pbr") is not None)
+    )
+    result.attrs["valuation_coverage"] = round(usable / len(codes), 4)
+
     errors: list[str] = []
     if failures:
         errors.append(
             f"naver_valuation failed for {len(failures)}/{len(codes)} KR listings: "
             + "; ".join(failures[:3])
         )
+    if values and not usable:
+        errors.append(f"naver_valuation: no PER/PBR in {len(values)} responses (payload format changed?)")
     if timed_out:
         errors.append(f"naver_valuation exceeded {budget_seconds:.0f}s budget; {timed_out} listings left without PE/PB")
     logger.info("Naver valuation: %d/%d KR listings, %d fields filled", len(values), len(codes), filled)

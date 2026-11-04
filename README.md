@@ -1,6 +1,6 @@
 # AlphaSift
 
-**Full-market stock discovery for AI agents.** AlphaSift scans an entire market, screens it with auditable YAML strategies, optionally lets an LLM rank the shortlist, keeps the final picks diversified across sectors, and saves every run so you can check later whether the picks worked.
+**Full-market stock discovery for AI agents.** AlphaSift scans every A-share (or the larger listings of six other markets), screens them with auditable YAML strategies, optionally lets an LLM rank the shortlist, keeps the final picks diversified across sectors, and saves every run so you can check later whether the picks worked.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
@@ -19,7 +19,7 @@ saved run ◄── L3 post-analysis ◄── risk overlay + sector diversity c
 
 ## Why AlphaSift
 
-- **Seven markets, one command.** China A-shares through a dedicated multi-source chain; US, Hong Kong, Japan, South Korea, Taiwan and India through the Yahoo Finance screener, which also works from overseas servers and CI runners.
+- **A-shares first, six more markets in beta.** China A-shares go through a dedicated multi-source chain. US, Hong Kong, Japan, South Korea, Taiwan and India go through the Yahoo Finance screener, which also works from overseas servers and CI runners; they have one unofficial data source and fewer fields (see Known limitations).
 - **Runs without an API key.** L1 screening, scoring, risk and diversity control are deterministic. An LLM only re-ranks the shortlist when you configure one.
 - **Strategies are YAML, not code.** Filters, factor weights, scoring curves, risk thresholds and sector buckets live in readable files that you can diff and review.
 - **Picks don't all come from one sector.** Every row carries an industry or sector label. `portfolio_profile.mode: hard_cap` keeps at most N picks per sector in the Top N.
@@ -91,7 +91,7 @@ On an overseas server, the A-share run takes about 10 seconds once source health
 | `--market` | Market | Snapshot source | Notes |
 |---|---|---|---|
 | `cn` | China A-shares | sina → efinance → akshare_em → em_datacenter (Tushare first when a token is set) | Health-aware ordering; EastMoney industry backfill |
-| `us` | United States | Yahoo screener (all listings ≥ $1B) | `ALPHASIFT_US_TICKERS` uses an explicit ticker list instead |
+| `us` | United States | Yahoo screener (NYSE / Nasdaq listings ≥ $1B, including ADRs) | `ALPHASIFT_US_TICKERS` uses an explicit ticker list instead |
 | `hk` | Hong Kong | Yahoo screener | Universe floor ≈ HK$8B |
 | `jp` | Japan | Yahoo screener | Universe floor ≈ ¥150B |
 | `kr` | South Korea | Yahoo screener + Naver Finance | Yahoo has no KR PE/PB; they come from Naver's (unofficial) mobile API, about 10s extra. `ALPHASIFT_KR_VALUATION=0` turns it off |
@@ -150,7 +150,7 @@ The full list is in [docs/configuration.md](docs/configuration.md).
 - AlphaSift is a discovery and ranking engine, not a backtester or an execution system. T+N evaluation compares saved prices with later prices and does not model dividends, suspensions or position constraints.
 - `evaluate-strategies --window 5,10,20` measures true T+N: each pick's return at the close of the Nth trading bar after entry, against the market benchmark (CSI 300, S&P 500, Hang Seng, Nikkei 225, KOSPI, TAIEX, Nifty 50) over the same bars. Picks whose window has not elapsed are reported as pending. `evaluate` and `evaluate-batch` without a window still measure return to the latest price.
 - Entry is placed in exchange time: a run saved before the session open enters at the previous close; a run saved during or after the session does not count that day's bar toward run-up or drawdown. Exchange holidays are not modeled beyond the bars the data source returns.
-- Yahoo-screener markets estimate traded value as price × volume and use total market cap as float cap. Korean PE/PB come from Naver Finance; loss-making companies have no PE.
+- Yahoo-screener markets are not the whole market: the universe is listings above a market-cap floor (about USD 1B), one query per Yahoo sector, capped at 4000 rows. They depend on a single unofficial endpoint, estimate traded value as price × volume, and use total market cap as float cap. Korean PE/PB come from Naver Finance (another unofficial endpoint); loss-making companies have no PE. PE/PB are only derived from EPS and book value when the trading and reporting currencies match.
 - Daily K-line strategies enrich only the L1 shortlist, not the whole market.
 - `strategies/` and `alphasift/strategies/` mirror each other (development vs installed package) and must stay in sync.
 
