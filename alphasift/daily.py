@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable
 from datetime import date, datetime, timedelta, timezone
 import hashlib
 import json
@@ -68,6 +69,7 @@ def enrich_daily_features(
     cache_ttl_seconds: float | None = None,
     max_workers: int | None = None,
     cache_min_last_date: date | None = None,
+    cache_policy: Callable[[], dict[str, object]] | None = None,
 ) -> pd.DataFrame:
     """Attach daily technical features to the first ``max_rows`` candidates.
 
@@ -101,9 +103,16 @@ def enrich_daily_features(
                 lookback_days=lookback_days,
                 source=source,
                 retries=fetch_retries,
-                cache_dir=cache_dir,
-                cache_ttl_seconds=cache_ttl_seconds,
-                cache_min_last_date=cache_min_last_date,
+                **(
+                    # Re-evaluated per fetch: a batch can run across the open.
+                    cache_policy()
+                    if cache_policy is not None
+                    else {
+                        "cache_dir": cache_dir,
+                        "cache_ttl_seconds": cache_ttl_seconds,
+                        "cache_min_last_date": cache_min_last_date,
+                    }
+                ),
             )
             features = compute_daily_features(hist)
             features["daily_source"] = str(hist.attrs.get("daily_source", ""))
@@ -168,11 +177,14 @@ def fetch_daily_history(
     cache_dir: str | Path | None = None,
     cache_ttl_seconds: float | None = None,
     cache_min_last_date: date | None = None,
+    cache_write: bool = True,
 ) -> pd.DataFrame:
     """Fetch daily history for one stock code.
 
     ``cache_min_last_date`` rejects a fresh cache entry whose last bar is
     older than that session (e.g. fetched before the vendor published it).
+    ``cache_write=False`` still allows the flagged stale fallback when every
+    source fails, but never stores the result (e.g. a partial-day bar).
 
     ``source`` accepts ``tencent``, ``sina``, ``akshare``, ``baostock``, ``tushare``,
     ``yfinance`` or ``auto``. ``auto`` prefers Tushare when a token is
@@ -269,7 +281,7 @@ def fetch_daily_history(
                 # When the bars were captured: evaluation must not treat a
                 # mid-session bar as that session's close.
                 result.attrs["fetched_at"] = datetime.now(timezone.utc).isoformat()
-                if cache_path is not None:
+                if cache_path is not None and cache_write:
                     _write_daily_history_cache(
                         cache_path,
                         result,

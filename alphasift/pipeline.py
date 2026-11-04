@@ -252,7 +252,7 @@ def screen(
                 source=effective_daily_source,
                 fetch_retries=config.daily_fetch_retries,
                 max_workers=config.daily_fetch_max_workers,
-                **_screening_daily_cache_kwargs(config, market),
+                cache_policy=lambda: _screening_daily_cache_kwargs(config, market),
             )
             daily_enriched = True
             daily_errors = [str(item) for item in enriched.attrs.get("daily_errors", [])]
@@ -616,12 +616,17 @@ def _screening_daily_cache_kwargs(config: Config, market: str) -> dict[str, obje
 
     After the latest close has settled, a history fetched since then that
     reaches that session cannot change before the next open, so it is
-    reused. During the session the cache is neither read nor written: a
-    partial-day bar must not reach evaluation, which shares the cache.
+    reused. During the session (and just before the open) nothing is read
+    as fresh or written: a partial-day bar must not reach evaluation, which
+    shares the cache. If every source fails, the last cached history is
+    still used, flagged ``stale_cache``. Called per fetch, so a batch that
+    runs across the open switches over.
     """
-    settled = latest_settled_close(market)
-    if settled is None or config.daily_history_cache_dir is None:
+    if config.daily_history_cache_dir is None:
         return {"cache_dir": None}
+    settled = latest_settled_close(market)
+    if settled is None:
+        return {"cache_dir": config.daily_history_cache_dir, "cache_ttl_seconds": 0.0, "cache_write": False}
     session, elapsed = settled
     return {
         "cache_dir": config.daily_history_cache_dir,

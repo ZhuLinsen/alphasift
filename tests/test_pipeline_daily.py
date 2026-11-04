@@ -243,11 +243,11 @@ def test_screening_reuses_daily_history_only_outside_the_session(monkeypatch, tm
           "volume_ratio": 1.0, "turnover_rate": 1.0, "total_mv": 2e11, "circ_mv": 2e11,
           "pe_ratio": 5.0, "pb_ratio": 0.6, "industry": "银行"}]
     )
-    seen = []
+    policies = []
 
     def fake_enrich(frame, **kwargs):
-        seen.append(kwargs)
-        raise RuntimeError("stop after recording the cache settings")
+        policies.append(kwargs["cache_policy"])
+        raise RuntimeError("stop after recording the cache policy")
 
     monkeypatch.setattr(pipeline, "fetch_snapshot_with_fallback", lambda sources, **kwargs: df)
     monkeypatch.setattr(pipeline, "enrich_daily_features", fake_enrich)
@@ -259,20 +259,45 @@ def test_screening_reuses_daily_history_only_outside_the_session(monkeypatch, tm
         daily_history_cache_dir=tmp_path,
         daily_history_cache_ttl_hours=24,
     )
+    try:
+        screen("shrink_pullback", use_llm=False, config=config)
+    except RuntimeError:
+        pass
+    policy = policies[0]
     session = date(2026, 11, 4)
-    for settled in (None, (session, 3600.0), (session, 3 * 86400.0)):
-        monkeypatch.setattr(pipeline, "latest_settled_close", lambda market, value=settled: value)
-        try:
-            screen("shrink_pullback", use_llm=False, config=config)
-        except RuntimeError:
-            pass
 
-    # In session: no cache at all, so partial bars never reach evaluation's cache.
-    assert seen[0].get("cache_dir") is None
-    # After the close: only histories fetched since, reaching that session; capped by config.
-    assert [item["cache_ttl_seconds"] for item in seen[1:]] == [3600.0, 24 * 3600.0]
-    assert all(item["cache_dir"] == tmp_path and item["cache_min_last_date"] == session for item in seen[1:])
+    # The policy is evaluated per fetch, so a batch crossing the open switches.
+    monkeypatch.setattr(pipeline, "latest_settled_close", lambda market: (session, 3600.0))
+    assert policy() == {"cache_dir": tmp_path, "cache_ttl_seconds": 3600.0, "cache_min_last_date": session}
+    monkeypatch.setattr(pipeline, "latest_settled_close", lambda market: (session, 3 * 86400.0))
+    assert policy()["cache_ttl_seconds"] == 24 * 3600.0  # capped by config
+    # In session: nothing fresh is read and nothing is written; stale fallback stays possible.
+    monkeypatch.setattr(pipeline, "latest_settled_close", lambda market: None)
+    assert policy() == {"cache_dir": tmp_path, "cache_ttl_seconds": 0.0, "cache_write": False}
 
+
+def test_in_session_fetch_never_writes_but_can_fall_back_to_stale_cache(monkeypatch, tmp_path):
+    import alphasift.daily as daily
+
+    def tencent(code, *, lookback_days):
+        return pd.DataFrame([{"日期": "2026-11-03", "收盘": 10.0}, {"日期": "2026-11-04", "收盘": 10.4}])
+
+    monkeypatch.setattr(daily, "_fetch_daily_tencent", tencent)
+    in_session = dict(source="tencent", retries=0, cache_dir=tmp_path, cache_ttl_seconds=0.0, cache_write=False)
+
+    daily.fetch_daily_history("000001", **in_session)
+    assert list(tmp_path.glob("*.json")) == []  # the partial-day bar was not cached
+
+    # After the close it is cached; in the next session, with the source down,
+    # that history is used and flagged stale.
+    daily.fetch_daily_history("000001", source="tencent", retries=0, cache_dir=tmp_path, cache_ttl_seconds=3600)
+
+    def down(code, *, lookback_days):
+        raise RuntimeError("501")
+
+    monkeypatch.setattr(daily, "_fetch_daily_tencent", down)
+    stale = daily.fetch_daily_history("000001", **in_session)
+    assert stale.attrs.get("daily_stale") is True
 
 def test_cached_history_that_misses_the_latest_session_is_refetched(monkeypatch, tmp_path):
     from datetime import date
