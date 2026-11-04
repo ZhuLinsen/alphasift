@@ -52,6 +52,7 @@ _PAGE_SIZE = 250
 _PAGE_PAUSE_SECONDS = 0.2
 _DEFAULT_MAX_ROWS = 4000
 _DEFAULT_BUDGET_SECONDS = 90.0
+_MIN_VALUATION_COVERAGE = 0.8
 
 
 def fetch_yahoo_snapshot(
@@ -119,9 +120,14 @@ def fetch_yahoo_snapshot(
     df = pd.DataFrame(list(rows.values()))
     df = df.sort_values("total_mv", ascending=False, na_position="last").head(limit).reset_index(drop=True)
     valuation_errors: list[str] = []
+    valuation_incomplete = False
     if spec.id == "kr" and kr_valuation_enabled():
-        # Yahoo has no PE/PB for Korean listings; Naver fills them.
-        df, valuation_errors = enrich_kr_valuation(df)
+        # Yahoo has no PE/PB for Korean listings; Naver fills them within
+        # what is left of the snapshot budget (at most 60s).
+        remaining = 60.0 if budget is None else max(5.0, min(60.0, budget - (time.monotonic() - started)))
+        df, valuation_errors = enrich_kr_valuation(df, budget_seconds=remaining)
+        # A mostly unvalued frame must not replace a valued last-good cache.
+        valuation_incomplete = float(df.attrs.get("valuation_coverage", 1.0)) < _MIN_VALUATION_COVERAGE
     df.attrs["snapshot_source"] = "yahoo_screener"
     df.attrs["market"] = spec.id
     df.attrs["currency"] = spec.currency
@@ -129,7 +135,7 @@ def fetch_yahoo_snapshot(
         *(f"yahoo_screener sector {item}" for item in errors),
         *valuation_errors,
     ]
-    df.attrs["partial"] = bool(errors)
+    df.attrs["partial"] = bool(errors) or valuation_incomplete
     logger.info("Yahoo screener snapshot for %s: %d rows", spec.id, len(df))
     return df
 

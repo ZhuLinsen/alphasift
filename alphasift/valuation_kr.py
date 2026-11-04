@@ -15,8 +15,8 @@ from __future__ import annotations
 import logging
 import os
 import re
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import TimeoutError as FuturesTimeout
 
 import pandas as pd
 import requests
@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 _NAVER_INTEGRATION_URL = "https://m.stock.naver.com/api/stock/{code}/integration"
 _HEADERS = {"User-Agent": "Mozilla/5.0 (alphasift)"}
-_NUMBER_RE = re.compile(r"-?[\d,]+(?:\.\d+)?")
+# Naver display values: "9.68배", "1,234.5배", "-12.30배", "N/A".
+_NUMBER_RE = re.compile(r"^\s*(-?\d{1,3}(?:,\d{3})*(?:\.\d+)?|-?\d+(?:\.\d+)?)\s*배?\s*$")
 _DEFAULT_WORKERS = 8
 _REQUEST_TIMEOUT = (5, 10)
 
@@ -52,24 +53,27 @@ def enrich_kr_valuation(
     missing = result["pe_ratio"].isna() | result["pb_ratio"].isna()
     codes = [str(code) for code in result.loc[missing, "code"]]
     if not codes:
+        result.attrs["valuation_coverage"] = 1.0
         return result, []
 
-    started = time.monotonic()
     values: dict[str, dict[str, float | None]] = {}
     failures: list[str] = []
     timed_out = 0
-    with ThreadPoolExecutor(max_workers=max(1, int(max_workers))) as pool:
-        futures = {pool.submit(fetch, _naver_code(code)): code for code in codes}
-        for future in as_completed(futures):
+    pool = ThreadPoolExecutor(max_workers=max(1, int(max_workers)))
+    futures = {pool.submit(fetch, _naver_code(code)): code for code in codes}
+    try:
+        for future in as_completed(futures, timeout=budget_seconds):
             code = futures[future]
-            if budget_seconds is not None and time.monotonic() - started > budget_seconds:
-                timed_out += 1
-                future.cancel()
-                continue
             try:
                 values[code] = future.result()
             except Exception as exc:  # noqa: BLE001 - one listing failing is fine
                 failures.append(f"{code}: {exc}")
+    except FuturesTimeout:
+        timed_out = sum(1 for future in futures if not future.done())
+    finally:
+        # Queued requests are dropped; in-flight ones finish in the background
+        # (bounded by the request timeout) without holding up the snapshot.
+        pool.shutdown(wait=False, cancel_futures=True)
 
     filled = 0
     for idx in result.index[missing]:
@@ -81,6 +85,7 @@ def enrich_kr_valuation(
                 result.at[idx, column] = item[key]
                 filled += 1
 
+    result.attrs["valuation_coverage"] = round(len(values) / len(codes), 4)
     errors: list[str] = []
     if failures:
         errors.append(
@@ -109,14 +114,15 @@ def fetch_naver_valuation(code: str, *, session: requests.Session | None = None)
 
 
 def parse_naver_number(value: object) -> float | None:
-    """Parse Naver display values like ``9.68배`` or ``1,234.5배``; N/A and dashes -> None."""
-    match = _NUMBER_RE.search(str(value or ""))
+    """Parse Naver display values like ``9.68배`` or ``1,234.5배``.
+
+    N/A, dashes, anything else and an exact 0 (no ratio) -> None.
+    """
+    match = _NUMBER_RE.match(str(value or ""))
     if not match:
         return None
-    try:
-        return float(match.group(0).replace(",", ""))
-    except ValueError:
-        return None
+    number = float(match.group(1).replace(",", ""))
+    return number if number != 0 else None
 
 
 def _naver_code(symbol: str) -> str:
