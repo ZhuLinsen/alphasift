@@ -5,6 +5,8 @@ name: Track record
 # against the market benchmark, and publish the dashboard to GitHub Pages.
 
 on:
+  push: # TEMP: test run from the PR branch; removed before merge
+    branches: [feat/track-record]
   schedule:
     - cron: "30 10 * * 1-5" # asia: 18:30 Beijing, after CN/HK/JP/KR/TW (and IN at 18:00) close
     - cron: "30 22 * * 1-5" # us: 06:30 Beijing the next morning
