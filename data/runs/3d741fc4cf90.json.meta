@@ -1,0 +1,26 @@
+{
+  "schema_version": 3,
+  "run_id": "3d741fc4cf90",
+  "strategy": "capital_heat",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "momentum",
+  "created_at": "2026-11-04T14:30:33.794286+00:00",
+  "picks": 5,
+  "snapshot_count": 5220,
+  "after_filter_count": 139,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 0,
+  "degradation": [],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/3d741fc4cf90.json",
+  "report_path": "track/data/runs/3d741fc4cf90.md"
+}

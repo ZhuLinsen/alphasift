@@ -1,0 +1,26 @@
+{
+  "schema_version": 3,
+  "run_id": "0573822768fe",
+  "strategy": "oversold_reversal",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "reversal",
+  "created_at": "2026-11-04T14:32:42.811740+00:00",
+  "picks": 5,
+  "snapshot_count": 5220,
+  "after_filter_count": 106,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 0,
+  "degradation": [],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/0573822768fe.json",
+  "report_path": "track/data/runs/0573822768fe.md"
+}
