@@ -156,3 +156,27 @@ def test_runs_without_market_load_as_cn(tmp_path):
 
     assert load_screen_result("legacy", data_dir=tmp_path).market == "cn"
     assert [item["run_id"] for item in list_saved_runs(data_dir=tmp_path, market="cn")] == ["legacy"]
+
+
+def test_benchmark_cache_refetches_for_older_runs(monkeypatch):
+    from alphasift.evaluate import _benchmark_return
+
+    def path(start, days):
+        dates = pd.bdate_range(start, periods=days)
+        return pd.DataFrame({"date": dates, "close": [100.0 + i for i in range(days)]})
+
+    fetched = []
+
+    def fake_fetch(market, *, lookback_days):
+        fetched.append(lookback_days)
+        return path("2026-06-01", 120)
+
+    monkeypatch.setattr("alphasift.evaluate._fetch_benchmark_path", fake_fetch)
+    cache = {"us": path("2026-10-01", 20)}  # left by a newer run
+    old_run = ScreenResult(strategy="s", market="us", run_id="old", created_at="2026-06-10T22:00:00")
+
+    ret, label, errors = _benchmark_return(old_run, horizon_days=5, lookback_days=160, cache=cache)
+
+    assert fetched == [160]
+    assert errors == [] and ret is not None
+    assert cache["us"]["date"].min() == pd.Timestamp("2026-06-01")

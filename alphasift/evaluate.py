@@ -822,7 +822,12 @@ def _benchmark_return(
     label = spec.benchmark_name or spec.benchmark
     if not spec.benchmark:
         return None, label, []
+    cutoff = entry_cutoff_date(run.created_at, spec.id)
     path = cache.get(spec.id) if cache is not None else None
+    if path is not None and not _path_reaches(path, cutoff):
+        # Cached for a newer run with a shorter lookback; batches list runs
+        # newest first, so older runs need a longer history.
+        path = None
     if path is None:
         try:
             path = _fetch_benchmark_path(spec.id, lookback_days=lookback_days)
@@ -833,7 +838,6 @@ def _benchmark_return(
     # Entry level = the benchmark close on the entry cutoff session, so the
     # benchmark and the picks share the same start and the same N bars.
     df = _normalize_price_path(path)
-    cutoff = entry_cutoff_date(run.created_at, spec.id)
     if df.empty or cutoff is None or "date" not in df.columns:
         return None, label, [f"Benchmark {label} has no usable history"]
     dates = df["date"].dt.normalize()
@@ -850,6 +854,16 @@ def _benchmark_return(
         horizon_days=horizon_days,
     )
     return metrics["path_end_return_pct"], label, []
+
+
+def _path_reaches(path: pd.DataFrame, cutoff: date | None) -> bool:
+    """True when the history has a bar on or before the entry cutoff session."""
+    if cutoff is None:
+        return True
+    df = _normalize_price_path(path)
+    if df.empty or "date" not in df.columns:
+        return False
+    return bool((df["date"].dt.normalize() <= pd.Timestamp(cutoff)).any())
 
 
 def _fetch_benchmark_path(market: str, *, lookback_days: int) -> pd.DataFrame:
