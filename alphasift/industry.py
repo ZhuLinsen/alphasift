@@ -311,7 +311,17 @@ def fetch_eastmoney_industry_map(
             stale_mapping = cached
 
     try:
-        mapping = _fetch_eastmoney_industry_rows()
+        # The backfill runs on the screening path (often from overseas, where
+        # EastMoney is slow), so bound it like a snapshot source: the whole
+        # paged fetch, retries included, gets the snapshot call budget.
+        from alphasift.snapshot import _snapshot_call_timeout_seconds
+        from alphasift.source_guard import call_with_timeout
+
+        mapping = call_with_timeout(
+            _fetch_eastmoney_industry_rows,
+            timeout_sec=_snapshot_call_timeout_seconds(),
+            label="eastmoney industry backfill",
+        )
     except Exception as exc:
         if stale_mapping:
             return stale_mapping, [
@@ -338,7 +348,9 @@ def fetch_eastmoney_industry_map(
 
 
 def _fetch_eastmoney_industry_rows() -> dict[str, dict[str, object]]:
-    from alphasift.snapshot import _eastmoney_get
+    from alphasift.snapshot import _eastmoney_get, _PageBudget
+
+    budget = _PageBudget("eastmoney industry", per_request_timeout=30.0)
 
     url = "https://data.eastmoney.com/dataapi/xuangu/list"
     headers = {
@@ -361,8 +373,9 @@ def _fetch_eastmoney_industry_rows() -> dict[str, dict[str, object]]:
                 "client": "WEB",
             },
             headers=headers,
-            timeout=30,
+            timeout=budget.request_timeout(),
         )
+        budget.pages += 1
         data = resp.json()
         if not data.get("success"):
             raise RuntimeError(f"eastmoney industry API error: {data.get('message', 'unknown')}")
