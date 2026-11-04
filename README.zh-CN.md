@@ -8,6 +8,8 @@
 
 [English](README.md) | 中文
 
+**公开记录：** 每个交易日收盘后自动运行全部内置策略并保存选股，之后按 T+5 / T+10 / T+20 和所在市场的基准指数比较——见[看板](https://zhulinsen.github.io/alphasift/)，原始数据在 [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) 分支。
+
 ```text
 全市场 ──► L1 硬筛 + 因子打分 ──► L2 LLM 横向排序（可选）
 (5000+ 只)   (YAML 策略，无需 API key)    (候选池内跨股票比较)

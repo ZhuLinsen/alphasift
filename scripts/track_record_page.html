@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AlphaSift Track Record</title>
+<meta name="description" content="AlphaSift 每日自动选股记录：每个策略收盘后的选股，以及 T+5 / T+10 / T+20 相对基准的表现。">
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1c1d1f; --muted: #6b6f76; --line: #e4e4e0;
+  --accent: #2f5bd3; --up: #c8352b; --down: #1f8a4c; --warn: #b7791f; --chip: #efefeb;
+  --s1: #2f5bd3; --s2: #c8352b; --s3: #1f8a4c; --s4: #b7791f; --s5: #7b4fc9; --s6: #0f8a8a;
+  --s7: #c2549b; --s8: #5b6470; --s9: #8a6d1f; --s10: #3f8fd6; --s11: #d9773a; --s12: #4a9e6b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141517; --panel: #1c1d20; --ink: #e8e8e6; --muted: #9a9ea6; --line: #2d2f33;
+    --accent: #7b9cf0; --up: #f0766b; --down: #4cc483; --warn: #e0b354; --chip: #26282c;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141517; --panel: #1c1d20; --ink: #e8e8e6; --muted: #9a9ea6; --line: #2d2f33;
+  --accent: #7b9cf0; --up: #f0766b; --down: #4cc483; --warn: #e0b354; --chip: #26282c;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", sans-serif;
+}
+main { max-width: 1080px; margin: 0 auto; padding: 28px 16px 64px; }
+header h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
+header p { margin: 0; color: var(--muted); }
+a { color: var(--accent); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip { background: var(--chip); border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); }
+.chip.bad { color: var(--up); }
+.notice { margin-top: 14px; padding: 10px 12px; border-left: 3px solid var(--warn); background: var(--panel);
+  color: var(--muted); font-size: 13px; border-radius: 4px; }
+section { margin-top: 32px; }
+section > h2 { font-size: 17px; margin: 0 0 4px; }
+section > .hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel); }
+.seg button { border: 0; background: none; color: var(--muted); padding: 5px 12px; font: inherit; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 8px; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+th { font-weight: 600; color: var(--muted); font-size: 12px; }
+th:first-child, td:first-child, th.l, td.l { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+.up { color: var(--up); } .down { color: var(--down); } .dim { color: var(--muted); }
+.small { font-size: 12px; }
+.tag { font-size: 11px; color: var(--warn); margin-left: 4px; }
+.chart { padding: 12px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 0 12px 12px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.card h3 { font-size: 14px; margin: 0; padding: 10px 12px 2px; }
+.card .sub { padding: 0 12px 6px; color: var(--muted); font-size: 12px; }
+.card td, .card th { padding: 6px 12px; }
+.empty { padding: 24px; text-align: center; color: var(--muted); }
+footer { margin-top: 40px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>AlphaSift Track Record</h1>
+    <p>每个交易日收盘后，自动运行 <a href="https://github.com/ZhuLinsen/alphasift">AlphaSift</a> 的全部内置策略（不用 LLM）并保存选股，之后按 T+5 / T+10 / T+20 个交易日和所在市场的基准指数比较。</p>
+    <div class="meta" id="meta"></div>
+    <div class="notice">仅供研究，不构成投资建议。收益为收盘到收盘、扣除往返成本，不含分红；样本少时波动很大，请结合"已评估"数量看。</div>
+  </header>
+
+  <section>
+    <h2>策略成绩单</h2>
+    <p class="hint">按单只选股统计已到期的窗口。超额收益 = 选股收益 − 同期基准收益，只统计拿到基准数据的选股。</p>
+    <div class="controls"><div class="seg" id="win-score"></div></div>
+    <div class="panel scroll"><table id="scorecard"></table></div>
+  </section>
+
+  <section>
+    <h2>超额收益走势</h2>
+    <p class="hint">截至每个入场日，该策略所有已到期选股的平均超额收益（累计平均）。</p>
+    <div class="controls">
+      <div class="seg" id="win-trend"></div>
+      <select id="market-trend" aria-label="市场"></select>
+    </div>
+    <div class="panel"><div class="chart" id="chart"></div><div class="legend" id="legend"></div></div>
+  </section>
+
+  <section>
+    <h2>最新选股</h2>
+    <p class="hint">每个策略最近一次运行的选股。</p>
+    <div class="controls"><select id="market-latest" aria-label="市场"></select></div>
+    <div class="cards" id="latest"></div>
+  </section>
+
+  <section>
+    <h2>历史记录</h2>
+    <p class="hint">按交易日查看当天的选股，以及之后各窗口的收益和超额收益（待定 = 窗口未到期）。</p>
+    <div class="controls"><select id="day" aria-label="日期"></select></div>
+    <div class="cards" id="history"></div>
+  </section>
+
+  <footer>原始数据：<a href="https://github.com/ZhuLinsen/alphasift/tree/track-record">track-record 分支</a>，每次运行一个提交，事后不修改。</footer>
+</main>
+<script>
+const MARKET_NAMES = { cn: "A 股", us: "美股", hk: "港股", jp: "日本", kr: "韩国", tw: "台湾", in: "印度" };
+const SESSION_NAMES = { asia: "亚洲场", us: "美股场" };
+const MIN_SAMPLE = 20;
+const state = { summary: null, scoreWin: "5", trendWin: "5", trendMarket: null, latestMarket: null };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const sname = (name) => esc((state.summary.strategy_names || {})[name] || name);
+const mname = (id) => MARKET_NAMES[id] || id;
+function pct(v, digits = 2) {
+  if (v === null || v === undefined) return '<span class="dim">–</span>';
+  const cls = v > 0 ? "up" : v < 0 ? "down" : "";
+  return `<span class="${cls}">${v > 0 ? "+" : ""}${v.toFixed(digits)}%</span>`;
+}
+const rate = (v) => (v === null || v === undefined ? '<span class="dim">–</span>' : `${Math.round(v * 100)}%`);
+const num = (v, d = 2) => (v === null || v === undefined ? '<span class="dim">–</span>' : Number(v).toFixed(d));
+const localTime = (iso) => (iso ? new Date(iso).toLocaleString("zh-CN", { hour12: false }) : "–");
+
+function segmented(el, key, onChange) {
+  el.innerHTML = state.summary.windows.map((w) => `<button type="button" data-w="${w}">T+${w}</button>`).join("");
+  const sync = () => el.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.w === state[key])));
+  el.addEventListener("click", (e) => {
+    const w = e.target.dataset && e.target.dataset.w;
+    if (!w) return;
+    state[key] = w; sync(); onChange();
+  });
+  sync();
+}
+
+function fillMarkets(el, key, onChange) {
+  const markets = state.summary.markets.map((m) => m.id);
+  state[key] = markets[0] || null;
+  el.innerHTML = markets.map((m) => `<option value="${m}">${mname(m)}</option>`).join("");
+  el.addEventListener("change", () => { state[key] = el.value; onChange(); });
+}
+
+function renderMeta() {
+  const s = state.summary;
+  const chips = [`更新于 ${localTime(s.generated_at)}`, `${s.run_count} 次运行`, `${s.days.length} 个交易日`];
+  const html = chips.map((c) => `<span class="chip">${esc(c)}</span>`);
+  for (const [session, info] of Object.entries(s.sessions || {})) {
+    const bad = info.ok < info.total;
+    const title = info.failures.map((f) => `${f.market} ${f.strategy}: ${f.status} ${f.error || ""}`).join("\n");
+    html.push(`<span class="chip${bad ? " bad" : ""}" title="${esc(title)}">${SESSION_NAMES[session] || session} ${info.ok}/${info.total} 成功 · ${localTime(info.finished_at)}</span>`);
+  }
+  $("meta").innerHTML = html.join("");
+}
+
+function renderScorecard() {
+  const w = state.scoreWin;
+  const rows = state.summary.scorecard;
+  if (!rows.length) { $("scorecard").innerHTML = '<tr><td class="empty">还没有运行记录</td></tr>'; return; }
+  const head = `<tr><th>市场</th><th class="l">策略</th><th>运行</th><th>已评估</th><th>待定</th><th>平均收益</th><th>胜率</th><th>同期基准</th><th>超额收益</th><th>跑赢基准</th></tr>`;
+  const sorted = [...rows].sort((a, b) => (b.windows[w].average_excess_return_pct ?? -1e9) - (a.windows[w].average_excess_return_pct ?? -1e9));
+  const body = sorted.map((r) => {
+    const x = r.windows[w];
+    const bench = x.matched_return_pct !== null && x.average_excess_return_pct !== null ? x.matched_return_pct - x.average_excess_return_pct : null;
+    const few = x.evaluated > 0 && x.evaluated < MIN_SAMPLE ? `<span class="tag" title="少于 ${MIN_SAMPLE} 只，结论不可靠">样本少</span>` : "";
+    return `<tr><td>${mname(r.market)}</td><td class="l">${sname(r.strategy)}</td><td>${r.runs}</td>
+      <td>${x.evaluated}${few}</td><td class="dim">${x.pending}</td><td>${pct(x.average_return_pct)}</td><td>${rate(x.win_rate)}</td>
+      <td>${pct(bench)}</td><td><b>${pct(x.average_excess_return_pct)}</b></td><td>${rate(x.beat_rate)}</td></tr>`;
+  }).join("");
+  $("scorecard").innerHTML = head + body;
+}
+
+function renderChart() {
+  const series = ((state.summary.trend || {})[state.trendMarket] || {})[state.trendWin] || {};
+  const names = Object.keys(series).sort();
+  if (!names.length) {
+    $("chart").innerHTML = `<div class="empty">该市场 T+${state.trendWin} 还没有到期的选股</div>`;
+    $("legend").innerHTML = "";
+    return;
+  }
+  const dates = [...new Set(names.flatMap((n) => series[n].map((p) => p[0])))].sort();
+  const values = names.flatMap((n) => series[n].map((p) => p[1]));
+  let lo = Math.min(0, ...values), hi = Math.max(0, ...values);
+  const pad = (hi - lo) * 0.1 || 1; lo -= pad; hi += pad;
+  const W = 900, H = 300, L = 48, R = 12, T = 12, B = 28;
+  const x = (d) => L + (dates.length === 1 ? (W - L - R) / 2 : (dates.indexOf(d) / (dates.length - 1)) * (W - L - R));
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const ticks = 5, parts = [];
+  for (let i = 0; i <= ticks; i++) {
+    const v = lo + ((hi - lo) * i) / ticks;
+    parts.push(`<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/>`,
+      `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v.toFixed(1)}%</text>`);
+  }
+  parts.push(`<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-dasharray="3 3"/>`);
+  const step = Math.max(1, Math.ceil(dates.length / 6));
+  dates.forEach((d, i) => {
+    if (i % step === 0 || i === dates.length - 1)
+      parts.push(`<text x="${x(d)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${d.slice(5)}</text>`);
+  });
+  names.forEach((n, i) => {
+    const color = `var(--s${(i % 12) + 1})`;
+    const pts = series[n];
+    parts.push(`<polyline fill="none" stroke="${color}" stroke-width="2" points="${pts.map((p) => `${x(p[0])},${y(p[1])}`).join(" ")}"/>`);
+    for (const p of pts)
+      parts.push(`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="3" fill="${color}"><title>${sname(n)} ${p[0]}：${p[1] > 0 ? "+" : ""}${p[1].toFixed(2)}%（${p[2]} 只）</title></circle>`);
+  });
+  $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="累计平均超额收益">${parts.join("")}</svg>`;
+  $("legend").innerHTML = names.map((n, i) => `<span><i style="background:var(--s${(i % 12) + 1})"></i>${sname(n)}</span>`).join("");
+}
+
+function picksTable(picks, withEval) {
+  const wins = state.summary.windows;
+  const head = withEval
+    ? `<tr><th>#</th><th class="l">股票</th>${wins.map((w) => `<th>T+${w}</th>`).join("")}</tr>`
+    : `<tr><th>#</th><th class="l">股票</th><th class="l">行业</th><th>价格</th><th>PE</th><th>PB</th></tr>`;
+  const body = picks.map((p) => {
+    const name = `${esc(p.name)} <span class="dim small">${esc(p.code)}</span>`;
+    if (!withEval)
+      return `<tr><td>${p.rank}</td><td class="l">${name}</td><td class="l dim">${esc(p.industry)}</td><td>${num(p.price)}</td><td>${num(p.pe_ratio, 1)}</td><td>${num(p.pb_ratio, 2)}</td></tr>`;
+    const cells = wins.map((w) => {
+      const e = (p.evaluation || {})[w];
+      if (!e) return '<td class="dim">–</td>';
+      if (e.status === "pending") return '<td class="dim">待定</td>';
+      if (e.status !== "ok") return `<td class="dim" title="${esc(e.status)}">无数据</td>`;
+      return `<td title="超额 ${e.excess_return_pct ?? "–"}%">${pct(e.return_pct, 1)}<br><span class="small">${e.excess_return_pct === null ? "" : "超额 " + pct(e.excess_return_pct, 1)}</span></td>`;
+    }).join("");
+    return `<tr><td>${p.rank}</td><td class="l">${name}</td>${cells}</tr>`;
+  }).join("");
+  return `<div class="scroll"><table>${head}${body}</table></div>`;
+}
+
+function renderLatest() {
+  const runs = (state.summary.latest || {})[state.latestMarket] || [];
+  $("latest").innerHTML = runs.length ? runs.map((r) => `<div class="panel card">
+      <h3>${sname(r.strategy)}</h3>
+      <div class="sub">${r.date} · 全市场 ${r.snapshot_count ?? "–"} 只，硬筛后 ${r.after_filter_count ?? "–"} 只${r.degradation ? ` · <span class="up">数据有降级</span>` : ""}</div>
+      ${r.picks.length ? picksTable(r.picks, false) : '<div class="empty">当天没有符合条件的股票</div>'}
+    </div>`).join("") : '<div class="empty">暂无</div>';
+}
+
+async function renderDay(day) {
+  $("history").innerHTML = '<div class="empty">加载中…</div>';
+  try {
+    const res = await fetch(`site/days/${day}.json`, { cache: "no-cache" });
+    const data = await res.json();
+    $("history").innerHTML = data.runs.map((r) => {
+      const ev = state.summary.windows.map((w) => {
+        const s = (r.evaluation || {})[w];
+        return s && s.evaluated ? `T+${w} 超额 ${pct(s.average_excess_return_pct, 1)}` : `T+${w} 待定`;
+      }).join(" · ");
+      return `<div class="panel card"><h3>${mname(r.market)} · ${sname(r.strategy)}</h3>
+        <div class="sub">${ev}</div>
+        ${r.picks.length ? picksTable(r.picks, true) : '<div class="empty">当天没有符合条件的股票</div>'}</div>`;
+    }).join("");
+  } catch (err) {
+    $("history").innerHTML = `<div class="empty">加载失败：${esc(err.message)}</div>`;
+  }
+}
+
+async function init() {
+  try {
+    const res = await fetch("site/summary.json", { cache: "no-cache" });
+    state.summary = await res.json();
+  } catch (err) {
+    document.querySelector("main").insertAdjacentHTML("beforeend", `<div class="empty">数据加载失败：${esc(err.message)}</div>`);
+    return;
+  }
+  renderMeta();
+  segmented($("win-score"), "scoreWin", renderScorecard);
+  segmented($("win-trend"), "trendWin", renderChart);
+  fillMarkets($("market-trend"), "trendMarket", renderChart);
+  fillMarkets($("market-latest"), "latestMarket", renderLatest);
+  renderScorecard(); renderChart(); renderLatest();
+  const days = state.summary.days.map((d) => d.date);
+  $("day").innerHTML = days.map((d) => `<option value="${d}">${d}（${state.summary.days.find((x) => x.date === d).runs} 次运行）</option>`).join("");
+  $("day").addEventListener("change", (e) => renderDay(e.target.value));
+  if (days.length) renderDay(days[0]);
+}
+init();
+</script>
+</body>
+</html>

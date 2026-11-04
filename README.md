@@ -8,6 +8,8 @@
 
 English | [中文](README.zh-CN.md)
 
+**Track record:** every built-in strategy runs after each close and its picks are measured at T+5 / T+10 / T+20 against the market benchmark — see the [dashboard](https://zhulinsen.github.io/alphasift/) and the raw runs on the [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) branch.
+
 ```text
 full market ──► L1 hard filters + factor scores ──► L2 LLM ranking (optional)
   (5,000+ names)    (YAML strategy, no API key)        (cross-candidate reasoning)
