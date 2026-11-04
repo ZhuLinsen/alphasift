@@ -12,7 +12,7 @@ from alphasift.candidate_context import collect_candidate_context
 from alphasift.context import build_llm_context
 from alphasift.daily import enrich_daily_features
 from alphasift.dsa_provider import apply_dsa_provider_context
-from alphasift.markets import get_market
+from alphasift.markets import get_market, latest_settled_close
 from alphasift.filter import (
     apply_hard_filters,
     hard_filter_rejection_summary,
@@ -252,6 +252,7 @@ def screen(
                 source=effective_daily_source,
                 fetch_retries=config.daily_fetch_retries,
                 max_workers=config.daily_fetch_max_workers,
+                cache_policy=lambda: _screening_daily_cache_kwargs(config, market),
             )
             daily_enriched = True
             daily_errors = [str(item) for item in enriched.attrs.get("daily_errors", [])]
@@ -608,6 +609,30 @@ def _sort_screened_candidates(df: pd.DataFrame, screening=None) -> pd.DataFrame:
     if not sort_columns:
         return df
     return df.sort_values(sort_columns, ascending=ascending, kind="mergesort")
+
+
+def _screening_daily_cache_kwargs(config: Config, market: str) -> dict[str, object]:
+    """Daily-history cache settings for screening.
+
+    After the latest close has settled, a history fetched since then that
+    reaches that session cannot change before the next open, so it is
+    reused. During the session (and just before the open) nothing is read
+    as fresh or written: a partial-day bar must not reach evaluation, which
+    shares the cache. If every source fails, the last cached history is
+    still used, flagged ``stale_cache``. Called per fetch, so a batch that
+    runs across the open switches over.
+    """
+    if config.daily_history_cache_dir is None:
+        return {"cache_dir": None}
+    settled = latest_settled_close(market)
+    if settled is None:
+        return {"cache_dir": config.daily_history_cache_dir, "cache_ttl_seconds": 0.0, "cache_write": False}
+    session, elapsed = settled
+    return {
+        "cache_dir": config.daily_history_cache_dir,
+        "cache_ttl_seconds": min(elapsed, float(config.daily_history_cache_ttl_hours) * 3600.0),
+        "cache_min_last_date": session,
+    }
 
 
 def _required_snapshot_columns(filters) -> list[str]:

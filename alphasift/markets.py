@@ -14,6 +14,8 @@ extra namespace prefix is needed.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 
 @dataclass(frozen=True)
@@ -113,3 +115,44 @@ def has_foreign_yahoo_suffix(code: str) -> bool:
     """True for symbols like ``0700.HK`` or ``005930.KS`` that must keep their suffix."""
     head, sep, suffix = (code or "").rpartition(".")
     return bool(sep and head and suffix.upper() in FOREIGN_YAHOO_SUFFIXES)
+
+
+# Daily bars are final some time after the close; vendors can lag a little.
+_CLOSE_SETTLE_SECONDS = 30 * 60
+# A screening batch takes minutes; stop reusing caches shortly before the open
+# so candidates processed after it do not mix in pre-open data.
+_PRE_OPEN_MARGIN_SECONDS = 15 * 60
+
+
+def latest_settled_close(market: str, now: datetime | None = None) -> tuple[date, float] | None:
+    """Latest session whose close has settled, and seconds since it settled.
+
+    None during the session (and just before the open): today's bar is not
+    final, so screening must not reuse cached histories. Weekends step back
+    to Friday; exchange holidays are not known here, which only makes reuse
+    stricter (a cached history must still reach the computed session date).
+    """
+    spec = get_market(market)
+    tz = ZoneInfo(spec.timezone)
+    local = (now or datetime.now(tz)).astimezone(tz)
+    open_h, open_m = (int(part) for part in spec.session_open.split(":"))
+    close_h, close_m = (int(part) for part in spec.session_close.split(":"))
+    day = local.date()
+    open_at = datetime.combine(day, time(open_h, open_m), tzinfo=tz)
+    if local.weekday() < 5:
+        if open_at.timestamp() - _PRE_OPEN_MARGIN_SECONDS <= local.timestamp() < datetime.combine(
+            day, time(close_h, close_m), tzinfo=tz
+        ).timestamp():
+            return None
+        if local.timestamp() < open_at.timestamp():
+            day -= timedelta(days=1)
+    else:
+        day -= timedelta(days=1)
+    while day.weekday() >= 5:
+        day -= timedelta(days=1)
+    settled = datetime.combine(day, time(close_h, close_m), tzinfo=tz).timestamp() + _CLOSE_SETTLE_SECONDS
+    # Epoch seconds, not wall-clock differences, so DST changes do not skew it.
+    elapsed = local.timestamp() - settled
+    if elapsed <= 0:
+        return None
+    return day, elapsed
