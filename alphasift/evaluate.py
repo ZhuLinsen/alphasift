@@ -12,9 +12,11 @@ import pandas as pd
 
 from alphasift.config import Config
 from alphasift.daily import fetch_daily_history
+from alphasift.markets import get_market
 from alphasift.models import EvaluationResult, PickEvaluation, ScreenResult
 from alphasift.normalize import normalize_code
 from alphasift.snapshot import fetch_snapshot_with_fallback
+from alphasift.snapshot_yahoo import fetch_yahoo_quotes
 from alphasift.store import list_saved_runs, load_screen_result
 
 
@@ -52,6 +54,9 @@ def evaluate_saved_run(
             source_health_path=config.source_health_path,
             market=run.market,
         )
+        current_snapshot = _fill_missing_quotes(
+            current_snapshot, run.market, [pick.code for pick in run.picks]
+        )
     if cost_bps is None:
         cost_bps = config.evaluation_cost_bps
     if follow_through_pct is None:
@@ -73,9 +78,9 @@ def evaluate_saved_run(
     effective_price_paths = _normalize_price_path_mapping(price_paths)
     if with_price_path:
         # Same market-aware default as pipeline.py: config.daily_source's
-        # "auto" chain is CN-only and cannot resolve US tickers.
+        # "auto" chain is CN-only and cannot resolve Yahoo symbols.
         effective_daily_source = (
-            "yfinance" if run.market == "us" and config.daily_source in ("auto", "")
+            "yfinance" if run.market != "cn" and config.daily_source in ("auto", "")
             else config.daily_source
         )
         fetched_paths, path_errors = _fetch_price_paths(
@@ -270,6 +275,8 @@ def evaluate_saved_runs(
     """
     if config is None:
         config = Config.from_env()
+    market = get_market(market).id  # saved runs store the lowercase id
+    fetched_snapshot = current_snapshot is None
     if current_snapshot is None:
         current_snapshot = fetch_snapshot_with_fallback(
             config.snapshot_source_priority,
@@ -295,6 +302,10 @@ def evaluate_saved_runs(
         strategy=strategy,
         market=market,
     )
+    if fetched_snapshot:
+        current_snapshot = _fill_missing_quotes(
+            current_snapshot, market, _saved_pick_codes(run_items, config)
+        )
 
     evaluations: list[EvaluationResult] = []
     for item in run_items:
@@ -466,6 +477,52 @@ def evaluate_saved_runs_by_windows(
         "price_path_window_days": normalized_windows,
         "with_price_path": True,
     }
+
+
+def _fill_missing_quotes(
+    snapshot: pd.DataFrame,
+    market: str,
+    codes: list[str],
+) -> pd.DataFrame:
+    """Add prices for saved non-CN picks that fell out of the screener universe.
+
+    The Yahoo screener only returns names above the market's universe floor,
+    so a pick that dropped below it would be marked missing and silently
+    left out of returns. CN snapshots cover the whole market already.
+    """
+    if get_market(market).cn_rules:
+        return snapshot
+    have = set(_snapshot_by_code(snapshot))
+    missing = [
+        code for code in dict.fromkeys(_normalize_code(item) for item in codes)
+        if code and code not in have
+    ]
+    if not missing:
+        return snapshot
+    attrs = dict(snapshot.attrs)
+    errors = [str(item) for item in attrs.get("source_errors", [])]
+    try:
+        quotes = fetch_yahoo_quotes(missing)
+    except Exception as exc:  # noqa: BLE001 - leave the picks missing, but say why
+        errors.append(f"yahoo_quotes for {len(missing)} saved picks: {exc}")
+        quotes = pd.DataFrame(columns=["code", "price"])
+    unresolved = sorted(set(missing) - set(quotes["code"]))
+    if unresolved:
+        errors.append(f"yahoo_quotes: no price for {','.join(unresolved[:10])}")
+    combined = pd.concat([snapshot, quotes], ignore_index=True) if not quotes.empty else snapshot.copy()
+    combined.attrs = {**attrs, "source_errors": errors}
+    return combined
+
+
+def _saved_pick_codes(run_items: list[dict[str, Any]], config: Config) -> list[str]:
+    codes: list[str] = []
+    for item in run_items:
+        try:
+            run = load_screen_result(str(item["path"]), data_dir=config.data_dir)
+        except Exception:  # noqa: BLE001 - the per-run loop reports load errors
+            continue
+        codes.extend(pick.code for pick in run.picks)
+    return codes
 
 
 def _snapshot_by_code(snapshot: pd.DataFrame) -> dict[str, float]:

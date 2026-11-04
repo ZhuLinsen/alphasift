@@ -38,6 +38,7 @@ def test_list_strategies_returns_enabled_strategies_only():
         "blue_chip_income",
         "capital_heat",
         "dual_low",
+        "global_value",
         "low_volatility_quality",
         "momentum_quality",
         "oversold_reversal",

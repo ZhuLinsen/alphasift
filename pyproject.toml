@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "alphasift"
 version = "0.2.0"
-description = "自动选股 Skill — 从全市场中按策略筛选、评分、排序候选股票"
+description = "Full-market stock discovery for AI agents: YAML strategies, optional LLM ranking, sector-diversified picks and T+N evaluation across CN, US, HK, JP, KR, TW and IN"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -18,7 +18,7 @@ dependencies = [
     "akshare>=1.10",
     "baostock>=0.8.9",
     "tushare>=1.4",
-    "yfinance>=0.2",
+    "yfinance>=1.0",
     "requests>=2.28",
 ]
 

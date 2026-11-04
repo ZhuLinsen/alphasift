@@ -9,7 +9,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from alphasift.normalize import normalize_code as _normalize_code
+from alphasift.normalize import normalize_code
+
+
+def _normalize_code(value: object) -> str:
+    # Candidate rows carry structured codes; non-CN tickers must survive.
+    return normalize_code(value, allow_ticker=True)
+
 
 _CONTEXT_TRIM_MARKER = "[context_trimmed]"
 _CANDIDATE_CONTEXT_COLUMNS = {

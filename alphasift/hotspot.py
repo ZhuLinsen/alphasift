@@ -15,11 +15,11 @@ import pandas as pd
 
 from alphasift.industry import (
     _board_heat_score,
-    _normalize_code,
     _safe_float,
     _safe_text,
     load_board_heat_trends,
 )
+from alphasift.normalize import normalize_code as _normalize_code  # strict: free-text paths
 
 
 HOTSPOT_STAGES = (

@@ -1,361 +1,166 @@
 # AlphaSift
 
-AlphaSift is an agent-friendly stock discovery and ranking engine. It scans a broad market universe, applies auditable YAML strategies, enriches candidates with optional market context, ranks them with deterministic factors and optional LLM judgment, and saves runs for later T+N evaluation.
+**Full-market stock discovery for AI agents.** AlphaSift scans every A-share (or the larger listings of six other markets), screens them with auditable YAML strategies, optionally lets an LLM rank the shortlist, keeps the final picks diversified across sectors, and saves every run so you can check later whether the picks worked.
 
-> This README is the default English version. A Chinese version is available at [README.zh-CN.md](README.zh-CN.md).
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+![Markets](https://img.shields.io/badge/markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-orange)
 
-## Disclaimer
+English | [中文](README.zh-CN.md)
 
-- This project is for learning, research, and engineering experiments only.
-- It is not investment advice, a return guarantee, or a buy/sell instruction.
-- Outputs depend on third-party market data, optional LLM providers, local configuration, and strategy parameters. They can be delayed, incomplete, wrong, or unsuitable for real trading.
-- Users are responsible for independent research, compliance checks, transaction costs, liquidity risks, announcement timing, and all resulting decisions.
+```text
+full market ──► L1 hard filters + factor scores ──► L2 LLM ranking (optional)
+  (5,000+ names)    (YAML strategy, no API key)        (cross-candidate reasoning)
+                                                              │
+saved run ◄── L3 post-analysis ◄── risk overlay + sector diversity cap
+   │          (scorecard / DSA / HTTP)
+   └──► T+N evaluation: returns, win rate, failure review
+```
 
-## What AlphaSift does
+## Why AlphaSift
 
-- **L1 deterministic screening**: hard filters and factor scoring over the full market snapshot.
-- **L2 optional LLM ranking**: structured cross-candidate reasoning, theses, catalysts, risks, confidence, and portfolio risk buckets.
-- **L3 pluggable post-analysis**: local scorecard by default, with optional DSA or external HTTP analyzers.
-- **Hotspot discovery**: topic/sector heat ranking, hotspot detail resolution, leader stock fallbacks, cache quality metadata, and history sidecars.
-- **Daily feature enrichment**: optional candidate-level daily K-line features such as moving averages, MACD/RSI, breakout strength, volume ratio, pullback distance, and platform duration.
-- **Evaluation loop**: save runs, evaluate later using newer snapshots, deduct transaction cost, tag follow-through / failed-breakout outcomes, review failure samples, and optionally fetch price paths for max drawdown / max favorable excursion.
-- **Agent-native interface**: `SKILL.md` describes capabilities and callable interfaces for AI agents.
+- **A-shares first, six more markets in beta.** China A-shares go through a dedicated multi-source chain. US, Hong Kong, Japan, South Korea, Taiwan and India go through the Yahoo Finance screener, which also works from overseas servers and CI runners; they have one unofficial data source and fewer fields (see Known limitations).
+- **Runs without an API key.** L1 screening, scoring, risk and diversity control are deterministic. An LLM only re-ranks the shortlist when you configure one.
+- **Strategies are YAML, not code.** Filters, factor weights, scoring curves, risk thresholds and sector buckets live in readable files that you can diff and review.
+- **Picks don't all come from one sector.** Every row carries an industry or sector label. `portfolio_profile.mode: hard_cap` keeps at most N picks per sector in the Top N.
+- **Data sources heal themselves.** Source outcomes persist across runs, so dead sources are tried last. Each source has a time budget. A last-good snapshot is used, marked as stale, when every live source fails.
+- **Every run is checkable.** Save runs and evaluate them later with transaction costs, win rates, failure samples and optional price paths (max drawdown / run-up).
+- **Built for agents.** [SKILL.md](SKILL.md) describes the callable interface. `alphasift serve` exposes a read-only JSON API for dashboards and orchestrators.
 
 ## Quick start
 
 ```bash
-# Install in editable mode
 pip install -e .
 
-# Copy configuration template
-cp .env.example .env
-# Edit .env if you want LLM ranking:
-# GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY
-# or LITELLM_MODEL / LLM_CHANNELS / LITELLM_CONFIG
-
-# List built-in strategies
-alphasift strategies
-
-# UI/agent overview: strategy groups, source health, recent runs
-alphasift overview --explain
-
-# Local read-only JSON API for dashboards/agents
-alphasift serve --host 127.0.0.1 --port 8765
-
-# Run the no-key demo
-alphasift quickstart
-
-# Screen without LLM ranking
+# A-shares, no API key needed
 alphasift screen dual_low --no-llm
 
-# Screen with LLM ranking, if a provider key is configured
+# Other markets: us, hk, jp, kr, tw, in
+alphasift screen global_value --market hk --no-llm
+
+# Add LLM ranking: set GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY
+# (or LITELLM_MODEL / LLM_CHANNELS) in .env first
+cp .env.example .env
 alphasift screen dual_low
 
-# Reuse another project's environment file
-alphasift --env-file /home/ubuntu/daily_ai_assistant/.env screen balanced_alpha
-
-# Add market or theme context to the LLM prompt
-alphasift screen balanced_alpha --context "Brokerage names are seeing volume expansion today."
-
-# Add candidate-level news / announcement / fund-flow context
-alphasift screen balanced_alpha --candidate-context-file candidate_context.csv
-
-# Show local L3 scorecard explanations
-alphasift screen balanced_alpha --explain
-
-# Add DSA as an optional L3 analyzer; requires DSA_API_URL
-alphasift screen dual_low --post-analyzer dsa
-
-# Disable L3 post-analysis explicitly
-alphasift screen dual_low --no-post-analysis
-
-# Audit project and strategy configuration
-alphasift audit
-
-# Save a run and generate a Markdown review report
+# Save a run, then evaluate it a few days later
 alphasift screen dual_low --no-llm --save-run
-alphasift runs --json
-alphasift report <run_id> --output data/reports/dual_low.md
+alphasift evaluate <run_id> --with-price-path --explain
 ```
 
-Example output shape:
+Run `alphasift quickstart` for a guided no-key demo, and `alphasift strategies` to list the strategies.
 
-```text
-$ alphasift screen dual_low --no-llm
-Universe 5190 -> filtered 337 -> output Top 5
-rank  code    name       score  price   change   pe     pb
-1     002039  黔源电力   72.7   20.72   -2.49%   14.76  1.99
-2     002444  巨星科技   71.0   30.82   +0.29%   14.59  1.95
-3     002128  电投能源   70.9   31.60   -2.41%   14.00  1.90
-```
+## Example output
 
-## Screening examples
+Real runs on 2026-11-03 with `--no-llm`. **They show what the engine outputs; they are not recommendations.**
 
-The following recorded examples were run on April 12, 2026, using the previous trading day's A-share close data from April 10, 2026. LLM ranking was disabled with `--no-llm`; these rows are examples of engine output, not recommendations.
+**China A-shares** (`dual_low`): 5,218 stocks, 284 after filters, Top 5 capped at 2 per sector
 
-### Dual Low
+| # | Code | Name | Industry | PE | PB |
+|---:|---|---|---|---:|---:|
+| 1 | 601169 | 北京银行 | Banks | 5.8 | 0.43 |
+| 2 | 600016 | 民生银行 | Banks | 5.7 | 0.26 |
+| 3 | 601668 | 中国建筑 | Construction | 6.6 | 0.39 |
+| 4 | 601186 | 中国铁建 | Infrastructure | 6.3 | 0.29 |
+| 5 | 601919 | 中远海控 | Shipping | 7.9 | 1.12 |
 
-Full market 5190 stocks -> 337 after hard filters -> Top 5 output.
+**Hong Kong** (`global_value --market hk`): 581 stocks, 275 after filters
 
-| Rank | Code | Name | Score | Price | Change | PE | PB |
-|---:|---|---|---:|---:|---:|---:|---:|
-| 1 | 002039 | 黔源电力 | 72.7 | 20.72 | -2.49% | 14.76 | 1.99 |
-| 2 | 002444 | 巨星科技 | 71.0 | 30.82 | +0.29% | 14.59 | 1.95 |
-| 3 | 002128 | 电投能源 | 70.9 | 31.60 | -2.41% | 14.00 | 1.90 |
-| 4 | 002236 | 大华股份 | 70.8 | 17.43 | +1.04% | 14.86 | 1.50 |
-| 5 | 600583 | 海油工程 | 68.9 | 7.02 | +4.15% | 14.89 | 1.17 |
+| # | Code | Name | Sector | PE | PB |
+|---:|---|---|---|---:|---:|
+| 1 | 0998.HK | China CITIC Bank | Financial Services | 5.8 | 0.43 |
+| 2 | 0267.HK | CITIC Limited | Industrials | 5.3 | 0.38 |
+| 3 | 1398.HK | ICBC | Financial Services | 6.5 | 0.59 |
+| 4 | 0001.HK | CK Hutchison | Industrials | 6.9 | 0.45 |
+| 5 | 0358.HK | Jiangxi Copper | Basic Materials | 5.7 | 0.77 |
 
-### Volume Breakout
+**Japan** (`global_value --market jp`): 773 stocks, 408 after filters
 
-Full market 5190 stocks -> 126 after hard filters -> Top 5 output.
+| # | Code | Name | Sector | PE | PB |
+|---:|---|---|---|---:|---:|
+| 1 | 9501.T | Tokyo Electric Power | Utilities | 2.6 | 0.21 |
+| 2 | 9022.T | Central Japan Railway | Industrials | 7.2 | 0.71 |
+| 3 | 9502.T | Chubu Electric Power | Utilities | 10.6 | 0.66 |
+| 4 | 1911.T | Sumitomo Forestry | Consumer Cyclical | 9.0 | 0.70 |
+| 5 | 7203.T | Toyota Motor | Consumer Cyclical | 8.7 | 0.97 |
 
-| Rank | Code | Name | Score | Price | Change |
-|---:|---|---|---:|---:|---:|
-| 1 | 002837 | 英维克 | 74.0 | 99.05 | +6.40% |
-| 2 | 688183 | 生益电子 | 73.8 | 95.30 | +7.09% |
-| 3 | 300803 | 指南针 | 73.3 | 101.68 | +3.07% |
-| 4 | 002384 | 东山精密 | 73.0 | 143.55 | +8.83% |
-| 5 | 300277 | 汽轮科技 | 73.0 | 19.74 | +5.73% |
+On an overseas server, the A-share run takes about 10 seconds once source health is warm. Each Yahoo market takes 2–10 seconds.
 
-## Hotspot workflow
+## Supported markets
 
-AlphaSift can discover current market hotspots and resolve a specific topic into a detail payload with raw timeline evidence, compact display-ready route events, leader stocks, source confidence, stale/fallback metadata, and quality diagnostics.
+| `--market` | Market | Snapshot source | Notes |
+|---|---|---|---|
+| `cn` | China A-shares | sina → efinance → akshare_em → em_datacenter (Tushare first when a token is set) | Health-aware ordering; EastMoney industry backfill |
+| `us` | United States | Yahoo screener (NYSE / Nasdaq listings ≥ $1B, including ADRs) | `ALPHASIFT_US_TICKERS` uses an explicit ticker list instead |
+| `hk` | Hong Kong | Yahoo screener | Universe floor ≈ HK$8B |
+| `jp` | Japan | Yahoo screener | Universe floor ≈ ¥150B |
+| `kr` | South Korea | Yahoo screener | Yahoo has no PE/PB for KR, so valuation strategies can't run there |
+| `tw` | Taiwan | Yahoo screener | TWSE and TPEx listings |
+| `in` | India | Yahoo screener | NSE and BSE listings |
 
-```bash
-# Discover hotspot topics and write schema_version=2 cache/history sidecars
-alphasift hotspots --provider akshare --top 12 --output data/hotspots.json --history data/hotspot.history.jsonl --explain
-
-# Inspect a single hotspot topic
-alphasift hotspot "AI compute" --top-stocks 10 --timeline --fallback-cache data/hotspots.json --explain
-
-# Safe offline/no-network check
-alphasift hotspots --provider none --explain
-```
-
-Hotspot cache files include:
-
-- `schema_version`: currently `2`
-- `generated_at`
-- `metadata`: provider, row count, source errors, stale/fallback state
-- `hotspots`: normalized topic rows
-- sidecars such as `*.meta.json` and JSONL history when requested
-
-Leader stock fallbacks are intentionally explicit. When live constituent APIs fail and AlphaSift uses last-good/cache leaders, returned stocks carry fields such as `source="last_good_cache.leader_stocks"`, `source_confidence`, and `fallback_used=true` instead of pretending to be live provider data.
-
-Hotspot details keep the raw `timeline` for auditability and also expose a compact `route` list for applications. `route` is grouped by day, newest first, trimmed for UI display, and falls back to a short current heat/stage/leader summary when no timeline evidence is available.
-
-## Python API
-
-```python
-from alphasift import screen
-
-result = screen("dual_low", use_llm=False)
-for pick in result.picks:
-    print(f"{pick.rank}. {pick.code} {pick.name} score={pick.final_score:.1f}")
-```
-
-Saved-run evaluation helpers are also exported:
-
-```python
-from alphasift import evaluate_saved_run, evaluate_saved_runs
-```
-
-## Configuration
-
-AlphaSift is designed to reuse LiteLLM-style configuration used by `daily_stock_analysis` and similar projects.
-
-| Variable | Required | Description | Default |
-|---|---:|---|---|
-| `LITELLM_MODEL` | Recommended | Main model in `provider/model` format | `gemini/gemini-2.5-flash` |
-| `LITELLM_FALLBACK_MODELS` | No | Comma-separated fallback models | - |
-| `LLM_CHANNELS` | No | Multi-channel provider config using `LLM_{NAME}_*` | - |
-| `LITELLM_CONFIG` | No | LiteLLM Router YAML file | - |
-| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | For LLM ranking | Provider API key | - |
-| `OPENAI_BASE_URL` / `OLLAMA_API_BASE` | No | OpenAI-compatible or Ollama endpoint | - |
-| `LLM_MAX_TOKENS` | No | Max tokens requested from LLM ranking; keeps local servers from generating unbounded output after client timeout | `2048` |
-| `LLM_CONTEXT` | No | Extra market/theme context for LLM ranking | - |
-| `LLM_CANDIDATE_CONTEXT_ENABLED` | No | Fetch candidate news/announcements/fund-flow context by default | `false` |
-| `INDUSTRY_MAP_FILES` | No | Local code-to-industry/concepts/board-heat files | - |
-| `INDUSTRY_PROVIDER` | No | Optional board/industry provider such as `akshare` | `none` |
-| `INDUSTRY_AUTO_BACKFILL` | No | Backfill A-share industry labels from an EastMoney map (cached for 7 days) when the snapshot source has none, so portfolio diversity control stays active | `true` |
-| `SNAPSHOT_SOURCE_PRIORITY` | No | Snapshot source order | Depends on Tushare token |
-| `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` | No | Max acceptable age for last-good snapshot fallback; empty disables the guard | - |
-| `ALPHASIFT_SOURCE_HEALTH_PATH` | No | File that records snapshot source outcomes across runs; sources that failed in the last 6 hours are tried last. Set to `off` to disable | `$ALPHASIFT_DATA_DIR/source_health.json` |
-| `ALPHASIFT_SOURCE_CALL_TIMEOUT_SEC` | No | Global caller-side timeout for third-party wrapper data-source calls; `0`/`off` disables | - |
-| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | No | Per-source snapshot time budget: caller-side timeout for `efinance`/`akshare_em`/`tushare`, and a total pagination budget for `sina`/`em_datacenter` | `60` |
-| `ALPHASIFT_DAILY_CALL_TIMEOUT_SEC` | No | Daily wrapper timeout for `akshare`/`baostock`/`tushare`/`yfinance` | `20` |
-| `ALPHASIFT_EASTMONEY_MIN_INTERVAL_SEC` | No | Minimum interval for direct Eastmoney HTTP calls | `1.0` |
-| `ALPHASIFT_EASTMONEY_JITTER_SEC` | No | Random jitter added to the Eastmoney interval | `0.3` |
-| `TUSHARE_TOKEN` / `TUSHARE_API_TOKEN` | For Tushare | Tushare Pro token | - |
-| `POST_ANALYZERS` | No | L3 analyzers; set `none` to disable | `scorecard` |
-| `DSA_API_URL` | For DSA analyzer | DSA service URL or full analysis endpoint | - |
-| `DAILY_ENRICH_ENABLED` | No | Enable candidate-level daily K-line enrichment | `false` |
-| `DAILY_SOURCE` | No | Daily K-line source: `auto`, `tencent`, `sina`, `akshare`, `baostock`, or `tushare` | `auto` |
-| `ALPHASIFT_DATA_DIR` | No | Run records, caches, and evaluation results | `./data` |
-| `STRATEGIES_DIR` | No | Custom strategy directory | auto-detect |
-
-Example multi-channel LiteLLM config:
-
-```env
-LLM_CHANNELS=primary
-LLM_PRIMARY_PROTOCOL=openai
-LLM_PRIMARY_BASE_URL=https://api.deepseek.com/v1
-LLM_PRIMARY_API_KEYS=sk-xxx,sk-yyy
-LLM_PRIMARY_MODELS=deepseek-chat,deepseek-reasoner
-LITELLM_MODEL=openai/deepseek-chat
-LITELLM_FALLBACK_MODELS=openai/gpt-4o-mini,anthropic/claude-3-5-sonnet
-```
-
-Example single-provider config:
-
-```env
-GEMINI_API_KEY=...
-LITELLM_MODEL=gemini/gemini-2.5-flash
-```
-
-You can load external `.env` files repeatedly:
-
-```bash
-alphasift --env-file /path/to/daily_stock_analysis/.env \
-  --env-file /path/to/daily_ai_assistant/.env \
-  screen balanced_alpha
-```
-
-For the full configuration reference, see [docs/configuration.md](docs/configuration.md).
-
-## Data sources
-
-AlphaSift supports multiple A-share market snapshot sources and automatically falls back by priority.
-
-Default without Tushare token:
-
-```text
-sina -> efinance -> akshare_em -> em_datacenter
-```
-
-Default with `TUSHARE_TOKEN` / `TUSHARE_API_TOKEN` and no manual priority override:
-
-```text
-tushare -> sina -> efinance -> akshare_em -> em_datacenter
-```
-
-| Source | Backend | Notes |
-|---|---|---|
-| `sina` | Sina Finance Market Center | Direct HTTP full-market source with PE/PB/turnover/market-cap fields |
-| `efinance` | Eastmoney push2 | Fast during live sessions |
-| `akshare_em` | Eastmoney push endpoint via AkShare-style access | Backup live source |
-| `em_datacenter` | Eastmoney Data Center | Often available outside trading hours |
-| `tushare` | Tushare Pro `daily` + `daily_basic` | Requires token; previous/nearest trading day data |
-
-Daily K-line enrichment defaults to `DAILY_SOURCE=auto`. The auto chain uses `tushare -> tencent -> sina -> akshare -> baostock` when a Tushare token is configured, otherwise `tencent -> sina -> akshare -> baostock`. Tencent is a direct HTTP K-line source with no wrapper dependency and is preferred over Eastmoney-heavy wrapper paths for candidate-level history enrichment; Sina provides a second direct HTTP fallback before wrapper sources. Repeatedly failing sources are temporarily skipped, and expired daily cache can be used as a marked stale fallback when every live daily source fails.
-
-Source support matrix:
-
-| Capability | Primary chain | Fields |
-|---|---|---|
-| Daily K-line enrichment | `tushare` when token exists, then `tencent`, `sina`, `akshare`, `baostock` with health-aware auto reordering | OHLCV, qfq where supported, technical factors, 20d volatility/ATR/drawdown controls, per-row `daily_source` provenance, `daily_quality_score`/flags, source-health stats; low-quality/fetch-failed/stale rows feed the final risk overlay |
-| Full-market snapshot | `sina`, then `efinance`, `akshare_em`, `em_datacenter`; `tushare` first when token exists | price, change, amount, market cap, PE/PB, turnover |
-| Candidate context | `news`, `fund_flow`, `announcement`, `quote` | news, announcements, fund flow, Tencent quote valuation/turnover |
-| Last-good fallback | daily history cache and snapshot cache | marked with stale/fallback attrs when live sources fail |
-
-If a source is unavailable, times out, or lacks fields required by a strategy, AlphaSift skips it and tries the next source. Direct HTTP sources use request timeouts; third-party wrapper calls such as efinance, AkShare, Baostock, Tushare, and yfinance also have caller-side timeouts inspired by adjacent provider-manager projects, so a stuck wrapper cannot block the whole run indefinitely. Eastmoney-only HTTP fallbacks use a shared retrying session with serial throttling and jitter, following the same anti-ban pattern documented by `a-stock-data`; tune `ALPHASIFT_EASTMONEY_MIN_INTERVAL_SEC` upward for batch runs on sensitive networks. If all live sources fail, the last-good snapshot fallback is explicitly marked as stale/fallback data; `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` can reject overly old fallback cache to avoid repeating stale selections.
+Non-CN codes are Yahoo symbols (`AAPL`, `0700.HK`, `7203.T`, `005930.KS`). Daily K-line enrichment and T+N evaluation use yfinance for these markets. Candidate-level news, announcement and fund-flow context is A-share only.
 
 ## Built-in strategies
 
-| Strategy | Type | Description |
+| Strategy | Markets | Type | Idea |
+|---|---|---|---|
+| `dual_low` | cn | Value | Low PE + low PB, activity and stability confirmation, hard cap per sector |
+| `quality_value` | cn | Value | Reasonable valuation with liquidity and controlled volatility |
+| `blue_chip_income` | cn | Income | Liquid blue chips with dividend quality |
+| `low_volatility_quality` | cn | Quality | Defensive screen using daily volatility, drawdown and ATR |
+| `volume_breakout` | cn | Trend | Volume expansion through resistance |
+| `shrink_pullback` | cn | Trend | Pullback into support within an uptrend (daily K-line) |
+| `capital_heat` | cn | Momentum | Active capital flow without extreme overheating |
+| `oversold_reversal` | cn | Reversal | Repair candidates with controlled drawdown |
+| `balanced_alpha` | cn | Framework | General multi-factor discovery |
+| `momentum_quality` | cn | Framework | Trend confirmation plus quality filters |
+| `global_value` | us, hk, jp, tw, in | Value | `dual_low` for other markets, with no currency-dependent thresholds |
+| `us_momentum_quality` | us | Trend | Momentum and quality for US large caps |
+
+Write your own in `strategies/`. See the [strategy guide](docs/strategy-guide.md).
+
+## Configuration
+
+Copy `.env.example` to `.env`. AlphaSift reads LiteLLM-style settings, so it can reuse the configuration of [daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis). The most common settings:
+
+| Variable | Purpose | Default |
 |---|---|---|
-| `dual_low` | Value | Low PE + low PB defensive value screen |
-| `blue_chip_income` | Income | High-liquidity blue-chip and dividend-quality defensive screen |
-| `volume_breakout` | Trend | Volume expansion and resistance breakout |
-| `quality_value` | Value | Reasonable valuation, liquidity, and controlled volatility |
-| `low_volatility_quality` | Quality | Defensive quality screen using daily volatility, drawdown, ATR, and data-quality controls |
-| `capital_heat` | Momentum | Active capital flow without extreme overheating |
-| `oversold_reversal` | Reversal | Repair candidates with controlled drawdown and still-valid liquidity |
-| `balanced_alpha` | Framework | General multi-factor discovery strategy |
-| `momentum_quality` | Framework | Trend confirmation plus quality filters |
-| `shrink_pullback` | Trend | Pullback into support during a broader uptrend; uses daily enrichment |
+| `LITELLM_MODEL` | Main model, `provider/model` | `gemini/gemini-2.5-flash` |
+| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | Provider key for LLM ranking | - |
+| `LLM_CHANNELS` / `LITELLM_CONFIG` | Multi-channel or LiteLLM Router config | - |
+| `TUSHARE_TOKEN` | Puts Tushare first in the A-share chain | - |
+| `SNAPSHOT_SOURCE_PRIORITY` | Override the A-share source order | depends on token |
+| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | Time budget per snapshot source | `60` |
+| `INDUSTRY_AUTO_BACKFILL` | Fill missing A-share industry labels | `true` |
+| `ALPHASIFT_DATA_DIR` | Runs, caches and source health | `./data` |
+| `DSA_API_URL` | Enable the optional DSA deep-analysis step | - |
 
-Use `alphasift overview --json/--explain` for one UI/agent payload that combines strategy groups, strategy facets, strategy cards, optional strategy recommendations, data-source `health_summary`, strategy coverage, data-source history, saved-evaluation performance, recent runs, and next actions. Use `alphasift serve` for a local read-only JSON API with `/health`, `/result-schema`, `/overview`, `/strategies`, `/strategy?name=<strategy_name>`, `/strategy-compare?base=<base>&target=<target>`, `/strategy-facets`, `/strategy-cards`, `/strategy-readiness`, `/strategy-run-summary`, `/data-source-history`, `/strategy-performance`, `/strategy-templates`, `/strategy-template?name=<template_name>`, `/runs`, `/report?run=<run_id>`, and `/doctor/data-sources` endpoints. Use `alphasift strategies --json` or `alphasift strategies --explain` to inspect strategy style, data requirements, active filters, factor weights, and profile overrides. Add matching flags such as `--risk-profile defensive --holding-period swing --strict --json` when a UI or agent needs ranked strategy recommendations, or `--compare dual_low low_volatility_quality --json` / `/strategy-compare` when reviewing strategy parameter drift. Use `/strategy-facets` when a UI needs filter values, counts, and backing strategy names for category, tag, style, data-requirement, and required-field controls. Use `/strategy-cards` when a UI needs one card per strategy with catalog metadata, readiness state, saved-run history, saved-evaluation performance, top factors, next actions, and lanes for needs-history, needs-evaluation, performance leaders, and attention. Use `/strategy-readiness` when a UI needs ready/attention/unchecked counts and missing-field impacts before live screening. Use `/strategy-run-summary` when a UI needs saved-run history by strategy without evaluating against live quotes, `/data-source-history` when it needs recent snapshot-source error/degradation/fallback rates, samples, stability status, and next actions from saved-run metadata, and `/strategy-performance` when it needs saved-evaluation return/win-rate leaderboards without re-running live evaluation. Use `alphasift strategies --templates --explain` and `alphasift strategies --template <name>` to start from reusable strategy authoring templates. Use `alphasift doctor data-sources --all-strategies --explain` to inspect the cross-strategy data-source field coverage matrix, source `health_summary`, and live snapshot `quality_summary` before relying on live screening. Add custom YAML strategies under `strategies/`. See [docs/strategy-guide.md](docs/strategy-guide.md).
+The full list is in [docs/configuration.md](docs/configuration.md).
 
-## Project layout
+## More features
 
-```text
-alphasift/
-├── SKILL.md                 # Agent skill description and callable interface
-├── README.zh-CN.md          # Chinese README
-├── strategies/              # Strategy YAML files
-├── docs/
-│   ├── configuration.md     # Configuration reference
-│   ├── design.md            # Design principles
-│   ├── positioning.md       # Product positioning
-│   ├── reference.md         # Structure, boundaries, observed runs
-│   ├── scoring.md           # Scoring details
-│   ├── strategy-guide.md    # Strategy authoring guide
-│   └── usage.md             # Usage guide
-└── alphasift/               # Python package
-    ├── cli.py               # CLI entry point
-    ├── config.py            # Environment configuration
-    ├── context.py           # LLM context assembly
-    ├── candidate_context.py # Candidate news/announcement/fund-flow context
-    ├── daily.py             # Daily K-line feature enrichment
-    ├── hotspot.py           # Hotspot discovery/detail/cache contract
-    ├── industry.py          # Industry/concept/board heat mapping
-    ├── models.py            # Data models
-    ├── snapshot.py          # Market snapshot loading and fallback
-    ├── filter.py            # L1 hard filters
-    ├── scorer.py            # Factor scoring
-    ├── ranker.py            # L2 LLM ranking
-    ├── risk.py              # Independent risk layer
-    ├── post_analysis.py     # L3 post-analysis plugins
-    ├── dsa.py               # Optional DSA integration
-    ├── store.py             # Run persistence
-    ├── overview.py          # UI/agent overview payload
-    ├── evaluate.py          # T+N evaluation
-    ├── pipeline.py          # Main orchestration
-    └── strategy.py          # Strategy YAML loader
-```
-
-## Relationship with daily_stock_analysis
-
-`daily_stock_analysis` (DSA) is an external single-stock deep-analysis service. AlphaSift is upstream: it discovers and ranks candidates across the market. DSA is downstream: it can analyze a small final shortlist in depth.
-
-- AlphaSift does broad discovery, deterministic scoring, LLM ranking, hotspot analysis, and saved-run evaluation.
-- DSA does individual stock deep analysis through its own API, usually `POST /api/v1/analysis/analyze`.
-- The integration is optional and configured through `DSA_API_URL`.
-- To control cost and latency, AlphaSift only calls DSA for final selected candidates.
-- The default L3 analyzer is local `scorecard`; DSA and external HTTP analyzers are optional.
+- **Python API**: `from alphasift import screen, evaluate_saved_run`, then `screen("dual_low", use_llm=False, market="cn")`.
+- **LLM context**: `--context "..."` adds market notes, and `--candidate-context-file` adds per-stock research.
+- **Post-analysis (L3)**: the local `scorecard` runs by default. `--post-analyzer dsa` sends the final shortlist to [daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis) for single-stock deep analysis.
+- **Hotspots**: `alphasift hotspots` and `alphasift hotspot "<topic>"` rank A-share themes and resolve leader stocks with cache and fallback metadata.
+- **Agent and UI payloads**: `alphasift overview --json`, `alphasift serve`, and `alphasift doctor data-sources --all-strategies --explain`. Endpoints are listed in the [usage guide](docs/usage.md).
 
 ## Known limitations
 
-- Strategies that depend on daily K-line features enrich only the L1 top candidates, not the entire historical market.
-- AlphaSift is not a full backtesting engine or portfolio execution system.
-- DSA post-analysis is synchronous and better suited to low-frequency final-candidate review.
-- Tushare fallback depends on the user's own token, point balance, and permissions.
-- T+N evaluation compares saved run prices with later snapshots; it is not a rigorous event-study backtest and does not model dividends, suspensions, slippage, or rebalancing constraints.
-- The repository keeps both `strategies/` and `alphasift/strategies/` mirrors for development and packaged usage; built-in strategy files should stay in sync.
+- AlphaSift is a discovery and ranking engine, not a backtester or an execution system. T+N evaluation compares saved prices with later prices and does not model dividends, suspensions or position constraints.
+- T+N counts calendar days rather than each exchange's trading calendar.
+- Yahoo-screener markets are not the whole market: the universe is listings above a market-cap floor (about USD 1B), one query per Yahoo sector, capped at 4000 rows. They depend on a single unofficial endpoint, estimate traded value as price × volume, and use total market cap as float cap. Korea has no valuation fields. PE/PB are only derived from EPS and book value when the trading and reporting currencies match.
+- Daily K-line strategies enrich only the L1 shortlist, not the whole market.
+- `strategies/` and `alphasift/strategies/` mirror each other (development vs installed package) and must stay in sync.
 
-## Verification
+## Disclaimer
 
-Last recorded full-suite check:
-
-```text
-$ python -m pytest -q
-176 passed, 1 skipped in 1.56s
-```
+This project is for learning, research and engineering experiments. It is not investment advice, a return guarantee or a buy/sell instruction. Market data, LLM output and strategy parameters can be delayed, incomplete or wrong. You are responsible for your own research, compliance, costs and decisions.
 
 ## Documentation
 
-- [SKILL.md](SKILL.md) — agent skill description and function interface
-- [README.zh-CN.md](README.zh-CN.md) — Chinese README
-- [docs/usage.md](docs/usage.md) — usage guide
-- [docs/configuration.md](docs/configuration.md) — configuration reference
-- [docs/positioning.md](docs/positioning.md) — positioning and relative advantages
-- [docs/comparison.md](docs/comparison.md) — comparison, gaps, and priorities
-- [docs/design.md](docs/design.md) — design principles
-- [docs/reference.md](docs/reference.md) — structure, data-source boundaries, observed runs
-- [docs/scoring.md](docs/scoring.md) — scoring system details
-- [docs/strategy-guide.md](docs/strategy-guide.md) — custom strategy guide
+[Usage](docs/usage.md) · [Configuration](docs/configuration.md) · [Strategy guide](docs/strategy-guide.md) · [Scoring](docs/scoring.md) · [Design](docs/design.md) · [Positioning](docs/positioning.md) · [Comparison](docs/comparison.md) · [Reference](docs/reference.md) · [Changelog](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
 ## License
 
-Apache License 2.0
+[Apache License 2.0](LICENSE)

@@ -1,0 +1,62 @@
+# 全球低估值策略：dual_low 的多市场版本（美股 / 港股 / 日本 / 台湾 / 印度）
+#
+# - 快照来自 Yahoo 筛选器，股票池已按市场设了约 10 亿美元等值的市值下限，
+#   因此这里不设成交额、市值、股价这类与币种相关的绝对阈值，只用 PE / PB /
+#   涨跌幅这类各市场可比的条件。
+# - 韩国市场 Yahoo 不提供 PE / PB，因此不在本策略范围内。
+# - 个别存托凭证（ADR）的 PB 因币种未换算而异常偏低（< 0.1），会被置空，从而不进入本策略。
+# - exclude_st 只作用于中文名称（A 股 ST 约定），对其他市场无影响。
+# - 行业来自 Yahoo 的 11 个板块，用 hard_cap 保证 Top N 中同一板块不超过 2 只。
+name: global_value
+display_name: 全球低估值
+description: 多市场低 PE + 低 PB 价值筛选，叠加当日活跃度与稳定性，按板块硬性分散
+version: "1.0"
+category: value
+tags: [value, defensive, low_valuation, multi_market]
+style:
+  risk_profile: defensive
+  holding_period: watchlist
+  execution_style: mean_reversion
+  market_regime: [risk_off, range_bound]
+  capital_profile: high_liquidity
+  ui_badge: Global
+
+screening:
+  enabled: true
+  market_scope: [us, hk, jp, tw, in]
+  hard_filters:
+    exclude_st: false
+    pe_ttm_min: 0
+    pe_ttm_max: 18
+    pb_min: 0
+    pb_max: 2.5
+    change_pct_min: -5.0
+    change_pct_max: 5.0
+  tech_weight: 0.2
+  factor_weights:
+    value: 0.36
+    stability: 0.20
+    liquidity: 0.14
+    momentum: 0.10
+    activity: 0.08
+    reversal: 0.06
+    size: 0.06
+  scoring_profile:
+    momentum_chase_start_pct: 3.0
+    momentum_chase_penalty_slope: 16.0
+    momentum_downside_start_pct: -3.0
+  risk_profile:
+    chase_change_pct: 5.0
+    abnormal_volume_ratio: 4.0
+    high_turnover_rate: 8.0
+    low_llm_confidence: 0.45
+  portfolio_profile:
+    mode: hard_cap
+    max_same_bucket: 2
+    concentration_penalty: 3.0
+  ranking_hints: |
+    优先考虑：
+    1. 低 PE / 低 PB 是基础，但要区分真正被低估和基本面持续恶化的价值陷阱
+    2. 注意不同市场的估值中枢不同，同一市场内横向比较更有意义
+    3. 现金流、分红稳定性、资产负债表质量和近期催化能解释估值修复逻辑
+  max_output: 5

@@ -66,7 +66,10 @@ def main():
     # screen
     sp = sub.add_parser("screen", help="执行选股")
     sp.add_argument("strategy", help="策略名称")
-    sp.add_argument("--market", default="cn")
+    sp.add_argument(
+        "--market", default="cn",
+        help="市场：cn（A 股）、us、hk、jp、kr、tw、in；非 A 股通过 Yahoo 筛选器获取快照",
+    )
     sp.add_argument("--max-output", type=int, default=None)
     sp.add_argument("--no-llm", action="store_true", help="不使用 LLM 排序")
     sp.add_argument(
@@ -204,7 +207,7 @@ def main():
     ebp = sub.add_parser("evaluate-batch", help="批量评估最近保存的选股结果并按策略聚合")
     ebp.add_argument("--limit", type=int, default=20, help="最多评估最近 N 个 run")
     ebp.add_argument("--strategy", default=None, help="只评估指定策略")
-    ebp.add_argument("--market", default="cn", help="只评估指定市场的 run（cn / us），批量共用一个快照，市场必须一致")
+    ebp.add_argument("--market", default="cn", help="只评估指定市场的 run（cn / us / hk / jp / kr / tw / in），批量共用一个快照，市场必须一致")
     ebp.add_argument("--output", default=None, help="额外写出批量评估 JSON 到指定路径")
     ebp.add_argument("--json", action="store_true", help="以 JSON 输出")
     ebp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
@@ -226,7 +229,7 @@ def main():
     esp = sub.add_parser("evaluate-strategies", help="生成策略级评估 summary")
     esp.add_argument("--limit", type=int, default=20, help="最多评估最近 N 个 run")
     esp.add_argument("--strategy", default=None, help="只评估指定策略")
-    esp.add_argument("--market", default="cn", help="只评估指定市场的 run（cn / us），批量共用一个快照，市场必须一致")
+    esp.add_argument("--market", default="cn", help="只评估指定市场的 run（cn / us / hk / jp / kr / tw / in），批量共用一个快照，市场必须一致")
     esp.add_argument("--output", default=None, help="额外写出策略评估 JSON 到指定路径")
     esp.add_argument("--json", action="store_true", help="以 JSON 输出")
     esp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")

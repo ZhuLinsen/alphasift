@@ -19,6 +19,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from alphasift.markets import MarketSpec, get_market
+from alphasift.snapshot_yahoo import fetch_yahoo_snapshot
 from alphasift.source_guard import call_with_timeout, parse_source_timeout_seconds
 
 logger = logging.getLogger(__name__)
@@ -76,8 +78,14 @@ def fetch_snapshot_with_fallback(
     so the next process tries recently healthy sources first. CLI runs are one
     process each, so in-memory health alone never helps them.
     """
-    if market == "us":
-        return _fetch_us_snapshot_with_fallback(required_columns)
+    spec = get_market(market)
+    if not spec.cn_rules:
+        return _fetch_yahoo_market_snapshot(
+            spec,
+            required_columns=required_columns or [],
+            fallback_snapshot_path=market_snapshot_cache_path(fallback_snapshot_path, spec.id),
+            fallback_max_age_hours=fallback_max_age_hours,
+        )
 
     errors = []
     required = required_columns or []
@@ -141,16 +149,90 @@ def fetch_snapshot_with_fallback(
     raise RuntimeError(f"All snapshot sources failed: {'; '.join(errors)}")
 
 
-def _fetch_us_snapshot_with_fallback(
-    required_columns: list[str] | None = None,
+def market_snapshot_cache_path(
+    fallback_snapshot_path: str | Path | None,
+    market: str,
+) -> Path | None:
+    """Per-market last-good cache; CN keeps the original file name."""
+    if fallback_snapshot_path is None:
+        return None
+    path = Path(fallback_snapshot_path)
+    if market == "cn":
+        return path
+    return path.with_name(f"snapshot.{market}.last_good.json")
+
+
+def _fetch_yahoo_market_snapshot(
+    spec: MarketSpec,
+    *,
+    required_columns: list[str],
+    fallback_snapshot_path: Path | None,
+    fallback_max_age_hours: float | None,
 ) -> pd.DataFrame:
-    """Fetch US equity snapshot via yfinance adapter."""
+    """Yahoo screener first; for US also the legacy per-ticker path.
+
+    ``ALPHASIFT_US_TICKERS`` keeps its meaning: an explicit US ticker list
+    goes straight to the legacy yfinance adapter.
+    """
+    attempts: list[tuple[str, object]] = []
+    if spec.id == "us" and os.getenv("ALPHASIFT_US_TICKERS", "").strip():
+        attempts.append(("yfinance_tickers", _fetch_us_legacy_snapshot))
+    else:
+        attempts.append(("yahoo_screener", lambda: fetch_yahoo_snapshot(spec.id)))
+        if spec.id == "us":
+            attempts.append(("yfinance_tickers", _fetch_us_legacy_snapshot))
+
+    errors: list[str] = []
+    for name, fetch in attempts:
+        try:
+            df = fetch()
+        except Exception as exc:  # noqa: BLE001 - fall through to next source / cache
+            errors.append(f"{name}: {exc}")
+            logger.warning("Snapshot source %s failed for market %s: %s", name, spec.id, exc)
+            continue
+        if df.empty:
+            errors.append(f"{name}: returned empty data")
+            continue
+        missing = _missing_required_columns(df, required_columns)
+        if missing:
+            errors.append(f"{name}: missing required columns {','.join(missing)}")
+            continue
+        df.attrs.setdefault("snapshot_source", name)
+        df.attrs["market"] = spec.id
+        df.attrs["currency"] = spec.currency
+        df.attrs["source_errors"] = [*errors, *df.attrs.get("source_errors", [])]
+        df.attrs["fallback_used"] = False
+        df.attrs["stale"] = False
+        df.attrs["stale_age_hours"] = None
+        if df.attrs.get("partial"):
+            # Some sectors failed: use the live rows, but keep the complete
+            # last-good cache instead of replacing it with a partial universe.
+            logger.warning("Snapshot for market %s is partial; last-good cache kept", spec.id)
+        else:
+            _write_last_good_snapshot(fallback_snapshot_path, df)
+        return df
+
+    cached = _read_last_good_snapshot(
+        fallback_snapshot_path,
+        required_columns=required_columns,
+        source_errors=errors,
+        max_age_hours=fallback_max_age_hours,
+    )
+    if cached is not None:
+        cached.attrs["market"] = spec.id
+        cached.attrs["currency"] = spec.currency
+        return cached
+    raise RuntimeError(f"All snapshot sources failed for market {spec.id}: {'; '.join(errors)}")
+
+
+def _fetch_us_legacy_snapshot() -> pd.DataFrame:
     from alphasift.snapshot_us import fetch_us_snapshot
 
-    df = fetch_us_snapshot()
-    missing = _missing_required_columns(df, required_columns or [])
-    if missing:
-        logger.warning("US snapshot missing columns: %s", ",".join(missing))
+    # An explicit ALPHASIFT_US_TICKERS list wins; "auto" would try the S&P 500
+    # scrape first and ignore it whenever Wikipedia is reachable.
+    universe = "env" if os.getenv("ALPHASIFT_US_TICKERS", "").strip() else "auto"
+    df = fetch_us_snapshot(universe_source=universe)
+    df.attrs["snapshot_source"] = "yfinance_tickers"
     return df
 
 
