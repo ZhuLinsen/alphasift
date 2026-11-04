@@ -40,3 +40,14 @@ alphasift = ["strategies/*.yaml"]
 [tool.setuptools.data-files]
 "." = ["SKILL.md", ".env.example", "LICENSE"]
 "agents" = ["agents/openai.yaml"]
+
+[tool.pytest.ini_options]
+# Deprecations raised from our own code fail the tests, so pandas-4 breakage
+# (e.g. .at adding a column) shows up before pandas 4 ships. Third-party
+# deprecations stay warnings.
+filterwarnings = [
+    "error::DeprecationWarning:alphasift",
+    "error::FutureWarning:alphasift",
+    "error::DeprecationWarning:(tests\\.)?test_",
+    "error::FutureWarning:(tests\\.)?test_",
+]
