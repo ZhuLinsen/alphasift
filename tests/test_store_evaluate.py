@@ -92,7 +92,7 @@ def test_list_saved_runs_falls_back_to_payload_when_metadata_missing(tmp_path):
             strategy="dual_low",
             market="cn",
             run_id="run_legacy",
-            created_at="2026-04-01T09:30:00",
+            created_at="2026-04-01T08:00:00+08:00",  # before the open: every listed bar is post-entry
             source_errors=["akshare: disconnected"],
             degradation=["used stale fallback"],
             picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80, price=10)],
@@ -230,7 +230,9 @@ def test_evaluate_result_computes_price_path_metrics():
         strategy="dual_low",
         market="cn",
         run_id="run123",
-        created_at="2026-04-01T09:30:00",
+        # Created at the open: the 2026-04-01 bar is partly pre-entry, so only
+        # later bars count toward the path.
+        created_at="2026-04-01T09:30:00+08:00",
         picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80, price=10)],
     )
     snapshot = pd.DataFrame([{"code": "000001", "price": 11}])
@@ -248,9 +250,9 @@ def test_evaluate_result_computes_price_path_metrics():
 
     pick = result.picks[0]
     assert pick.path_status == "ok"
-    assert pick.path_days == 2
+    assert pick.path_days == 1
     assert pick.path_end_return_pct == 10.0
-    assert pick.max_drawdown_pct == -3.0
+    assert pick.max_drawdown_pct == 0.0
     assert pick.max_runup_pct == 15.0
 
 
@@ -272,7 +274,7 @@ def test_evaluate_saved_runs_aggregates_by_strategy(tmp_path, monkeypatch):
             strategy="dual_low",
             market="cn",
             run_id="run_a",
-            created_at="2026-04-01T09:30:00",
+            created_at="2026-04-01T08:00:00+08:00",  # before the open: every listed bar is post-entry
             picks=[
                 Pick(
                     rank=1,
@@ -296,7 +298,7 @@ def test_evaluate_saved_runs_aggregates_by_strategy(tmp_path, monkeypatch):
             strategy="volume_breakout",
             market="cn",
             run_id="run_b",
-            created_at="2026-04-01T09:30:00",
+            created_at="2026-04-01T08:00:00+08:00",  # before the open: every listed bar is post-entry
             picks=[
                 Pick(
                     rank=1,
@@ -409,7 +411,7 @@ def test_evaluate_saved_runs_uses_parallel_price_path_fetch_without_order_drift(
             strategy="dual_low",
             market="cn",
             run_id="run_parallel",
-            created_at="2026-04-01T09:30:00",
+            created_at="2026-04-01T08:00:00+08:00",  # before the open: every listed bar is post-entry
             picks=[
                 Pick(rank=1, code="000003", name="招商银行", final_score=90, screen_score=90, price=30),
                 Pick(rank=2, code="000001", name="平安银行", final_score=80, screen_score=80, price=10),
@@ -488,7 +490,7 @@ def test_evaluate_saved_runs_uses_cached_price_paths(tmp_path, monkeypatch):
                 strategy="dual_low",
                 market="cn",
                 run_id=run_id,
-                created_at="2026-04-01T09:30:00",
+                created_at="2026-04-01T08:00:00+08:00",  # before the open: every listed bar is post-entry
                 picks=[
                     Pick(
                         rank=1,
@@ -536,117 +538,80 @@ def test_evaluate_saved_runs_uses_cached_price_paths(tmp_path, monkeypatch):
     assert len(list((tmp_path / "daily_history").glob("*.json"))) == 1
 
 
-def test_evaluate_saved_runs_by_windows_aggregates_strategy_window_summaries(tmp_path, monkeypatch):
+def test_evaluate_saved_runs_by_windows_measures_true_t_plus_n_against_benchmark(tmp_path, monkeypatch):
+    # Five post-entry bars. T+3 is complete; T+10 has not elapsed yet.
+    stock_paths = {
+        "000001": [10.0, 11.0, 11.5, 10.2, 11.2],
+        "600000": [20.0, 19.0, 18.0, 18.5, 21.0],
+    }
+
+    def bars(closes):
+        return pd.DataFrame(
+            [
+                {"日期": f"2026-04-0{day}", "收盘": close, "最高": close * 1.02, "最低": close * 0.98}
+                for day, close in enumerate(closes, start=1)
+            ]
+        )
+
+    entry_close = {"000001": 10.0, "600000": 20.0}
+
     def fake_fetch_daily_history(code, **kwargs):
-        lookback = int(kwargs.get("lookback_days", 0) or 0)
-        if lookback >= 10:
-            path = pd.DataFrame(
-                [
-                    {"日期": "2026-04-01", "收盘": 10.0, "最高": 11.0, "最低": 9.0},
-                    {"日期": "2026-04-02", "收盘": 11.0, "最高": 13.0, "最低": 9.5},
-                    {"日期": "2026-04-03", "收盘": 11.5, "最高": 11.6, "最低": 10.5},
-                    {"日期": "2026-04-04", "收盘": 10.2, "最高": 11.0, "最低": 10.1},
-                    {"日期": "2026-04-05", "收盘": 11.2, "最高": 11.8, "最低": 9.8},
-                ]
-            )
-        else:
-            path = pd.DataFrame(
-                [
-                    {"日期": "2026-04-01", "收盘": 10.0, "最高": 11.0, "最低": 9.0},
-                    {"日期": "2026-04-02", "收盘": 11.0, "最高": 13.0, "最低": 9.5},
-                    {"日期": "2026-04-03", "收盘": 11.5, "最高": 11.6, "最低": 10.5},
-                ]
-            )
-        return path
+        # The entry session (03-31) closes at the pick price.
+        entry = pd.DataFrame([{"日期": "2026-03-31", "收盘": entry_close[code], "最高": entry_close[code], "最低": entry_close[code]}])
+        return pd.concat([entry, bars(stock_paths[code])], ignore_index=True)
+
+    def fake_benchmark(market, *, lookback_days):
+        # Index closes 100 on the entry session (03-31), then +1% by T+3.
+        frame = bars([100.5, 100.8, 101.0, 101.5, 102.0])
+        entry = pd.DataFrame([{"日期": "2026-03-31", "收盘": 100.0, "最高": 100.0, "最低": 100.0}])
+        return pd.concat([entry, frame], ignore_index=True)
 
     monkeypatch.setattr("alphasift.evaluate.fetch_daily_history", fake_fetch_daily_history)
-    save_screen_result(
-        ScreenResult(
-            strategy="dual_low",
-            market="cn",
-            run_id="run_a",
-            created_at="2026-04-01T09:30:00",
-            picks=[
-                Pick(
-                    rank=1,
-                    code="000001",
-                    name="平安银行",
-                    final_score=80,
-                    screen_score=80,
-                    price=10,
-                    breakout_20d_pct=0.4,
-                )
-            ],
-        ),
-        data_dir=tmp_path,
-    )
-    save_screen_result(
-        ScreenResult(
-            strategy="volume_breakout",
-            market="cn",
-            run_id="run_b",
-            created_at="2026-04-01T09:30:00",
-            picks=[
-                Pick(
-                    rank=1,
-                    code="600000",
-                    name="浦发银行",
-                    final_score=70,
-                    screen_score=70,
-                    price=20,
-                    breakout_20d_pct=-0.5,
-                )
-            ],
-        ),
-        data_dir=tmp_path,
-    )
-    snapshot = pd.DataFrame(
-        [
-            {"code": "000001", "price": 11},
-            {"code": "600000", "price": 18},
-        ]
-    )
-    snapshot.attrs["snapshot_source"] = "test"
+    monkeypatch.setattr("alphasift.evaluate._fetch_benchmark_path", fake_benchmark)
+    for run_id, strategy, code, price in (
+        ("run_a", "dual_low", "000001", 10.0),
+        ("run_b", "volume_breakout", "600000", 20.0),
+    ):
+        save_screen_result(
+            ScreenResult(
+                strategy=strategy,
+                market="cn",
+                run_id=run_id,
+                # After the 03-31 close: entry is that close; 04-01 is T+1.
+                created_at="2026-03-31T20:00:00+08:00",
+                picks=[Pick(rank=1, code=code, name=code, final_score=80, screen_score=80, price=price)],
+            ),
+            data_dir=tmp_path,
+        )
+    snapshot = pd.DataFrame([{"code": "000001", "price": 99.0}, {"code": "600000", "price": 99.0}])
 
     payload = evaluate_saved_runs_by_windows(
-        windows=[5, 10],
+        windows=[3, 10],
         config=Config(llm_api_key="", data_dir=tmp_path),
         current_snapshot=snapshot,
         limit=10,
         cost_bps=0,
-    )
-    window5 = evaluate_saved_runs(
-        config=Config(llm_api_key="", data_dir=tmp_path),
-        current_snapshot=snapshot,
-        limit=10,
-        cost_bps=0,
-        with_price_path=True,
-        price_path_lookback_days=5,
-    )
-    window10 = evaluate_saved_runs(
-        config=Config(llm_api_key="", data_dir=tmp_path),
-        current_snapshot=snapshot,
-        limit=10,
-        cost_bps=0,
-        with_price_path=True,
-        price_path_lookback_days=10,
     )
 
-    assert payload["price_path_window_days"] == [5, 10]
-    assert payload["with_price_path"] is True
-    assert len(payload["strategy_summaries"]) == 2
+    assert payload["price_path_window_days"] == [3, 10]
+    dual_low = next(item for item in payload["strategy_summaries"] if item["strategy"] == "dual_low")
+    t3, t10 = dual_low["window_summaries"]
+    # T+3 close 11.5 vs entry 10 -> +15%, independent of today's snapshot price.
+    assert t3["window_days"] == 3
+    assert t3["average_return_pct"] == 15.0
+    assert t3["benchmark"] == "CSI 300"
+    assert t3["average_benchmark_return_pct"] == 1.0
+    assert t3["average_excess_return_pct"] == 14.0
+    assert t3["beat_benchmark_rate"] == 100.0
+    assert t3["pending_count"] == 0
+    # Only five bars exist, so T+10 is pending rather than a return.
+    assert t10["average_return_pct"] is None
+    assert t10["pending_count"] == 1
+    assert t10["evaluated_pick_count"] == 0
 
-    strategy = next(item for item in payload["strategy_summaries"] if item["strategy"] == "dual_low")
-    assert strategy["window_count"] == 2
-    assert [window.get("window_days") for window in strategy["window_summaries"]] == [5, 10]
-    window5_summary = next(
-        item for item in window5["strategy_summaries"] if item.get("strategy") == "dual_low"
-    )
-    window10_summary = next(
-        item for item in window10["strategy_summaries"] if item.get("strategy") == "dual_low"
-    )
-    assert strategy["window_summaries"][0]["average_return_pct"] == window5_summary["average_return_pct"]
-    assert strategy["window_summaries"][1]["average_return_pct"] == window10_summary["average_return_pct"]
+    breakout = next(item for item in payload["strategy_summaries"] if item["strategy"] == "volume_breakout")
+    assert breakout["window_summaries"][0]["average_return_pct"] == -10.0
+    assert breakout["window_summaries"][0]["average_excess_return_pct"] == -11.0
 
 
 def test_evaluate_saved_runs_filters_strategy_before_loading_runs(tmp_path):
@@ -655,7 +620,7 @@ def test_evaluate_saved_runs_filters_strategy_before_loading_runs(tmp_path):
             strategy="dual_low",
             market="cn",
             run_id="run_matching",
-            created_at="2026-04-01T09:30:00",
+            created_at="2026-04-01T08:00:00+08:00",  # before the open: every listed bar is post-entry
             picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80, price=10)],
         ),
         data_dir=tmp_path,

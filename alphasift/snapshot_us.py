@@ -220,7 +220,9 @@ def fetch_daily_history_yfinance(
     """
     import yfinance as yf
 
-    end = pd.Timestamp.now().normalize()
+    # yfinance's end is exclusive: ask through tomorrow (UTC) so a session
+    # that has already closed is included. Callers drop in-progress bars.
+    end = pd.Timestamp.now(tz="UTC").normalize().tz_localize(None) + pd.Timedelta(days=2)
     start = end - pd.Timedelta(days=max(lookback_days * 2, 180))
     hist = yf.download(
         ticker,

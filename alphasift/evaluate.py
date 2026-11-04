@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -37,8 +38,18 @@ def evaluate_saved_run(
     price_paths: dict[str, pd.DataFrame] | None = None,
     with_price_path: bool | None = None,
     price_path_lookback_days: int | None = None,
+    horizon_days: int | None = None,
+    benchmark_paths: dict[str, pd.DataFrame] | None = None,
 ) -> EvaluationResult:
-    """Evaluate saved picks against the latest snapshot price."""
+    """Evaluate saved picks.
+
+    By default each pick's return is measured to the latest snapshot price.
+    With ``horizon_days`` (T+N), the return is the close of the Nth trading
+    bar after entry, compared with the market benchmark over the same bars.
+    Picks whose window has not elapsed are reported as ``pending`` and kept
+    out of averages. ``benchmark_paths`` caches benchmark history by market
+    across runs.
+    """
     if config is None:
         config = Config.from_env()
 
@@ -47,12 +58,8 @@ def evaluate_saved_run(
         # Must fetch the snapshot for the run's own market — a CN-default
         # snapshot can't resolve US tickers (or vice versa), which silently
         # marks every pick "missing" instead of evaluating it.
-        current_snapshot = fetch_snapshot_with_fallback(
-            config.snapshot_source_priority,
-            fallback_snapshot_path=config.fallback_snapshot_path,
-            fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
-            source_health_path=config.source_health_path,
-            market=run.market,
+        current_snapshot = _fetch_current_snapshot(
+            config, run.market, optional=horizon_days is not None
         )
         current_snapshot = _fill_missing_quotes(
             current_snapshot, run.market, [pick.code for pick in run.picks]
@@ -67,6 +74,12 @@ def evaluate_saved_run(
         with_price_path = config.evaluation_price_path_enabled
     if price_path_lookback_days is None:
         price_path_lookback_days = config.evaluation_price_path_lookback_days
+    if horizon_days is not None:
+        horizon_days = max(int(horizon_days), 1)
+        with_price_path = True
+        # Cover entry -> today; the window is cut from the post-entry bars.
+        elapsed = _elapsed_days(run) or 0
+        price_path_lookback_days = max(int(price_path_lookback_days), elapsed + 10)
 
     snapshot_source = str(current_snapshot.attrs.get("snapshot_source", ""))
     source_errors = [str(item) for item in current_snapshot.attrs.get("source_errors", [])]
@@ -95,12 +108,56 @@ def evaluate_saved_run(
         )
         effective_price_paths.update(fetched_paths)
 
+    excess_returns: list[float] = []
+    pending_count = 0
+    benchmark_errors: list[str] = []
+    benchmark_label = ""
+    benchmark_return_pct: float | None = None
+    benchmark_curve: pd.Series | None = None
+    if horizon_days is not None:
+        benchmark_return_pct, benchmark_label, benchmark_errors, benchmark_curve = _benchmark_return(
+            run,
+            horizon_days=horizon_days,
+            lookback_days=int(price_path_lookback_days),
+            cache=benchmark_paths,
+        )
+
     for pick in run.picks:
         code = _normalize_code(pick.code)
         current_price = by_code.get(code)
+        path_metrics = _price_path_metrics(
+            effective_price_paths.get(code),
+            entry_price=pick.price,
+            created_at=run.created_at,
+            cost_bps=float(cost_bps),
+            market=run.market,
+            horizon_days=horizon_days,
+        )
         status = "ok"
         return_pct = None
-        if current_price is None:
+        excess_return_pct = None
+        pick_benchmark_pct = None
+        if horizon_days is not None:
+            # T+N: the return is the Nth post-entry close, not today's price.
+            if pick.price <= 0:
+                status = "bad_entry_price"
+            elif path_metrics["path_status"] == "ok":
+                return_pct = path_metrics["path_end_return_pct"]
+                returns.append(float(return_pct))
+                # Benchmark through this pick's own window end (same dates).
+                pick_benchmark_pct = _benchmark_return_through(
+                    benchmark_curve, path_metrics.get("path_end_date")
+                )
+                if pick_benchmark_pct is not None:
+                    excess_return_pct = _safe_round(float(return_pct) - pick_benchmark_pct)
+                    excess_returns.append(float(excess_return_pct))
+            elif path_metrics["path_status"] == "pending":
+                status = "pending"
+                pending_count += 1
+            else:
+                status = "missing"
+                missing_codes.append(pick.code)
+        elif current_price is None:
             status = "missing"
             missing_codes.append(pick.code)
         elif pick.price <= 0:
@@ -114,12 +171,6 @@ def evaluate_saved_run(
             return_pct,
             follow_through_pct=float(follow_through_pct),
             failed_breakout_pct=float(failed_breakout_pct),
-        )
-        path_metrics = _price_path_metrics(
-            effective_price_paths.get(code),
-            entry_price=pick.price,
-            created_at=run.created_at,
-            cost_bps=float(cost_bps),
         )
         evaluations.append(PickEvaluation(
             code=pick.code,
@@ -146,6 +197,9 @@ def evaluate_saved_run(
             path_end_return_pct=path_metrics["path_end_return_pct"],
             max_drawdown_pct=path_metrics["max_drawdown_pct"],
             max_runup_pct=path_metrics["max_runup_pct"],
+            horizon_days=horizon_days,
+            benchmark_return_pct=pick_benchmark_pct,
+            excess_return_pct=excess_return_pct,
         ))
 
     return EvaluationResult(
@@ -162,9 +216,20 @@ def evaluate_saved_run(
         win_rate=_safe_round(sum(1 for item in returns if item > 0) / len(returns) * 100) if returns else None,
         missing_codes=missing_codes,
         degradation=[
-            *[f"Missing current quote for {code}" for code in missing_codes],
+            *[
+                (f"Missing T+{horizon_days} price path for {code}" if horizon_days else f"Missing current quote for {code}")
+                for code in missing_codes
+            ],
             *path_errors,
+            *benchmark_errors,
         ],
+        horizon_days=horizon_days,
+        benchmark=benchmark_label,
+        benchmark_return_pct=benchmark_return_pct if horizon_days is not None else None,
+        average_excess_return_pct=(
+            _safe_round(sum(excess_returns) / len(excess_returns)) if excess_returns else None
+        ),
+        pending_count=pending_count,
     )
 
 
@@ -208,6 +273,7 @@ def evaluate_result_against_snapshot(
             entry_price=pick.price,
             created_at=run.created_at,
             cost_bps=float(cost_bps),
+            market=run.market,
         )
         picks.append(PickEvaluation(
             code=pick.code,
@@ -265,6 +331,8 @@ def evaluate_saved_runs(
     with_price_path: bool | None = None,
     price_path_lookback_days: int | None = None,
     failure_sample_limit: int = 5,
+    horizon_days: int | None = None,
+    benchmark_paths: dict[str, pd.DataFrame] | None = None,
 ) -> dict[str, object]:
     """Evaluate multiple saved runs with one current snapshot and aggregate stats.
 
@@ -278,13 +346,7 @@ def evaluate_saved_runs(
     market = get_market(market).id  # saved runs store the lowercase id
     fetched_snapshot = current_snapshot is None
     if current_snapshot is None:
-        current_snapshot = fetch_snapshot_with_fallback(
-            config.snapshot_source_priority,
-            fallback_snapshot_path=config.fallback_snapshot_path,
-            fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
-            source_health_path=config.source_health_path,
-            market=market,
-        )
+        current_snapshot = _fetch_current_snapshot(config, market, optional=horizon_days is not None)
     if cost_bps is None:
         cost_bps = config.evaluation_cost_bps
     if follow_through_pct is None:
@@ -307,6 +369,7 @@ def evaluate_saved_runs(
             current_snapshot, market, _saved_pick_codes(run_items, config)
         )
 
+    shared_benchmark_paths = benchmark_paths if benchmark_paths is not None else {}
     evaluations: list[EvaluationResult] = []
     for item in run_items:
         try:
@@ -320,6 +383,8 @@ def evaluate_saved_runs(
                     failed_breakout_pct=failed_breakout_pct,
                     with_price_path=with_price_path,
                     price_path_lookback_days=price_path_lookback_days,
+                    horizon_days=horizon_days,
+                    benchmark_paths=shared_benchmark_paths,
                 )
             )
         except Exception as exc:
@@ -369,6 +434,7 @@ def evaluate_saved_runs(
         "failed_breakout_pct": float(failed_breakout_pct),
         "with_price_path": bool(with_price_path),
         "price_path_lookback_days": int(price_path_lookback_days),
+        "horizon_days": horizon_days,
         "summary": summary,
         "portfolio_summary": portfolio_summary,
         "by_strategy": by_strategy,
@@ -412,7 +478,12 @@ def evaluate_saved_runs_by_windows(
     failed_breakout_pct: float | None = None,
     failure_sample_limit: int = 5,
 ) -> dict[str, Any]:
-    """Evaluate saved runs for multiple price-path windows."""
+    """Evaluate saved runs at fixed T+N horizons (trading bars after entry).
+
+    Each window measures every pick at the close of its Nth post-entry bar and
+    compares it with the market benchmark over the same bars. Runs whose
+    window has not elapsed yet count as pending rather than as returns.
+    """
     normalized_windows = _normalize_price_windows(windows)
     if not normalized_windows:
         normalized_windows = [30]
@@ -420,7 +491,11 @@ def evaluate_saved_runs_by_windows(
     if config is None:
         config = Config.from_env()
 
+    if current_snapshot is None:
+        # One live snapshot for every window instead of one per window.
+        current_snapshot = _fetch_current_snapshot(config, get_market(market).id, optional=True)
     window_results: list[dict[str, Any]] = []
+    benchmark_paths: dict[str, pd.DataFrame] = {}
     for window_days in normalized_windows:
         window_results.append(
             evaluate_saved_runs(
@@ -433,7 +508,8 @@ def evaluate_saved_runs_by_windows(
                 follow_through_pct=follow_through_pct,
                 failed_breakout_pct=failed_breakout_pct,
                 with_price_path=True,
-                price_path_lookback_days=window_days,
+                horizon_days=window_days,
+                benchmark_paths=benchmark_paths,
                 failure_sample_limit=failure_sample_limit,
             )
         )
@@ -451,6 +527,15 @@ def evaluate_saved_runs_by_windows(
                     "win_rate": summary.get("win_rate"),
                     "average_max_drawdown_pct": summary.get("average_max_drawdown_pct"),
                     "average_max_runup_pct": summary.get("average_max_runup_pct"),
+                    "evaluated_pick_count": summary.get("evaluated_pick_count", 0),
+                    "pending_count": summary.get("pending_count", 0),
+                    "benchmark": summary.get("benchmark", ""),
+                    "benchmark_pick_count": summary.get("benchmark_pick_count", 0),
+                    "average_matched_return_pct": summary.get("average_matched_return_pct"),
+                    "average_benchmark_return_pct": summary.get("average_benchmark_return_pct"),
+                    "average_excess_return_pct": summary.get("average_excess_return_pct"),
+                    "beat_benchmark_rate": summary.get("beat_benchmark_rate"),
+                    "benchmark_errors": summary.get("benchmark_errors", []),
                     "failed_breakout_count": (summary.get("shape_status_counts", {}) or {}).get("failed_breakout", 0),
                     "breakout_follow_through_count": (summary.get("shape_status_counts", {}) or {}).get("breakout_follow_through", 0),
                     "missing_count": summary.get("missing_count", 0),
@@ -477,6 +562,30 @@ def evaluate_saved_runs_by_windows(
         "price_path_window_days": normalized_windows,
         "with_price_path": True,
     }
+
+
+def _fetch_current_snapshot(config: Config, market: str, *, optional: bool) -> pd.DataFrame:
+    """Live snapshot for current prices.
+
+    T+N returns come from historical closes; the current price is only shown
+    alongside. With ``optional`` a snapshot outage leaves it empty instead
+    of failing an evaluation whose windows have already completed.
+    """
+    try:
+        return fetch_snapshot_with_fallback(
+            config.snapshot_source_priority,
+            fallback_snapshot_path=config.fallback_snapshot_path,
+            fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
+            source_health_path=config.source_health_path,
+            market=market,
+        )
+    except Exception as exc:
+        if not optional:
+            raise
+        empty = pd.DataFrame(columns=["code", "price"])
+        empty.attrs["snapshot_source"] = ""
+        empty.attrs["source_errors"] = [f"current snapshot unavailable (T+N uses historical closes): {exc}"]
+        return empty
 
 
 def _fill_missing_quotes(
@@ -618,22 +727,57 @@ def _price_path_metrics(
     entry_price: float,
     created_at: str,
     cost_bps: float,
+    market: str = "cn",
+    horizon_days: int | None = None,
+    now: datetime | None = None,
 ) -> dict[str, object]:
+    """Return path metrics over bars strictly after the entry session.
+
+    With ``horizon_days`` the window is the first N post-entry bars (a true
+    T+N); fewer bars than N means the window has not elapsed yet ("pending").
+    The T+N return is close-to-close from the entry session's close in the
+    same history, so it shares the benchmark's start and the history's
+    split/dividend adjustment; without that close the pick is reported as
+    ``no_entry_close`` rather than measured from the saved pick price. Without a horizon, the window runs from
+    the saved entry price to the latest bar.
+    """
     empty = {
         "path_status": "",
         "path_days": None,
         "path_end_return_pct": None,
         "max_drawdown_pct": None,
         "max_runup_pct": None,
+        "path_end_date": None,
     }
     if path is None:
         return empty
     if entry_price <= 0:
         return {**empty, "path_status": "bad_entry_price"}
+    as_of = now or _history_fetched_at(path)
     df = _normalize_price_path(path)
     if df.empty:
         return {**empty, "path_status": "no_path"}
-    df = _filter_path_after_created_at(df, created_at)
+    cutoff = entry_cutoff_date(created_at, market)
+    if horizon_days:
+        # T+N is close-to-close within one history. Without the entry
+        # session's close the saved pick price (intraday, unadjusted) would
+        # be compared with adjusted closes, so report it instead of guessing.
+        entry_bars = (
+            df[df["date"].dt.normalize() <= pd.Timestamp(cutoff)]
+            if cutoff is not None and "date" in df.columns
+            else df.iloc[0:0]
+        )
+        if entry_bars.empty or not float(entry_bars["close"].iloc[-1]) > 0:
+            return {**empty, "path_status": "no_entry_close"}
+        entry_price = float(entry_bars["close"].iloc[-1])
+    df = _filter_path_after_entry(df, cutoff)
+    # Only sessions that had closed when the history was fetched count; a bar
+    # cached mid-session is not a close even after the session ends.
+    df = _completed_sessions(df, market, now=as_of)
+    if horizon_days:
+        if len(df) < horizon_days:
+            return {**empty, "path_status": "pending", "path_days": int(len(df))}
+        df = df.head(int(horizon_days))
     if df.empty:
         return {**empty, "path_status": "no_path_after_entry"}
 
@@ -648,11 +792,178 @@ def _price_path_metrics(
     max_drawdown = (float(low.min()) / entry_price - 1.0) * 100 if not low.empty else None
     return {
         "path_status": "ok",
+        "path_end_date": df["date"].iloc[-1] if "date" in df.columns else None,
         "path_days": int(len(close)),
         "path_end_return_pct": _safe_round(end_return),
         "max_drawdown_pct": _safe_round(min(max_drawdown, 0.0)) if max_drawdown is not None else None,
         "max_runup_pct": _safe_round(max(max_runup, 0.0)) if max_runup is not None else None,
     }
+
+
+def entry_cutoff_date(created_at: str, market: str = "cn") -> date | None:
+    """Return the last session date whose bar is at least partly pre-entry.
+
+    ``created_at`` is the server's naive local time. It is converted to the
+    exchange's timezone: a run created before the session open was priced off
+    the previous close, so that day's bar is entirely post-entry; a run
+    created during or after the session saw part of that day's bar, which must
+    not count toward post-entry run-up or drawdown.
+    """
+    try:
+        created = datetime.fromisoformat(str(created_at))
+    except (TypeError, ValueError):
+        return None
+    try:
+        spec = get_market(market or "cn")
+    except ValueError:
+        spec = get_market("cn")
+    local = created.astimezone(ZoneInfo(spec.timezone))
+    hour, minute = (int(part) for part in spec.session_open.split(":"))
+    if local.time() < time(hour, minute):
+        return local.date() - timedelta(days=1)
+    return local.date()
+
+
+def _completed_sessions(
+    df: pd.DataFrame,
+    market: str,
+    *,
+    now: datetime | None = None,
+) -> pd.DataFrame:
+    """Keep bars whose session had closed at ``now`` (default: the current time).
+
+    Pass the history's fetch time as ``now`` so a bar captured mid-session is
+    never treated as that session's close.
+    """
+    if "date" not in df.columns or df["date"].dropna().empty:
+        return df
+    try:
+        spec = get_market(market or "cn")
+    except ValueError:
+        spec = get_market("cn")
+    tz = ZoneInfo(spec.timezone)
+    local_now = (now or datetime.now(tz)).astimezone(tz)
+    hour, minute = (int(part) for part in spec.session_close.split(":"))
+    dates = df["date"].dt.normalize()
+    last_closed = pd.Timestamp(local_now.date())
+    if local_now.time() < time(hour, minute):
+        last_closed -= pd.Timedelta(days=1)
+    return df[dates <= last_closed].copy()
+
+
+def _history_fetched_at(path: pd.DataFrame) -> datetime | None:
+    raw = getattr(path, "attrs", {}).get("fetched_at")
+    if isinstance(raw, datetime):
+        return raw
+    try:
+        return datetime.fromisoformat(str(raw)) if raw else None
+    except ValueError:
+        return None
+
+
+def _filter_path_after_entry(df: pd.DataFrame, cutoff: date | None) -> pd.DataFrame:
+    if cutoff is None or "date" not in df.columns or df["date"].dropna().empty:
+        return df
+    dates = df["date"]
+    if getattr(dates.dt, "tz", None) is not None:
+        dates = dates.dt.tz_localize(None)
+    return df[dates.dt.normalize() > pd.Timestamp(cutoff)].copy()
+
+
+def _benchmark_return(
+    run: ScreenResult,
+    *,
+    horizon_days: int,
+    lookback_days: int,
+    cache: dict[str, pd.DataFrame] | None,
+) -> tuple[float | None, str, list[str], pd.DataFrame | None]:
+    """Return the benchmark's T+N return plus its post-entry closes.
+
+    The closes (indexed by date, as returns from the entry close) let each
+    pick be compared through its own window end, which differs from the
+    benchmark's when the stock skipped a session (suspension, holiday gap).
+    """
+    try:
+        spec = get_market(run.market or "cn")
+    except ValueError:
+        return None, "", [f"Benchmark skipped: unsupported market {run.market!r}"], None
+    label = spec.benchmark_name or spec.benchmark
+    if not spec.benchmark:
+        return None, label, [], None
+    cutoff = entry_cutoff_date(run.created_at, spec.id)
+    path = cache.get(spec.id) if cache is not None else None
+    if path is not None and not _path_reaches(path, cutoff):
+        # Cached for a newer run with a shorter lookback; batches list runs
+        # newest first, so older runs need a longer history.
+        path = None
+    if path is None:
+        try:
+            path = _fetch_benchmark_path(spec.id, lookback_days=lookback_days)
+        except Exception as exc:
+            return None, label, [f"Benchmark {label} fetch failed: {exc}"], None
+        if cache is not None:
+            cache[spec.id] = path
+    # Entry level = the benchmark close on the entry cutoff session, so the
+    # benchmark and the picks share the same start and the same N bars.
+    df = _normalize_price_path(path)
+    if df.empty or cutoff is None or "date" not in df.columns:
+        return None, label, [f"Benchmark {label} has no usable history"], None
+    dates = df["date"].dt.normalize()
+    before = df[dates <= pd.Timestamp(cutoff)]
+    if before.empty:
+        return None, label, [f"Benchmark {label} history does not reach the entry date"], None
+    entry_level = float(before["close"].iloc[-1])
+    metrics = _price_path_metrics(
+        path,
+        entry_price=entry_level,
+        created_at=run.created_at,
+        cost_bps=0.0,
+        market=spec.id,
+        horizon_days=horizon_days,
+    )
+    after = _completed_sessions(
+        _filter_path_after_entry(df, cutoff), spec.id, now=_history_fetched_at(path)
+    )
+    curve = pd.Series(
+        (after["close"].to_numpy(dtype=float) / entry_level - 1.0) * 100,
+        index=after["date"].dt.normalize(),
+    )
+    return metrics["path_end_return_pct"], label, [], curve
+
+
+def _benchmark_return_through(curve: pd.Series | None, end_date) -> float | None:
+    """Benchmark return from the entry close to the last close on or before ``end_date``."""
+    if curve is None or curve.empty or end_date is None:
+        return None
+    upto = curve[curve.index <= pd.Timestamp(end_date).normalize()]
+    return _safe_round(float(upto.iloc[-1])) if not upto.empty else None
+
+
+def _path_reaches(path: pd.DataFrame, cutoff: date | None) -> bool:
+    """True when the history has a bar on or before the entry cutoff session."""
+    if cutoff is None:
+        return True
+    df = _normalize_price_path(path)
+    if df.empty or "date" not in df.columns:
+        return False
+    return bool((df["date"].dt.normalize() <= pd.Timestamp(cutoff)).any())
+
+
+def _fetch_benchmark_path(market: str, *, lookback_days: int) -> pd.DataFrame:
+    spec = get_market(market or "cn")
+    if not spec.benchmark:
+        raise RuntimeError(f"no benchmark configured for market {spec.id}")
+    fetched_at = datetime.now().astimezone()
+    if spec.id == "cn":
+        from alphasift.daily import _fetch_daily_tencent
+
+        path = _fetch_daily_tencent(spec.benchmark, lookback_days=lookback_days)
+    else:
+        from alphasift.snapshot_us import fetch_daily_history_yfinance
+
+        path = fetch_daily_history_yfinance(spec.benchmark, lookback_days=lookback_days)
+    path.attrs["fetched_at"] = fetched_at.isoformat()
+    return path
 
 
 def _normalize_price_path(path: pd.DataFrame) -> pd.DataFrame:
@@ -672,18 +983,10 @@ def _normalize_price_path(path: pd.DataFrame) -> pd.DataFrame:
         df[column] = pd.to_numeric(df[column], errors="coerce")
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"], errors="coerce")
+        if getattr(df["date"].dt, "tz", None) is not None:
+            df["date"] = df["date"].dt.tz_localize(None)
         df = df.sort_values("date")
     return df.dropna(subset=["close"]).copy()
-
-
-def _filter_path_after_created_at(df: pd.DataFrame, created_at: str) -> pd.DataFrame:
-    if "date" not in df.columns or df["date"].dropna().empty:
-        return df
-    try:
-        created = pd.to_datetime(datetime.fromisoformat(created_at).date())
-    except ValueError:
-        return df
-    return df[df["date"] >= created].copy()
 
 
 def _classify_shape_status(
@@ -742,6 +1045,32 @@ def _aggregate_evaluations(evaluations: list[EvaluationResult]) -> dict[str, obj
         for pick in evaluation.picks
         if pick.max_runup_pct is not None
     ]
+    excess = [
+        float(pick.excess_return_pct)
+        for evaluation in evaluations
+        for pick in evaluation.picks
+        if pick.excess_return_pct is not None
+    ]
+    # Benchmark and excess cover only picks with benchmark data for their own
+    # window. The matched return average is over the same picks, so
+    # matched_return - bench == excess even when coverage is partial; the
+    # all-pick average_return_pct can differ from it.
+    matched = [
+        (float(pick.return_pct), float(pick.benchmark_return_pct))
+        for evaluation in evaluations
+        for pick in evaluation.picks
+        if pick.excess_return_pct is not None
+        and pick.benchmark_return_pct is not None
+        and pick.return_pct is not None
+    ]
+    benchmark_returns = [bench for _, bench in matched]
+    benchmarks = sorted({evaluation.benchmark for evaluation in evaluations if evaluation.benchmark})
+    benchmark_errors = _dedupe_strings(
+        item
+        for evaluation in evaluations
+        for item in evaluation.degradation
+        if str(item).startswith("Benchmark ")
+    )
     pick_count = sum(len(evaluation.picks) for evaluation in evaluations)
     missing_count = sum(len(evaluation.missing_codes) for evaluation in evaluations)
     return {
@@ -758,6 +1087,21 @@ def _aggregate_evaluations(evaluations: list[EvaluationResult]) -> dict[str, obj
         "median_max_drawdown_pct": _safe_round(float(pd.Series(drawdowns).median())) if drawdowns else None,
         "average_max_runup_pct": _safe_round(sum(runups) / len(runups)) if runups else None,
         "median_max_runup_pct": _safe_round(float(pd.Series(runups).median())) if runups else None,
+        "pending_count": sum(evaluation.pending_count for evaluation in evaluations),
+        "benchmark": ",".join(benchmarks),
+        # Why bench/excess are empty when they are: fetch failures, short history.
+        "benchmark_errors": benchmark_errors,
+        "benchmark_pick_count": len(matched),
+        "average_matched_return_pct": (
+            _safe_round(sum(ret for ret, _ in matched) / len(matched)) if matched else None
+        ),
+        "average_benchmark_return_pct": (
+            _safe_round(sum(benchmark_returns) / len(benchmark_returns)) if benchmark_returns else None
+        ),
+        "average_excess_return_pct": _safe_round(sum(excess) / len(excess)) if excess else None,
+        "beat_benchmark_rate": (
+            _safe_round(sum(1 for value in excess if value > 0) / len(excess) * 100) if excess else None
+        ),
     }
 
 
@@ -838,6 +1182,14 @@ def _strategy_summaries(evaluations: list[EvaluationResult]) -> list[dict[str, o
             "win_rate": aggregate["win_rate"],
             "average_max_drawdown_pct": aggregate["average_max_drawdown_pct"],
             "average_max_runup_pct": aggregate["average_max_runup_pct"],
+            "pending_count": aggregate["pending_count"],
+            "benchmark": aggregate["benchmark"],
+            "benchmark_pick_count": aggregate["benchmark_pick_count"],
+            "average_matched_return_pct": aggregate["average_matched_return_pct"],
+            "average_benchmark_return_pct": aggregate["average_benchmark_return_pct"],
+            "average_excess_return_pct": aggregate["average_excess_return_pct"],
+            "benchmark_errors": aggregate["benchmark_errors"],
+            "beat_benchmark_rate": aggregate["beat_benchmark_rate"],
             "average_portfolio_return_pct": portfolio["average_portfolio_return_pct"],
             "portfolio_win_rate": portfolio["portfolio_win_rate"],
             "shape_status_counts": dict(sorted(shape_counts.items())),
@@ -928,6 +1280,9 @@ def _event_signal_review(evaluations: list[EvaluationResult]) -> dict[str, objec
     signal_occurrences = 0
     for evaluation in evaluations:
         for pick in evaluation.picks:
+            if pick.status == "pending":
+                # Unelapsed T+N windows would dilute win and failure rates.
+                continue
             signals = [signal for signal in _event_signals(pick) if signal != "none"]
             for signal in signals:
                 signal_occurrences += 1
@@ -1266,6 +1621,9 @@ def _failure_samples(evaluations: list[EvaluationResult]) -> list[dict[str, obje
 
 
 def _failure_reasons(pick: PickEvaluation) -> list[str]:
+    if pick.status == "pending":
+        # The T+N window has not elapsed: no evidence either way yet.
+        return []
     reasons: list[str] = []
     if pick.status != "ok":
         reasons.append(f"quote_status:{pick.status}")
@@ -1534,6 +1892,11 @@ def _evaluation_brief(evaluation: EvaluationResult) -> dict[str, object]:
             / sum(1 for pick in evaluation.picks if pick.max_drawdown_pct is not None)
         ) if any(pick.max_drawdown_pct is not None for pick in evaluation.picks) else None,
         "missing_count": len(evaluation.missing_codes),
+        "horizon_days": evaluation.horizon_days,
+        "pending_count": evaluation.pending_count,
+        "benchmark": evaluation.benchmark,
+        "benchmark_return_pct": evaluation.benchmark_return_pct,
+        "average_excess_return_pct": evaluation.average_excess_return_pct,
         "degradation": evaluation.degradation,
     }
 
@@ -1543,7 +1906,8 @@ def _elapsed_days(run: ScreenResult) -> int | None:
         created = datetime.fromisoformat(run.created_at)
     except ValueError:
         return None
-    return (datetime.now() - created).days
+    now = datetime.now(created.tzinfo) if created.tzinfo else datetime.now()
+    return (now - created).days
 
 
 def _safe_round(value: float | None) -> float | None:

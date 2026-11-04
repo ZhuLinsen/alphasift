@@ -148,7 +148,8 @@ The full list is in [docs/configuration.md](docs/configuration.md).
 ## Known limitations
 
 - AlphaSift is a discovery and ranking engine, not a backtester or an execution system. T+N evaluation compares saved prices with later prices and does not model dividends, suspensions or position constraints.
-- T+N counts calendar days rather than each exchange's trading calendar.
+- `evaluate-strategies --window 5,10,20` measures true T+N: each pick's return at the close of the Nth trading bar after entry, against the market benchmark (CSI 300, S&P 500, Hang Seng, Nikkei 225, KOSPI, TAIEX, Nifty 50) over the same bars. Picks whose window has not elapsed are reported as pending. `evaluate` and `evaluate-batch` without a window still measure return to the latest price.
+- Entry is placed in exchange time: a run saved before the session open enters at the previous close; a run saved during or after the session does not count that day's bar toward run-up or drawdown. Exchange holidays are not modeled beyond the bars the data source returns.
 - Yahoo-screener markets are not the whole market: the universe is listings above a market-cap floor (about USD 1B), one query per Yahoo sector, capped at 4000 rows. They depend on a single unofficial endpoint, estimate traded value as price × volume, and use total market cap as float cap. Korea has no valuation fields. PE/PB are only derived from EPS and book value when the trading and reporting currencies match.
 - Daily K-line strategies enrich only the L1 shortlist, not the whole market.
 - `strategies/` and `alphasift/strategies/` mirror each other (development vs installed package) and must stay in sync.

@@ -242,7 +242,10 @@ def main():
     esp.add_argument(
         "--window",
         default=None,
-        help="用逗号分隔多个窗口对价格路径进行滚动回看，例如 5,10,20；和 --price-path-lookback-days 互斥",
+        help=(
+            "逗号分隔的 T+N 交易日窗口，例如 5,10,20：按入场后第 N 个交易日收盘计算收益，"
+            "并与所在市场基准指数同期收益对比；未满 N 日的记为 pending。和 --price-path-lookback-days 互斥"
+        ),
     )
 
     # runs
@@ -1463,7 +1466,7 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
             f"evaluated_at={result.get('evaluated_at')} "
             f"source={result.get('snapshot_source') or '-'} "
             f"limit={result.get('limit')} strategy_filter={result.get('strategy_filter') or '-'} "
-            f"price_path={result.get('with_price_path')}"
+            f"price_path={result.get('with_price_path')} cost_bps={result.get('cost_bps')}"
         ),
     ]
     if result.get("price_path_window_days"):
@@ -1472,7 +1475,10 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
     if result.get("strategy_summaries", []) and isinstance(result.get("strategy_summaries"), list):
         sample = result["strategy_summaries"][0]
         if isinstance(sample, dict) and sample.get("window_summaries") is not None:
-            lines.append("strategy windows avg_return median_return win_rate max_dd max_runup failed_follow missing")
+            lines.append(
+                "strategy windows T+N: ret=avg return, bench=benchmark, excess=ret-bench, "
+                "beat=% picks beating benchmark, win, dd, runup, pending, missing"
+            )
         else:
             lines.append(
                 "strategy runs picks avg_return median_return win_rate max_dd max_runup outcome shapes"
@@ -1490,14 +1496,24 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
                 window_days = window.get("window_days", "-")
                 line_parts.append(
                     (
-                        f"{window_days}d:" 
+                        f"T+{window_days}:"
                         f"ret={window.get('average_return_pct')!s} "
+                        f"bench={window.get('average_benchmark_return_pct')!s} "
+                        f"excess={window.get('average_excess_return_pct')!s} "
+                        + _format_partial_benchmark(window)
+                        + f"beat={window.get('beat_benchmark_rate')!s} "
                         f"win={window.get('win_rate')!s} "
                         f"dd={window.get('average_max_drawdown_pct')!s} "
                         f"runup={window.get('average_max_runup_pct')!s} "
                         f"f={window.get('failed_breakout_count', 0)} "
                         f"t={window.get('breakout_follow_through_count', 0)} "
-                        f"m={window.get('missing_count', 0)}; "
+                        f"pending={window.get('pending_count', 0)} "
+                        f"m={window.get('missing_count', 0)}"
+                        + (
+                            f" bench_error={window['benchmark_errors'][0]}"
+                            if window.get("benchmark_errors") else ""
+                        )
+                        + "; "
                     )
                 )
             lines.append("".join(line_parts).strip())
@@ -1513,6 +1529,16 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
     lines.extend(_format_event_signal_review_explain(result.get("event_signal_review", {}), limit=5))
     lines.extend(_format_failure_review_explain(result.get("failure_review", {}), include_samples=False))
     return "\n".join(lines)
+
+
+def _format_partial_benchmark(window: dict) -> str:
+    """When only some picks have benchmark data, bench/excess cover just
+    those picks; show how many and their own average return."""
+    evaluated = int(window.get("evaluated_pick_count") or 0)
+    matched = int(window.get("benchmark_pick_count") or 0)
+    if not evaluated or matched >= evaluated:
+        return ""
+    return f"bench_n={matched}/{evaluated} matched_ret={window.get('average_matched_return_pct')!s} "
 
 
 def _format_event_signal_review_explain(
