@@ -41,6 +41,11 @@ alphasift = ["strategies/*.yaml"]
 "." = ["SKILL.md", ".env.example", "LICENSE"]
 "agents" = ["agents/openai.yaml"]
 
+[tool.ruff.lint]
+# Pinned so every ruff version checks the same rules (newer releases widen
+# the default set; CI installs the latest).
+select = ["E4", "E7", "E9", "F"]
+
 [tool.pytest.ini_options]
 # Deprecations raised from our own code fail the tests, so pandas-4 breakage
 # (e.g. .at adding a column) shows up before pandas 4 ships. Third-party
