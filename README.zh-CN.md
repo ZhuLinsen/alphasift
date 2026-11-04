@@ -1,6 +1,6 @@
 # AlphaSift
 
-**为 AI Agent 设计的全市场选股引擎。** AlphaSift 扫描整个市场，用可审计的 YAML 策略筛选打分，可选地让 LLM 对入围候选做横向排序，保证最终结果在行业上足够分散，并保存每次运行，方便事后检验选得准不准。
+**为 AI Agent 设计的全市场选股引擎。** AlphaSift 扫描全部 A 股（其他六个市场为市值较大的上市股票），用可审计的 YAML 策略筛选打分，可选地让 LLM 对入围候选做横向排序，让最终结果在行业上尽量分散，并保存每次运行，方便事后检验选得准不准。
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
@@ -19,7 +19,7 @@
 
 ## 为什么用 AlphaSift
 
-- **一条命令，七个市场**：A 股走专门的多数据源链路；美股、港股、日本、韩国、台湾、印度走 Yahoo Finance 筛选器，海外服务器和 CI 上也能用。
+- **以 A 股为主，另有六个市场（测试阶段）**：A 股走专门的多数据源链路；美股、港股、日本、韩国、台湾、印度走 Yahoo Finance 筛选器，海外服务器和 CI 上也能用，但只有一个非官方数据源、字段也更少（见“已知限制”）。
 - **不配 API key 也能跑**：L1 筛选、打分、风险和行业分散都是确定性的；配置了 LLM 才会对入围候选做重排。
 - **策略是 YAML，不是代码**：硬筛条件、因子权重、评分曲线、风险阈值、行业桶都写在可读、可 diff、可审查的文件里。
 - **不会一股脑全选同一个行业**：每只候选都带行业/板块标签，`portfolio_profile.mode: hard_cap` 保证 Top N 中同一行业不超过 N 只。
@@ -91,7 +91,7 @@ alphasift evaluate <run_id> --with-price-path --explain
 | `--market` | 市场 | 快照数据源 | 说明 |
 |---|---|---|---|
 | `cn` | A 股 | sina → efinance → akshare_em → em_datacenter（配置 token 时 Tushare 优先） | 按健康度排序数据源；缺行业时用东财行业映射补全 |
-| `us` | 美股 | Yahoo 筛选器（市值 ≥ 10 亿美元的全部上市公司） | 设置 `ALPHASIFT_US_TICKERS` 时改用指定的股票列表 |
+| `us` | 美股 | Yahoo 筛选器（NYSE / Nasdaq 上市、市值 ≥ 10 亿美元，含 ADR） | 设置 `ALPHASIFT_US_TICKERS` 时改用指定的股票列表 |
 | `hk` | 港股 | Yahoo 筛选器 | 股票池市值下限约 80 亿港元 |
 | `jp` | 日本 | Yahoo 筛选器 | 股票池市值下限约 1500 亿日元 |
 | `kr` | 韩国 | Yahoo 筛选器 | Yahoo 不提供韩股 PE/PB，估值类策略无法运行 |
@@ -150,7 +150,7 @@ alphasift evaluate <run_id> --with-price-path --explain
 - AlphaSift 是候选发现与排序引擎，不是回测或交易执行系统。T+N 评估比较的是保存时价格与之后的价格，不处理分红、停牌和持仓约束。
 - `evaluate-strategies --window 5,10,20` 计算真正的 T+N：按入场后第 N 个交易日的收盘价算收益，并和所在市场基准指数（沪深 300、标普 500、恒生、日经 225、KOSPI、台湾加权、Nifty 50）同期收益对比，输出超额收益和跑赢基准比例；未满 N 个交易日的记为 pending，不计入平均。不带窗口的 `evaluate` / `evaluate-batch` 仍按最新价计算至今收益。
 - 入场时点按交易所时间判断：开盘前保存的运行以前一日收盘入场；盘中或收盘后保存的运行，当天 K 线不计入最大浮盈和最大回撤。
-- Yahoo 筛选器市场的成交额按 价格 × 成交量 估算，流通市值用总市值代替；韩国市场没有估值字段。
+- Yahoo 筛选器市场并不是全市场：股票池是市值约 10 亿美元以上、按 Yahoo 板块逐个查询的上市股票，最多 4000 行；只依赖一个非官方接口；成交额按 价格 × 成交量 估算，流通市值用总市值代替；韩国市场没有估值字段；只有交易币种和财报币种一致时才用每股收益、每股净资产推算 PE/PB。
 - 依赖日 K 的策略只对 L1 入围候选做增强，不覆盖全市场。
 - `strategies/` 与 `alphasift/strategies/` 是开发态和安装态的两份镜像，内置策略需保持一致。
 
