@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- T+N 评估：历史数据里没有入场交易日收盘价时标记为 `no_entry_close`，不再退回用保存的选股价（盘中、未复权）去比复权收盘价，否则拆股后会算出虚假的 −50%
+- T+N 基准对比：只有部分选股有基准数据时，基准和超额只覆盖这些选股；新增 `benchmark_pick_count` 和同一批选股的平均收益 `average_matched_return_pct`（两者相减恒等于超额），CLI 在覆盖不全时显示 `bench_n=k/n matched_ret=...`
+- T+N 评估不再依赖实时快照：快照拉取失败时照常用历史收盘价计算，只是不显示当前价，原因记在 `source_errors`
+- Yahoo 快照：财报币种和交易币种不同时（部分 ADR），不再用每股收益、每股净资产自行推算 PE/PB，避免美元股价除以日元每股收益得到极低 PE、在低估值策略里排第一；拉取超过时间预算时保留已拉到的数据并标记为不完整（不覆盖完整缓存），不再丢弃后改用其他股票池
+- README：其他六个市场标为测试阶段，写明股票池范围（市值下限、按板块查询、最多 4000 行、美股含 ADR）
 - 韩国市场补上 PE/PB：Yahoo 不提供韩股估值，改由 Naver Finance 移动端接口逐只补全（272 只约 14 秒，PB 覆盖 271 只、PE 覆盖 223 只，亏损公司没有 PE），`global_value` 加入 kr；韩国优先股（代码末位非 0，如 005935）不再进入股票池。`ALPHASIFT_KR_VALUATION=0` 可关闭
 - `doctor data-sources` 支持 `--market`（us / hk / jp / kr / tw / in）：非 A 股检查 Yahoo 筛选器快照和 yfinance 日 K（默认用该市场代表股，如 0700.HK、7203.T）；`--strategy global_value` 这类不支持 A 股的策略会自动选它的第一个市场。实测 jp 通过，kr 正确报出 PE/PB 全部缺失
 - **修正 T+N 评估口径**：`evaluate-strategies --window 5,10,20` 之前每个窗口的收益都是"今天价格对比入场价"，三个窗口数值相同，窗口只影响拉取多少根 K 线。现在按入场后第 N 个交易日收盘计算收益，最大回撤和浮盈也只看这 N 根 K 线；未满 N 日的记为 `pending`，不计入平均
@@ -19,8 +24,8 @@
 - 非 A 股时跳过 A 股板块提供方（akshare / eastmoney），行业映射和 LLM 候选上下文不再把 `0700.HK` 当成 `000700`、把 `AAPL` 丢掉
 - `ALPHASIFT_US_TICKERS` 现在确实只用指定列表，不会在能访问 Wikipedia 时被 S&P 500 覆盖；ST 过滤的拒绝统计和瀑布图与实际过滤一致
 - `sina`/`em_datacenter` 分页拉取现在受 `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC`（默认 60 秒）总时长约束，每页读超时随剩余预算收缩、连接超时 5 秒；海外服务器首次运行从约 4 分钟降到约 70 秒
-- 新增 `portfolio_profile.mode: hard_cap`：保证 Top N 中同一行业桶不超过 `max_same_bucket`，候选不足时才回补；`dual_low` 升级到 1.3 并启用硬上限，新增"基建"桶。实测前 5 名从 3 只银行 + 2 只建筑变为 2 只银行 + 2 只基建 + 1 只航运
-- 修复 `--no-llm` 等场景下组合分散度控制静默失效：`em_datacenter` 快照现在带回行业字段；其他数据源缺行业时自动用东财行业映射补全（`INDUSTRY_AUTO_BACKFILL`，缓存 7 天）；完全没有行业标签时会在 `degradation` 中明确提示。实测 `dual_low` 前 5 名从 5 只银行变为 3 只银行 + 2 只建筑股
+- 新增 `portfolio_profile.mode: hard_cap`：Top N 优先选不超过 `max_same_bucket` 的同行业股票，符合上限的候选不够时才用超出的补足，没有行业标签的股票不受限制（不是绝对上限）；`dual_low` 升级到 1.3 并启用硬上限，新增"基建"桶。实测前 5 名从 3 只银行 + 2 只建筑变为 2 只银行 + 2 只基建 + 1 只航运
+- 修复 `--no-llm` 等场景下组合分散度控制静默失效：`em_datacenter` 快照现在带回行业字段；其他数据源缺行业时自动用东财行业映射补全（`INDUSTRY_AUTO_BACKFILL`，缓存 7 天）；完全没有行业标签时会在 `degradation` 中明确提示。东财行业补全整体受 `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC`（默认 60 秒）约束，超时就跳过，不会拖住选股。实测 `dual_low` 前 5 名从 5 只银行变为 3 只银行 + 2 只建筑股
 - 快照数据源成败会跨运行保存到 `source_health.json`，最近 6 小时内失败过的源自动排到后面；海外服务器上 `dual_low --no-llm` 从约 4 分钟降到约 10 秒
 - `em_datacenter` 每页从 500 行提高到 2000 行，全市场 3 次请求即可取完
 - 支持 DSA 通过 `context["dsa"]` 注入候选 provider，AlphaSift 会在 L1 初筛后、LLM 重排前补充 DSA 行情、基本面和新闻上下文

@@ -54,6 +54,12 @@ def _save_run(tmp_path, created_at="2026-03-31T20:00:00+08:00"):
     )
 
 
+def _with_entry(entry_close, bars):
+    """Prepend the entry session's bar (03-31), as a real history has it."""
+    entry = pd.DataFrame([{"date": "2026-03-31", "close": entry_close, "high": entry_close, "low": entry_close}])
+    return pd.concat([entry, bars], ignore_index=True)
+
+
 def _bars(start_day, closes):
     return pd.DataFrame(
         [
@@ -79,8 +85,8 @@ def test_horizon_marks_short_paths_pending_and_survives_benchmark_failure(tmp_pa
         cost_bps=0,
         horizon_days=2,
         price_paths={
-            "000001": _bars(1, [10.5, 11.0, 12.0]),
-            "600000": _bars(1, [19.0]),  # only one post-entry bar so far
+            "000001": _with_entry(10.0, _bars(1, [10.5, 11.0, 12.0])),
+            "600000": _with_entry(20.0, _bars(1, [19.0])),  # only one post-entry bar so far
         },
     )
 
@@ -382,3 +388,78 @@ def test_window_summaries_report_benchmark_failures(tmp_path, monkeypatch):
     window = result["strategy_summaries"][0]["window_summaries"][0]
     assert window["average_excess_return_pct"] is None
     assert any("index endpoint down" in item for item in window["benchmark_errors"])
+
+
+def test_horizon_without_the_entry_close_is_not_measured_from_the_saved_price(tmp_path, monkeypatch):
+    # History starts after entry: the saved pick price (intraday, unadjusted)
+    # must not be compared with adjusted closes. A 2:1 split would read -50%.
+    _save_run(tmp_path)
+    monkeypatch.setattr("alphasift.evaluate._fetch_benchmark_path", lambda market, *, lookback_days: pd.DataFrame())
+
+    result = evaluate_saved_run(
+        "run_h",
+        config=Config(llm_api_key="", data_dir=tmp_path),
+        current_snapshot=pd.DataFrame([{"code": "000001", "price": 5.0}]),
+        cost_bps=0,
+        horizon_days=2,
+        price_paths={"000001": _bars(1, [5.0, 5.0, 5.0]), "600000": _bars(1, [10.0, 10.0])},
+    )
+
+    assert [pick.path_status for pick in result.picks] == ["no_entry_close", "no_entry_close"]
+    assert all(pick.return_pct is None for pick in result.picks)
+    assert result.average_return_pct is None
+
+
+def test_partial_benchmark_coverage_reports_the_matched_population():
+    from alphasift.cli import _format_partial_benchmark
+    from alphasift.evaluate import _aggregate_evaluations
+    from alphasift.models import EvaluationResult, PickEvaluation
+
+    def pick(code, ret, bench):
+        return PickEvaluation(
+            code=code, name=code, rank=1, entry_price=10.0, current_price=None, return_pct=ret,
+            final_score=80, status="ok", benchmark_return_pct=bench,
+            excess_return_pct=None if bench is None else ret - bench,
+        )
+
+    evaluation = EvaluationResult(
+        run_id="r", strategy="dual_low", market="cn", created_at="",
+        picks=[pick("a", 10.0, 5.0), pick("b", -20.0, None)],
+    )
+
+    aggregate = _aggregate_evaluations([evaluation])
+
+    # All priced picks: (10 - 20) / 2 = -5. Only "a" has a benchmark.
+    assert aggregate["average_return_pct"] == -5.0
+    assert aggregate["benchmark_pick_count"] == 1
+    assert aggregate["average_matched_return_pct"] == 10.0
+    assert aggregate["average_matched_return_pct"] - aggregate["average_benchmark_return_pct"] == (
+        aggregate["average_excess_return_pct"]
+    )
+    window = {**aggregate, "evaluated_pick_count": aggregate["evaluated_pick_count"]}
+    assert _format_partial_benchmark(window) == "bench_n=1/2 matched_ret=10.0 "
+
+
+def test_window_evaluation_survives_a_snapshot_outage(tmp_path, monkeypatch):
+    from alphasift.evaluate import evaluate_saved_runs_by_windows
+
+    _save_run(tmp_path)
+
+    def snapshot_down(*args, **kwargs):
+        raise RuntimeError("All snapshot sources failed")
+
+    paths = {
+        "000001": _with_entry(10.0, _bars(1, [10.5, 11.0, 12.0])),
+        "600000": _with_entry(20.0, _bars(1, [19.0, 18.0, 17.0])),
+    }
+    monkeypatch.setattr("alphasift.evaluate.fetch_snapshot_with_fallback", snapshot_down)
+    monkeypatch.setattr("alphasift.evaluate.fetch_daily_history", lambda code, **kwargs: paths[code])
+    monkeypatch.setattr("alphasift.evaluate._fetch_benchmark_path", lambda market, *, lookback_days: pd.DataFrame())
+
+    payload = evaluate_saved_runs_by_windows(
+        windows=[2], config=Config(llm_api_key="", data_dir=tmp_path), cost_bps=0
+    )
+
+    window = payload["strategy_summaries"][0]["window_summaries"][0]
+    assert window["average_return_pct"] == 0.0  # +10% and -10% at T+2
+    assert any("current snapshot unavailable" in item for item in payload["source_errors"])

@@ -328,3 +328,44 @@ def test_evaluate_prices_picks_that_left_the_screener_universe(monkeypatch, tmp_
     assert result["summary"]["run_count"] == 1
     # 0005.HK +10%, 1234.HK -20% (no longer missing): average -5%.
     assert result["summary"]["average_return_pct"] == -5.0
+
+
+def test_ratios_are_not_derived_across_currencies():
+    from alphasift.snapshot_yahoo import _quote_to_row
+
+    # USD price over JPY EPS / book value would give PE 0.2 and PB 0.2.
+    adr = _quote_to_row(
+        _quote(
+            "TM", 4e11, currency="USD", financialCurrency="JPY", trailingPE=None, priceToBook=None,
+            epsTrailingTwelveMonths=500.0, bookValue=500.0,
+        ),
+        "Consumer Cyclical",
+    )
+    assert adr["pe_ratio"] is None and adr["pb_ratio"] is None
+    # Same currency: derived as before.
+    local = _quote_to_row(
+        _quote("7203.T", 4e13, currency="JPY", financialCurrency="JPY", trailingPE=None, epsTrailingTwelveMonths=20.0),
+        "Consumer Cyclical",
+    )
+    assert local["pe_ratio"] == pytest.approx(5.0)
+    # Ratios Yahoo reports itself are kept for cross-currency listings (ICBC H-share).
+    h_share = _quote_to_row(_quote("1398.HK", 2e12, currency="HKD", financialCurrency="CNY"), "Financial Services")
+    assert h_share["pe_ratio"] == 12.0
+
+
+def test_budget_expiry_returns_fetched_rows_as_partial(monkeypatch):
+    import alphasift.snapshot_yahoo as snapshot_yahoo
+
+    clock = iter([0.0, 1.0, 1.0, 1.0, 999.0, 999.0, 999.0])
+    monkeypatch.setattr(snapshot_yahoo.time, "monotonic", lambda: next(clock, 999.0))
+    monkeypatch.setattr(snapshot_yahoo.time, "sleep", lambda seconds: None)
+    monkeypatch.setenv("ALPHASIFT_YAHOO_SNAPSHOT_BUDGET_SEC", "10")
+
+    def fake_screen(query, size, offset, sortField, sortAsc):
+        return {"total": 1, "quotes": [_quote(f"{offset}{len(query.operands)}.HK", 9e11)]}
+
+    df = snapshot_yahoo.fetch_yahoo_snapshot("hk", screen=fake_screen)
+
+    assert len(df) >= 1
+    assert df.attrs["partial"] is True
+    assert any("not fetched" in item for item in df.attrs["source_errors"])
