@@ -1,0 +1,126 @@
+name: Track record
+
+# Every trading day after the close: run each built-in strategy with --no-llm
+# --save-run, commit the saved runs to the track-record branch, evaluate T+N
+# against the market benchmark, and publish the dashboard to GitHub Pages.
+
+on:
+  schedule:
+    - cron: "30 10 * * 1-5" # asia: 18:30 Beijing, after CN/HK/JP/KR/TW (and IN at 18:00) close
+    - cron: "30 22 * * 1-5" # us: 06:30 Beijing the next morning
+  workflow_dispatch:
+    inputs:
+      session:
+        description: "asia, us, or rebuild (re-evaluate every market and rebuild the site without screening)"
+        type: choice
+        options: [asia, us, rebuild]
+        default: asia
+      markets:
+        description: "Optional comma-separated subset, e.g. cn,hk"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: track-record
+  cancel-in-progress: false
+
+env:
+  STATE: ${{ github.workspace }}/state
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      contents: write
+    env:
+      # Caches and source health stay out of git; only runs, logs and site data are committed.
+      ALPHASIFT_FALLBACK_SNAPSHOT_PATH: ${{ github.workspace }}/state/snapshot.last_good.json
+      ALPHASIFT_SOURCE_HEALTH_PATH: ${{ github.workspace }}/state/source_health.json
+      ALPHASIFT_DAILY_HISTORY_CACHE_DIR: ${{ github.workspace }}/state/daily_history
+      ALPHASIFT_INDUSTRY_PROVIDER_CACHE_DIR: ${{ github.workspace }}/state/industry_provider_cache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: track-record
+          path: track
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: python -m pip install -e .
+      - uses: actions/cache@v4
+        with:
+          path: state
+          key: track-state-${{ github.run_id }}
+          restore-keys: track-state-
+
+      - name: Pick the session
+        id: session
+        run: |
+          session="${{ inputs.session || 'asia' }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "${{ github.event.schedule }}" = "30 22 * * 1-5" ]; then session=us; else session=asia; fi
+          fi
+          markets="${{ inputs.markets }}"
+          if [ -z "$markets" ]; then
+            case "$session" in
+              asia) markets=cn,hk,jp,kr,tw,in ;;
+              us) markets=us ;;
+              rebuild) markets=cn,hk,jp,kr,tw,in,us ;;
+            esac
+          fi
+          echo "session=$session" >> "$GITHUB_OUTPUT"
+          echo "markets=$markets" >> "$GITHUB_OUTPUT"
+          echo "session=$session markets=$markets"
+
+      - name: Screen
+        if: steps.session.outputs.session != 'rebuild'
+        run: |
+          python scripts/track_record.py screen --track track \
+            --session "${{ steps.session.outputs.session }}" --markets "${{ steps.session.outputs.markets }}" \
+            || echo "::warning::no strategy saved a run this session"
+      - name: Evaluate T+N
+        run: python scripts/track_record.py evaluate --track track --markets "${{ steps.session.outputs.markets }}"
+      - name: Build site data
+        run: |
+          python scripts/track_record.py build --track track
+          cp scripts/track_record_page.html track/index.html
+
+      - name: Commit to track-record
+        working-directory: track
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -q -m "track: ${{ steps.session.outputs.session }} $(TZ=Asia/Shanghai date +%F)"
+          git push origin HEAD:track-record
+
+      - name: Stage the dashboard
+        run: |
+          mkdir -p _site
+          cp track/index.html _site/
+          cp -r track/site _site/site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: record
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
