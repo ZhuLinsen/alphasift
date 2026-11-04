@@ -70,6 +70,7 @@ def apply_hard_filters(df: pd.DataFrame, filters: HardFilterConfig) -> pd.DataFr
 
     # Numeric filters — each is optional
     mask = _filter_min(result, mask, ["amount", "成交额"], filters.amount_min)
+    mask = _filter_min(result, mask, ["avg_amount_usd"], filters.avg_amount_usd_min)
     mask = _filter_min(result, mask, ["price", "最新价", "现价"], filters.price_min)
     mask = _filter_max(result, mask, ["price", "最新价", "现价"], filters.price_max)
     mask = _filter_min(result, mask, ["total_mv", "总市值"], filters.market_cap_min)
@@ -150,6 +151,7 @@ def hard_filter_rejection_summary(
             record(label, _filter_max(df, mask, columns, value))
 
     record_min("amount_min", ["amount", "成交额"], filters.amount_min)
+    record_min("avg_amount_usd_min", ["avg_amount_usd"], filters.avg_amount_usd_min)
     record_min("price_min", ["price", "最新价", "现价"], filters.price_min)
     record_max("price_max", ["price", "最新价", "现价"], filters.price_max)
     record_min("market_cap_min", ["total_mv", "总市值"], filters.market_cap_min)
@@ -250,6 +252,7 @@ def hard_filter_waterfall(
             record(label, _filter_max(df, mask, columns, value), columns)
 
     record_min("amount_min", ["amount", "成交额"], filters.amount_min)
+    record_min("avg_amount_usd_min", ["avg_amount_usd"], filters.avg_amount_usd_min)
     record_min("price_min", ["price", "最新价", "现价"], filters.price_min)
     record_max("price_max", ["price", "最新价", "现价"], filters.price_max)
     record_min("market_cap_min", ["total_mv", "总市值"], filters.market_cap_min)

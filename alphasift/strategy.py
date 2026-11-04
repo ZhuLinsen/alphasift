@@ -791,6 +791,8 @@ def _required_snapshot_fields(filters_config: HardFilterConfig) -> list[str]:
         fields.append("name")
     if filters_config.amount_min is not None:
         fields.append("amount")
+    if filters_config.avg_amount_usd_min is not None:
+        fields.append("avg_amount_usd")
     if filters_config.price_min is not None or filters_config.price_max is not None:
         fields.append("price")
     if filters_config.market_cap_min is not None or filters_config.market_cap_max is not None:

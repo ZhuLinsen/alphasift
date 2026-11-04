@@ -84,10 +84,14 @@ def doctor_data_sources(
     scope when that strategy does not run on cn (e.g. global_value -> us).
     Non-CN markets check the Yahoo screener and the yfinance daily adapter.
     """
+    # --all-strategies checks one market, so only the strategies that run on
+    # it count (CN sources cannot carry global_value's avg_amount_usd).
+    plan_market = _resolve_doctor_market(market, {}) if all_strategies and not strategy_name else None
     strategy_requirements, coverage_requirements = _strategy_preflight_plan(
         config,
         strategy_name=strategy_name,
         all_strategies=all_strategies,
+        market=plan_market,
     )
     market = _resolve_doctor_market(market, strategy_requirements)
     if market == "cn":
@@ -271,14 +275,18 @@ def _strategy_preflight_plan(
     *,
     strategy_name: str | None,
     all_strategies: bool,
+    market: str | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if strategy_name and all_strategies:
         raise ValueError("--strategy and --all-strategies cannot be combined")
     if all_strategies:
         requirements = [_strategy_requirement_payload(item) for item in list_strategies(config.strategies_dir)]
+        if market:
+            requirements = [item for item in requirements if market in item["market_scope"]]
         return (
             {
                 "mode": "all",
+                "market": market or "",
                 "strategy_count": len(requirements),
                 "daily_strategy_count": sum(
                     1 for item in requirements if item["requires_daily_features"]
@@ -448,13 +456,15 @@ _SNAPSHOT_NUMERIC_FIELDS = {
     "price",
     "change_pct",
     "amount",
+    "avg_amount",
+    "avg_amount_usd",
     "total_mv",
     "pe_ratio",
     "pb_ratio",
     "turnover_rate",
     "volume_ratio",
 }
-_SNAPSHOT_POSITIVE_FIELDS = {"price", "amount", "total_mv"}
+_SNAPSHOT_POSITIVE_FIELDS = {"price", "amount", "avg_amount", "avg_amount_usd", "total_mv"}
 
 
 def _snapshot_quality_fields(df, required_fields: list[str]) -> list[str]:

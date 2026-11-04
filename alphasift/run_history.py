@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from alphasift.store import list_saved_runs
+from alphasift.timeutil import MIN_TIMESTAMP, parse_timestamp
 
 
 def build_strategy_run_summary(
@@ -20,7 +21,7 @@ def build_strategy_run_summary(
     strategy_rows = [_strategy_summary(item) for item in _group_runs_by_strategy(runs).values()]
     strategy_rows.sort(
         key=lambda item: (
-            str(item.get("latest_created_at") or ""),
+            _parse_created_at(str(item.get("latest_created_at") or "")),
             str(item.get("strategy") or ""),
         ),
         reverse=True,
@@ -159,7 +160,5 @@ def _run_sort_key(item: dict[str, object]) -> tuple[datetime, str]:
 
 
 def _parse_created_at(value: str) -> datetime:
-    try:
-        return datetime.fromisoformat(value)
-    except ValueError:
-        return datetime.min
+    # Aware for both old naive and new offset timestamps, so they sort together.
+    return parse_timestamp(value) or MIN_TIMESTAMP

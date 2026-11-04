@@ -3,7 +3,8 @@
 
 from typing import Any
 from dataclasses import dataclass, field
-from datetime import datetime
+
+from alphasift.timeutil import now_iso
 
 
 @dataclass
@@ -12,6 +13,9 @@ class HardFilterConfig:
     price_min: float | None = None
     price_max: float | None = None
     amount_min: float | None = None
+    # Estimated daily traded value in USD (current price x 10-day average
+    # volume, 3-month if missing); comparable across markets.
+    avg_amount_usd_min: float | None = None
     market_cap_min: float | None = None
     market_cap_max: float | None = None
     pe_ttm_min: float | None = None
@@ -223,7 +227,7 @@ class ScreenResult:
     portfolio_diversity_enabled: bool = True
     portfolio_concentration_notes: list[str] = field(default_factory=list)
     saved_path: str = ""
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    created_at: str = field(default_factory=now_iso)
 
 
 @dataclass
@@ -264,7 +268,7 @@ class EvaluationResult:
     strategy: str
     market: str
     created_at: str
-    evaluated_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    evaluated_at: str = field(default_factory=now_iso)
     elapsed_days: int | None = None
     snapshot_source: str = ""
     source_errors: list[str] = field(default_factory=list)

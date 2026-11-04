@@ -49,13 +49,14 @@ style:                    # 可选，面向 UI/agent 的策略风格，不参与
 
 screening:
   enabled: bool            # 是否启用选股
-  market_scope: [string]   # 适用市场，当前仅 [cn]
+  market_scope: [string]   # 适用市场：cn / us / hk / jp / kr / tw / in，默认 [cn]
 
   hard_filters:            # L1 硬筛条件（全部可选，不填则不筛）
     exclude_st: bool       # 排除 ST
     price_min: float       # 最低价格
     price_max: float       # 最高价格
-    amount_min: float      # 最低成交额（元）
+    amount_min: float      # 最低成交额（当地货币，A 股为元）
+    avg_amount_usd_min: float  # 估算日均成交额下限（美元，非 A 股；当前价 × 近 10 日平均成交量，按市场近似汇率折算）
     market_cap_min: float  # 最低总市值
     market_cap_max: float  # 最高总市值
     pe_ttm_min: float      # 最低 PE(TTM)

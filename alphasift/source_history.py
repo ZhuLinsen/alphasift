@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from alphasift.store import list_saved_runs
+from alphasift.timeutil import MIN_TIMESTAMP, parse_timestamp
 
 
 def build_data_source_history(
@@ -21,7 +22,7 @@ def build_data_source_history(
     source_rows.sort(
         key=lambda item: (
             float(item.get("source_error_rate") or 0.0) + float(item.get("degradation_rate") or 0.0),
-            str(item.get("latest_created_at") or ""),
+            _parse_created_at(str(item.get("latest_created_at") or "")),
             str(item.get("snapshot_source") or ""),
         ),
         reverse=True,
@@ -301,7 +302,5 @@ def _run_sort_key(item: dict[str, object]) -> tuple[datetime, str]:
 
 
 def _parse_created_at(value: str) -> datetime:
-    try:
-        return datetime.fromisoformat(value)
-    except ValueError:
-        return datetime.min
+    # Aware for both old naive and new offset timestamps, so they sort together.
+    return parse_timestamp(value) or MIN_TIMESTAMP

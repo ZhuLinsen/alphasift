@@ -7,15 +7,21 @@ typically 5-30 pages of 250 rows at ~0.3s each.
 
 Field notes:
 - ``amount`` is price x volume, an estimate of traded value.
+  ``avg_amount`` is the current price x the 10-day average volume (3-month
+  when missing), an estimate whose volume part does not depend on the time
+  of day; ``avg_amount_usd`` converts it at the market's
+  approximate ``usd_rate`` for cross-market liquidity floors.
 - ``volume_ratio`` is today's volume over the 10-day average. During the
   session it reflects a partial day, like the A-share intraday volume ratio.
 - ``circ_mv`` is total market cap; Yahoo has no free-float cap here.
 - PE/PB are derived from trailing EPS and book value per share when Yahoo
   omits the ratios. South Korea has neither; KR PE/PB come from Naver
   Finance instead (``alphasift.valuation_kr``).
-- Preferred shares are dropped. PB below 0.1 on a listing whose reporting
-  currency differs from its trading currency (some ADRs) is cleared as an
-  unconverted-currency artifact.
+- Preferred shares are dropped (US ``-P`` symbols, KRX codes not ending in
+  0, Taiwan codes with a letter suffix). A company listed on two local
+  exchanges (India: NSE and BSE) is kept once.
+- PB below 0.1 on a listing whose reporting currency differs from its
+  trading currency (some ADRs) is cleared as an unconverted-currency artifact.
 """
 
 from __future__ import annotations
@@ -47,6 +53,7 @@ YAHOO_SECTORS = (
     "Utilities",
 )
 _PREFERRED_SYMBOL_RE = re.compile(r"-P[A-Z]{0,2}$")
+_TW_PREFERRED_RE = re.compile(r"\d{4}[A-Z]")
 _CROSS_CURRENCY_MIN_PB = 0.1
 _PAGE_SIZE = 250
 _PAGE_PAUSE_SECONDS = 0.2
@@ -78,6 +85,9 @@ def fetch_yahoo_snapshot(
     )
     started = time.monotonic()
 
+    # A company listed on two exchanges (India) takes two raw rows, so a
+    # sector may need up to limit x suffixes rows to yield ``limit`` companies.
+    sector_row_cap = limit * max(1, len(spec.yahoo_suffixes))
     rows: dict[str, dict[str, object]] = {}
     errors: list[str] = []
     timed_out = False
@@ -86,7 +96,7 @@ def fetch_yahoo_snapshot(
         # The global top-``limit`` is then cut after all sectors are in, so a
         # large early sector cannot crowd out Technology or Utilities.
         offset = 0
-        while offset < limit:
+        while offset < sector_row_cap:
             if budget is not None and time.monotonic() - started > budget:
                 # Keep what was fetched, marked partial: the caller then uses
                 # it without replacing the complete last-good cache, instead of
@@ -125,8 +135,9 @@ def fetch_yahoo_snapshot(
         detail = "; ".join(errors[:3]) or "no rows above the universe floor"
         raise RuntimeError(f"yahoo_screener returned no data for market {spec.id}: {detail}")
 
-    df = pd.DataFrame(list(rows.values()))
+    df = _drop_secondary_listings(pd.DataFrame(list(rows.values())), spec)
     df = df.sort_values("total_mv", ascending=False, na_position="last").head(limit).reset_index(drop=True)
+    df["avg_amount_usd"] = pd.to_numeric(df["avg_amount"], errors="coerce") / spec.usd_rate
     valuation_errors: list[str] = []
     valuation_incomplete = False
     if spec.id == "kr" and kr_valuation_enabled():
@@ -176,7 +187,7 @@ def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
     if _PREFERRED_SYMBOL_RE.search(symbol):
         # JPM-PC, BAC-PB...: preferred shares are tagged EQUITY by Yahoo.
         return None
-    if _is_krx_preferred(symbol):
+    if _is_local_preferred(symbol):
         return None
     volume = _num(quote.get("regularMarketVolume"))
     avg_volume = _num(quote.get("averageDailyVolume10Day")) or _num(quote.get("averageDailyVolume3Month"))
@@ -215,6 +226,7 @@ def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
         "price": price,
         "change_pct": _num(quote.get("regularMarketChangePercent")),
         "amount": price * volume if volume is not None else None,
+        "avg_amount": price * avg_volume if avg_volume is not None else None,
         "total_mv": market_cap,
         "circ_mv": market_cap,
         "pe_ratio": pe,
@@ -228,10 +240,48 @@ def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
     }
 
 
-def _is_krx_preferred(symbol: str) -> bool:
-    """KRX common shares have codes ending in 0; 005935, 005387, 00088K are preferreds."""
+def _is_local_preferred(symbol: str) -> bool:
+    """Preferred shares by local code convention.
+
+    KRX: common shares end in 0; 005935, 005387, 00088K are preferreds.
+    TWSE/TPEx: common shares are 4 digits; 2881A, 2891C, 2002A are preferreds.
+    """
     head, _, suffix = symbol.upper().rpartition(".")
-    return suffix in {"KS", "KQ"} and len(head) == 6 and head[-1] != "0"
+    if suffix in {"KS", "KQ"}:
+        return len(head) == 6 and head[-1] != "0"
+    if suffix in {"TW", "TWO"}:
+        return _TW_PREFERRED_RE.fullmatch(head) is not None
+    return False
+
+
+def _drop_secondary_listings(df: pd.DataFrame, spec: MarketSpec) -> pd.DataFrame:
+    """Keep one listing per company when it trades on two local exchanges.
+
+    Indian companies are listed on both NSE (RELIANCE.NS) and BSE
+    (RELIANCE.BO) under the same symbol; without this every company would be
+    screened, and could be picked, twice. The listing with more average
+    traded value (normally NSE) is kept.
+
+    This matches symbols, not company identity: a BSE listing under a
+    numeric scrip code would not be paired. KRX (KS/KQ) and TWSE/TPEx
+    (TW/TWO) codes are unique across their two boards, so nothing collapses
+    there.
+    """
+    if len(spec.yahoo_suffixes) < 2 or df.empty:
+        return df
+    head = df["code"].astype(str).str.upper().str.rsplit(".", n=1).str[0]
+    # Rank by 10-day average traded value: today's volume can be missing or
+    # partial before the session and would keep the thin BSE listing.
+    today = pd.to_numeric(df["amount"], errors="coerce")
+    average = pd.to_numeric(df["avg_amount"], errors="coerce") if "avg_amount" in df.columns else today
+    order = average.fillna(today).fillna(-1.0)
+    keep = (
+        df.assign(_head=head, _order=order)
+        .sort_values("_order", ascending=False, kind="stable")
+        .drop_duplicates("_head", keep="first")
+        .index
+    )
+    return df.loc[sorted(keep)].reset_index(drop=True)
 
 
 def _num(value: object) -> float | None:
