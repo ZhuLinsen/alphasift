@@ -132,6 +132,16 @@ def _resolve_fallback_snapshot_path(data_dir: Path) -> Path | None:
     return data_dir / "snapshot.last_good.json"
 
 
+def _resolve_source_health_path(data_dir: Path) -> Path | None:
+    raw = os.getenv("ALPHASIFT_SOURCE_HEALTH_PATH")
+    if raw is None:
+        return data_dir / "source_health.json"
+    value = raw.strip()
+    if value.lower() in {"", "0", "false", "none", "off"}:
+        return None
+    return Path(value)
+
+
 def _default_strategies_dir() -> Path:
     """Find strategies directory: env var > project root > package bundled."""
     env_dir = os.getenv("STRATEGIES_DIR")
@@ -183,6 +193,8 @@ class Config:
     fallback_snapshot_path: Path | None = (
         _PROJECT_ROOT / "data" / "snapshot.last_good.json"
     )
+    # Cross-run snapshot source health; None disables persisted reordering.
+    source_health_path: Path | None = None
 
     # Strategy directory
     strategies_dir: Path = field(default_factory=_default_strategies_dir)
@@ -190,6 +202,9 @@ class Config:
     # Optional deterministic industry/concept enrichment.
     industry_map_files: list[Path] = field(default_factory=list)
     industry_provider: str = "none"
+    # Backfill A-share industry labels when the snapshot source has none, so
+    # portfolio diversity control is not silently disabled.
+    industry_auto_backfill: bool = True
     industry_provider_max_boards: int = 80
     industry_provider_cache_dir: Path | None = (
         _PROJECT_ROOT / "data" / "industry_provider_cache"
@@ -311,6 +326,7 @@ class Config:
             llm_max_tokens=max(1, int(os.getenv("LLM_MAX_TOKENS", "2048"))),
             snapshot_source_priority=_resolve_snapshot_source_priority(),
             fallback_snapshot_path=fallback_snapshot_path,
+            source_health_path=_resolve_source_health_path(data_dir),
             snapshot_fallback_max_age_hours=_parse_optional_float_env(
                 "SNAPSHOT_FALLBACK_MAX_AGE_HOURS"
             ),
@@ -320,6 +336,7 @@ class Config:
                 for item in _parse_csv_env("INDUSTRY_MAP_FILES", [])
             ],
             industry_provider=os.getenv("INDUSTRY_PROVIDER", "none"),
+            industry_auto_backfill=_parse_bool_env("INDUSTRY_AUTO_BACKFILL", True),
             industry_provider_max_boards=max(1, int(os.getenv("INDUSTRY_PROVIDER_MAX_BOARDS", "80"))),
             industry_provider_cache_dir=industry_provider_cache_dir,
             industry_provider_cache_ttl_hours=max(

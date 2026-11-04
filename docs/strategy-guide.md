@@ -104,7 +104,8 @@ screening:
     low_daily_quality_score: float
     fetch_failed_daily_points: float
 
-  portfolio_profile:       # 可选，覆盖 LLM 行业/主题风险桶
+  portfolio_profile:       # 可选，控制行业/主题集中度
+    mode: soft | hard_cap  # soft（默认）只扣分；hard_cap 让 Top N 优先选不超过 max_same_bucket 的同桶股票（候选不足时用超出的补足；无行业标签的不受限）
     max_same_bucket: int
     concentration_penalty: float
     buckets:
@@ -188,6 +189,7 @@ alphasift strategies --template momentum_breakout_daily --json
 - 低波动价值策略可降低 `chase_change_pct`、`volume_spike_ratio`
 - 高弹性题材策略可提高 `high_turnover_rate`、`abnormal_volume_ratio`
 - 行业集中度偏好可用 `portfolio_profile.buckets` 调整，例如把银行、券商、保险归为金融风险桶
+- 默认 `soft` 模式只按超出数量扣分，分差大时同一行业仍可能占满前几名；需要硬性分散时设 `mode: hard_cap`，超出上限的候选会排到所有未超限候选之后，只在其他行业候选不足时才回补。行业来自 LLM 行业判断或快照/行业映射中的 `industry` 字段，没有行业标签的候选不受上限约束
 - 事件驱动策略可用 `event_profile` 偏好回购、订单、业绩改善，也可以提高公告相对新闻的来源权重
 
 不要把 profile 当作回测拟合参数频繁调到极端值；它更适合表达策略风格和风险偏好。

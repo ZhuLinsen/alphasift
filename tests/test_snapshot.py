@@ -518,3 +518,42 @@ def test_fetch_us_snapshot_single_ticker_with_multiindex(monkeypatch):
     assert len(df) == 1
     assert df.iloc[0]["code"] == "AAPL"
     assert df.iloc[0]["price"] > 0
+
+
+def test_fetch_sina_stops_when_snapshot_budget_is_spent(monkeypatch):
+    import alphasift.snapshot as snapshot_module
+
+    clock = {"now": 1000.0}
+    timeouts = []
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return [{"code": f"{len(timeouts):06d}", "name": "x", "trade": "1"}] * 80
+
+    def fake_get(url, **kwargs):
+        timeouts.append(kwargs["timeout"])
+        clock["now"] += 4.0  # each page takes 4s; the budget is 10s
+        return FakeResponse()
+
+    monkeypatch.setenv("ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC", "10")
+    monkeypatch.setattr(snapshot_module.time, "monotonic", lambda: clock["now"])
+    monkeypatch.setattr("alphasift.snapshot.requests.get", fake_get)
+
+    with pytest.raises(TimeoutError, match="sina exceeded 10s snapshot budget after 3 pages"):
+        _fetch_sina()
+
+    # Read timeouts shrink with the remaining budget, connect timeout stays short.
+    assert timeouts[0] == (5.0, 10.0)
+    assert timeouts[2][1] == pytest.approx(2.0)
+
+
+def test_page_budget_can_be_disabled(monkeypatch):
+    from alphasift.snapshot import _PageBudget
+
+    monkeypatch.setenv("ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC", "off")
+    budget = _PageBudget("sina", per_request_timeout=15.0)
+
+    assert budget.request_timeout() == (5.0, 15.0)

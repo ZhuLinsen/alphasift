@@ -30,6 +30,7 @@ _EM_REQUEST_JITTER_SECONDS = 0.3
 _SOURCE_HEALTH_FAILURE_THRESHOLD = 3
 _SOURCE_HEALTH_COOLDOWN_SECONDS = 5 * 60
 _SNAPSHOT_CALL_TIMEOUT_SECONDS = 60.0
+_DIRECT_CONNECT_TIMEOUT_SECONDS = 5.0
 _EM_SESSION: requests.Session | None = None
 _EM_LAST_REQUEST_AT = 0.0
 _EM_LOCK = threading.Lock()
@@ -67,42 +68,66 @@ def fetch_snapshot_with_fallback(
     fallback_snapshot_path: str | Path | None = None,
     fallback_max_age_hours: float | None = None,
     market: str = "cn",
+    source_health_path: str | Path | None = None,
 ) -> pd.DataFrame:
-    """Try live sources, optionally falling back to the last-good snapshot."""
+    """Try live sources, optionally falling back to the last-good snapshot.
+
+    When ``source_health_path`` is set, per-source outcomes are persisted there
+    so the next process tries recently healthy sources first. CLI runs are one
+    process each, so in-memory health alone never helps them.
+    """
     if market == "us":
         return _fetch_us_snapshot_with_fallback(required_columns)
 
     errors = []
     required = required_columns or []
+    persisted_health = _load_persisted_source_health(source_health_path)
+    touched: set[str] = set()
+    sources, order_notes = _order_sources_by_persisted_health(sources, persisted_health)
     for source in sources:
         disabled_reason = _source_disabled_reason(source)
         if disabled_reason:
             errors.append(f"{source}: {disabled_reason}")
             continue
+        started = time.monotonic()
         try:
             df = fetch_cn_snapshot(source)
             if not df.empty:
                 missing = _missing_required_columns(df, required)
                 if missing:
+                    # A strategy-specific capability gap, not an outage: do not
+                    # demote the source for strategies that don't need the column.
                     errors.append(
                         f"{source}: missing required columns {','.join(missing)}"
                     )
                     continue
                 df.attrs.setdefault("snapshot_source", source)
                 df.attrs["source_errors"] = list(errors)
+                df.attrs["source_order_notes"] = list(order_notes)
                 df.attrs["fallback_used"] = False
                 df.attrs["stale"] = False
                 df.attrs["stale_age_hours"] = None
                 _write_last_good_snapshot(fallback_snapshot_path, df)
                 _record_source_success(source, rows=len(df))
+                _record_persisted_outcome(persisted_health, source, ok=True, started=started)
+                touched.add(source)
+                _save_persisted_source_health(source_health_path, persisted_health, touched)
                 logger.info("Snapshot fetched from %s: %d rows", source, len(df))
                 return df
             errors.append(f"{source}: returned empty data")
             _record_source_failure(source, "returned empty data")
+            _record_persisted_outcome(
+                persisted_health, source, ok=False, started=started, error="returned empty data",
+            )
+            touched.add(source)
         except Exception as e:
             errors.append(f"{source}: {e}")
             _record_source_failure(source, e)
+            _record_persisted_outcome(persisted_health, source, ok=False, started=started, error=e)
+            touched.add(source)
             logger.warning("Snapshot source %s failed: %s", source, e)
+
+    _save_persisted_source_health(source_health_path, persisted_health, touched)
 
     cached = _read_last_good_snapshot(
         fallback_snapshot_path,
@@ -155,6 +180,33 @@ def _snapshot_call_timeout_seconds() -> float | None:
     )
 
 
+class _PageBudget:
+    """Cooperative wall-clock budget for paged direct-HTTP snapshot sources.
+
+    Wrapper sources run under ``call_with_timeout``; sina and em_datacenter
+    page through plain requests instead, so they check this before each page
+    and cap each request's read timeout by the remaining time.
+    """
+
+    def __init__(self, source: str, *, per_request_timeout: float):
+        self.source = source
+        self.per_request_timeout = per_request_timeout
+        self.budget = _snapshot_call_timeout_seconds()
+        self.started = time.monotonic()
+        self.pages = 0
+
+    def request_timeout(self) -> tuple[float, float]:
+        if self.budget is None:
+            return (_DIRECT_CONNECT_TIMEOUT_SECONDS, self.per_request_timeout)
+        remaining = self.budget - (time.monotonic() - self.started)
+        if remaining <= 0:
+            raise TimeoutError(
+                f"{self.source} exceeded {self.budget:.0f}s snapshot budget after {self.pages} pages"
+            )
+        read = max(min(self.per_request_timeout, remaining), 1.0)
+        return (min(_DIRECT_CONNECT_TIMEOUT_SECONDS, read), read)
+
+
 def _source_disabled_reason(source: str) -> str | None:
     now = time.monotonic()
     with _SOURCE_HEALTH_LOCK:
@@ -195,6 +247,129 @@ def _record_source_failure(source: str, error: object | None = None) -> None:
             state["last_error"] = " ".join(str(error).split())
         if failures >= _SOURCE_HEALTH_FAILURE_THRESHOLD:
             state["disabled_until"] = now + _SOURCE_HEALTH_COOLDOWN_SECONDS
+
+
+_PERSISTED_HEALTH_VERSION = 1
+_PERSISTED_FAILURE_TTL_SECONDS = 6 * 60 * 60
+
+
+def _load_persisted_source_health(path: str | Path | None) -> dict[str, dict[str, object]]:
+    """Read persisted health, dropping malformed entries.
+
+    Health is advisory: a corrupt or hand-edited file must never block a run.
+    """
+    if path is None:
+        return {}
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(payload, dict) or payload.get("version") != _PERSISTED_HEALTH_VERSION:
+        return {}
+    sources = payload.get("sources")
+    if not isinstance(sources, dict):
+        return {}
+    cleaned: dict[str, dict[str, object]] = {}
+    for name, raw in sources.items():
+        if not isinstance(raw, dict):
+            continue
+        try:
+            entry: dict[str, object] = {
+                "last_success_at": float(raw.get("last_success_at", 0) or 0),
+                "last_failure_at": float(raw.get("last_failure_at", 0) or 0),
+                "consecutive_failures": int(raw.get("consecutive_failures", 0) or 0),
+            }
+            if raw.get("last_duration_sec") is not None:
+                entry["last_duration_sec"] = float(raw["last_duration_sec"])
+        except (TypeError, ValueError):
+            continue
+        if raw.get("last_error"):
+            entry["last_error"] = str(raw["last_error"])[:300]
+        cleaned[str(name)] = entry
+    return cleaned
+
+
+def _save_persisted_source_health(
+    path: str | Path | None,
+    health: dict[str, dict[str, object]],
+    touched: set[str] | None = None,
+) -> None:
+    """Write health atomically, keeping other runs' updates for untouched sources."""
+    if path is None:
+        return
+    target = Path(path)
+    merged = _load_persisted_source_health(target)
+    for name in (touched if touched is not None else health.keys()):
+        if name in health:
+            merged[name] = health[name]
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_name(f".{target.name}.{os.getpid()}.{time.time_ns()}.tmp")
+        tmp.write_text(
+            json.dumps({"version": _PERSISTED_HEALTH_VERSION, "sources": merged}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        tmp.replace(target)
+    except OSError as exc:
+        logger.debug("Could not persist snapshot source health to %s: %s", target, exc)
+
+
+def _record_persisted_outcome(
+    health: dict[str, dict[str, object]],
+    source: str,
+    *,
+    ok: bool,
+    started: float,
+    error: object | None = None,
+) -> None:
+    state = health.setdefault(source, {})
+    now = time.time()
+    state["last_duration_sec"] = round(time.monotonic() - started, 2)
+    if ok:
+        state["last_success_at"] = now
+        state["consecutive_failures"] = 0
+        state.pop("last_error", None)
+    else:
+        state["last_failure_at"] = now
+        state["consecutive_failures"] = int(state.get("consecutive_failures", 0) or 0) + 1
+        if error is not None:
+            state["last_error"] = " ".join(str(error).split())[:300]
+
+
+def _order_sources_by_persisted_health(
+    sources: list[str],
+    health: dict[str, dict[str, object]],
+    *,
+    now: float | None = None,
+) -> tuple[list[str], list[str]]:
+    """Move sources whose latest attempt failed recently behind the others.
+
+    Demoted sources are still tried, only later, so a recovered source comes
+    back automatically once its failure ages out of the TTL window.
+    """
+    if not health:
+        return list(sources), []
+    current = time.time() if now is None else now
+    healthy: list[str] = []
+    demoted: list[str] = []
+    for source in sources:
+        state = health.get(source) or {}
+        last_failure = float(state.get("last_failure_at", 0) or 0)
+        last_success = float(state.get("last_success_at", 0) or 0)
+        recently_failing = (
+            int(state.get("consecutive_failures", 0) or 0) > 0
+            and last_failure > last_success
+            and current - last_failure < _PERSISTED_FAILURE_TTL_SECONDS
+        )
+        (demoted if recently_failing else healthy).append(source)
+    if not demoted or not healthy:
+        return list(sources), []
+    ordered = healthy + demoted
+    note = (
+        "Snapshot source order adjusted by recent health: "
+        f"{','.join(ordered)} (recently failed: {','.join(demoted)})"
+    )
+    return ordered, [note]
 
 
 def snapshot_source_health_snapshot(
@@ -365,7 +540,9 @@ def _fetch_sina() -> pd.DataFrame:
     page = 1
     page_size = 80
     all_items = []
+    budget = _PageBudget("sina", per_request_timeout=15.0)
     while True:
+        request_timeout = budget.request_timeout()
         resp = requests.get(
             url,
             params={
@@ -381,8 +558,9 @@ def _fetch_sina() -> pd.DataFrame:
                 "User-Agent": "Mozilla/5.0",
                 "Referer": "https://vip.stock.finance.sina.com.cn/mkt/",
             },
-            timeout=15,
+            timeout=request_timeout,
         )
+        budget.pages += 1
         resp.raise_for_status()
         items = resp.json()
         if not isinstance(items, list):
@@ -410,8 +588,11 @@ def _fetch_em_datacenter() -> pd.DataFrame:
     """
     url = "https://data.eastmoney.com/dataapi/xuangu/list"
     all_items = []
+    budget = _PageBudget("em_datacenter", per_request_timeout=30.0)
     page = 1
-    page_size = 500
+    # 2000 rows per page keeps a full A-share pull to ~3 throttled requests.
+    # The endpoint rejects much larger pages (6000 returned a non-JSON body).
+    page_size = 2000
 
     while True:
         params = {
@@ -421,7 +602,7 @@ def _fetch_em_datacenter() -> pd.DataFrame:
             "p": str(page),
             "sty": "SECUCODE,SECURITY_CODE,SECURITY_NAME_ABBR,NEW_PRICE,"
                    "CHANGE_RATE,VOLUME_RATIO,DEAL_AMOUNT,TURNOVERRATE,"
-                   "PE9,PBNEWMRQ,TOTAL_MARKET_CAP,CIRCULATION_MARKET_CAP",
+                   "PE9,PBNEWMRQ,TOTAL_MARKET_CAP,CIRCULATION_MARKET_CAP,INDUSTRY",
             "filter": '(MARKET+in+("上交所主板","深交所主板","深交所创业板","上交所科创板","北交所"))',
             "source": "SELECT_SECURITIES",
             "client": "WEB",
@@ -431,17 +612,19 @@ def _fetch_em_datacenter() -> pd.DataFrame:
             "Referer": "https://data.eastmoney.com/xuangu/",
         }
 
-        resp = _eastmoney_get(url, params=params, headers=headers, timeout=30)
+        resp = _eastmoney_get(url, params=params, headers=headers, timeout=budget.request_timeout())
+        budget.pages += 1
         data = resp.json()
 
         if not data.get("success"):
             raise RuntimeError(f"em_datacenter API error: {data.get('message', 'unknown')}")
 
-        items = data["result"]["data"]
+        result = data.get("result") or {}
+        items = result.get("data") or []
         all_items.extend(items)
 
-        total_count = data["result"]["count"]
-        if page * page_size >= total_count:
+        total_count = int(result.get("count") or 0)
+        if not items or page * page_size >= total_count:
             break
         page += 1
 

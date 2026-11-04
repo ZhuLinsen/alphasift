@@ -96,6 +96,12 @@ def enrich_industry_concepts(
             )
             _merge_mapping(mapping, provider_mapping)
             notes.extend(provider_notes)
+        elif provider.lower() == "eastmoney":
+            provider_mapping, provider_notes = fetch_eastmoney_industry_map(
+                cache_dir=provider_cache_dir,
+            )
+            _merge_mapping(mapping, provider_mapping)
+            notes.extend(provider_notes)
         else:
             notes.append(f"industry provider skipped: unsupported provider={provider}")
 
@@ -264,6 +270,121 @@ def fetch_akshare_board_map(
         if cache_note:
             notes.append(cache_note)
     return mapping, notes
+
+
+_EASTMONEY_INDUSTRY_CACHE_NAME = "eastmoney_industry_map_v1.json"
+_EASTMONEY_INDUSTRY_CACHE_TTL_SECONDS = 7 * 24 * 3600
+
+
+def fetch_eastmoney_industry_map(
+    *,
+    cache_dir: str | Path | None | object = _CACHE_DIR_UNSET,
+    cache_ttl_seconds: float = _EASTMONEY_INDUSTRY_CACHE_TTL_SECONDS,
+) -> tuple[dict[str, dict[str, object]], list[str]]:
+    """Return an A-share code -> industry map from EastMoney's screener API.
+
+    Industry labels change rarely, so the map is cached for a week. A full
+    pull is ~3 throttled requests. If the refresh fails, an expired cache is
+    still used because a stale label beats no label for diversity control.
+    """
+    notes: list[str] = []
+    resolved_dir = _resolve_akshare_board_cache_dir(cache_dir)
+    cache_path = resolved_dir / _EASTMONEY_INDUSTRY_CACHE_NAME if resolved_dir else None
+    stale_mapping: dict[str, dict[str, object]] | None = None
+    if cache_path is not None and cache_path.is_file():
+        try:
+            payload = json.loads(cache_path.read_text(encoding="utf-8"))
+            cached = _normalize_cached_mapping(payload.get("mapping")) if isinstance(payload, dict) else None
+        except Exception:
+            cached = None
+        if cached:
+            age = time.time() - cache_path.stat().st_mtime
+            if age <= cache_ttl_seconds:
+                return cached, [f"eastmoney industry cache hit: rows={len(cached)}"]
+            stale_mapping = cached
+
+    try:
+        # The backfill runs on the screening path (often from overseas, where
+        # EastMoney is slow), so bound it like a snapshot source: the whole
+        # paged fetch, retries included, gets the snapshot call budget.
+        from alphasift.snapshot import _snapshot_call_timeout_seconds
+        from alphasift.source_guard import call_with_timeout
+
+        mapping = call_with_timeout(
+            _fetch_eastmoney_industry_rows,
+            timeout_sec=_snapshot_call_timeout_seconds(),
+            label="eastmoney industry backfill",
+        )
+    except Exception as exc:
+        if stale_mapping:
+            return stale_mapping, [
+                f"eastmoney industry refresh failed, using expired cache rows={len(stale_mapping)}: {exc}"
+            ]
+        return {}, [f"eastmoney industry provider failed: {exc}"]
+
+    notes.append(f"eastmoney industry map fetched: rows={len(mapping)}")
+    if cache_path is not None and mapping:
+        try:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp_path = cache_path.with_name(f".{cache_path.name}.{time.time_ns()}.tmp")
+            tmp_path.write_text(
+                json.dumps(
+                    {"provider": "eastmoney", "created_at": datetime.now().isoformat(), "mapping": mapping},
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            tmp_path.replace(cache_path)
+        except OSError as exc:
+            notes.append(f"eastmoney industry cache write failed: {exc}")
+    return mapping, notes
+
+
+def _fetch_eastmoney_industry_rows() -> dict[str, dict[str, object]]:
+    from alphasift.snapshot import _eastmoney_get, _PageBudget
+
+    budget = _PageBudget("eastmoney industry", per_request_timeout=30.0)
+
+    url = "https://data.eastmoney.com/dataapi/xuangu/list"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Referer": "https://data.eastmoney.com/xuangu/",
+    }
+    mapping: dict[str, dict[str, object]] = {}
+    page, page_size = 1, 2000
+    while True:
+        resp = _eastmoney_get(
+            url,
+            params={
+                "st": "SECURITY_CODE",
+                "sr": "1",
+                "ps": str(page_size),
+                "p": str(page),
+                "sty": "SECURITY_CODE,INDUSTRY",
+                "filter": '(MARKET+in+("上交所主板","深交所主板","深交所创业板","上交所科创板","北交所"))',
+                "source": "SELECT_SECURITIES",
+                "client": "WEB",
+            },
+            headers=headers,
+            timeout=budget.request_timeout(),
+        )
+        budget.pages += 1
+        data = resp.json()
+        if not data.get("success"):
+            raise RuntimeError(f"eastmoney industry API error: {data.get('message', 'unknown')}")
+        result = data.get("result") or {}
+        items = result.get("data") or []
+        for item in items:
+            code = _normalize_code(item.get("SECURITY_CODE"))
+            industry = _safe_text(item.get("INDUSTRY"))
+            if code and industry:
+                mapping[code] = {"industry": industry}
+        if not items or page * page_size >= int(result.get("count") or 0):
+            break
+        page += 1
+    if not mapping:
+        raise RuntimeError("eastmoney industry API returned no rows")
+    return mapping
 
 
 def save_industry_map(mapping: dict[str, dict[str, object]], path_like: str | Path) -> Path:

@@ -1,5 +1,9 @@
 from alphasift.models import Pick
-from alphasift.risk import apply_portfolio_overlay, apply_risk_overlay
+from alphasift.risk import (
+    PORTFOLIO_DIVERSITY_SKIPPED_NOTE,
+    apply_portfolio_overlay,
+    apply_risk_overlay,
+)
 
 
 def test_risk_overlay_penalizes_and_flags_hot_candidates():
@@ -168,7 +172,7 @@ def test_portfolio_overlay_ignores_missing_llm_sector():
     result, notes = apply_portfolio_overlay(picks, concentration_penalty=5)
 
     assert [pick.final_score for pick in result] == [90, 88]
-    assert notes == []
+    assert notes == [PORTFOLIO_DIVERSITY_SKIPPED_NOTE]
 
 
 def test_portfolio_overlay_uses_industry_when_llm_sector_missing():
@@ -183,3 +187,70 @@ def test_portfolio_overlay_uses_industry_when_llm_sector_missing():
     assert [pick.code for pick in result] == ["000001", "600690", "600000"]
     assert "portfolio_sector_concentration:金融" in result[2].portfolio_flags
     assert notes == ["Portfolio concentration bucket=金融: penalized=1, codes=600000:银行(-5.0)"]
+
+
+def _bank_heavy_picks():
+    rows = [
+        ("601229", "上海银行", 85.0, "银行"),
+        ("601169", "北京银行", 84.7, "银行"),
+        ("600016", "民生银行", 84.3, "银行"),
+        ("000001", "平安银行", 83.4, "银行"),
+        ("600015", "华夏银行", 82.5, "银行"),
+        ("601668", "中国建筑", 70.0, "建筑施工"),
+        ("601186", "中国铁建", 69.0, "基础建设"),
+        ("600900", "长江电力", 68.0, ""),
+    ]
+    return [
+        Pick(rank=i, code=code, name=name, final_score=score, screen_score=score, industry=industry)
+        for i, (code, name, score, industry) in enumerate(rows, start=1)
+    ]
+
+
+def test_soft_mode_can_leave_one_bucket_on_top():
+    result, _ = apply_portfolio_overlay(
+        _bank_heavy_picks(), profile={"max_same_bucket": 2, "concentration_penalty": 3.0}
+    )
+
+    assert [pick.industry for pick in result[:5]].count("银行") == 5
+
+
+def test_hard_cap_limits_bucket_in_top_n_and_keeps_overflow_as_backfill():
+    result, notes = apply_portfolio_overlay(
+        _bank_heavy_picks(),
+        profile={"mode": "hard_cap", "max_same_bucket": 2, "concentration_penalty": 3.0},
+    )
+
+    top5 = result[:5]
+    assert [pick.industry for pick in top5].count("银行") == 2
+    assert [pick.code for pick in top5][2:] == ["601668", "601186", "600900"]
+    # Deferred banks stay in the list as backfill, flagged and ranked last.
+    assert [pick.code for pick in result[5:]] == ["600016", "000001", "600015"]
+    assert "portfolio_sector_cap:金融" in result[5].portfolio_flags
+    assert [pick.rank for pick in result] == list(range(1, 9))
+    assert any("Portfolio hard cap bucket=金融: max=2" in note for note in notes)
+
+
+def test_hard_cap_backfills_when_alternatives_run_out():
+    picks = _bank_heavy_picks()[:5]
+
+    result, _ = apply_portfolio_overlay(
+        picks, profile={"mode": "hard_cap", "max_same_bucket": 2, "concentration_penalty": 0}
+    )
+
+    assert len(result) == 5
+    assert all(pick.industry == "银行" for pick in result)
+
+
+def test_invalid_portfolio_mode_is_rejected(tmp_path):
+    from pathlib import Path
+
+    import pytest
+
+    from alphasift.strategy import load_strategy
+
+    source = Path("strategies/dual_low.yaml").read_text(encoding="utf-8")
+    bad = tmp_path / "bad.yaml"
+    bad.write_text(source.replace("mode: hard_cap", "mode: strict"), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="portfolio_profile.mode"):
+        load_strategy(bad)
