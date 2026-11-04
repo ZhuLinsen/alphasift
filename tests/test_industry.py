@@ -355,3 +355,23 @@ def test_fetch_akshare_board_map_limits_and_merges_parallel_results(monkeypatch)
     assert mapping["000002"]["concepts"] == "低估值"
     assert any("akshare industry boards loaded: 1/1" in note for note in notes)
     assert any("akshare concepts boards loaded: 1/1" in note for note in notes)
+
+
+def test_eastmoney_industry_backfill_is_bounded_by_the_snapshot_budget(tmp_path, monkeypatch):
+    import time as time_module
+
+    import alphasift.industry as industry
+
+    def hang():
+        time_module.sleep(5)
+        return {"000001": {"industry": "银行"}}
+
+    monkeypatch.setattr(industry, "_fetch_eastmoney_industry_rows", hang)
+    monkeypatch.setenv("ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC", "0.3")
+
+    started = time_module.monotonic()
+    mapping, notes = industry.fetch_eastmoney_industry_map(cache_dir=tmp_path)
+
+    assert time_module.monotonic() - started < 2
+    assert mapping == {}
+    assert any("eastmoney" in note for note in notes)
