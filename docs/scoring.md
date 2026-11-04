@@ -144,7 +144,7 @@ LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代
 
 ## 后验评估与形态标签
 
-`alphasift evaluate-strategies --window 5,10,20` 按入场后第 N 个交易日收盘计算真正的 T+N 收益，同时给出基准指数同期收益、超额收益（`average_excess_return_pct`）、跑赢基准比例（`beat_benchmark_rate`）和未到期数量（`pending_count`）。`alphasift evaluate` 和 `evaluate-batch` 会用保存时价格与最新快照价格计算至今收益，可通过 `EVALUATION_COST_BPS` 扣除往返成本。对带日 K 形态字段的候选，还会输出：
+`alphasift evaluate-strategies --window 5,10,20` 按入场交易日收盘到其后第 N 个交易日收盘计算真正的 T+N 收益（与基准同口径、同一复权基础；盘中选出的股票也以当日收盘为入场价），同时给出基准指数同期收益、超额收益（`average_excess_return_pct`）、跑赢基准比例（`beat_benchmark_rate`）和未到期数量（`pending_count`）。`alphasift evaluate` 和 `evaluate-batch` 会用保存时价格与最新快照价格计算至今收益，可通过 `EVALUATION_COST_BPS` 扣除往返成本。对带日 K 形态字段的候选，还会输出：
 
 - `breakout_follow_through`：突破候选达到 `EVALUATION_FOLLOW_THROUGH_PCT`
 - `failed_breakout`：突破候选跌破 `EVALUATION_FAILED_BREAKOUT_PCT`

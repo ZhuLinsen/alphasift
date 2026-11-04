@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import os
@@ -260,6 +260,9 @@ def fetch_daily_history(
                 result.attrs["daily_source_order_notes"] = list(source_order_notes)
                 result.attrs["source_errors"] = list(errors)
                 result.attrs["daily_source_health"] = _daily_source_health_snapshot(sources)
+                # When the bars were captured: evaluation must not treat a
+                # mid-session bar as that session's close.
+                result.attrs["fetched_at"] = datetime.now(timezone.utc).isoformat()
                 if cache_path is not None:
                     _write_daily_history_cache(
                         cache_path,
@@ -476,6 +479,7 @@ def _read_daily_history_cache(
                     df.attrs[key] = metadata[key]
         if is_stale:
             df.attrs["daily_stale"] = True
+        df.attrs["fetched_at"] = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
         return df
     except Exception:
         return None

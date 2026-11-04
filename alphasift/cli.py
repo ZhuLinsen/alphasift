@@ -1466,7 +1466,7 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
             f"evaluated_at={result.get('evaluated_at')} "
             f"source={result.get('snapshot_source') or '-'} "
             f"limit={result.get('limit')} strategy_filter={result.get('strategy_filter') or '-'} "
-            f"price_path={result.get('with_price_path')}"
+            f"price_path={result.get('with_price_path')} cost_bps={result.get('cost_bps')}"
         ),
     ]
     if result.get("price_path_window_days"):
@@ -1507,7 +1507,12 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
                         f"f={window.get('failed_breakout_count', 0)} "
                         f"t={window.get('breakout_follow_through_count', 0)} "
                         f"pending={window.get('pending_count', 0)} "
-                        f"m={window.get('missing_count', 0)}; "
+                        f"m={window.get('missing_count', 0)}"
+                        + (
+                            f" bench_error={window['benchmark_errors'][0]}"
+                            if window.get("benchmark_errors") else ""
+                        )
+                        + "; "
                     )
                 )
             lines.append("".join(line_parts).strip())
