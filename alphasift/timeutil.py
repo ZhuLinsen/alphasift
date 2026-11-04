@@ -23,8 +23,11 @@ def now_iso() -> str:
 
 def parse_timestamp(value: object) -> datetime | None:
     """Parse an ISO timestamp into an aware datetime; naive values are local time."""
+    text = str(value or "").strip()
+    if text.endswith(("Z", "z")):
+        text = text[:-1] + "+00:00"  # Python 3.10 fromisoformat rejects Z
     try:
-        parsed = datetime.fromisoformat(str(value))
+        parsed = datetime.fromisoformat(text)
     except (TypeError, ValueError):
         return None
     if parsed.tzinfo is None:

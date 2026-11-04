@@ -40,3 +40,24 @@ def test_run_sort_handles_old_naive_and_new_aware_timestamps_together():
     ordered = sorted(items, key=_run_sort_key)
     assert [item["run_id"] for item in ordered] == ["bad", "old", "new"]
     assert MIN_TIMESTAMP.tzinfo is timezone.utc
+
+
+def test_parse_timestamp_accepts_z_suffix():
+    parsed = parse_timestamp("2026-04-02T02:00:00Z")
+    assert parsed is not None and parsed.utcoffset().total_seconds() == 0
+    assert str(entry_cutoff_date("2026-04-02T02:00:00Z", "jp")) == "2026-04-02"
+
+
+def test_history_summaries_order_strategies_by_real_time_not_string(tmp_path):
+    from alphasift.run_history import build_strategy_run_summary
+    from alphasift.store import save_screen_result
+
+    # 12:00+08:00 is 04:00 UTC: an hour before 05:00+00:00, though it sorts later as text.
+    for strategy, created in (("dual_low", "2026-11-04T12:00:00+08:00"), ("global_value", "2026-11-04T05:00:00+00:00")):
+        save_screen_result(
+            ScreenResult(strategy=strategy, market="cn", run_id=strategy, created_at=created), data_dir=tmp_path
+        )
+
+    payload = build_strategy_run_summary(data_dir=tmp_path)
+
+    assert [item["strategy"] for item in payload["strategies"]] == ["global_value", "dual_low"]

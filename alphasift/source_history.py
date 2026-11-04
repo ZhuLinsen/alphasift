@@ -22,7 +22,7 @@ def build_data_source_history(
     source_rows.sort(
         key=lambda item: (
             float(item.get("source_error_rate") or 0.0) + float(item.get("degradation_rate") or 0.0),
-            str(item.get("latest_created_at") or ""),
+            _parse_created_at(str(item.get("latest_created_at") or "")),
             str(item.get("snapshot_source") or ""),
         ),
         reverse=True,

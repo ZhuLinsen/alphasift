@@ -25,7 +25,7 @@ def build_strategy_performance_summary(
     strategy_rows.sort(
         key=lambda item: (
             _score_value(item.get("performance_score")),
-            str(item.get("latest_evaluated_at") or ""),
+            _parse_datetime(str(item.get("latest_evaluated_at") or "")),
             str(item.get("strategy") or ""),
         ),
         reverse=True,

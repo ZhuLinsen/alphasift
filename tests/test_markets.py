@@ -345,18 +345,21 @@ def test_india_keeps_one_listing_per_company_across_nse_and_bse():
         if sector != "Energy":
             return {"total": 0, "quotes": []}
         quotes = [
-            _quote("RELIANCE.BO", 2e13, currency="INR", regularMarketVolume=100_000),
-            _quote("RELIANCE.NS", 2e13, currency="INR", regularMarketVolume=5_000_000),
-            _quote("ONGC.NS", 3e12, currency="INR", regularMarketVolume=300_000),
-            _quote("ONGC.BO", 3e12, currency="INR", regularMarketVolume=900_000),
+            _quote("RELIANCE.BO", 2e13, currency="INR", averageDailyVolume10Day=100_000),
+            _quote("RELIANCE.NS", 2e13, currency="INR", averageDailyVolume10Day=5_000_000),
+            _quote("ONGC.NS", 3e12, currency="INR", averageDailyVolume10Day=300_000),
+            _quote("ONGC.BO", 3e12, currency="INR", averageDailyVolume10Day=900_000),
+            # Before the open today's volume is 0 on NSE; the 10-day average decides.
+            _quote("TCS.NS", 1e13, currency="INR", regularMarketVolume=0, averageDailyVolume10Day=2_000_000),
+            _quote("TCS.BO", 1e13, currency="INR", regularMarketVolume=50_000, averageDailyVolume10Day=40_000),
             _quote("BSEONLY.BO", 1e12, currency="INR"),
         ]
         return {"total": len(quotes), "quotes": quotes}
 
     df = fetch_yahoo_snapshot("in", screen=fake_screen)
 
-    # The listing with more traded value is kept, whichever exchange it is on.
-    assert sorted(df["code"]) == ["BSEONLY.BO", "ONGC.BO", "RELIANCE.NS"]
+    # The listing with more average traded value is kept, whichever exchange it is on.
+    assert sorted(df["code"]) == ["BSEONLY.BO", "ONGC.BO", "RELIANCE.NS", "TCS.NS"]
 
 
 def test_single_suffix_markets_do_not_collapse_share_classes():
@@ -383,3 +386,42 @@ def test_yahoo_snapshot_adds_average_traded_value_in_usd():
     row = df.iloc[0]
     assert row["avg_amount"] == pytest.approx(100.0 * 30_000)  # 10-day volume, not today's
     assert row["avg_amount_usd"] == pytest.approx(100.0 * 30_000 / get_market("jp").usd_rate)
+
+
+def test_window_evaluation_prices_picks_that_left_the_screener_universe(monkeypatch, tmp_path):
+    import alphasift.evaluate as evaluate
+    from alphasift.config import Config
+    from alphasift.models import Pick, ScreenResult
+    from alphasift.store import save_screen_result
+
+    save_screen_result(
+        ScreenResult(
+            strategy="global_value",
+            market="hk",
+            run_id="hk1",
+            picks=[Pick(rank=1, code="1234.HK", name="Small", final_score=70, screen_score=70, price=10)],
+        ),
+        data_dir=tmp_path,
+    )
+    requested = []
+
+    def fake_quotes(symbols):
+        requested.append(list(symbols))
+        return pd.DataFrame([{"code": "1234.HK", "price": 8.0}])
+
+    monkeypatch.setattr(
+        evaluate, "fetch_snapshot_with_fallback", lambda *a, **k: pd.DataFrame([{"code": "0005.HK", "price": 1.0}])
+    )
+    monkeypatch.setattr(evaluate, "fetch_yahoo_quotes", fake_quotes)
+    monkeypatch.setattr(evaluate, "fetch_daily_history", lambda *a, **k: pd.DataFrame())
+    monkeypatch.setattr(evaluate, "_fetch_benchmark_path", lambda *a, **k: pd.DataFrame())
+
+    evaluate.evaluate_saved_runs_by_windows(
+        windows=[5, 20],
+        config=Config(llm_api_key="", data_dir=tmp_path),
+        market="hk",
+        cost_bps=0,
+    )
+
+    # Filled once, before the windows share the prefetched snapshot.
+    assert requested == [["1234.HK"]]

@@ -21,7 +21,7 @@ def build_strategy_run_summary(
     strategy_rows = [_strategy_summary(item) for item in _group_runs_by_strategy(runs).values()]
     strategy_rows.sort(
         key=lambda item: (
-            str(item.get("latest_created_at") or ""),
+            _parse_created_at(str(item.get("latest_created_at") or "")),
             str(item.get("strategy") or ""),
         ),
         reverse=True,

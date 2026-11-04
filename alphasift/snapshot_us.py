@@ -129,6 +129,7 @@ def fetch_us_snapshot(
             change_pct = ((price - prev_close) / prev_close * 100) if prev_close > 0 else 0.0
 
             vol_20d = float(hist["Volume"].tail(20).mean())
+            vol_10d = float(hist["Volume"].tail(10).mean())
             volume_ratio = (volume / vol_20d) if vol_20d > 0 else 1.0
 
             info = yf.Ticker(ticker).fast_info
@@ -142,8 +143,8 @@ def fetch_us_snapshot(
                 "price": price,
                 "change_pct": round(change_pct, 2),
                 "amount": round(volume * price, 0),
-                "avg_amount": round(vol_20d * price, 0),
-                "avg_amount_usd": round(vol_20d * price, 0),
+                "avg_amount": round(vol_10d * price, 0),
+                "avg_amount_usd": round(vol_10d * price, 0),
                 "total_mv": market_cap,
                 "circ_mv": market_cap,
                 "pe_ratio": None,

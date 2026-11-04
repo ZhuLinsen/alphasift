@@ -504,12 +504,24 @@ def evaluate_saved_runs_by_windows(
 
     if current_snapshot is None:
         # One live snapshot for every window instead of one per window.
+        market_id = get_market(market).id
         current_snapshot = fetch_snapshot_with_fallback(
             config.snapshot_source_priority,
             fallback_snapshot_path=config.fallback_snapshot_path,
             fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
             source_health_path=config.source_health_path,
-            market=get_market(market).id,
+            market=market_id,
+        )
+        # evaluate_saved_runs only fills prices for picks that left the
+        # screener universe when it fetched the snapshot itself.
+        run_items = list_saved_runs(
+            data_dir=config.data_dir,
+            limit=max(int(limit), 1),
+            strategy=strategy,
+            market=market_id,
+        )
+        current_snapshot = _fill_missing_quotes(
+            current_snapshot, market_id, _saved_pick_codes(run_items, config)
         )
     window_results: list[dict[str, Any]] = []
     benchmark_paths: dict[str, pd.DataFrame] = {}
@@ -806,9 +818,8 @@ def entry_cutoff_date(created_at: str, market: str = "cn") -> date | None:
     created during or after the session saw part of that day's bar, which must
     not count toward post-entry run-up or drawdown.
     """
-    try:
-        created = datetime.fromisoformat(str(created_at))
-    except (TypeError, ValueError):
+    created = parse_timestamp(created_at)
+    if created is None:
         return None
     try:
         spec = get_market(market or "cn")
@@ -1416,6 +1427,8 @@ def _event_signal_strategy_patch_suggestions(
     for evaluation in evaluations:
         strategy = evaluation.strategy or "unknown"
         for pick in evaluation.picks:
+            if pick.status == "pending":
+                continue  # the window has not elapsed; no outcome yet
             for signal in _event_signals(pick):
                 if signal == "none":
                     continue

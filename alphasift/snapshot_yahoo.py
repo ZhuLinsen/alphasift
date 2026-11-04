@@ -84,6 +84,9 @@ def fetch_yahoo_snapshot(
     )
     started = time.monotonic()
 
+    # A company listed on two exchanges (India) takes two raw rows, so a
+    # sector may need up to limit x suffixes rows to yield ``limit`` companies.
+    sector_row_cap = limit * max(1, len(spec.yahoo_suffixes))
     rows: dict[str, dict[str, object]] = {}
     errors: list[str] = []
     for sector in YAHOO_SECTORS:
@@ -91,7 +94,7 @@ def fetch_yahoo_snapshot(
         # The global top-``limit`` is then cut after all sectors are in, so a
         # large early sector cannot crowd out Technology or Utilities.
         offset = 0
-        while offset < limit:
+        while offset < sector_row_cap:
             if budget is not None and time.monotonic() - started > budget:
                 raise TimeoutError(
                     f"yahoo_screener exceeded {budget:.0f}s budget for market {spec.id} "
@@ -238,13 +241,17 @@ def _drop_secondary_listings(df: pd.DataFrame, spec: MarketSpec) -> pd.DataFrame
 
     Indian companies are listed on both NSE (RELIANCE.NS) and BSE
     (RELIANCE.BO) under the same symbol; without this every company would be
-    screened, and could be picked, twice. The listing with more traded value
-    (normally NSE) is kept.
+    screened, and could be picked, twice. The listing with more average
+    traded value (normally NSE) is kept.
     """
     if len(spec.yahoo_suffixes) < 2 or df.empty:
         return df
     head = df["code"].astype(str).str.upper().str.rsplit(".", n=1).str[0]
-    order = pd.to_numeric(df["amount"], errors="coerce").fillna(-1.0)
+    # Rank by 10-day average traded value: today's volume can be missing or
+    # partial before the session and would keep the thin BSE listing.
+    today = pd.to_numeric(df["amount"], errors="coerce")
+    average = pd.to_numeric(df["avg_amount"], errors="coerce") if "avg_amount" in df.columns else today
+    order = average.fillna(today).fillna(-1.0)
     keep = (
         df.assign(_head=head, _order=order)
         .sort_values("_order", ascending=False, kind="stable")

@@ -538,3 +538,19 @@ def test_doctor_infers_market_from_non_cn_strategy(monkeypatch, tmp_path):
 
     with pytest.raises(ValueError, match="does not support market 'cn'"):
         doctor_data_sources(config, strategy_name="global_value", market="cn")
+
+
+def test_doctor_all_strategies_only_counts_strategies_for_the_checked_market(tmp_path):
+    config = Config(strategies_dir=Path("strategies"), data_dir=tmp_path)
+
+    cn = doctor_data_sources(config, all_strategies=True, run_live=False).to_dict()
+    hk = doctor_data_sources(config, all_strategies=True, run_live=False, market="hk").to_dict()
+
+    cn_names = {item["strategy"] for item in cn["strategy_coverage"]}
+    hk_names = {item["strategy"] for item in hk["strategy_coverage"]}
+    # CN sources cannot carry global_value's USD liquidity column.
+    assert "global_value" not in cn_names and "dual_low" in cn_names
+    assert "avg_amount_usd" not in cn["snapshot"]["required_fields"]
+    assert hk_names == {"global_value"}
+    assert "avg_amount_usd" in hk["snapshot"]["required_fields"]
+    assert hk["strategy_requirements"]["market"] == "hk"
