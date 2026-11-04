@@ -1,9 +1,9 @@
-# 全球低估值策略：dual_low 的多市场版本（美股 / 港股 / 日本 / 台湾 / 印度）
+# 全球低估值策略：dual_low 的多市场版本（美股 / 港股 / 日本 / 韩国 / 台湾 / 印度）
 #
 # - 快照来自 Yahoo 筛选器，股票池已按市场设了约 10 亿美元等值的市值下限，
 #   因此这里不设成交额、市值、股价这类与币种相关的绝对阈值，只用 PE / PB /
 #   涨跌幅这类各市场可比的条件。
-# - 韩国市场 Yahoo 不提供 PE / PB，因此不在本策略范围内。
+# - 韩国市场 Yahoo 不提供 PE / PB，改由 Naver Finance 补全（亏损公司没有 PE，不会进入本策略）。
 # - 个别存托凭证（ADR）的 PB 因币种未换算而异常偏低（< 0.1），会被置空，从而不进入本策略。
 # - exclude_st 只作用于中文名称（A 股 ST 约定），对其他市场无影响。
 # - 行业来自 Yahoo 的 11 个板块，用 hard_cap 保证 Top N 中同一板块不超过 2 只。
@@ -23,7 +23,7 @@ style:
 
 screening:
   enabled: true
-  market_scope: [us, hk, jp, tw, in]
+  market_scope: [us, hk, jp, kr, tw, in]
   hard_filters:
     exclude_st: false
     pe_ttm_min: 0

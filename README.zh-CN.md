@@ -94,7 +94,7 @@ alphasift evaluate <run_id> --with-price-path --explain
 | `us` | 美股 | Yahoo 筛选器（NYSE / Nasdaq 上市、市值 ≥ 10 亿美元，含 ADR） | 设置 `ALPHASIFT_US_TICKERS` 时改用指定的股票列表 |
 | `hk` | 港股 | Yahoo 筛选器 | 股票池市值下限约 80 亿港元 |
 | `jp` | 日本 | Yahoo 筛选器 | 股票池市值下限约 1500 亿日元 |
-| `kr` | 韩国 | Yahoo 筛选器 | Yahoo 不提供韩股 PE/PB，估值类策略无法运行 |
+| `kr` | 韩国 | Yahoo 筛选器 + Naver Finance | Yahoo 不提供韩股 PE/PB，改从 Naver 移动端接口（非官方）补全，约多 10 秒；`ALPHASIFT_KR_VALUATION=0` 可关闭 |
 | `tw` | 台湾 | Yahoo 筛选器 | 含上市（TWSE）和上柜（TPEx） |
 | `in` | 印度 | Yahoo 筛选器 | 含 NSE 和 BSE |
 
@@ -114,7 +114,7 @@ alphasift evaluate <run_id> --with-price-path --explain
 | `oversold_reversal` | cn | 反转 | 回撤可控的修复候选 |
 | `balanced_alpha` | cn | 框架 | 通用多因子发现 |
 | `momentum_quality` | cn | 框架 | 趋势确认 + 质量过滤 |
-| `global_value` | us, hk, jp, tw, in | 价值 | `dual_low` 的多市场版本，不使用与币种相关的绝对阈值 |
+| `global_value` | us, hk, jp, kr, tw, in | 价值 | `dual_low` 的多市场版本，不使用与币种相关的绝对阈值 |
 | `us_momentum_quality` | us | 趋势 | 美股大盘股动量 + 质量 |
 
 自定义策略放在 `strategies/` 下，写法见[策略编写指南](docs/strategy-guide.md)。
@@ -150,7 +150,7 @@ alphasift evaluate <run_id> --with-price-path --explain
 - AlphaSift 是候选发现与排序引擎，不是回测或交易执行系统。T+N 评估比较的是保存时价格与之后的价格，不处理分红、停牌和持仓约束。
 - `evaluate-strategies --window 5,10,20` 计算真正的 T+N：按入场后第 N 个交易日的收盘价算收益，并和所在市场基准指数（沪深 300、标普 500、恒生、日经 225、KOSPI、台湾加权、Nifty 50）同期收益对比，输出超额收益和跑赢基准比例；未满 N 个交易日的记为 pending，不计入平均。不带窗口的 `evaluate` / `evaluate-batch` 仍按最新价计算至今收益。
 - 入场时点按交易所时间判断：开盘前保存的运行以前一日收盘入场；盘中或收盘后保存的运行，当天 K 线不计入最大浮盈和最大回撤。
-- Yahoo 筛选器市场并不是全市场：股票池是市值约 10 亿美元以上、按 Yahoo 板块逐个查询的上市股票，最多 4000 行；只依赖一个非官方接口；成交额按 价格 × 成交量 估算，流通市值用总市值代替；韩国市场没有估值字段；只有交易币种和财报币种一致时才用每股收益、每股净资产推算 PE/PB。
+- Yahoo 筛选器市场并不是全市场：股票池是市值约 10 亿美元以上、按 Yahoo 板块逐个查询的上市股票，最多 4000 行；只依赖一个非官方接口；成交额按 价格 × 成交量 估算，流通市值用总市值代替；韩国 PE/PB 来自 Naver Finance（同样是非官方接口），亏损公司没有 PE；只有交易币种和财报币种一致时才用每股收益、每股净资产推算 PE/PB。
 - 依赖日 K 的策略只对 L1 入围候选做增强，不覆盖全市场。
 - `strategies/` 与 `alphasift/strategies/` 是开发态和安装态的两份镜像，内置策略需保持一致。
 

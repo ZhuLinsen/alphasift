@@ -94,7 +94,7 @@ On an overseas server, the A-share run takes about 10 seconds once source health
 | `us` | United States | Yahoo screener (NYSE / Nasdaq listings ≥ $1B, including ADRs) | `ALPHASIFT_US_TICKERS` uses an explicit ticker list instead |
 | `hk` | Hong Kong | Yahoo screener | Universe floor ≈ HK$8B |
 | `jp` | Japan | Yahoo screener | Universe floor ≈ ¥150B |
-| `kr` | South Korea | Yahoo screener | Yahoo has no PE/PB for KR, so valuation strategies can't run there |
+| `kr` | South Korea | Yahoo screener + Naver Finance | Yahoo has no KR PE/PB; they come from Naver's (unofficial) mobile API, about 10s extra. `ALPHASIFT_KR_VALUATION=0` turns it off |
 | `tw` | Taiwan | Yahoo screener | TWSE and TPEx listings |
 | `in` | India | Yahoo screener | NSE and BSE listings |
 
@@ -114,7 +114,7 @@ Non-CN codes are Yahoo symbols (`AAPL`, `0700.HK`, `7203.T`, `005930.KS`). Daily
 | `oversold_reversal` | cn | Reversal | Repair candidates with controlled drawdown |
 | `balanced_alpha` | cn | Framework | General multi-factor discovery |
 | `momentum_quality` | cn | Framework | Trend confirmation plus quality filters |
-| `global_value` | us, hk, jp, tw, in | Value | `dual_low` for other markets, with no currency-dependent thresholds |
+| `global_value` | us, hk, jp, kr, tw, in | Value | `dual_low` for other markets, with no currency-dependent thresholds |
 | `us_momentum_quality` | us | Trend | Momentum and quality for US large caps |
 
 Write your own in `strategies/`. See the [strategy guide](docs/strategy-guide.md).
@@ -150,7 +150,7 @@ The full list is in [docs/configuration.md](docs/configuration.md).
 - AlphaSift is a discovery and ranking engine, not a backtester or an execution system. T+N evaluation compares saved prices with later prices and does not model dividends, suspensions or position constraints.
 - `evaluate-strategies --window 5,10,20` measures true T+N: each pick's return at the close of the Nth trading bar after entry, against the market benchmark (CSI 300, S&P 500, Hang Seng, Nikkei 225, KOSPI, TAIEX, Nifty 50) over the same bars. Picks whose window has not elapsed are reported as pending. `evaluate` and `evaluate-batch` without a window still measure return to the latest price.
 - Entry is placed in exchange time: a run saved before the session open enters at the previous close; a run saved during or after the session does not count that day's bar toward run-up or drawdown. Exchange holidays are not modeled beyond the bars the data source returns.
-- Yahoo-screener markets are not the whole market: the universe is listings above a market-cap floor (about USD 1B), one query per Yahoo sector, capped at 4000 rows. They depend on a single unofficial endpoint, estimate traded value as price × volume, and use total market cap as float cap. Korea has no valuation fields. PE/PB are only derived from EPS and book value when the trading and reporting currencies match.
+- Yahoo-screener markets are not the whole market: the universe is listings above a market-cap floor (about USD 1B), one query per Yahoo sector, capped at 4000 rows. They depend on a single unofficial endpoint, estimate traded value as price × volume, and use total market cap as float cap. Korean PE/PB come from Naver Finance (another unofficial endpoint); loss-making companies have no PE. PE/PB are only derived from EPS and book value when the trading and reporting currencies match.
 - Daily K-line strategies enrich only the L1 shortlist, not the whole market.
 - `strategies/` and `alphasift/strategies/` mirror each other (development vs installed package) and must stay in sync.
 

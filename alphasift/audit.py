@@ -166,7 +166,7 @@ def _known_project_gaps() -> list[dict[str, str]]:
         {
             "severity": "gap",
             "area": "market_scope",
-            "message": "A 股之外的美股/港股/日本/韩国/台湾/印度通过 Yahoo 筛选器接入，但还没有按交易所日历计算 T+N、没有跨币种的金额阈值，韩国缺少 PE/PB。",
+            "message": "A 股之外的美股/港股/日本/韩国/台湾/印度通过 Yahoo 筛选器接入，但还没有按交易所日历计算 T+N、没有跨币种的金额阈值；韩国 PE/PB 依赖 Naver 非官方接口。",
             "recommendation": "引入 exchange_calendars 计算各市场交易日，为策略增加按市场覆盖的金额阈值，再考虑台湾交易所官方 OpenAPI 等更完整的数据源。",
         },
         {
