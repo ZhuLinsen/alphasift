@@ -595,6 +595,9 @@ def main():
             "event_signal_review": result.get("event_signal_review", {}),
             "failure_review": result.get("failure_review", {}),
         }
+        if result.get("window_reviews"):
+            payload["review_window_days"] = result.get("review_window_days")
+            payload["window_reviews"] = result.get("window_reviews", [])
         if args.output:
             Path(args.output).parent.mkdir(parents=True, exist_ok=True)
             Path(args.output).write_text(
@@ -1530,6 +1533,15 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
                 f"{item.get('win_rate')!s:<8} {item.get('average_max_drawdown_pct')!s:<8} "
                 f"{item.get('average_max_runup_pct')!s:<9} {item.get('outcome'):<17} {shape_text}"
             )
+    window_reviews = result.get("window_reviews")
+    if isinstance(window_reviews, list) and window_reviews:
+        for review in window_reviews:
+            if not isinstance(review, dict):
+                continue
+            lines.append(f"-- T+{review.get('window_days')} reviews --")
+            lines.extend(_format_event_signal_review_explain(review.get("event_signal_review", {}), limit=5))
+            lines.extend(_format_failure_review_explain(review.get("failure_review", {}), include_samples=False))
+        return "\n".join(lines)
     lines.extend(_format_event_signal_review_explain(result.get("event_signal_review", {}), limit=5))
     lines.extend(_format_failure_review_explain(result.get("failure_review", {}), include_samples=False))
     return "\n".join(lines)

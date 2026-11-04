@@ -710,3 +710,26 @@ def test_cli_doctor_dsa_readiness_explain_uses_configured_url(monkeypatch, capsy
     out = capsys.readouterr().out
     assert "dsa status=route_present available=True" in out
     assert "http://localhost:8000/api/v1/analysis/analyze" in out
+
+
+def test_evaluate_strategies_explain_prints_reviews_per_window():
+    from alphasift.cli import _format_evaluate_strategies_explain
+
+    def review(failures):
+        return {"summary": {"failure_count": failures}, "dimensions": {}, "recommendations": []}
+
+    text = _format_evaluate_strategies_explain(
+        {
+            "price_path_window_days": [5, 20],
+            "strategy_summaries": [],
+            "failure_review": review(1),
+            "window_reviews": [
+                {"window_days": 5, "event_signal_review": {}, "failure_review": review(1)},
+                {"window_days": 20, "event_signal_review": {}, "failure_review": review(4)},
+            ],
+        }
+    )
+
+    assert "-- T+5 reviews --" in text
+    assert "-- T+20 reviews --" in text
+    assert text.index("failures=1") < text.index("-- T+20 reviews --") < text.index("failures=4")

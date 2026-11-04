@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -19,6 +19,7 @@ from alphasift.normalize import normalize_code
 from alphasift.snapshot import fetch_snapshot_with_fallback
 from alphasift.snapshot_yahoo import fetch_yahoo_quotes
 from alphasift.store import list_saved_runs, load_screen_result
+from alphasift.timeutil import now_iso, parse_timestamp
 
 
 def _normalize_code(value: object) -> str:
@@ -434,7 +435,7 @@ def evaluate_saved_runs(
         "by_path_status": _aggregate_by_pick_label(evaluations, "path_status"),
     }
     return {
-        "evaluated_at": datetime.now().isoformat(),
+        "evaluated_at": now_iso(),
         "snapshot_source": str(current_snapshot.attrs.get("snapshot_source", "")),
         "source_errors": [str(item) for item in current_snapshot.attrs.get("source_errors", [])],
         "limit": limit,
@@ -569,11 +570,24 @@ def evaluate_saved_runs_by_windows(
             }
         )
 
+    # Failures and event signals differ by horizon: a pick that is fine at T+5
+    # can be a loser at T+20. Each window keeps its own reviews.
+    window_reviews = [
+        {
+            "window_days": window_days,
+            "event_signal_review": window_results[index].get("event_signal_review", {}),
+            "failure_review": window_results[index].get("failure_review", {}),
+        }
+        for index, window_days in enumerate(normalized_windows)
+    ]
     base_payload = window_results[0]
     return {
         **{k: base_payload[k] for k in base_payload if k != "strategy_summaries"},
         "strategy_summaries": summary_by_strategy,
         "price_path_window_days": normalized_windows,
+        # Top-level summary, dimensions and reviews are those of the shortest window.
+        "review_window_days": normalized_windows[0],
+        "window_reviews": window_reviews,
         "with_price_path": True,
     }
 
@@ -785,7 +799,8 @@ def _price_path_metrics(
 def entry_cutoff_date(created_at: str, market: str = "cn") -> date | None:
     """Return the last session date whose bar is at least partly pre-entry.
 
-    ``created_at`` is the server's naive local time. It is converted to the
+    ``created_at`` carries its UTC offset (older runs hold a naive local
+    time, read as this machine's local time). It is converted to the
     exchange's timezone: a run created before the session open was priced off
     the previous close, so that day's bar is entirely post-entry; a run
     created during or after the session saw part of that day's bar, which must
@@ -1872,12 +1887,10 @@ def _evaluation_brief(evaluation: EvaluationResult) -> dict[str, object]:
 
 
 def _elapsed_days(run: ScreenResult) -> int | None:
-    try:
-        created = datetime.fromisoformat(run.created_at)
-    except ValueError:
+    created = parse_timestamp(run.created_at)
+    if created is None:
         return None
-    now = datetime.now(created.tzinfo) if created.tzinfo else datetime.now()
-    return (now - created).days
+    return (datetime.now(timezone.utc) - created).days
 
 
 def _safe_round(value: float | None) -> float | None:

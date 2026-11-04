@@ -328,3 +328,58 @@ def test_evaluate_prices_picks_that_left_the_screener_universe(monkeypatch, tmp_
     assert result["summary"]["run_count"] == 1
     # 0005.HK +10%, 1234.HK -20% (no longer missing): average -5%.
     assert result["summary"]["average_return_pct"] == -5.0
+
+
+def test_taiwan_preferred_shares_are_dropped():
+    from alphasift.snapshot_yahoo import _quote_to_row
+
+    for symbol in ("2881A.TW", "2891C.TW", "2002A.TW"):
+        assert _quote_to_row(_quote(symbol, 5e11, currency="TWD"), "Financial Services") is None
+    for symbol in ("2330.TW", "6488.TWO", "910322.TW"):  # common shares and a TDR stay
+        assert _quote_to_row(_quote(symbol, 5e11, currency="TWD"), "Technology") is not None
+
+
+def test_india_keeps_one_listing_per_company_across_nse_and_bse():
+    def fake_screen(query, size, offset, sortField, sortAsc):
+        sector = [op for op in query.operands if op.operands[0] == "sector"][0].operands[1]
+        if sector != "Energy":
+            return {"total": 0, "quotes": []}
+        quotes = [
+            _quote("RELIANCE.BO", 2e13, currency="INR", regularMarketVolume=100_000),
+            _quote("RELIANCE.NS", 2e13, currency="INR", regularMarketVolume=5_000_000),
+            _quote("ONGC.NS", 3e12, currency="INR", regularMarketVolume=300_000),
+            _quote("ONGC.BO", 3e12, currency="INR", regularMarketVolume=900_000),
+            _quote("BSEONLY.BO", 1e12, currency="INR"),
+        ]
+        return {"total": len(quotes), "quotes": quotes}
+
+    df = fetch_yahoo_snapshot("in", screen=fake_screen)
+
+    # The listing with more traded value is kept, whichever exchange it is on.
+    assert sorted(df["code"]) == ["BSEONLY.BO", "ONGC.BO", "RELIANCE.NS"]
+
+
+def test_single_suffix_markets_do_not_collapse_share_classes():
+    def fake_screen(query, size, offset, sortField, sortAsc):
+        sector = [op for op in query.operands if op.operands[0] == "sector"][0].operands[1]
+        if sector != "Industrials":
+            return {"total": 0, "quotes": []}
+        return {"total": 2, "quotes": [_quote("0019.HK", 3e11), _quote("0087.HK", 5e10)]}
+
+    df = fetch_yahoo_snapshot("hk", screen=fake_screen)
+
+    assert sorted(df["code"]) == ["0019.HK", "0087.HK"]
+
+
+def test_yahoo_snapshot_adds_average_traded_value_in_usd():
+    def fake_screen(query, size, offset, sortField, sortAsc):
+        sector = [op for op in query.operands if op.operands[0] == "sector"][0].operands[1]
+        if sector != "Technology":
+            return {"total": 0, "quotes": []}
+        return {"total": 1, "quotes": [_quote("7203.T", 4e13, currency="JPY", averageDailyVolume10Day=30_000)]}
+
+    df = fetch_yahoo_snapshot("jp", screen=fake_screen)
+
+    row = df.iloc[0]
+    assert row["avg_amount"] == pytest.approx(100.0 * 30_000)  # 10-day volume, not today's
+    assert row["avg_amount_usd"] == pytest.approx(100.0 * 30_000 / get_market("jp").usd_rate)

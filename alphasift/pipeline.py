@@ -616,6 +616,8 @@ def _required_snapshot_columns(filters) -> list[str]:
         columns.append("name")
     if filters.amount_min is not None:
         columns.append("amount")
+    if filters.avg_amount_usd_min is not None:
+        columns.append("avg_amount_usd")
     if filters.price_min is not None or filters.price_max is not None:
         columns.append("price")
     if filters.market_cap_min is not None or filters.market_cap_max is not None:

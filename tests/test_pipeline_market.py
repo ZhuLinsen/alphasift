@@ -27,13 +27,19 @@ def _hk_snapshot():
                 "price": 10.0,
                 "change_pct": 0.5,
                 "amount": 5e8,
+                "avg_amount_usd": avg_usd,
                 "total_mv": 1e11,
                 "circ_mv": 1e11,
                 "pe_ratio": 8.0,
                 "pb_ratio": 0.8,
                 "industry": "Financial Services",
             }
-            for code, name in [("0005.HK", "HSBC"), ("0939.HK", "CCB"), ("1398.HK", "ICBC")]
+            for code, name, avg_usd in [
+                ("0005.HK", "HSBC", 6e7),
+                ("0939.HK", "CCB", 4e7),
+                ("1398.HK", "ICBC", 5e7),
+                ("9999.HK", "Thin", 3e5),
+            ]
         ]
     )
 
@@ -65,3 +71,6 @@ def test_non_cn_screen_skips_a_share_industry_provider(monkeypatch):
     assert any("Industry provider akshare skipped" in item for item in result.degradation)
     codes = {pick.code for pick in result.picks}
     assert codes and codes <= {"0005.HK", "0939.HK", "1398.HK"}
+    # global_value's USD 1M average traded value floor drops the thin listing.
+    assert "9999.HK" not in codes
+    assert result.after_filter_count == 3

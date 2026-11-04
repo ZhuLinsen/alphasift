@@ -10,6 +10,7 @@ from statistics import median
 
 from alphasift.models import EvaluationResult, PickEvaluation
 from alphasift.store import evaluation_from_dict
+from alphasift.timeutil import MIN_TIMESTAMP, parse_timestamp
 
 
 def build_strategy_performance_summary(
@@ -293,7 +294,4 @@ def _evaluation_sort_key(item: EvaluationResult) -> tuple[datetime, str]:
 
 
 def _parse_datetime(value: str) -> datetime:
-    try:
-        return datetime.fromisoformat(value)
-    except ValueError:
-        return datetime.min
+    return parse_timestamp(value) or MIN_TIMESTAMP

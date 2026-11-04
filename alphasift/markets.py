@@ -45,6 +45,10 @@ class MarketSpec:
     # K-line (Yahoo's 000300.SS history is broken); others use Yahoo.
     benchmark: str = ""
     benchmark_name: str = ""
+    # Approximate local units per USD. Only used to express liquidity floors
+    # (avg_amount_usd_min) in one currency across markets; a rough rate is
+    # enough for a floor, so it is not fetched live.
+    usd_rate: float = 1.0
 
 
 MARKETS: dict[str, MarketSpec] = {
@@ -52,7 +56,7 @@ MARKETS: dict[str, MarketSpec] = {
     for spec in (
         MarketSpec(
             "cn", "China A-shares", "CNY", "Asia/Shanghai", cn_rules=True,
-            benchmark="sh000300", benchmark_name="CSI 300",
+            benchmark="sh000300", benchmark_name="CSI 300", usd_rate=7.2,
         ),
         MarketSpec(
             "us", "United States", "USD", "America/New_York", "us", (),
@@ -63,23 +67,23 @@ MARKETS: dict[str, MarketSpec] = {
         ),
         MarketSpec(
             "hk", "Hong Kong", "HKD", "Asia/Hong_Kong", "hk", ("HK",), 8e9,
-            session_close="16:00", benchmark="^HSI", benchmark_name="Hang Seng",
+            session_close="16:00", benchmark="^HSI", benchmark_name="Hang Seng", usd_rate=7.8,
         ),
         MarketSpec(
             "jp", "Japan", "JPY", "Asia/Tokyo", "jp", ("T",), 1.5e11,
-            session_open="09:00", session_close="15:30", benchmark="^N225", benchmark_name="Nikkei 225",
+            session_open="09:00", session_close="15:30", benchmark="^N225", benchmark_name="Nikkei 225", usd_rate=150.0,
         ),
         MarketSpec(
             "kr", "South Korea", "KRW", "Asia/Seoul", "kr", ("KS", "KQ"), 1.4e12,
-            session_open="09:00", session_close="15:30", benchmark="^KS11", benchmark_name="KOSPI",
+            session_open="09:00", session_close="15:30", benchmark="^KS11", benchmark_name="KOSPI", usd_rate=1400.0,
         ),
         MarketSpec(
             "tw", "Taiwan", "TWD", "Asia/Taipei", "tw", ("TW", "TWO"), 3e10,
-            session_open="09:00", session_close="13:30", benchmark="^TWII", benchmark_name="TAIEX",
+            session_open="09:00", session_close="13:30", benchmark="^TWII", benchmark_name="TAIEX", usd_rate=30.0,
         ),
         MarketSpec(
             "in", "India", "INR", "Asia/Kolkata", "in", ("NS", "BO"), 8.5e10,
-            session_open="09:15", session_close="15:30", benchmark="^NSEI", benchmark_name="Nifty 50",
+            session_open="09:15", session_close="15:30", benchmark="^NSEI", benchmark_name="Nifty 50", usd_rate=85.0,
         ),
     )
 }

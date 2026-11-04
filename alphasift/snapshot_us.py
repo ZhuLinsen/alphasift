@@ -142,6 +142,8 @@ def fetch_us_snapshot(
                 "price": price,
                 "change_pct": round(change_pct, 2),
                 "amount": round(volume * price, 0),
+                "avg_amount": round(vol_20d * price, 0),
+                "avg_amount_usd": round(vol_20d * price, 0),
                 "total_mv": market_cap,
                 "circ_mv": market_cap,
                 "pe_ratio": None,
@@ -167,7 +169,7 @@ def fetch_us_snapshot(
     df = pd.DataFrame(rows)
 
     numeric_cols = [
-        "price", "change_pct", "amount", "total_mv", "circ_mv",
+        "price", "change_pct", "amount", "avg_amount", "avg_amount_usd", "total_mv", "circ_mv",
         "pe_ratio", "pb_ratio", "volume_ratio", "turnover_rate",
     ]
     for col in numeric_cols:

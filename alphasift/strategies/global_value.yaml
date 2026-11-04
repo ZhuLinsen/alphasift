@@ -3,6 +3,8 @@
 # - 快照来自 Yahoo 筛选器，股票池已按市场设了约 10 亿美元等值的市值下限，
 #   因此这里不设成交额、市值、股价这类与币种相关的绝对阈值，只用 PE / PB /
 #   涨跌幅这类各市场可比的条件。
+# - 流动性下限用 avg_amount_usd_min：近 10 日日均成交额按市场近似汇率折成美元，
+#   不受盘中时点影响。100 万美元主要剔除港股、台股、印度里成交清淡的标的。
 # - 韩国市场 Yahoo 不提供 PE / PB，改由 Naver Finance 补全（亏损公司没有 PE，不会进入本策略）。
 # - 个别存托凭证（ADR）的 PB 因币种未换算而异常偏低（< 0.1），会被置空，从而不进入本策略。
 # - exclude_st 只作用于中文名称（A 股 ST 约定），对其他市场无影响。
@@ -10,7 +12,7 @@
 name: global_value
 display_name: 全球低估值
 description: 多市场低 PE + 低 PB 价值筛选，叠加当日活跃度与稳定性，按板块硬性分散
-version: "1.0"
+version: "1.1"
 category: value
 tags: [value, defensive, low_valuation, multi_market]
 style:
@@ -26,6 +28,7 @@ screening:
   market_scope: [us, hk, jp, kr, tw, in]
   hard_filters:
     exclude_st: false
+    avg_amount_usd_min: 1000000
     pe_ttm_min: 0
     pe_ttm_max: 18
     pb_min: 0

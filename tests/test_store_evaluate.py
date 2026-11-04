@@ -609,6 +609,15 @@ def test_evaluate_saved_runs_by_windows_measures_true_t_plus_n_against_benchmark
     assert breakout["window_summaries"][0]["average_return_pct"] == -10.0
     assert breakout["window_summaries"][0]["average_excess_return_pct"] == -11.0
 
+    # Reviews are kept per window: the T+3 loser is a failure there, while
+    # at T+10 every pick is still pending and nothing has failed yet.
+    assert payload["review_window_days"] == 3
+    reviews = {item["window_days"]: item for item in payload["window_reviews"]}
+    assert sorted(reviews) == [3, 10]
+    assert reviews[3]["failure_review"]["summary"]["failure_count"] >= 1
+    assert reviews[10]["failure_review"]["summary"]["failure_count"] == 0
+    assert payload["failure_review"] == reviews[3]["failure_review"]
+
 
 def test_evaluate_saved_runs_filters_strategy_before_loading_runs(tmp_path):
     matching_path = save_screen_result(
