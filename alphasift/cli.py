@@ -1500,7 +1500,8 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
                         f"ret={window.get('average_return_pct')!s} "
                         f"bench={window.get('average_benchmark_return_pct')!s} "
                         f"excess={window.get('average_excess_return_pct')!s} "
-                        f"beat={window.get('beat_benchmark_rate')!s} "
+                        + _format_partial_benchmark(window)
+                        + f"beat={window.get('beat_benchmark_rate')!s} "
                         f"win={window.get('win_rate')!s} "
                         f"dd={window.get('average_max_drawdown_pct')!s} "
                         f"runup={window.get('average_max_runup_pct')!s} "
@@ -1528,6 +1529,16 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
     lines.extend(_format_event_signal_review_explain(result.get("event_signal_review", {}), limit=5))
     lines.extend(_format_failure_review_explain(result.get("failure_review", {}), include_samples=False))
     return "\n".join(lines)
+
+
+def _format_partial_benchmark(window: dict) -> str:
+    """When only some picks have benchmark data, bench/excess cover just
+    those picks; show how many and their own average return."""
+    evaluated = int(window.get("evaluated_pick_count") or 0)
+    matched = int(window.get("benchmark_pick_count") or 0)
+    if not evaluated or matched >= evaluated:
+        return ""
+    return f"bench_n={matched}/{evaluated} matched_ret={window.get('average_matched_return_pct')!s} "
 
 
 def _format_event_signal_review_explain(
