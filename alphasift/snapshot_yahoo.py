@@ -78,17 +78,23 @@ def fetch_yahoo_snapshot(
 
     rows: dict[str, dict[str, object]] = {}
     errors: list[str] = []
-    for sector in YAHOO_SECTORS:
+    timed_out = False
+    for sector_index, sector in enumerate(YAHOO_SECTORS):
         # Each sector is paged by market cap, up to ``limit`` rows of its own.
         # The global top-``limit`` is then cut after all sectors are in, so a
         # large early sector cannot crowd out Technology or Utilities.
         offset = 0
         while offset < limit:
             if budget is not None and time.monotonic() - started > budget:
-                raise TimeoutError(
-                    f"yahoo_screener exceeded {budget:.0f}s budget for market {spec.id} "
-                    f"after {len(rows)} rows"
+                # Keep what was fetched, marked partial: the caller then uses
+                # it without replacing the complete last-good cache, instead of
+                # dropping it and switching to a different universe.
+                skipped = ", ".join(YAHOO_SECTORS[sector_index:])
+                errors.append(
+                    f"budget {budget:.0f}s exceeded after {len(rows)} rows; not fetched: {skipped}"
                 )
+                timed_out = True
+                break
             try:
                 payload = screen(
                     _sector_query(spec, sector, floor),
@@ -110,6 +116,8 @@ def fetch_yahoo_snapshot(
             if not quotes or offset >= total:
                 break
             time.sleep(_PAGE_PAUSE_SECONDS)
+        if timed_out:
+            break
 
     if not rows:
         detail = "; ".join(errors[:3]) or "no rows above the universe floor"
@@ -153,16 +161,20 @@ def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
     avg_volume = _num(quote.get("averageDailyVolume10Day")) or _num(quote.get("averageDailyVolume3Month"))
     shares = _num(quote.get("sharesOutstanding"))
     market_cap = _num(quote.get("marketCap"))
+    trading_currency = str(quote.get("currency") or "")
+    financial_currency = str(quote.get("financialCurrency") or trading_currency)
+    # EPS and book value are in the reporting currency. Dividing a USD price
+    # by JPY EPS gives a meaningless (tiny) ratio that would rank first in a
+    # low-PE screen, so only derive ratios when the currencies match.
+    same_currency = not financial_currency or not trading_currency or financial_currency == trading_currency
     pe = _num(quote.get("trailingPE"))
-    if pe is None:
+    if pe is None and same_currency:
         eps = _num(quote.get("epsTrailingTwelveMonths"))
         pe = price / eps if eps else None
     pb = _num(quote.get("priceToBook"))
-    if pb is None:
+    if pb is None and same_currency:
         book = _num(quote.get("bookValue"))
         pb = price / book if book and book > 0 else None
-    trading_currency = str(quote.get("currency") or "")
-    financial_currency = str(quote.get("financialCurrency") or trading_currency)
     if (
         pb is not None
         and pb < _CROSS_CURRENCY_MIN_PB
