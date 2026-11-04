@@ -234,6 +234,8 @@ def test_sort_screened_candidates_keeps_default_tie_breakers_without_weights():
 
 
 def test_screening_reuses_daily_history_only_outside_the_session(monkeypatch, tmp_path):
+    from datetime import date
+
     import alphasift.pipeline as pipeline
 
     df = pd.DataFrame(
@@ -257,13 +259,42 @@ def test_screening_reuses_daily_history_only_outside_the_session(monkeypatch, tm
         daily_history_cache_dir=tmp_path,
         daily_history_cache_ttl_hours=24,
     )
-    for since_close in (0.0, 3600.0, 3 * 86400.0):
-        monkeypatch.setattr(pipeline, "seconds_since_settled_close", lambda market, value=since_close: value)
+    session = date(2026, 11, 4)
+    for settled in (None, (session, 3600.0), (session, 3 * 86400.0)):
+        monkeypatch.setattr(pipeline, "latest_settled_close", lambda market, value=settled: value)
         try:
             screen("shrink_pullback", use_llm=False, config=config)
         except RuntimeError:
             pass
 
-    assert [item["cache_dir"] for item in seen] == [tmp_path] * 3
-    # In session: never reuse; after the close: only what was fetched since; capped by config.
-    assert [item["cache_ttl_seconds"] for item in seen] == [0.0, 3600.0, 24 * 3600.0]
+    # In session: no cache at all, so partial bars never reach evaluation's cache.
+    assert seen[0].get("cache_dir") is None
+    # After the close: only histories fetched since, reaching that session; capped by config.
+    assert [item["cache_ttl_seconds"] for item in seen[1:]] == [3600.0, 24 * 3600.0]
+    assert all(item["cache_dir"] == tmp_path and item["cache_min_last_date"] == session for item in seen[1:])
+
+
+def test_cached_history_that_misses_the_latest_session_is_refetched(monkeypatch, tmp_path):
+    from datetime import date
+
+    import alphasift.daily as daily
+
+    calls = []
+
+    def fake_tencent(code, *, lookback_days):
+        calls.append(code)
+        last = "2026-11-04" if len(calls) > 1 else "2026-11-03"  # first fetch: vendor not published yet
+        return pd.DataFrame(
+            [{"日期": "2026-11-02", "收盘": 10.0}, {"日期": "2026-11-03", "收盘": 10.5}, {"日期": last, "收盘": 11.0}]
+        ).drop_duplicates("日期")
+
+    monkeypatch.setattr(daily, "_fetch_daily_tencent", fake_tencent)
+    kwargs = dict(source="tencent", retries=0, cache_dir=tmp_path, cache_ttl_seconds=3600)
+
+    daily.fetch_daily_history("000001", **kwargs, cache_min_last_date=date(2026, 11, 4))
+    second = daily.fetch_daily_history("000001", **kwargs, cache_min_last_date=date(2026, 11, 4))
+    third = daily.fetch_daily_history("000001", **kwargs, cache_min_last_date=date(2026, 11, 4))
+
+    assert len(calls) == 2  # the cache lacking 11-04 was not reused; the complete one was
+    assert str(second["日期"].iloc[-1]) == "2026-11-04"
+    assert str(third["日期"].iloc[-1]) == "2026-11-04"

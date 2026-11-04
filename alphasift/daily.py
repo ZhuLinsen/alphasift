@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import hashlib
 import json
 import os
@@ -67,6 +67,7 @@ def enrich_daily_features(
     cache_dir: str | Path | None = None,
     cache_ttl_seconds: float | None = None,
     max_workers: int | None = None,
+    cache_min_last_date: date | None = None,
 ) -> pd.DataFrame:
     """Attach daily technical features to the first ``max_rows`` candidates.
 
@@ -102,6 +103,7 @@ def enrich_daily_features(
                 retries=fetch_retries,
                 cache_dir=cache_dir,
                 cache_ttl_seconds=cache_ttl_seconds,
+                cache_min_last_date=cache_min_last_date,
             )
             features = compute_daily_features(hist)
             features["daily_source"] = str(hist.attrs.get("daily_source", ""))
@@ -165,8 +167,12 @@ def fetch_daily_history(
     retries: int = 2,
     cache_dir: str | Path | None = None,
     cache_ttl_seconds: float | None = None,
+    cache_min_last_date: date | None = None,
 ) -> pd.DataFrame:
     """Fetch daily history for one stock code.
+
+    ``cache_min_last_date`` rejects a fresh cache entry whose last bar is
+    older than that session (e.g. fetched before the vendor published it).
 
     ``source`` accepts ``tencent``, ``sina``, ``akshare``, ``baostock``, ``tushare``,
     ``yfinance`` or ``auto``. ``auto`` prefers Tushare when a token is
@@ -201,7 +207,7 @@ def fetch_daily_history(
             lookback_days=normalized_lookback_days,
         )
         cached = _read_daily_history_cache(cache_path, ttl_seconds=cache_ttl_seconds)
-        if cached is not None:
+        if cached is not None and _history_reaches(cached, cache_min_last_date):
             return cached
 
     attempts = max(int(retries), 0) + 1
@@ -442,6 +448,17 @@ def _daily_history_cache_path(
     safe_source = "".join(ch if ch.isalnum() else "-" for ch in source).strip("-") or "source"
     safe_code = "".join(ch if ch.isalnum() else "-" for ch in code).strip("-") or "code"
     return Path(cache_dir) / f"{safe_code}_{safe_source}_{int(lookback_days)}_{digest}.json"
+
+
+def _history_reaches(df: pd.DataFrame, min_last_date: date | None) -> bool:
+    if min_last_date is None:
+        return True
+    try:
+        normalized = _normalize_daily_history(df)
+        dates = pd.to_datetime(normalized["date"], errors="coerce").dropna()
+    except Exception:  # noqa: BLE001 - an unreadable cache is just a miss
+        return False
+    return not dates.empty and dates.max().date() >= min_last_date
 
 
 def _read_daily_history_cache(
