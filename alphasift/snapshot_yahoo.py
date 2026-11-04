@@ -11,8 +11,8 @@ Field notes:
   session it reflects a partial day, like the A-share intraday volume ratio.
 - ``circ_mv`` is total market cap; Yahoo has no free-float cap here.
 - PE/PB are derived from trailing EPS and book value per share when Yahoo
-  omits the ratios. South Korea has neither, so KR rows carry no PE/PB and
-  valuation strategies cannot run there.
+  omits the ratios. South Korea has neither; KR PE/PB come from Naver
+  Finance instead (``alphasift.valuation_kr``).
 - Preferred shares are dropped. PB below 0.1 on a listing whose reporting
   currency differs from its trading currency (some ADRs) is cleared as an
   unconverted-currency artifact.
@@ -29,6 +29,7 @@ import pandas as pd
 
 from alphasift.markets import MarketSpec, get_market
 from alphasift.source_guard import parse_source_timeout_seconds
+from alphasift.valuation_kr import enrich_kr_valuation, kr_valuation_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -117,10 +118,17 @@ def fetch_yahoo_snapshot(
 
     df = pd.DataFrame(list(rows.values()))
     df = df.sort_values("total_mv", ascending=False, na_position="last").head(limit).reset_index(drop=True)
+    valuation_errors: list[str] = []
+    if spec.id == "kr" and kr_valuation_enabled():
+        # Yahoo has no PE/PB for Korean listings; Naver fills them.
+        df, valuation_errors = enrich_kr_valuation(df)
     df.attrs["snapshot_source"] = "yahoo_screener"
     df.attrs["market"] = spec.id
     df.attrs["currency"] = spec.currency
-    df.attrs["source_errors"] = [f"yahoo_screener sector {item}" for item in errors]
+    df.attrs["source_errors"] = [
+        *(f"yahoo_screener sector {item}" for item in errors),
+        *valuation_errors,
+    ]
     df.attrs["partial"] = bool(errors)
     logger.info("Yahoo screener snapshot for %s: %d rows", spec.id, len(df))
     return df
@@ -148,6 +156,8 @@ def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
         return None
     if _PREFERRED_SYMBOL_RE.search(symbol):
         # JPM-PC, BAC-PB...: preferred shares are tagged EQUITY by Yahoo.
+        return None
+    if _is_krx_preferred(symbol):
         return None
     volume = _num(quote.get("regularMarketVolume"))
     avg_volume = _num(quote.get("averageDailyVolume10Day")) or _num(quote.get("averageDailyVolume3Month"))
@@ -193,6 +203,12 @@ def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
         "currency": str(quote.get("currency") or ""),
         "exchange": str(quote.get("fullExchangeName") or quote.get("exchange") or ""),
     }
+
+
+def _is_krx_preferred(symbol: str) -> bool:
+    """KRX common shares have codes ending in 0; 005935, 005387, 00088K are preferreds."""
+    head, _, suffix = symbol.upper().rpartition(".")
+    return suffix in {"KS", "KQ"} and len(head) == 6 and head[-1] != "0"
 
 
 def _num(value: object) -> float | None:

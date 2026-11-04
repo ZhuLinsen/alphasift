@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 韩国市场补上 PE/PB：Yahoo 不提供韩股估值，改由 Naver Finance 移动端接口逐只补全（272 只约 14 秒，PB 覆盖 271 只、PE 覆盖 223 只，亏损公司没有 PE），`global_value` 加入 kr；韩国优先股（代码末位非 0，如 005935）不再进入股票池。`ALPHASIFT_KR_VALUATION=0` 可关闭
 - `doctor data-sources` 支持 `--market`（us / hk / jp / kr / tw / in）：非 A 股检查 Yahoo 筛选器快照和 yfinance 日 K（默认用该市场代表股，如 0700.HK、7203.T）；`--strategy global_value` 这类不支持 A 股的策略会自动选它的第一个市场。实测 jp 通过，kr 正确报出 PE/PB 全部缺失
 - **修正 T+N 评估口径**：`evaluate-strategies --window 5,10,20` 之前每个窗口的收益都是"今天价格对比入场价"，三个窗口数值相同，窗口只影响拉取多少根 K 线。现在按入场后第 N 个交易日收盘计算收益，最大回撤和浮盈也只看这 N 根 K 线；未满 N 日的记为 `pending`，不计入平均
 - **新增基准对比**：T+N 窗口同时计算所在市场基准指数（沪深 300、标普 500、恒生、日经 225、KOSPI、台湾加权、Nifty 50）同期收益，输出 `average_excess_return_pct` 和 `beat_benchmark_rate`。沪深 300 走腾讯指数 K 线（Yahoo 的 000300.SS 历史数据不完整）
