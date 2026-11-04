@@ -343,7 +343,11 @@ def main():
     dsp = doctor_sub.add_parser("data-sources", help="诊断 snapshot / daily 数据源状态")
     dsp.add_argument("--snapshot-source", action="append", default=None, help="snapshot 来源，可重复或逗号分隔")
     dsp.add_argument("--daily-source", default=None, help="daily K 来源，默认使用 DAILY_SOURCE/config")
-    dsp.add_argument("--daily-code", default="000001", help="daily K smoke test 股票代码，默认 000001")
+    dsp.add_argument("--daily-code", default="000001", help="daily K smoke test 股票代码，默认 000001；非 A 股默认用该市场的代表性股票")
+    dsp.add_argument(
+        "--market", default=None,
+        help="诊断的市场：cn / us / hk / jp / kr / tw / in；默认 cn，若 --strategy 不支持 cn 则取其第一个市场",
+    )
     dsp.add_argument("--strategy", default=None, help="按指定策略的必需 snapshot/daily 字段做数据源预检")
     dsp.add_argument("--all-strategies", action="store_true", help="按所有策略的字段并集做数据源覆盖矩阵")
     dsp.add_argument("--compare-snapshot-sources", action="store_true", help="逐个检查 snapshot 源字段覆盖和代码交集")
@@ -813,6 +817,7 @@ def main():
                     strategy_name=args.strategy,
                     all_strategies=args.all_strategies,
                     compare_snapshot_sources=args.compare_snapshot_sources,
+                    market=args.market,
                 )
             except ValueError as exc:
                 parser.error(str(exc))

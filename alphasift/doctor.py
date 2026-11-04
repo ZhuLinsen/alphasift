@@ -17,6 +17,7 @@ from alphasift.snapshot import (
     fetch_snapshot_with_fallback,
     snapshot_source_health_snapshot,
 )
+from alphasift.markets import get_market
 from alphasift.strategy import list_strategies
 
 
@@ -75,15 +76,31 @@ def doctor_data_sources(
     strategy_name: str | None = None,
     all_strategies: bool = False,
     compare_snapshot_sources: bool = False,
+    market: str | None = None,
 ) -> DataSourcesDoctorResult:
-    """Check snapshot and daily K-line source health without exposing secrets."""
-    sources = list(snapshot_sources or config.snapshot_source_priority)
-    daily_source_name = daily_source or config.daily_source
+    """Check snapshot and daily K-line source health without exposing secrets.
+
+    ``market`` defaults to cn, or to the first market in ``strategy_name``'s
+    scope when that strategy does not run on cn (e.g. global_value -> us).
+    Non-CN markets check the Yahoo screener and the yfinance daily adapter.
+    """
     strategy_requirements, coverage_requirements = _strategy_preflight_plan(
         config,
         strategy_name=strategy_name,
         all_strategies=all_strategies,
     )
+    market = _resolve_doctor_market(market, strategy_requirements)
+    if market == "cn":
+        sources = list(snapshot_sources or config.snapshot_source_priority)
+        daily_source_name = daily_source or config.daily_source
+    else:
+        # CN source names (sina, em_datacenter...) do not apply; the market
+        # registry routes non-CN snapshots through the Yahoo screener.
+        sources = ["yahoo_screener", "yfinance_tickers"] if market == "us" else ["yahoo_screener"]
+        configured_daily = daily_source or config.daily_source
+        daily_source_name = "yfinance" if configured_daily in ("", "auto") else configured_daily
+        if daily_code == "000001":
+            daily_code = _MARKET_SAMPLE_SYMBOLS[market]
     snapshot_required_fields = _required_fields_for_check(
         strategy_requirements.get("required_snapshot_fields"),
         default=["code", "name", "price"],
@@ -94,6 +111,7 @@ def doctor_data_sources(
         sources=sources,
         run_live=run_live,
         required_fields=snapshot_required_fields,
+        market=market,
     )
     daily = (
         _check_daily_sources(
@@ -114,7 +132,8 @@ def doctor_data_sources(
         sources,
         required_fields=snapshot_required_fields,
         run_live=run_live,
-        enabled=compare_snapshot_sources,
+        # Per-source reconciliation compares the CN source chain only.
+        enabled=compare_snapshot_sources and market == "cn",
     )
     recommendations = _build_recommendations(snapshot, daily)
     statuses = [snapshot.status, daily.status if daily is not None else "skipped"]
@@ -123,6 +142,7 @@ def doctor_data_sources(
         status=status,
         generated_at=datetime.now(timezone.utc).isoformat(),
         config={
+            "market": market,
             "snapshot_source_priority": sources,
             "daily_source": daily_source_name,
             "daily_code": daily_code if check_daily else "",
@@ -149,6 +169,7 @@ def _check_snapshot_sources(
     sources: list[str],
     run_live: bool,
     required_fields: list[str],
+    market: str = "cn",
 ) -> SourceCheckResult:
     health = snapshot_source_health_snapshot(sources)
     if not run_live:
@@ -164,7 +185,7 @@ def _check_snapshot_sources(
             required_columns=required_fields,
             fallback_snapshot_path=config.fallback_snapshot_path,
             fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
-            market="cn",
+            market=market,
             source_health_path=config.source_health_path,
         )
     except Exception as exc:  # noqa: BLE001 - doctor must aggregate failures.
@@ -272,6 +293,33 @@ def _strategy_preflight_plan(
     return strategy_requirements, [strategy_requirements] if strategy_requirements else []
 
 
+# One liquid listing per market for the daily K-line smoke test.
+_MARKET_SAMPLE_SYMBOLS = {
+    "us": "AAPL",
+    "hk": "0700.HK",
+    "jp": "7203.T",
+    "kr": "005930.KS",
+    "tw": "2330.TW",
+    "in": "RELIANCE.NS",
+}
+
+
+def _resolve_doctor_market(market: str | None, strategy_requirements: dict[str, Any]) -> str:
+    if market:
+        resolved = get_market(market).id
+        scope = strategy_requirements.get("market_scope")
+        if scope and resolved not in scope:
+            raise ValueError(
+                f"Strategy '{strategy_requirements.get('strategy')}' does not support market "
+                f"'{resolved}'. Supported: {', '.join(scope)}"
+            )
+        return resolved
+    scope = list(strategy_requirements.get("market_scope") or [])
+    if scope and "cn" not in scope:
+        return get_market(scope[0]).id
+    return "cn"
+
+
 def _strategy_requirements(config: Config, strategy_name: str | None) -> dict[str, Any]:
     if not strategy_name:
         return {}
@@ -291,6 +339,7 @@ def _strategy_requirement_payload(item) -> dict[str, Any]:
         "requires_daily_features": bool(item.requires_daily_features),
         "required_snapshot_fields": list(item.required_snapshot_fields),
         "required_daily_fields": list(item.required_daily_fields),
+        "market_scope": list(getattr(item, "market_scope", None) or ["cn"]),
     }
 
 
