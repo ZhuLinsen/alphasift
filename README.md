@@ -6,7 +6,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 ![Markets](https://img.shields.io/badge/markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-orange)
 
-English | [中文](README.zh-CN.md)
+English | [中文](README.zh-CN.md) | [日本語](README.ja.md)
 
 ```text
 full market ──► L1 hard filters + factor scores ──► L2 LLM ranking (optional)
