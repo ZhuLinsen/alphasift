@@ -6,7 +6,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 ![Markets](https://img.shields.io/badge/markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-orange)
 
-[English](README.md) | 中文
+[English](README.md) | 中文 | [日本語](README.ja.md)
 
 **公开记录：** 每个交易日收盘后自动运行全部内置策略并保存选股，之后按 T+5 / T+10 / T+20 和所在市场的基准指数比较——见[看板](https://zhulinsen.github.io/alphasift/)，原始数据在 [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) 分支。
 

@@ -6,7 +6,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 ![Markets](https://img.shields.io/badge/markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-orange)
 
-English | [中文](README.zh-CN.md)
+English | [中文](README.zh-CN.md) | [日本語](README.ja.md)
 
 **Track record:** every built-in strategy runs after each close and its picks are measured at T+5 / T+10 / T+20 against the market benchmark — see the [dashboard](https://zhulinsen.github.io/alphasift/) and the raw runs on the [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) branch.
 
