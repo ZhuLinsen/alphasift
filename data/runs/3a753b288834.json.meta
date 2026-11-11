@@ -1,0 +1,26 @@
+{
+  "schema_version": 3,
+  "run_id": "3a753b288834",
+  "strategy": "us_momentum_quality",
+  "market": "us",
+  "strategy_version": "1.0",
+  "strategy_category": "framework",
+  "created_at": "2026-11-11T22:35:03.980104+00:00",
+  "picks": 5,
+  "snapshot_count": 2577,
+  "after_filter_count": 1710,
+  "snapshot_source": "yahoo_screener",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 0,
+  "degradation": [],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/3a753b288834.json",
+  "report_path": "track/data/runs/3a753b288834.md"
+}
