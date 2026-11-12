@@ -1,5 +1,5 @@
 {
- "evaluated_at": "2026-11-12T10:45:09+00:00",
+ "evaluated_at": "2026-11-12T22:35:34+00:00",
  "windows": [
   5,
   10,
@@ -1477,7 +1477,7 @@
    }
   },
   "7284e8e0148c": {
-   "evaluated_at": "2026-11-11T22:35:06+00:00",
+   "evaluated_at": "2026-11-12T22:35:31+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1579,7 +1579,7 @@
    }
   },
   "3a753b288834": {
-   "evaluated_at": "2026-11-11T22:35:08+00:00",
+   "evaluated_at": "2026-11-12T22:35:32+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3172,6 +3172,210 @@
        "excess_return_pct": null
       },
       "HINDALCO.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    }
+   }
+  },
+  "7da1a5d66a44": {
+   "evaluated_at": "2026-11-12T22:35:33+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "BBD": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "LNC": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "TAP": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CMCSA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PCG": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    },
+    "10": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "BBD": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "LNC": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "TAP": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CMCSA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PCG": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    },
+    "20": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "BBD": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "LNC": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "TAP": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CMCSA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PCG": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    }
+   }
+  },
+  "5dccc124ea86": {
+   "evaluated_at": "2026-11-12T22:35:34+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "BRK-B": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CVS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "OXY": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "XEL": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    },
+    "10": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "BRK-B": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CVS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "OXY": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "XEL": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    },
+    "20": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "BRK-B": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CVS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "OXY": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "XEL": {
        "status": "pending",
        "return_pct": null,
        "excess_return_pct": null
