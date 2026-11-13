@@ -1,0 +1,33 @@
+{
+  "schema_version": 3,
+  "run_id": "4ad4740fa2d1",
+  "strategy": "volume_breakout",
+  "market": "cn",
+  "strategy_version": "1.2",
+  "strategy_category": "trend",
+  "created_at": "2026-11-13T10:39:52.873414+00:00",
+  "picks": 3,
+  "snapshot_count": 5219,
+  "after_filter_count": 3,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 6,
+  "degradation": [
+    "Daily K-line enrichment attempted 56 candidates, succeeded 56 of 56 snapshot-filtered candidates",
+    "Daily K-line sources: sina=56",
+    "Daily K-line quality flags: fallback_errors=1, short_history_lt60=2",
+    "Daily K-line source ordering: daily source order adjusted by health: sina,akshare,baostock,tencent",
+    "Daily K-line source health: tencent failures=1",
+    "Daily hard-filter rejections: require_price_above_ma20 removed 4 (56->52); signal_score_min removed 6 (52->46); breakout_20d_pct_min removed 27 (46->19); range_20d_pct_max removed 9 (19->10); body_pct_min removed 2 (10->8); consolidation_days_20d_min removed 5 (8->3)"
+  ],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": true,
+  "daily_enrich_count": 56,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/4ad4740fa2d1.json",
+  "report_path": "track/data/runs/4ad4740fa2d1.md"
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 3,
+  "run_id": "0f4b9945faf3",
+  "strategy": "low_volatility_quality",
+  "market": "cn",
+  "strategy_version": "1.0",
+  "strategy_category": "quality",
+  "created_at": "2026-11-13T10:36:22.365307+00:00",
+  "picks": 5,
+  "snapshot_count": 5219,
+  "after_filter_count": 38,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 3,
+  "degradation": [
+    "Daily K-line enrichment attempted 100 candidates, succeeded 100 of 497 snapshot-filtered candidates",
+    "Daily K-line sources: tencent=100",
+    "Daily hard-filter rejections: change_60d_min removed 26 (100->74); signal_score_min removed 27 (74->47); volatility_20d_pct_max removed 8 (47->39); max_drawdown_20d_pct_min removed 1 (39->38)"
+  ],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": true,
+  "daily_enrich_count": 100,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/0f4b9945faf3.json",
+  "report_path": "track/data/runs/0f4b9945faf3.md"
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 3,
+  "run_id": "989cbd17f9a6",
+  "strategy": "shrink_pullback",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "trend",
+  "created_at": "2026-11-13T10:38:32.844840+00:00",
+  "picks": 5,
+  "snapshot_count": 5219,
+  "after_filter_count": 12,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 3,
+  "degradation": [
+    "Daily K-line enrichment attempted 100 candidates, succeeded 100 of 2469 snapshot-filtered candidates",
+    "Daily K-line sources: tencent=100",
+    "Daily hard-filter rejections: require_ma_bullish removed 71 (100->29); require_price_above_ma20 removed 1 (29->28); volume_ratio_20d_max removed 2 (28->26); pullback_to_ma20_pct_max removed 3 (26->23); volatility_20d_pct_max removed 11 (23->12)"
+  ],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": true,
+  "daily_enrich_count": 100,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/989cbd17f9a6.json",
+  "report_path": "track/data/runs/989cbd17f9a6.md"
+}
