@@ -1,5 +1,5 @@
 {
- "evaluated_at": "2026-11-13T10:41:47+00:00",
+ "evaluated_at": "2026-11-13T22:34:48+00:00",
  "windows": [
   5,
   10,
@@ -1477,7 +1477,7 @@
    }
   },
   "7284e8e0148c": {
-   "evaluated_at": "2026-11-12T22:35:31+00:00",
+   "evaluated_at": "2026-11-13T22:34:46+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1579,7 +1579,7 @@
    }
   },
   "3a753b288834": {
-   "evaluated_at": "2026-11-12T22:35:32+00:00",
+   "evaluated_at": "2026-11-13T22:34:46+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3181,7 +3181,7 @@
    }
   },
   "7da1a5d66a44": {
-   "evaluated_at": "2026-11-12T22:35:33+00:00",
+   "evaluated_at": "2026-11-13T22:34:46+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3283,7 +3283,7 @@
    }
   },
   "5dccc124ea86": {
-   "evaluated_at": "2026-11-12T22:35:34+00:00",
+   "evaluated_at": "2026-11-13T22:34:46+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4876,6 +4876,210 @@
        "excess_return_pct": null
       },
       "OIL.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    }
+   }
+  },
+  "cae43eb6e6a1": {
+   "evaluated_at": "2026-11-13T22:34:47+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "PURR": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CTVA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CMCSA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "BCS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "EXE": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    },
+    "10": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "PURR": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CTVA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CMCSA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "BCS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "EXE": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    },
+    "20": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "PURR": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CTVA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CMCSA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "BCS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "EXE": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    }
+   }
+  },
+  "a6da12b31a6a": {
+   "evaluated_at": "2026-11-13T22:34:48+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "BRK-B": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "XEL": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "OXY": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "BABA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    },
+    "10": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "BRK-B": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "XEL": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "OXY": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "BABA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     }
+    },
+    "20": {
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "BRK-B": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "XEL": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "OXY": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "BABA": {
        "status": "pending",
        "return_pct": null,
        "excess_return_pct": null

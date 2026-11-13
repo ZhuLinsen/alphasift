@@ -1,0 +1,26 @@
+{
+  "session": "us",
+  "finished_at": "2026-11-13T22:34:45+00:00",
+  "entries": [
+    {
+      "market": "us",
+      "strategy": "global_value",
+      "status": "ok",
+      "run_id": "cae43eb6e6a1",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 5.4
+    },
+    {
+      "market": "us",
+      "strategy": "us_momentum_quality",
+      "status": "ok",
+      "run_id": "a6da12b31a6a",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 4.9
+    }
+  ]
+}
