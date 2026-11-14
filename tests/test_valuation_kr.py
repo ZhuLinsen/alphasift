@@ -206,3 +206,82 @@ def test_exhausted_snapshot_budget_skips_naver_instead_of_running_past_it(monkey
     assert calls == []
     assert df.attrs["partial"] is True
     assert any("budget exhausted" in item for item in df.attrs["source_errors"])
+
+
+def test_yahoo_quote_to_row_drops_dual_class_pb_artifact():
+    from alphasift.snapshot_yahoo import _quote_to_row
+
+    brk_b = {
+        "symbol": "BRK-B",
+        "longName": "Berkshire Hathaway Inc.",
+        "quoteType": "EQUITY",
+        "regularMarketPrice": 592.94,
+        "regularMarketVolume": 1_000_000,
+        "bookValue": 536413.0,
+        "priceToBook": 0.001105,
+        "trailingPE": 16.6,
+        "marketCap": 1.26e12,
+        "currency": "USD",
+        "financialCurrency": "USD",
+    }
+    brk_a = {**brk_b, "symbol": "BRK-A", "regularMarketPrice": 889793.8, "priceToBook": 1.66}
+    low_pb_bank = {**brk_b, "symbol": "C", "regularMarketPrice": 60.0, "bookValue": 240.0, "priceToBook": 0.25}
+
+    row_b = _quote_to_row(brk_b, "Financial Services")
+    row_a = _quote_to_row(brk_a, "Financial Services")
+    row_c = _quote_to_row(low_pb_bank, "Financial Services")
+
+    assert row_b is not None and row_b["pb_ratio"] is None and row_b["pe_ratio"] == 16.6
+    assert row_a is not None and row_a["pb_ratio"] == 1.66
+    assert row_c is not None and row_c["pb_ratio"] == 0.25
+
+
+def test_fetch_yahoo_snapshot_records_quote_date_in_exchange_timezone():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    ts = int(datetime(2026, 11, 13, 16, 0, tzinfo=ZoneInfo("America/New_York")).timestamp())
+    df = snapshot_yahoo.fetch_yahoo_snapshot(
+        "us",
+        screen=lambda *a, **k: {
+            "total": 1,
+            "quotes": [
+                {
+                    "symbol": "MSFT",
+                    "longName": "Microsoft",
+                    "quoteType": "EQUITY",
+                    "regularMarketPrice": 420.0,
+                    "regularMarketVolume": 10_000_000,
+                    "regularMarketTime": ts,
+                    "marketCap": 3e12,
+                    "currency": "USD",
+                }
+            ],
+        },
+    )
+
+    assert df.attrs["quote_date"] == "2026-11-13"
+
+
+def test_us_legacy_enrich_info_fields_sanitizes_dual_class_pb(monkeypatch):
+    import sys
+    import types
+
+    from alphasift.snapshot_us import _enrich_info_fields
+
+    infos = {
+        "BRK-B": {"trailingPE": 16.6, "priceToBook": 0.001105, "currency": "USD", "financialCurrency": "USD"},
+        "JPM": {"trailingPE": 14.5, "priceToBook": 2.62, "currency": "USD", "financialCurrency": "USD"},
+    }
+    fake_yf = types.SimpleNamespace(Ticker=lambda t: types.SimpleNamespace(info=infos[t]))
+    monkeypatch.setitem(sys.modules, "yfinance", fake_yf)
+
+    df = pd.DataFrame([
+        {"code": "BRK-B", "name": "BRK-B", "pe_ratio": None, "pb_ratio": None, "industry": ""},
+        {"code": "JPM", "name": "JPM", "pe_ratio": None, "pb_ratio": None, "industry": ""},
+    ])
+    _enrich_info_fields(df)
+
+    assert df.loc[0, "pe_ratio"] == 16.6
+    assert pd.isna(df.loc[0, "pb_ratio"])
+    assert df.loc[1, "pb_ratio"] == 2.62

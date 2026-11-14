@@ -99,7 +99,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
-          git commit -q -m "track: ${{ steps.session.outputs.session }} $(TZ=Asia/Shanghai date +%F)"
+          tz="Asia/Shanghai"
+          if [ "${{ steps.session.outputs.session }}" = "us" ]; then tz="America/New_York"; fi
+          git commit -q -m "track: ${{ steps.session.outputs.session }} $(TZ=$tz date +%F)"
           git push origin HEAD:track-record
 
       - name: Stage the dashboard

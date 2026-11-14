@@ -203,6 +203,21 @@ alphasift runs --strategy dual_low --json
 评估会用保存时价格与评估时最新快照价格计算 T+N 收益、胜率、缺失报价、交易成本扣减、等权组合摘要和形态后验标签。启用 `--with-price-path` 后，会额外估算最大回撤和最大浮盈。
 `evaluate-batch` / `evaluate-strategies` 还会输出 `failure_review` 和 `event_signal_review`，用于定位反复失效的策略、事件信号、风险 flag、形态状态和数据问题，并沉淀可偏好/规避的事件标签。`event_signal_review.strategy_patch_suggestions` 会把策略级事件胜率转换成可审阅的 `screening.event_profile` YAML 片段，方便后续把稳定的 prefer/avoid 结论落回策略。
 
+多窗口 T+N 基准对比（例如同时检查 T+5 / T+10 / T+20 相对于市场基准指数的超额收益）：
+
+```bash
+alphasift evaluate-strategies --market cn --window 5,10,20 --explain
+alphasift evaluate-strategies --market us --window 5,10,20 --json
+```
+
+自动化公开跟踪脚本（`scripts/track_record.py`）用于批量跑完同一交易时段的全部分市场策略、执行多窗口基准评估并生成看板站点数据：
+
+```bash
+python scripts/track_record.py screen --session asia --track track
+python scripts/track_record.py evaluate --markets cn,hk --track track
+python scripts/track_record.py build --track track
+```
+
 ## 自定义策略
 
 在 `strategies/` 目录添加 YAML 文件即可，文件名就是策略标识。可用 `alphasift strategies --templates --explain` 查看起步模板。完整写法见 [strategy-guide.md](strategy-guide.md)，内置策略说明见 [../strategies/README.md](../strategies/README.md)。
