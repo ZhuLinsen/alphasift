@@ -1,0 +1,67 @@
+# US momentum-quality: a market_scope=[us] adaptation of momentum_quality.yaml
+# for the yfinance-backed US snapshot (see alphasift/snapshot_us.py).
+#
+# Differences from the CN template, and why:
+# - exclude_st: false — there is no ST/delisting-risk name convention in the
+#   US market, and the CN filter's "ST" substring match on company names would
+#   false-positive on ordinary US names (e.g. "AST SpaceMobile").
+# - No pe_ttm_min/max or pb_min/max hard filters — snapshot_us.py's PE/PB come
+#   from a best-effort yfinance .info backfill that many tickers won't have;
+#   a hard filter on a mostly-missing column would silently gut the universe.
+#   value factor weight is kept low for the same reason.
+# - No theme_heat / topic_alignment factor weight — those depend on CN
+#   board/concept-heat enrichment (hotspot.py) that has no US data source yet.
+# - No portfolio_profile sector buckets — snapshot_us.py's industry field is
+#   Yahoo's fine-grained industry string, not a small fixed sector taxonomy,
+#   so the CN template's Chinese keyword buckets don't apply.
+name: us_momentum_quality
+display_name: US Momentum Quality
+description: Trend-confirmation candidates from the yfinance-backed US snapshot, adapted from momentum_quality.yaml
+version: "1.0"
+category: framework
+tags: [momentum, quality, trend, us, llm_friendly]
+style:
+  risk_profile: balanced
+  holding_period: swing
+  execution_style: trend_quality
+  market_regime: [risk_on, trend, rotation]
+  capital_profile: high_liquidity
+  ui_badge: Trend
+
+screening:
+  enabled: true
+  market_scope: [us]
+  hard_filters:
+    exclude_st: false
+    amount_min: 20000000
+    market_cap_min: 2000000000
+    change_pct_min: -6.0
+    change_pct_max: 10.0
+    price_min: 5
+  tech_weight: 0.55
+  factor_weights:
+    momentum: 0.34
+    value: 0.08
+    liquidity: 0.20
+    activity: 0.18
+    stability: 0.16
+    reversal: 0.04
+  scoring_profile:
+    momentum_chase_start_pct: 6.0
+    momentum_chase_penalty_slope: 12.0
+    activity_ideal_volume_ratio: 1.8
+    activity_ideal_turnover_rate: 1.5
+    stability_hot_change_pct: 8.0
+  risk_profile:
+    chase_change_pct: 9.0
+    abnormal_volume_ratio: 5.0
+    high_turnover_rate: 8.0
+    low_llm_confidence: 0.50
+  ranking_hints: |
+    Prefer:
+    1. Candidates with a confirmed trend that have not yet chased into an
+       extended/overbought move.
+    2. Liquidity and activity that support the trend without looking like a
+       one-day volume spike.
+    3. Avoid over-concentration in a single obvious mega-cap theme.
+  max_output: 5

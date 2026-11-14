@@ -847,6 +847,9 @@ def _fetch_daily_baostock(code: str, *, lookback_days: int) -> pd.DataFrame:
 
 
 def _to_baostock_code(code: str) -> str:
+    text = str(code).strip().lower()
+    if len(text) == 8 and text[:2] in {"sh", "sz", "bj"} and text[2:].isdigit():
+        return f"{text[:2]}.{text[2:]}"
     raw = str(code).strip().zfill(6)
     if raw.startswith(("6", "9", "5")):
         return f"sh.{raw}"
@@ -854,6 +857,9 @@ def _to_baostock_code(code: str) -> str:
 
 
 def _to_tushare_code(code: str) -> str:
+    text = str(code).strip().lower()
+    if len(text) == 8 and text[:2] in {"sh", "sz", "bj"} and text[2:].isdigit():
+        return f"{text[2:]}.{text[:2].upper()}"
     raw = str(code).strip().zfill(6)
     if raw.startswith(("4", "8", "920")):
         return f"{raw}.BJ"

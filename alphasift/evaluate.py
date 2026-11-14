@@ -6,6 +6,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
+import time as _time
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -969,13 +970,41 @@ def _fetch_benchmark_path(market: str, *, lookback_days: int) -> pd.DataFrame:
         raise RuntimeError(f"no benchmark configured for market {spec.id}")
     fetched_at = datetime.now().astimezone()
     if spec.id == "cn":
-        from alphasift.daily import _fetch_daily_tencent
+        from alphasift.daily import _fetch_daily_sina, _fetch_daily_tencent
 
-        path = _fetch_daily_tencent(spec.benchmark, lookback_days=lookback_days)
+        sources = (
+            ("tencent", _fetch_daily_tencent),
+            ("sina", _fetch_daily_sina),
+        )
     else:
         from alphasift.snapshot_us import fetch_daily_history_yfinance
 
-        path = fetch_daily_history_yfinance(spec.benchmark, lookback_days=lookback_days)
+        sources = (("yfinance", fetch_daily_history_yfinance),)
+
+    errors: list[str] = []
+    path: pd.DataFrame | None = None
+    for name, fetcher in sources:
+        for attempt in range(2):
+            try:
+                candidate = fetcher(spec.benchmark, lookback_days=lookback_days)
+                if candidate is None or candidate.empty:
+                    raise RuntimeError(f"{name} benchmark history empty for {spec.benchmark}")
+                norm = _normalize_price_path(candidate)
+                if norm.empty or "date" not in norm.columns:
+                    raise RuntimeError(
+                        f"{name} benchmark history has no valid dated closes for {spec.benchmark}"
+                    )
+                path = norm
+                break
+            except Exception as exc:  # noqa: BLE001 - retry / fall through to backup benchmark source
+                errors.append(f"{name}[{attempt + 1}]: {exc}")
+                if attempt == 0:
+                    _time.sleep(0.4)
+        if path is not None:
+            break
+
+    if path is None:
+        raise RuntimeError("; ".join(errors))
     path.attrs["fetched_at"] = fetched_at.isoformat()
     return path
 
@@ -994,13 +1023,24 @@ def _normalize_price_path(path: pd.DataFrame) -> pd.DataFrame:
     for column in ("close", "high", "low"):
         if column not in df.columns:
             df[column] = df["close"]
-        df[column] = pd.to_numeric(df[column], errors="coerce")
+        df[column] = pd.to_numeric(df[column], errors="coerce").replace(
+            [float("inf"), float("-inf")], float("nan")
+        )
+    valid = df["close"].notna() & (df["close"] > 0)
     if "date" in df.columns:
-        df["date"] = pd.to_datetime(df["date"], errors="coerce")
-        if getattr(df["date"].dt, "tz", None) is not None:
-            df["date"] = df["date"].dt.tz_localize(None)
-        df = df.sort_values("date")
-    return df.dropna(subset=["close"]).copy()
+        parsed_dates = pd.to_datetime(df["date"], errors="coerce")
+        if not pd.api.types.is_datetime64_any_dtype(parsed_dates):
+            parsed_dates = pd.to_datetime(
+                df["date"], errors="coerce", utc=True
+            ).dt.tz_localize(None)
+        elif getattr(parsed_dates.dt, "tz", None) is not None:
+            parsed_dates = parsed_dates.dt.tz_localize(None)
+        df["date"] = parsed_dates
+        valid &= df["date"].notna()
+        df = df.loc[valid].sort_values("date")
+    else:
+        df = df.loc[valid]
+    return df.copy()
 
 
 def _classify_shape_status(

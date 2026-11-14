@@ -1,4 +1,5 @@
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -416,3 +417,32 @@ def test_load_strategy_rejects_unknown_profile_key(tmp_path):
 
     with pytest.raises(ValueError, match="Unknown keys"):
         load_strategy(path)
+
+
+def test_git_tracked_strategies_are_bundled_in_package():
+    repo_dir = Path("strategies")
+    bundled_dir = Path("alphasift/strategies")
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files", "strategies/*.yaml"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        proc = None
+
+    if proc is not None and proc.returncode == 0 and proc.stdout.strip():
+        tracked_files = [
+            Path(line.strip())
+            for line in proc.stdout.splitlines()
+            if line.strip() and Path(line.strip()).parent == repo_dir
+        ]
+    else:
+        tracked_files = [repo_dir / "us_momentum_quality.yaml"]
+
+    assert tracked_files
+    for repo_file in tracked_files:
+        bundled_file = bundled_dir / repo_file.name
+        assert bundled_file.is_file(), f"Missing bundled strategy mirror: {bundled_file}"
+        assert repo_file.read_bytes() == bundled_file.read_bytes()

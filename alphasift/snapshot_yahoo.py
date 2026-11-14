@@ -20,16 +20,19 @@ Field notes:
 - Preferred shares are dropped (US ``-P`` symbols, KRX codes not ending in
   0, Taiwan codes with a letter suffix). A company listed on two local
   exchanges (India: NSE and BSE) is kept once.
-- PB below 0.1 on a listing whose reporting currency differs from its
-  trading currency (some ADRs) is cleared as an unconverted-currency artifact.
+- PB below 0.05 (e.g. dual-class share mismatches like BRK-B dividing Class B
+  price by Class A book value) or below 0.1 on a cross-currency listing (some
+  ADRs) is cleared as a reporting/currency artifact.
 """
 
 from __future__ import annotations
 
+from datetime import datetime
 import logging
 import os
 import re
 import time
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -54,6 +57,7 @@ YAHOO_SECTORS = (
 )
 _PREFERRED_SYMBOL_RE = re.compile(r"-P[A-Z]{0,2}$")
 _TW_PREFERRED_RE = re.compile(r"\d{4}[A-Z]")
+_MIN_PLAUSIBLE_PB = 0.05
 _CROSS_CURRENCY_MIN_PB = 0.1
 _PAGE_SIZE = 250
 _PAGE_PAUSE_SECONDS = 0.2
@@ -91,6 +95,7 @@ def fetch_yahoo_snapshot(
     rows: dict[str, dict[str, object]] = {}
     errors: list[str] = []
     timed_out = False
+    max_quote_time: float | None = None
     for sector_index, sector in enumerate(YAHOO_SECTORS):
         # Each sector is paged by market cap, up to ``limit`` rows of its own.
         # The global top-``limit`` is then cut after all sectors are in, so a
@@ -123,6 +128,9 @@ def fetch_yahoo_snapshot(
                 row = _quote_to_row(quote, sector)
                 if row is not None:
                     rows.setdefault(str(row["code"]), row)
+                    quote_ts = _num(quote.get("regularMarketTime"))
+                    if quote_ts is not None and quote_ts > 0:
+                        max_quote_time = quote_ts if max_quote_time is None else max(max_quote_time, quote_ts)
             offset += len(quotes)
             total = int((payload or {}).get("total") or 0)
             if not quotes or offset >= total:
@@ -155,6 +163,12 @@ def fetch_yahoo_snapshot(
     df.attrs["snapshot_source"] = "yahoo_screener"
     df.attrs["market"] = spec.id
     df.attrs["currency"] = spec.currency
+    if max_quote_time is not None:
+        df.attrs["quote_date"] = (
+            datetime.fromtimestamp(max_quote_time, tz=ZoneInfo(spec.timezone))
+            .date()
+            .isoformat()
+        )
     df.attrs["source_errors"] = [
         *(f"yahoo_screener sector {item}" for item in errors),
         *valuation_errors,
@@ -175,6 +189,26 @@ def _sector_query(spec: MarketSpec, sector: str, floor: float):
     if spec.yahoo_exchanges:
         clauses.append(EquityQuery("is-in", ["exchange", *spec.yahoo_exchanges]))
     return EquityQuery("and", clauses)
+
+
+def sanitize_yahoo_pb(
+    pb: object,
+    *,
+    trading_currency: str = "",
+    financial_currency: str = "",
+) -> float | None:
+    """Drop Yahoo P/B reporting/currency artifacts such as dual-class share mismatches."""
+    value = _num(pb)
+    if value is None or value <= 0 or value < _MIN_PLAUSIBLE_PB:
+        return None
+    if (
+        value < _CROSS_CURRENCY_MIN_PB
+        and financial_currency
+        and trading_currency
+        and financial_currency != trading_currency
+    ):
+        return None
+    return value
 
 
 def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
@@ -207,18 +241,11 @@ def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
     if pb is None and same_currency:
         book = _num(quote.get("bookValue"))
         pb = price / book if book and book > 0 else None
-    if (
-        pb is not None
-        and pb < _CROSS_CURRENCY_MIN_PB
-        and financial_currency
-        and trading_currency
-        and financial_currency != trading_currency
-    ):
-        # Cross-currency listings (ADRs, H-shares) are usually converted
-        # correctly (ICBC 1398.HK: PB 0.59), but some ADRs divide a USD price
-        # by book value in the home currency (EC: PB 0.008). A PB that low
-        # only happens with an unconverted currency, so drop it.
-        pb = None
+    pb = sanitize_yahoo_pb(
+        pb,
+        trading_currency=trading_currency,
+        financial_currency=financial_currency,
+    )
     dividend_yield = _num(quote.get("dividendYield"))
     return {
         "code": symbol,

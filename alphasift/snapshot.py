@@ -110,6 +110,7 @@ def fetch_snapshot_with_fallback(
                     )
                     continue
                 df.attrs.setdefault("snapshot_source", source)
+                df.attrs["market"] = spec.id
                 df.attrs["source_errors"] = list(errors)
                 df.attrs["source_order_notes"] = list(order_notes)
                 df.attrs["fallback_used"] = False
@@ -144,6 +145,7 @@ def fetch_snapshot_with_fallback(
         max_age_hours=fallback_max_age_hours,
     )
     if cached is not None:
+        cached.attrs["market"] = spec.id
         return cached
 
     raise RuntimeError(f"All snapshot sources failed: {'; '.join(errors)}")
@@ -332,7 +334,7 @@ def _record_source_failure(source: str, error: object | None = None) -> None:
 
 
 _PERSISTED_HEALTH_VERSION = 1
-_PERSISTED_FAILURE_TTL_SECONDS = 6 * 60 * 60
+_PERSISTED_FAILURE_TTL_SECONDS = 36 * 60 * 60
 
 
 def _load_persisted_source_health(path: str | Path | None) -> dict[str, dict[str, object]]:
@@ -875,6 +877,27 @@ def _prepare_tushare_snapshot(
     return _normalize(merged, source="tushare")
 
 
+def _extract_cn_quote_date(df: pd.DataFrame) -> str | None:
+    """Extract latest ISO trading date from common CN snapshot date columns."""
+    for col in ("trade_date", "date", "日期"):
+        if col not in df.columns:
+            continue
+        dates: list[str] = []
+        for raw in df[col].dropna().astype(str):
+            token = raw.strip()
+            if len(token) == 8 and token.isdigit():
+                token = f"{token[:4]}-{token[4:6]}-{token[6:8]}"
+            else:
+                token = token[:10]
+            try:
+                dates.append(date.fromisoformat(token).isoformat())
+            except ValueError:
+                continue
+        if dates:
+            return max(dates)
+    return None
+
+
 def _normalize(df: pd.DataFrame, source: str) -> pd.DataFrame:
     """Normalize column names to a standard schema.
 
@@ -979,6 +1002,9 @@ def _normalize(df: pd.DataFrame, source: str) -> pd.DataFrame:
         df = df.dropna(subset=["price"])
         df = df[df["price"] > 0]
 
+    quote_date = _extract_cn_quote_date(df)
+    if quote_date:
+        df.attrs["quote_date"] = quote_date
     df.attrs["snapshot_source"] = source
     return df
 

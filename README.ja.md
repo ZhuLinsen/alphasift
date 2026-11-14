@@ -8,6 +8,8 @@
 
 [English](README.md) | [中文](README.zh-CN.md) | 日本語
 
+**公開トラックレコード：** 毎営業日の引け後に全内蔵戦略を自動実行して結果を保存し、T+5 / T+10 / T+20 で各市場のベンチマークに対する超過リターンを比較しています — [ダッシュボード](https://zhulinsen.github.io/alphasift/)および生ログは [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) ブランチをご覧ください。
+
 ```text
 full market ──► L1 hard filters + factor scores ──► L2 LLM ranking (optional)
   (5,000+ names)    (YAML strategy, no API key)        (cross-candidate reasoning)

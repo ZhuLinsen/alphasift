@@ -463,3 +463,74 @@ def test_window_evaluation_survives_a_snapshot_outage(tmp_path, monkeypatch):
     window = payload["strategy_summaries"][0]["window_summaries"][0]
     assert window["average_return_pct"] == 0.0  # +10% and -10% at T+2
     assert any("current snapshot unavailable" in item for item in payload["source_errors"])
+
+
+def test_cn_benchmark_falls_back_from_tencent_to_sina_with_retries(monkeypatch):
+    import pytest
+    import alphasift.daily as daily_mod
+    from alphasift.evaluate import _fetch_benchmark_path
+
+    seen = {"tencent": [], "sina": []}
+
+    def failing_tencent(code, *, lookback_days):
+        seen["tencent"].append((code, lookback_days))
+        raise ConnectionError("tencent rate limited")
+
+    def fake_sina(code, *, lookback_days):
+        seen["sina"].append((code, lookback_days))
+        return pd.DataFrame([{"date": "2026-11-04", "close": 4101.34}])
+
+    monkeypatch.setattr("alphasift.evaluate._time.sleep", lambda _s: None)
+    monkeypatch.setattr(daily_mod, "_fetch_daily_tencent", failing_tencent)
+    monkeypatch.setattr(daily_mod, "_fetch_daily_sina", fake_sina)
+
+    path = _fetch_benchmark_path("cn", lookback_days=25)
+
+    assert seen["tencent"] == [("sh000300", 25), ("sh000300", 25)]
+    assert seen["sina"] == [("sh000300", 25)]
+    assert float(path["close"].iloc[-1]) == 4101.34
+    assert path.attrs["fetched_at"]
+
+    # Non-empty Tencent frames with unparseable dates or non-finite/non-positive
+    # closes also fall through to Sina rather than poisoning returns.
+    bad_frames = [
+        pd.DataFrame([{"date": "bad-date", "close": None}]),
+        pd.DataFrame([{"date": "2026-11-04", "close": 0.0}]),
+        pd.DataFrame([{"date": "2026-11-04", "close": -5.0}]),
+        pd.DataFrame([{"date": "2026-11-04", "close": float("inf")}]),
+        pd.DataFrame([
+            {"date": "bad-date", "close": 4000.0},
+            {"date": "2026-11-04", "close": None},
+        ]),
+    ]
+    for bad_df in bad_frames:
+        seen["tencent"].clear()
+        seen["sina"].clear()
+        monkeypatch.setattr(
+            daily_mod,
+            "_fetch_daily_tencent",
+            lambda code, *, lookback_days, frame=bad_df: frame,
+        )
+        path2 = _fetch_benchmark_path("cn", lookback_days=25)
+        assert len(seen["sina"]) == 1
+        assert float(path2["close"].iloc[-1]) == 4101.34
+
+    # A mixed Tencent frame drops corrupted rows and returns only the validated closes.
+    monkeypatch.setattr(
+        daily_mod,
+        "_fetch_daily_tencent",
+        lambda code, *, lookback_days: pd.DataFrame([
+            {"date": "2026-11-03", "close": 0.0},
+            {"date": "2026-11-04", "close": 4101.34},
+        ]),
+    )
+    seen["sina"].clear()
+    path_clean = _fetch_benchmark_path("cn", lookback_days=25)
+    assert seen["sina"] == []
+    assert len(path_clean) == 1
+    assert float(path_clean["close"].iloc[0]) == 4101.34
+
+    monkeypatch.setattr(daily_mod, "_fetch_daily_tencent", failing_tencent)
+    monkeypatch.setattr(daily_mod, "_fetch_daily_sina", lambda code, *, lookback_days: pd.DataFrame())
+    with pytest.raises(RuntimeError, match="tencent.*sina"):
+        _fetch_benchmark_path("cn", lookback_days=25)

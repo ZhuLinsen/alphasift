@@ -930,3 +930,11 @@ def test_fetch_daily_history_yfinance_flattens_multiindex(monkeypatch):
     assert "收盘" in result.columns
     assert "日期" in result.columns
     assert len(result) == 30
+
+
+def test_baostock_and_tushare_code_preserve_prefixed_index_symbols():
+    assert _to_baostock_code("sh000300") == "sh.000300"
+    assert _to_baostock_code("SZ399001") == "sz.399001"
+    assert _to_baostock_code("600519") == "sh.600519"
+    assert _to_tushare_code("sh000300") == "000300.SH"
+    assert _to_tushare_code("sz399001") == "399001.SZ"

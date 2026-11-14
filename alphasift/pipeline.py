@@ -37,7 +37,7 @@ from alphasift.risk import (
     apply_risk_overlay,
 )
 from alphasift.scorer import compute_screen_scores, factor_score_columns
-from alphasift.snapshot import fetch_snapshot_with_fallback
+from alphasift.snapshot import _missing_required_columns, fetch_snapshot_with_fallback
 from alphasift.strategy import load_all_strategies
 
 logger = logging.getLogger(__name__)
@@ -66,6 +66,8 @@ def screen(
     deep_analysis_max_picks: int | None = None,
     context: dict[str, object] | None = None,
     config: Config | None = None,
+    snapshot_df: pd.DataFrame | None = None,
+    allow_snapshot_refetch: bool = True,
 ) -> ScreenResult:
     """Execute stock screening with the given strategy.
 
@@ -93,6 +95,14 @@ def screen(
         context: Optional host runtime context. DSA may provide LLM settings and
             callable data providers under context["dsa"].
         config: Runtime config. Defaults to Config.from_env().
+        snapshot_df: Optional pre-fetched snapshot DataFrame to reuse across multiple
+            screens of the same market. Copied internally; falls back to live
+            snapshot fetch if empty or missing strategy-required columns unless
+            ``allow_snapshot_refetch=False``.
+        allow_snapshot_refetch: Whether to call ``fetch_snapshot_with_fallback``
+            when ``snapshot_df`` is empty or lacks strategy-required columns.
+            Track-record sessions set this to ``False`` so an unvalidated
+            replacement snapshot can never bypass session freshness gates.
 
     Returns:
         ScreenResult with ranked picks.
@@ -133,15 +143,44 @@ def screen(
     daily_limit = daily_enrich_max_candidates or config.daily_enrich_max_candidates
     snapshot_filters = without_daily_filters(screening.hard_filters) if daily_needed else screening.hard_filters
 
-    # 2. Fetch snapshot
-    snapshot_df = fetch_snapshot_with_fallback(
-        config.snapshot_source_priority,
-        required_columns=_required_snapshot_columns(snapshot_filters),
-        fallback_snapshot_path=config.fallback_snapshot_path,
-        fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
-        market=market,
-        source_health_path=config.source_health_path,
+    # 2. Fetch snapshot (or isolate a valid pre-fetched snapshot for reuse)
+    required_snapshot_columns = _required_snapshot_columns(snapshot_filters)
+    if snapshot_df is not None:
+        supplied_market = str(snapshot_df.attrs.get("market") or "").strip().lower()
+        if supplied_market and supplied_market != market:
+            raise ValueError(
+                f"snapshot_df market {supplied_market!r} does not match requested market {market!r}"
+            )
+    missing_supplied = (
+        _missing_required_columns(snapshot_df, required_snapshot_columns)
+        if snapshot_df is not None and not snapshot_df.empty
+        else []
     )
+    if snapshot_df is not None and not snapshot_df.empty and not missing_supplied:
+        working_snapshot = snapshot_df.copy()
+        working_snapshot.attrs = {
+            key: list(val) if isinstance(val, list) else val
+            for key, val in snapshot_df.attrs.items()
+        }
+        snapshot_df = working_snapshot
+    elif snapshot_df is not None and not allow_snapshot_refetch:
+        detail = (
+            f"missing required columns: {','.join(missing_supplied)}"
+            if missing_supplied
+            else "empty snapshot"
+        )
+        raise RuntimeError(
+            f"Supplied snapshot for market {market!r} cannot run {strategy!r} ({detail})"
+        )
+    else:
+        snapshot_df = fetch_snapshot_with_fallback(
+            config.snapshot_source_priority,
+            required_columns=required_snapshot_columns,
+            fallback_snapshot_path=config.fallback_snapshot_path,
+            fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
+            market=market,
+            source_health_path=config.source_health_path,
+        )
     effective_industry_map_files = (
         list(industry_map_files)
         if industry_map_files is not None
@@ -263,15 +302,22 @@ def screen(
             daily_source_health_notes = _daily_source_health_notes(
                 dict(enriched.attrs.get("daily_source_health", {}) or {})
             )
-            degradation.append(
+            enrich_summary = (
                 f"Daily K-line enrichment attempted {enrich_count} candidates, "
                 f"succeeded {daily_enrich_count} of {after_filter_count} snapshot-filtered candidates"
             )
+            if explain_filters or daily_enrich_count < enrich_count:
+                degradation.append(enrich_summary)
+            else:
+                logger.info("%s", enrich_summary)
             if daily_source_counts:
                 source_summary = ", ".join(
                     f"{name}={count}" for name, count in sorted(daily_source_counts.items())
                 )
-                degradation.append(f"Daily K-line sources: {source_summary}")
+                if explain_filters:
+                    degradation.append(f"Daily K-line sources: {source_summary}")
+                else:
+                    logger.info("Daily K-line sources: %s", source_summary)
             if daily_quality_flag_counts:
                 flag_summary = ", ".join(
                     f"{name}={count}" for name, count in sorted(daily_quality_flag_counts.items())
@@ -293,18 +339,21 @@ def screen(
                             "Daily hard-filter waterfall: "
                             + _format_filter_waterfall(daily_waterfall)
                         )
-                daily_filter_rejections = hard_filter_rejection_summary(
-                    enriched,
-                    screening.hard_filters,
-                    limit=6,
-                )
-                df = apply_hard_filters(enriched, screening.hard_filters)
-                after_filter_count = len(df)
-                if daily_filter_rejections:
-                    degradation.append(
-                        "Daily hard-filter rejections: "
-                        + "; ".join(daily_filter_rejections)
+                    daily_filter_rejections = hard_filter_rejection_summary(
+                        enriched,
+                        screening.hard_filters,
+                        limit=6,
                     )
+                    df = apply_hard_filters(enriched, screening.hard_filters)
+                    after_filter_count = len(df)
+                    if daily_filter_rejections:
+                        degradation.append(
+                            "Daily hard-filter rejections: "
+                            + "; ".join(daily_filter_rejections)
+                        )
+                else:
+                    df = apply_hard_filters(enriched, screening.hard_filters)
+                    after_filter_count = len(df)
             else:
                 df = enriched
         except Exception as exc:

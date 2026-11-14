@@ -12,6 +12,7 @@ only path when ``ALPHASIFT_US_TICKERS`` pins an explicit list.
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date, datetime
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -90,8 +91,8 @@ def fetch_us_snapshot(
 
     logger.info("Fetching US snapshot for %d tickers", len(tickers))
 
-    hist_end = pd.Timestamp.now().normalize()
-    hist_start = hist_end - pd.Timedelta(days=30)
+    hist_end = pd.Timestamp.now(tz="UTC").normalize().tz_localize(None) + pd.Timedelta(days=2)
+    hist_start = hist_end - pd.Timedelta(days=32)
     data = yf.download(
         tickers,
         start=hist_start.strftime("%Y-%m-%d"),
@@ -103,8 +104,9 @@ def fetch_us_snapshot(
     )
 
     rows = []
+    quote_dates: list[str] = []
 
-    def _process_ticker(ticker: str) -> dict | None:
+    def _process_ticker(ticker: str) -> tuple[dict, str] | None:
         try:
             if len(tickers) == 1:
                 hist = data.copy()
@@ -120,6 +122,17 @@ def fetch_us_snapshot(
             hist = hist[hist["Close"].notna()]
             if len(hist) < 2:
                 return None
+
+            raw_idx = hist.index[-1]
+            bar_date = ""
+            if isinstance(raw_idx, (pd.Timestamp, datetime, date)) or (
+                isinstance(raw_idx, str) and raw_idx.strip()
+            ):
+                latest_ts = pd.to_datetime(raw_idx, errors="coerce")
+                if pd.notna(latest_ts):
+                    if getattr(latest_ts, "tzinfo", None) is not None:
+                        latest_ts = latest_ts.tz_convert("America/New_York")
+                    bar_date = latest_ts.strftime("%Y-%m-%d")
 
             latest = hist.iloc[-1]
             prev = hist.iloc[-2]
@@ -137,22 +150,25 @@ def fetch_us_snapshot(
             shares = getattr(info, "shares", None) or 0
             turnover_rate = (volume / shares * 100) if shares > 0 else 0.0
 
-            return {
-                "code": ticker,
-                "name": ticker,
-                "price": price,
-                "change_pct": round(change_pct, 2),
-                "amount": round(volume * price, 0),
-                "avg_amount": round(vol_10d * price, 0),
-                "avg_amount_usd": round(vol_10d * price, 0),
-                "total_mv": market_cap,
-                "circ_mv": market_cap,
-                "pe_ratio": None,
-                "pb_ratio": None,
-                "volume_ratio": round(volume_ratio, 2),
-                "turnover_rate": round(turnover_rate, 4),
-                "industry": "",
-            }
+            return (
+                {
+                    "code": ticker,
+                    "name": ticker,
+                    "price": price,
+                    "change_pct": round(change_pct, 2),
+                    "amount": round(volume * price, 0),
+                    "avg_amount": round(vol_10d * price, 0),
+                    "avg_amount_usd": round(vol_10d * price, 0),
+                    "total_mv": market_cap,
+                    "circ_mv": market_cap,
+                    "pe_ratio": None,
+                    "pb_ratio": None,
+                    "volume_ratio": round(volume_ratio, 2),
+                    "turnover_rate": round(turnover_rate, 4),
+                    "industry": "",
+                },
+                bar_date,
+            )
         except Exception as e:
             logger.debug("Failed to process %s: %s", ticker, e)
             return None
@@ -162,7 +178,10 @@ def fetch_us_snapshot(
         for future in as_completed(futures):
             result = future.result()
             if result:
-                rows.append(result)
+                row, bar_date = result
+                rows.append(row)
+                if bar_date:
+                    quote_dates.append(bar_date)
 
     if not rows:
         raise RuntimeError("yfinance returned no valid data for any ticker")
@@ -183,6 +202,9 @@ def fetch_us_snapshot(
     _enrich_info_fields(df)
 
     df.attrs["snapshot_source"] = "yfinance"
+    df.attrs["market"] = "us"
+    if quote_dates:
+        df.attrs["quote_date"] = max(quote_dates)
     logger.info("US snapshot: %d rows from yfinance", len(df))
     return df
 
@@ -190,6 +212,8 @@ def fetch_us_snapshot(
 def _enrich_info_fields(df: pd.DataFrame) -> None:
     """Best-effort enrichment of pe_ratio, pb_ratio, industry from yfinance info."""
     import yfinance as yf
+
+    from alphasift.snapshot_yahoo import sanitize_yahoo_pb
 
     needs_pe = df["pe_ratio"].isna().sum() > len(df) * 0.5
     if not needs_pe:
@@ -202,7 +226,13 @@ def _enrich_info_fields(df: pd.DataFrame) -> None:
             if pd.isna(df.at[idx, "pe_ratio"]) or df.at[idx, "pe_ratio"] == 0:
                 df.at[idx, "pe_ratio"] = info.get("trailingPE")
             if pd.isna(df.at[idx, "pb_ratio"]) or df.at[idx, "pb_ratio"] == 0:
-                df.at[idx, "pb_ratio"] = info.get("priceToBook")
+                trading_currency = str(info.get("currency") or "")
+                financial_currency = str(info.get("financialCurrency") or trading_currency)
+                df.at[idx, "pb_ratio"] = sanitize_yahoo_pb(
+                    info.get("priceToBook"),
+                    trading_currency=trading_currency,
+                    financial_currency=financial_currency,
+                )
             if not df.at[idx, "industry"]:
                 df.at[idx, "industry"] = info.get("industry", "")
             if not df.at[idx, "name"] or df.at[idx, "name"] == ticker:

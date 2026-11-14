@@ -209,6 +209,7 @@ def test_prepare_tushare_snapshot_maps_fields_and_units():
     assert normalized.loc[0, "turnover_rate"] == 2.5
     assert normalized.loc[0, "industry"] == "银行"
     assert normalized.attrs["snapshot_source"] == "tushare"
+    assert normalized.attrs["quote_date"] == "2026-04-30"
 
 
 def test_fetch_tushare_requires_token(monkeypatch):
@@ -507,8 +508,14 @@ def test_fetch_us_snapshot_single_ticker_with_multiindex(monkeypatch):
         def __init__(self, ticker):
             self.fast_info = FakeFastInfo()
 
+    download_kwargs: dict = {}
+
+    def fake_download(*args, **kwargs):
+        download_kwargs.update(kwargs)
+        return hist_df
+
     fake_yf = types.ModuleType("yfinance")
-    fake_yf.download = lambda *a, **kw: hist_df
+    fake_yf.download = fake_download
     fake_yf.Ticker = FakeTicker
     monkeypatch.setitem(sys.modules, "yfinance", fake_yf)
 
@@ -518,6 +525,9 @@ def test_fetch_us_snapshot_single_ticker_with_multiindex(monkeypatch):
     assert len(df) == 1
     assert df.iloc[0]["code"] == "AAPL"
     assert df.iloc[0]["price"] > 0
+    assert df.attrs["market"] == "us"
+    assert df.attrs["quote_date"] == "2026-05-20"
+    assert download_kwargs["end"] > pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d")
 
 
 def test_fetch_sina_stops_when_snapshot_budget_is_spent(monkeypatch):

@@ -19,20 +19,29 @@ directory by the workflow, so they never land in git.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import os
 import statistics
-import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+# Ensure direct script execution (`python scripts/track_record.py`) can import
+# the local `alphasift` package when the repo root is not on sys.path.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 SESSIONS = {"asia": ["cn", "hk", "jp", "kr", "tw", "in"], "us": ["us"]}
 WINDOWS = [5, 10, 20]
+SNAPSHOT_TIMEOUT_SEC = 5 * 60
 SCREEN_TIMEOUT_SEC = 20 * 60
+MAX_MISSING_RETRY_DAYS = 90
+SKIPPED_STATUSES = frozenset({"skipped_holiday", "skipped_duplicate"})
 RECENT_DAYS_IN_SUMMARY = 30
 PICK_FIELDS = ("rank", "code", "name", "industry", "price", "pe_ratio", "pb_ratio", "final_score")
 
@@ -46,40 +55,346 @@ def strategies_for(market: str) -> list[str]:
     return sorted(info.name for info in list_strategies() if market in info.market_scope)
 
 
+def _required_columns_for_market(strategies: list[str], config: Any) -> list[str]:
+    from alphasift.filter import requires_daily_features, without_daily_filters
+    from alphasift.pipeline import _required_snapshot_columns
+    from alphasift.strategy import load_all_strategies
+
+    loaded = load_all_strategies(config.strategies_dir)
+    cols: list[str] = []
+    for name in strategies:
+        strat = loaded.get(name)
+        if strat is None:
+            continue
+        filters = strat.screening.hard_filters
+        if requires_daily_features(filters):
+            filters = without_daily_filters(filters)
+        cols.extend(_required_snapshot_columns(filters))
+    return list(dict.fromkeys(cols))
+
+
+def _fetch_market_snapshot(market: str, strategies: list[str], config: Any):
+    from alphasift.snapshot import fetch_snapshot_with_fallback
+
+    required = _required_columns_for_market(strategies, config)
+    try:
+        return fetch_snapshot_with_fallback(
+            config.snapshot_source_priority,
+            required_columns=required,
+            fallback_snapshot_path=config.fallback_snapshot_path,
+            fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
+            market=market,
+            source_health_path=config.source_health_path,
+        )
+    except Exception as exc:
+        if "missing required columns" in str(exc) and len(strategies) > 1:
+            return fetch_snapshot_with_fallback(
+                config.snapshot_source_priority,
+                required_columns=[],
+                fallback_snapshot_path=config.fallback_snapshot_path,
+                fallback_max_age_hours=config.snapshot_fallback_max_age_hours,
+                market=market,
+                source_health_path=config.source_health_path,
+            )
+        raise
+
+
+def _latest_benchmark_date(market: str, *, source: str | None = None) -> str | None:
+    from alphasift.evaluate import _normalize_price_path
+
+    if market == "cn" and source in {"tencent", "sina"}:
+        from alphasift.daily import _fetch_daily_sina, _fetch_daily_tencent
+
+        fetcher = _fetch_daily_tencent if source == "tencent" else _fetch_daily_sina
+        path = fetcher("sh000300", lookback_days=15)
+    else:
+        from alphasift.evaluate import _fetch_benchmark_path
+
+        path = _fetch_benchmark_path(market, lookback_days=15)
+    norm = _normalize_price_path(path)
+    if norm.empty or "date" not in norm.columns or norm["date"].dropna().empty:
+        return None
+    return norm["date"].dropna().iloc[-1].date().isoformat()
+
+
+def _check_market_session(market: str, snapshot_df: Any, expected_date: str) -> tuple[str, str]:
+    """Verify whether the fetched live snapshot represents ``expected_date``.
+
+    Returns ``("open", effective_date)``, ``("closed", reason)`` when two
+    independent signals corroborate an exchange holiday, or ``("stale", reason)``
+    when the session date looks outdated or cannot be verified.
+    """
+    if market == "cn":
+        try:
+            parsed_expected = date.fromisoformat(expected_date[:10])
+        except ValueError:
+            return ("stale", f"invalid expected_date {expected_date!r}")
+
+        attrs = getattr(snapshot_df, "attrs", {})
+        raw_quote_date = str(attrs.get("quote_date") or "").strip()
+        snap_source = str(attrs.get("snapshot_source") or "").strip().lower()
+        if not raw_quote_date and hasattr(snapshot_df, "columns"):
+            from alphasift.snapshot import _extract_cn_quote_date
+
+            raw_quote_date = _extract_cn_quote_date(snapshot_df) or ""
+
+        parsed_quote: date | None = None
+        if raw_quote_date:
+            try:
+                parsed_quote = date.fromisoformat(raw_quote_date[:10])
+            except ValueError:
+                return (
+                    "stale",
+                    f"invalid CN snapshot quote_date {raw_quote_date!r} for {expected_date}",
+                )
+        elif snap_source == "tushare":
+            return ("stale", f"tushare snapshot missing quote_date for {expected_date}")
+
+        if parsed_quote is not None and parsed_quote >= parsed_expected:
+            return ("open", parsed_quote.isoformat())
+
+        t_date: date | None = None
+        try:
+            t_raw = _latest_benchmark_date("cn", source="tencent")
+            t_date = date.fromisoformat(t_raw[:10]) if t_raw else None
+        except Exception:  # noqa: BLE001
+            t_date = None
+
+        if parsed_quote is None and t_date is not None and t_date >= parsed_expected:
+            return ("open", t_date.isoformat())
+        if parsed_quote is not None and t_date is not None and t_date >= parsed_expected:
+            return (
+                "stale",
+                f"stale CN snapshot quote_date {parsed_quote.isoformat()} < {expected_date}",
+            )
+
+        s_date: date | None = None
+        try:
+            s_raw = _latest_benchmark_date("cn", source="sina")
+            s_date = date.fromisoformat(s_raw[:10]) if s_raw else None
+        except Exception:  # noqa: BLE001
+            s_date = None
+
+        if parsed_quote is not None:
+            if (
+                t_date is not None
+                and s_date is not None
+                and max(t_date, s_date) < parsed_expected
+            ):
+                latest = max(t_date, s_date).isoformat()
+                return (
+                    "closed",
+                    f"market closed (quotes {parsed_quote.isoformat()}, CSI 300 latest {latest} < {expected_date})",
+                )
+            return (
+                "stale",
+                f"stale CN snapshot quote_date {parsed_quote.isoformat()} < {expected_date}",
+            )
+
+        if s_date is not None and s_date >= parsed_expected:
+            return ("open", s_date.isoformat())
+        if t_date is not None and s_date is not None:
+            latest = max(t_date, s_date).isoformat()
+            return ("closed", f"market closed (CSI 300 latest {latest} < {expected_date})")
+        observed = t_date or s_date
+        if observed is not None:
+            return (
+                "stale",
+                f"unconfirmed stale CN index date {observed.isoformat()} < {expected_date}",
+            )
+        return ("stale", f"unable to verify CN trading session for {expected_date}")
+
+    raw_quote_date = str(getattr(snapshot_df, "attrs", {}).get("quote_date") or "")[:10]
+    try:
+        parsed_quote = date.fromisoformat(raw_quote_date)
+        parsed_expected = date.fromisoformat(expected_date[:10])
+    except ValueError:
+        return (
+            "stale",
+            f"missing or invalid snapshot quote_date {raw_quote_date!r} for {expected_date}",
+        )
+
+    quote_date = parsed_quote.isoformat()
+    if parsed_quote >= parsed_expected:
+        return ("open", quote_date)
+
+    try:
+        bench_raw = _latest_benchmark_date(market)
+        parsed_bench = date.fromisoformat(bench_raw[:10]) if bench_raw else None
+    except Exception:  # noqa: BLE001
+        parsed_bench = None
+    if parsed_bench is not None and parsed_bench < parsed_expected:
+        return (
+            "closed",
+            f"market closed (quotes {quote_date}, benchmark {parsed_bench.isoformat()} < {expected_date})",
+        )
+    return ("stale", f"unconfirmed stale quote_date {quote_date} < {expected_date}")
+
+
+def _print_entry(entry: dict[str, Any]) -> None:
+    print(
+        f"[{entry['status']:>17}] {entry['market']:<3} {entry['strategy']:<24} "
+        f"{entry['seconds']:>6}s {entry.get('error', '')}",
+        flush=True,
+    )
+
+
 def run_session(session: str, track: Path, *, markets: list[str] | None = None) -> dict[str, Any]:
     """Screen every strategy of every market in the session; never stop on one failure."""
     runs_dir = track / "data" / "runs"
     runs_dir.mkdir(parents=True, exist_ok=True)
-    env = {**os.environ, "ALPHASIFT_DATA_DIR": str(track / "data")}
-    entries = []
-    for market in markets or SESSIONS[session]:
-        for strategy in strategies_for(market):
-            before = set(runs_dir.glob("*.json"))
-            started = time.monotonic()
-            entry: dict[str, Any] = {"market": market, "strategy": strategy}
-            try:
-                proc = subprocess.run(
-                    [sys.executable, "-m", "alphasift.cli", "screen", strategy,
-                     "--market", market, "--no-llm", "--save-run"],
-                    env=env, capture_output=True, text=True, timeout=SCREEN_TIMEOUT_SEC,
-                )
-                created = sorted(set(runs_dir.glob("*.json")) - before)
-                if proc.returncode == 0 and created:
-                    run = json.loads(created[-1].read_text(encoding="utf-8"))
-                    entry.update(status="ok", run_id=run.get("run_id"), picks=len(run.get("picks", [])),
-                                 snapshot_source=run.get("snapshot_source", ""),
-                                 degradation=len(run.get("degradation") or []))
-                else:
-                    entry.update(status="failed", error=_tail(proc.stderr or proc.stdout))
-            except subprocess.TimeoutExpired:
-                entry.update(status="timeout", error=f"exceeded {SCREEN_TIMEOUT_SEC}s")
-            entry["seconds"] = round(time.monotonic() - started, 1)
-            print(f"[{entry['status']:>7}] {market:<3} {strategy:<24} {entry['seconds']:>6}s "
-                  f"{entry.get('error', '')}", flush=True)
-            entries.append(entry)
+    old_data_dir = os.environ.get("ALPHASIFT_DATA_DIR")
+    old_tushare_date = os.environ.pop("TUSHARE_TRADE_DATE", None)
+    os.environ["ALPHASIFT_DATA_DIR"] = str(track / "data")
+    now_iso = _now()
+    target_markets = list(markets or SESSIONS[session])
+    entries: list[dict[str, Any]] = []
+    try:
+        from alphasift.config import Config
+        from alphasift.pipeline import screen
+        from alphasift.source_guard import call_with_timeout
+        from alphasift.store import save_screen_result
 
-    log = {"session": session, "finished_at": _now(), "entries": entries}
-    log_path = track / "data" / "logs" / f"{_today_cst()}-{session}.json"
+        # Track record is an immutable daily ledger of live picks: never fall back
+        # to stale last-good snapshot caches from earlier trading days.
+        config = dataclasses.replace(Config.from_env(), fallback_snapshot_path=None)
+        recorded_dates: dict[tuple[str, str], set[str]] = {}
+        for existing in load_runs(track):
+            recorded_dates.setdefault((existing["market"], existing["strategy"]), set()).add(
+                existing["date"]
+            )
+
+        for market in target_markets:
+            strats = strategies_for(market)
+            if not strats:
+                continue
+            expected_date = session_date(market, now_iso)
+            if all(expected_date in recorded_dates.get((market, s), set()) for s in strats):
+                for strategy in strats:
+                    entry: dict[str, Any] = {
+                        "market": market,
+                        "strategy": strategy,
+                        "status": "skipped_duplicate",
+                        "error": f"already recorded {expected_date}",
+                        "seconds": 0.0,
+                    }
+                    _print_entry(entry)
+                    entries.append(entry)
+                continue
+
+            started_snapshot = time.monotonic()
+            try:
+                market_snapshot = call_with_timeout(
+                    _fetch_market_snapshot,
+                    market,
+                    strats,
+                    config,
+                    timeout_sec=SNAPSHOT_TIMEOUT_SEC,
+                    label=f"snapshot {market}",
+                )
+                if getattr(market_snapshot, "attrs", {}).get("fallback_used"):
+                    raise RuntimeError("refusing stale fallback snapshot for track record")
+            except TimeoutError:
+                elapsed = round(time.monotonic() - started_snapshot, 1)
+                msg = f"snapshot exceeded {SNAPSHOT_TIMEOUT_SEC}s"
+                for strategy in strats:
+                    entry = {
+                        "market": market,
+                        "strategy": strategy,
+                        "status": "timeout",
+                        "error": msg,
+                        "seconds": elapsed,
+                    }
+                    _print_entry(entry)
+                    entries.append(entry)
+                continue
+            except Exception as exc:  # noqa: BLE001 - one market failing must not stop others
+                elapsed = round(time.monotonic() - started_snapshot, 1)
+                msg = _tail(str(exc))
+                for strategy in strats:
+                    entry = {
+                        "market": market,
+                        "strategy": strategy,
+                        "status": "failed",
+                        "error": msg,
+                        "seconds": elapsed,
+                    }
+                    _print_entry(entry)
+                    entries.append(entry)
+                continue
+
+            session_state, detail = _check_market_session(market, market_snapshot, expected_date)
+            if session_state in {"closed", "stale"}:
+                status = "skipped_holiday" if session_state == "closed" else "failed"
+                for strategy in strats:
+                    entry = {
+                        "market": market,
+                        "strategy": strategy,
+                        "status": status,
+                        "error": detail,
+                        "seconds": 0.0,
+                    }
+                    _print_entry(entry)
+                    entries.append(entry)
+                continue
+
+            effective_date = detail or expected_date
+            for strategy in strats:
+                if effective_date in recorded_dates.get((market, strategy), set()):
+                    entry = {
+                        "market": market,
+                        "strategy": strategy,
+                        "status": "skipped_duplicate",
+                        "error": f"already recorded {effective_date}",
+                        "seconds": 0.0,
+                    }
+                    _print_entry(entry)
+                    entries.append(entry)
+                    continue
+
+                started = time.monotonic()
+                entry = {"market": market, "strategy": strategy}
+                try:
+                    result = call_with_timeout(
+                        screen,
+                        strategy,
+                        market=market,
+                        use_llm=False,
+                        config=config,
+                        snapshot_df=market_snapshot,
+                        allow_snapshot_refetch=False,
+                        timeout_sec=SCREEN_TIMEOUT_SEC,
+                        label=f"screen {market} {strategy}",
+                    )
+                    save_screen_result(result, data_dir=config.data_dir)
+                    recorded_dates.setdefault((market, strategy), set()).add(effective_date)
+                    entry.update(
+                        status="ok",
+                        run_id=result.run_id,
+                        picks=len(result.picks),
+                        snapshot_source=result.snapshot_source,
+                        degradation=len(result.degradation or []),
+                    )
+                except TimeoutError:
+                    entry.update(status="timeout", error=f"exceeded {SCREEN_TIMEOUT_SEC}s")
+                except Exception as exc:  # noqa: BLE001 - one broken strategy must not stop the rest
+                    entry.update(status="failed", error=_tail(str(exc)))
+                entry["seconds"] = round(time.monotonic() - started, 1)
+                _print_entry(entry)
+                entries.append(entry)
+    finally:
+        if old_data_dir is None:
+            os.environ.pop("ALPHASIFT_DATA_DIR", None)
+        else:
+            os.environ["ALPHASIFT_DATA_DIR"] = old_data_dir
+        if old_tushare_date is None:
+            os.environ.pop("TUSHARE_TRADE_DATE", None)
+        else:
+            os.environ["TUSHARE_TRADE_DATE"] = old_tushare_date
+
+    log_date = session_date(target_markets[0], now_iso) if target_markets else _today_cst()
+    log = {"session": session, "date": log_date, "finished_at": _now(), "entries": entries}
+    log_path = track / "data" / "logs" / f"{log_date}-{session}.json"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log_path.write_text(json.dumps(log, ensure_ascii=False, indent=2), encoding="utf-8")
     return log
@@ -92,6 +407,65 @@ def _tail(text: str, lines: int = 3) -> str:
 # --------------------------------------------------------------------------- evaluate
 
 
+def _allow_missing_picks(created_at: str, now_iso: str) -> bool:
+    from alphasift.timeutil import parse_timestamp
+
+    created_dt = parse_timestamp(created_at)
+    now_dt = parse_timestamp(now_iso)
+    if created_dt is None or now_dt is None:
+        return False
+    return (now_dt - created_dt).total_seconds() >= MAX_MISSING_RETRY_DAYS * 86400
+
+
+def _is_window_complete(
+    item: dict[str, Any],
+    *,
+    has_benchmark: bool,
+    allow_missing: bool = False,
+) -> bool:
+    picks = item.get("picks")
+    if not isinstance(picks, dict):
+        return False
+    values = list(picks.values())
+    if any(p.get("status") == "pending" for p in values):
+        return False
+    missing_picks = [p for p in values if p.get("status") == "missing"]
+    if missing_picks:
+        if not allow_missing or len(missing_picks) == len(values):
+            return False
+    if has_benchmark:
+        ok_picks = [
+            p for p in values
+            if p.get("status") == "ok" and p.get("return_pct") is not None
+        ]
+        if ok_picks and (
+            item.get("benchmark_return_pct") is None
+            or any(p.get("excess_return_pct") is None for p in ok_picks)
+        ):
+            return False
+    return True
+
+
+def _is_run_final(
+    entry: dict[str, Any],
+    *,
+    has_benchmark: bool,
+    allow_missing: bool = False,
+) -> bool:
+    windows = entry.get("windows")
+    if not isinstance(windows, dict):
+        return False
+    return all(
+        str(window) in windows
+        and _is_window_complete(
+            windows[str(window)],
+            has_benchmark=has_benchmark,
+            allow_missing=allow_missing,
+        )
+        for window in WINDOWS
+    )
+
+
 def evaluate_markets(track: Path, markets: list[str]) -> dict[str, Any]:
     """T+N evaluation of every saved run in ``markets``; other markets keep their last result.
 
@@ -99,54 +473,80 @@ def evaluate_markets(track: Path, markets: list[str]) -> dict[str, Any]:
     """
     import pandas as pd
 
+    old_data_dir = os.environ.get("ALPHASIFT_DATA_DIR")
+    old_tushare_date = os.environ.pop("TUSHARE_TRADE_DATE", None)
     os.environ["ALPHASIFT_DATA_DIR"] = str(track / "data")
-    from alphasift.config import Config
-    from alphasift.evaluate import evaluate_saved_run
-
-    config = Config.from_env()
     out_path = track / "site" / "evaluation.json"
     previous = _read_json(out_path) or {}
     runs_out: dict[str, Any] = dict(previous.get("runs", {}))
-    no_snapshot = pd.DataFrame(columns=["code", "price"])  # T+N uses closes, not live quotes
+    eval_now = _now()
+    try:
+        from alphasift.config import Config
+        from alphasift.evaluate import evaluate_saved_run
+        from alphasift.markets import get_market
 
-    for run in load_runs(track):
-        if run["market"] not in markets:
-            continue
-        prior = runs_out.get(run["run_id"])
-        if prior and prior.get("final"):
-            continue
-        benchmark_paths: dict = {}
-        windows: dict[str, Any] = {}
-        for window in WINDOWS:
-            try:
-                result = evaluate_saved_run(
-                    run["path"], config=config, current_snapshot=no_snapshot,
-                    with_price_path=True, horizon_days=window, benchmark_paths=benchmark_paths,
-                )
-            except Exception as exc:  # one broken run must not stop the record
-                windows[str(window)] = {"error": str(exc)[:300]}
+        config = Config.from_env()
+        no_snapshot = pd.DataFrame(columns=["code", "price"])  # T+N uses closes, not live quotes
+        benchmark_paths: dict[str, pd.DataFrame] = {}
+
+        for run in load_runs(track):
+            if run["market"] not in markets:
                 continue
-            windows[str(window)] = {
-                "benchmark": result.benchmark,
-                "benchmark_return_pct": result.benchmark_return_pct,
-                "pending": result.pending_count,
-                "picks": {
-                    pick.code: {
-                        "status": pick.status,
-                        "return_pct": _round(pick.return_pct),
-                        "excess_return_pct": _round(pick.excess_return_pct),
-                    }
-                    for pick in result.picks
-                },
-            }
-        final = all(
-            "picks" in item and not any(p["status"] == "pending" for p in item["picks"].values())
-            for item in windows.values()
-        )
-        runs_out[run["run_id"]] = {"evaluated_at": _now(), "final": final, "windows": windows}
-        print(f"evaluated {run['market']:<3} {run['strategy']:<24} {run['run_id']} final={final}", flush=True)
+            has_benchmark = bool(get_market(run["market"]).benchmark)
+            allow_missing = _allow_missing_picks(run["created_at"], eval_now)
+            prior = runs_out.get(run["run_id"])
+            if (
+                prior
+                and prior.get("final")
+                and _is_run_final(prior, has_benchmark=has_benchmark, allow_missing=allow_missing)
+            ):
+                continue
+            windows: dict[str, Any] = {}
+            for window in WINDOWS:
+                try:
+                    result = evaluate_saved_run(
+                        run["path"], config=config, current_snapshot=no_snapshot,
+                        with_price_path=True, horizon_days=window, benchmark_paths=benchmark_paths,
+                    )
+                except Exception as exc:  # one broken run must not stop the record
+                    windows[str(window)] = {"error": str(exc)[:300]}
+                    continue
+                window_payload: dict[str, Any] = {
+                    "benchmark": result.benchmark,
+                    "benchmark_return_pct": result.benchmark_return_pct,
+                    "pending": result.pending_count,
+                    "picks": {
+                        pick.code: {
+                            "status": pick.status,
+                            "return_pct": _round(pick.return_pct),
+                            "excess_return_pct": _round(pick.excess_return_pct),
+                        }
+                        for pick in result.picks
+                    },
+                }
+                benchmark_errors = [
+                    str(item) for item in (result.degradation or []) if str(item).startswith("Benchmark ")
+                ]
+                if benchmark_errors:
+                    window_payload["benchmark_errors"] = benchmark_errors
+                windows[str(window)] = window_payload
+            final = all(
+                _is_window_complete(item, has_benchmark=has_benchmark, allow_missing=allow_missing)
+                for item in windows.values()
+            )
+            runs_out[run["run_id"]] = {"evaluated_at": eval_now, "final": final, "windows": windows}
+            print(f"evaluated {run['market']:<3} {run['strategy']:<24} {run['run_id']} final={final}", flush=True)
+    finally:
+        if old_data_dir is None:
+            os.environ.pop("ALPHASIFT_DATA_DIR", None)
+        else:
+            os.environ["ALPHASIFT_DATA_DIR"] = old_data_dir
+        if old_tushare_date is None:
+            os.environ.pop("TUSHARE_TRADE_DATE", None)
+        else:
+            os.environ["TUSHARE_TRADE_DATE"] = old_tushare_date
 
-    payload = {"evaluated_at": _now(), "windows": WINDOWS, "runs": runs_out}
+    payload = {"evaluated_at": eval_now, "windows": WINDOWS, "runs": runs_out}
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
     return payload
@@ -247,7 +647,7 @@ def _run_window_summary(item: dict[str, Any]) -> dict[str, Any]:
     picks = list(item.get("picks", {}).values())
     returns = [p["return_pct"] for p in picks if p["status"] == "ok" and p["return_pct"] is not None]
     excess = [p["excess_return_pct"] for p in picks if p["status"] == "ok" and p["excess_return_pct"] is not None]
-    return {
+    summary = {
         "average_return_pct": _round(statistics.fmean(returns)) if returns else None,
         "average_excess_return_pct": _round(statistics.fmean(excess)) if excess else None,
         "benchmark_return_pct": _round(item.get("benchmark_return_pct")),
@@ -255,6 +655,9 @@ def _run_window_summary(item: dict[str, Any]) -> dict[str, Any]:
         "pending": item.get("pending", 0),
         "error": item.get("error"),
     }
+    if item.get("benchmark_errors"):
+        summary["benchmark_errors"] = list(item["benchmark_errors"])
+    return summary
 
 
 def _pick_outcomes(runs: list[dict], evaluation: dict, window: int):
@@ -337,11 +740,16 @@ def _latest_logs(track: Path) -> dict[str, Any]:
         if logs:
             log = _read_json(logs[-1]) or {}
             entries = log.get("entries", [])
+            skipped = sum(1 for e in entries if e.get("status") in SKIPPED_STATUSES)
             out[session] = {
                 "finished_at": log.get("finished_at"),
                 "ok": sum(1 for e in entries if e.get("status") == "ok"),
-                "total": len(entries),
-                "failures": [e for e in entries if e.get("status") != "ok"],
+                "skipped": skipped,
+                "total": len(entries) - skipped,
+                "failures": [
+                    e for e in entries
+                    if e.get("status") != "ok" and e.get("status") not in SKIPPED_STATUSES
+                ],
             }
     return out
 
@@ -377,7 +785,10 @@ def render_readme(summary: dict[str, Any]) -> str:
         )
     lines += ["", "## Latest session", ""]
     for session, info in summary["sessions"].items():
-        lines.append(f"- **{session}** finished {info['finished_at']}: {info['ok']}/{info['total']} strategies ok")
+        skipped_note = f" ({info['skipped']} skipped)" if info.get("skipped") else ""
+        lines.append(
+            f"- **{session}** finished {info['finished_at']}: {info['ok']}/{info['total']} strategies ok{skipped_note}"
+        )
         for failure in info["failures"]:
             lines.append(f"  - {failure['market']} {failure['strategy']}: {failure['status']} {failure.get('error', '')}")
     lines += ["", "Raw runs: [`data/runs/`](data/runs) · derived site data: [`site/`](site)", ""]
@@ -433,8 +844,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "screen":
         log = run_session(args.session, args.track, markets=markets)
         ok = sum(1 for e in log["entries"] if e["status"] == "ok")
-        print(f"{ok}/{len(log['entries'])} strategies saved a run")
-        return 0 if ok else 1
+        skipped = sum(1 for e in log["entries"] if e["status"] in SKIPPED_STATUSES)
+        print(f"{ok}/{len(log['entries']) - skipped} strategies saved a run ({skipped} skipped)")
+        if ok > 0 or (log["entries"] and skipped == len(log["entries"])):
+            return 0
+        return 1
     if args.command == "evaluate":
         evaluate_markets(args.track, markets)
         return 0

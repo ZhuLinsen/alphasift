@@ -41,17 +41,19 @@ def test_order_sources_demotes_recent_failures_only():
     now = time.time()
     health = {
         "sina": {"consecutive_failures": 2, "last_failure_at": now - 60, "last_success_at": 0},
-        "efinance": {"consecutive_failures": 1, "last_failure_at": now - 7 * 3600, "last_success_at": 0},
+        "akshare_em": {"consecutive_failures": 1, "last_failure_at": now - 25 * 3600, "last_success_at": 0},
+        "efinance": {"consecutive_failures": 1, "last_failure_at": now - 37 * 3600, "last_success_at": 0},
         "em_datacenter": {"consecutive_failures": 0, "last_success_at": now - 30},
     }
 
     ordered, notes = _order_sources_by_persisted_health(
-        ["sina", "efinance", "em_datacenter"], health, now=now
+        ["sina", "akshare_em", "efinance", "em_datacenter"], health, now=now
     )
 
-    # sina failed a minute ago -> demoted; efinance's failure aged out of the TTL.
-    assert ordered == ["efinance", "em_datacenter", "sina"]
-    assert notes and "recently failed: sina" in notes[0]
+    # sina (1m) and akshare_em (25h < 36h TTL) stay demoted across daily runs;
+    # efinance (37h >= 36h TTL) aged out and is retried.
+    assert ordered == ["efinance", "em_datacenter", "sina", "akshare_em"]
+    assert notes and "recently failed: sina,akshare_em" in notes[0]
 
 
 def test_order_sources_keeps_order_when_everything_is_failing():
