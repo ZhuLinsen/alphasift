@@ -2,7 +2,7 @@
 name: balanced_alpha
 display_name: 均衡多因子
 description: 综合估值、资金、动量、稳定性的通用候选发现策略
-version: "1.1"
+version: "1.2"
 category: framework
 tags: [multi_factor, balanced, llm_friendly]
 style:
@@ -39,6 +39,7 @@ screening:
     theme_heat: 0.05
     size: 0.03
   scoring_profile:
+    factor_rank_blend: 1.0
     momentum_chase_start_pct: 5.5
     momentum_chase_penalty_slope: 12.0
     activity_ideal_volume_ratio: 2.0
@@ -49,6 +50,7 @@ screening:
     abnormal_volume_ratio: 6.0
     high_turnover_rate: 15.0
   portfolio_profile:
+    mode: hard_cap
     max_same_bucket: 1
     concentration_penalty: 4.0
     buckets:

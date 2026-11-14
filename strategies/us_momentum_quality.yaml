@@ -11,13 +11,15 @@
 #   value factor weight is kept low for the same reason.
 # - No theme_heat / topic_alignment factor weight — those depend on CN
 #   board/concept-heat enrichment (hotspot.py) that has no US data source yet.
-# - No portfolio_profile sector buckets — snapshot_us.py's industry field is
-#   Yahoo's fine-grained industry string, not a small fixed sector taxonomy,
-#   so the CN template's Chinese keyword buckets don't apply.
+# - portfolio_profile uses mode: hard_cap (max_same_bucket: 2) without Chinese
+#   keyword buckets, grouping directly on the active sector/industry label:
+#   Yahoo screener snapshots supply Yahoo's 11 fixed sectors, whereas the
+#   per-ticker yfinance fallback supplies fine-grained industry strings, and LLM
+#   sector labels take precedence when present (matching global_value.yaml).
 name: us_momentum_quality
 display_name: US Momentum Quality
 description: Trend-confirmation candidates from the yfinance-backed US snapshot, adapted from momentum_quality.yaml
-version: "1.0"
+version: "1.1"
 category: framework
 tags: [momentum, quality, trend, us, llm_friendly]
 style:
@@ -47,6 +49,7 @@ screening:
     stability: 0.16
     reversal: 0.04
   scoring_profile:
+    factor_rank_blend: 1.0
     momentum_chase_start_pct: 6.0
     momentum_chase_penalty_slope: 12.0
     activity_ideal_volume_ratio: 1.8
@@ -57,6 +60,10 @@ screening:
     abnormal_volume_ratio: 5.0
     high_turnover_rate: 8.0
     low_llm_confidence: 0.50
+  portfolio_profile:
+    mode: hard_cap
+    max_same_bucket: 2
+    concentration_penalty: 3.0
   ranking_hints: |
     Prefer:
     1. Candidates with a confirmed trend that have not yet chased into an

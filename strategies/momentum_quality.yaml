@@ -2,7 +2,7 @@
 name: momentum_quality
 display_name: 趋势质量
 description: 兼顾趋势确认和基本面质量的中线候选发现
-version: "1.1"
+version: "1.2"
 category: framework
 tags: [momentum, quality, trend, llm_friendly]
 style:
@@ -39,6 +39,7 @@ screening:
     theme_heat: 0.06
     size: 0.02
   scoring_profile:
+    factor_rank_blend: 1.0
     momentum_chase_start_pct: 5.0
     momentum_chase_penalty_slope: 14.0
     activity_ideal_volume_ratio: 2.2
@@ -50,6 +51,7 @@ screening:
     high_turnover_rate: 14.0
     low_llm_confidence: 0.50
   portfolio_profile:
+    mode: hard_cap
     max_same_bucket: 1
     concentration_penalty: 4.5
     buckets:
