@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 新增 `scoring_profile.factor_rank_blend`（`0.0–1.0`，默认 `0.0`）并在 `balanced_alpha`（1.2）、`momentum_quality`（1.2）、`low_volatility_quality`（1.1）与 `us_momentum_quality`（1.1）启用 `1.0`：在合成 `screen_score` 时将 `momentum`、`reversal`、`activity`、`stability` 按比例混入截面百分位排名，缩小连续线性因子与排名因子（`value`/`liquidity`/`size`）间的截面离散度差距，同时保持 `Pick.factor_scores` 原始公式分供 L3 `scorecard` 使用，并对常量序列或 `n <= 5` 的小候选池自动降为 `0`（`5 < n < 30` 线性过渡）；同时在上述策略及 `blue_chip_income`（1.1）启用 `portfolio_profile.mode: hard_cap` 抑制同板块集中
 - 韩国估值：覆盖率改为统计真正拿到 PE 或 PB 的股票数（此前只统计请求成功数，接口格式变化导致全部为 N/A 时会被当成完整，覆盖掉有估值的缓存）；快照预算已用完时跳过 Naver，不再额外多跑 5 秒；复用 HTTP 连接，实测韩国快照约 14 秒降到 6 秒
 - T+N 评估：历史数据里没有入场交易日收盘价时标记为 `no_entry_close`，不再退回用保存的选股价（盘中、未复权）去比复权收盘价，否则拆股后会算出虚假的 −50%
 - T+N 基准对比：只有部分选股有基准数据时，基准和超额只覆盖这些选股；新增 `benchmark_pick_count` 和同一批选股的平均收益 `average_matched_return_pct`（两者相减恒等于超额），CLI 在覆盖不全时显示 `bench_n=k/n matched_ret=...`

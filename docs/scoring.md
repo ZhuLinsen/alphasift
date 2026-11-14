@@ -42,6 +42,7 @@ screen_score = Σ(factor_score × normalized_factor_weight)
 
 因子评分有默认曲线，但不再要求所有策略共用同一套硬编码阈值。策略 YAML 可以通过 `scoring_profile` 覆盖关键参数，例如：
 
+- `factor_rank_blend`：`0.0–1.0`，默认 `0.0`；在合成 `screen_score` 时将 `momentum`、`reversal`、`activity`、`stability` 按比例混入截面百分位排名以对齐估值/流动性因子的截面离散度（样本数 $n \le 5$ 自动归零、$5 < n < 30$ 线性过渡；`Pick.factor_scores` 仍保留原始公式分供 L3 `scorecard` 与解释层使用）
 - `momentum_chase_start_pct`：动量分开始惩罚追高的涨幅
 - `activity_ideal_volume_ratio`：活跃度分偏好的量比中心
 - `activity_ideal_turnover_rate`：活跃度分偏好的换手中心

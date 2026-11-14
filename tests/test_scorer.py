@@ -1,7 +1,10 @@
+import math
+
 import pandas as pd
+import pytest
 
 from alphasift.models import ScreeningConfig
-from alphasift.scorer import compute_screen_scores
+from alphasift.scorer import _effective_rank_blend, compute_screen_scores
 
 
 def test_value_factor_favors_lower_positive_pe_and_pb():
@@ -221,3 +224,98 @@ def test_stability_factor_penalizes_high_daily_volatility_and_deep_drawdown():
 
     assert scored.loc["controlled", "factor_stability_score"] > scored.loc["wild", "factor_stability_score"]
     assert scored.loc["controlled", "screen_score"] > scored.loc["wild", "screen_score"]
+
+
+def test_effective_rank_blend_tapers_small_samples_and_sanitizes_inputs():
+    assert _effective_rank_blend(1.0, 1) == 0.0
+    assert _effective_rank_blend(1.0, 5) == 0.0
+    assert _effective_rank_blend(1.0, 6) == pytest.approx(0.04)
+    assert _effective_rank_blend(1.0, 17) == pytest.approx(0.48)
+    assert _effective_rank_blend(1.0, 30) == 1.0
+    assert _effective_rank_blend(1.0, 31) == 1.0
+    assert _effective_rank_blend(0.0, 100) == 0.0
+    assert _effective_rank_blend(1.5, 50) == 1.0
+    assert _effective_rank_blend(-0.5, 50) == 0.0
+    assert _effective_rank_blend(True, 50) == 0.0
+    assert _effective_rank_blend(float("nan"), 50) == 0.0
+    assert _effective_rank_blend(float("inf"), 50) == 0.0
+
+
+def test_factor_rank_blend_restores_linear_factor_dispersion_while_keeping_raw_factor_columns():
+    rows = []
+    for i in range(36):
+        rows.append({
+            "code": f"MEGA_{i:02d}",
+            "amount": 5_000_000_000 - i * 10_000_000,
+            "change_pct": -2.0 + i * 0.05,
+        })
+    for i in range(4):
+        rows.append({
+            "code": f"MOMO_{i:02d}",
+            "amount": 600_000_000 + i * 50_000_000,
+            "change_pct": 3.0 + i * 0.2,
+        })
+    df = pd.DataFrame(rows)
+
+    weights = {"momentum": 0.55, "liquidity": 0.45}
+    scored_raw = compute_screen_scores(df, ScreeningConfig(factor_weights=weights)).set_index("code")
+    scored_blend = compute_screen_scores(
+        df,
+        ScreeningConfig(
+            factor_weights=weights,
+            scoring_profile={"factor_rank_blend": 1.0},
+        ),
+    ).set_index("code")
+
+    assert scored_raw["screen_score"].idxmax().startswith("MEGA_")
+    assert scored_blend["screen_score"].idxmax().startswith("MOMO_")
+    assert scored_blend["factor_momentum_score"].equals(scored_raw["factor_momentum_score"])
+    assert math.isfinite(float(scored_blend["screen_score"].iloc[0]))
+
+
+def test_factor_rank_blend_preserves_flat_constant_factor_and_small_post_daily_pool():
+    flat_df = pd.DataFrame(
+        [{"code": f"F_{i:02d}", "amount": 100_000_000 + i * 1_000_000, "change_pct": 1.5} for i in range(40)]
+    )
+    weights = {"momentum": 0.6, "liquidity": 0.4}
+    flat_raw = compute_screen_scores(flat_df, ScreeningConfig(factor_weights=weights))
+    flat_blend = compute_screen_scores(
+        flat_df,
+        ScreeningConfig(factor_weights=weights, scoring_profile={"factor_rank_blend": 1.0}),
+    )
+    assert flat_blend["screen_score"].equals(flat_raw["screen_score"])
+
+    small_df = pd.DataFrame(
+        [{"code": f"S_{i}", "amount": 100_000_000 + i * 1_000_000, "change_pct": float(i - 2)} for i in range(5)]
+    )
+    small_raw = compute_screen_scores(small_df, ScreeningConfig(factor_weights=weights))
+    small_blend = compute_screen_scores(
+        small_df,
+        ScreeningConfig(factor_weights=weights, scoring_profile={"factor_rank_blend": 1.0}),
+    )
+    assert small_blend["screen_score"].equals(small_raw["screen_score"])
+
+
+@pytest.mark.parametrize("factor", ["momentum", "reversal", "activity", "stability"])
+@pytest.mark.parametrize("blend,sample_size", [(0.4, 35), (1.0, 15)])
+def test_factor_rank_blend_exact_arithmetic_partial_taper_and_ties(factor, blend, sample_size):
+    df = pd.DataFrame({
+        "change_pct": [(-2.0 + (i % 5) * 1.25) if i not in (3, 7) else 0.5 for i in range(sample_size)],
+        "volume_ratio": [0.8 + (i % 6) * 0.4 for i in range(sample_size)],
+        "turnover_rate": [1.0 + (i % 7) * 1.1 for i in range(sample_size)],
+    })
+    raw = compute_screen_scores(df, ScreeningConfig(factor_weights={factor: 1.0}))
+    blended = compute_screen_scores(
+        df,
+        ScreeningConfig(
+            factor_weights={factor: 1.0},
+            scoring_profile={"factor_rank_blend": blend},
+        ),
+    )
+
+    effective = blend * min(1.0, max(0.0, (sample_size - 5) / 25.0))
+    raw_series = raw["screen_score"]
+    expected = ((1.0 - effective) * raw_series + effective * (raw_series.rank(pct=True) * 100.0)).clip(0, 100)
+
+    pd.testing.assert_series_equal(blended["screen_score"], expected, check_names=False)
+    pd.testing.assert_series_equal(blended[f"factor_{factor}_score"], raw[f"factor_{factor}_score"])

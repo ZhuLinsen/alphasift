@@ -2,7 +2,7 @@
 name: blue_chip_income
 display_name: 蓝筹收益质量
 description: 面向高流动性大盘蓝筹的收益质量候选，强调合理估值、稳定成交和防守型持有体验
-version: "1.0"
+version: "1.1"
 category: income
 tags: [value, quality, income, blue_chip, defensive, snapshot_only]
 style:
@@ -59,6 +59,7 @@ screening:
     high_pb_points: 5.0
     low_llm_confidence: 0.45
   portfolio_profile:
+    mode: hard_cap
     max_same_bucket: 2
     concentration_penalty: 3.0
     buckets:
