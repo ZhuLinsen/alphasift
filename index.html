@@ -153,9 +153,14 @@ function renderMeta() {
   const chips = [`更新于 ${localTime(s.generated_at)}`, `${s.run_count} 次运行`, `${s.days.length} 个交易日`];
   const html = chips.map((c) => `<span class="chip">${esc(c)}</span>`);
   for (const [session, info] of Object.entries(s.sessions || {})) {
-    const bad = info.ok < info.total;
-    const title = info.failures.map((f) => `${f.market} ${f.strategy}: ${f.status} ${f.error || ""}`).join("\n");
-    html.push(`<span class="chip${bad ? " bad" : ""}" title="${esc(title)}">${SESSION_NAMES[session] || session} ${info.ok}/${info.total} 成功 · ${localTime(info.finished_at)}</span>`);
+    const failures = info.failures || [];
+    const bad = failures.length > 0;
+    const skipped = info.skipped || 0;
+    const title = failures.map((f) => `${f.market} ${f.strategy}: ${f.status} ${f.error || ""}`).join("\n");
+    const statusText = skipped && info.total === 0
+      ? `跳过 ${skipped}`
+      : `${info.ok}/${info.total} 成功${skipped ? ` · 跳过 ${skipped}` : ""}`;
+    html.push(`<span class="chip${bad ? " bad" : ""}" title="${esc(title)}">${SESSION_NAMES[session] || session} ${statusText} · ${localTime(info.finished_at)}</span>`);
   }
   $("meta").innerHTML = html.join("");
 }

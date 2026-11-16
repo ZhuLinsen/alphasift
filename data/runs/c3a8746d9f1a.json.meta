@@ -1,0 +1,36 @@
+{
+  "schema_version": 3,
+  "run_id": "c3a8746d9f1a",
+  "strategy": "volume_breakout",
+  "market": "cn",
+  "strategy_version": "1.2",
+  "strategy_category": "trend",
+  "created_at": "2026-11-16T10:37:24.266834+00:00",
+  "picks": 5,
+  "snapshot_count": 5220,
+  "after_filter_count": 9,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 3,
+  "source_errors": [
+    "sina: HTTPSConnectionPool(host='vip.stock.finance.sina.com.cn', port=443): Read timed out. (read timeout=5.0)",
+    "efinance: Expecting value: line 1 column 1 (char 0)",
+    "akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+  ],
+  "degradation_count": 5,
+  "degradation": [
+    "Snapshot source fallback: sina: HTTPSConnectionPool(host='vip.stock.finance.sina.com.cn', port=443): Read timed out. (read timeout=5.0)",
+    "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+    "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。",
+    "Daily K-line source ordering: daily source order adjusted by health: sina,akshare,baostock,tencent",
+    "Daily K-line source health: tencent failures=1,last_rows=120"
+  ],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": true,
+  "daily_enrich_count": 40,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/c3a8746d9f1a.json",
+  "report_path": "track/data/runs/c3a8746d9f1a.md"
+}
