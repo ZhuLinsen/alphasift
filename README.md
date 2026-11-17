@@ -2,7 +2,7 @@
 
 Every trading day after the close, a GitHub Action runs each built-in strategy with `--no-llm --save-run` and commits the saved run here. Picks are never edited afterwards; the git history is the timestamped record. Each pick is then measured at T+5 / T+10 / T+20 trading days against its market benchmark.
 
-**Dashboard:** https://zhulinsen.github.io/alphasift/ · Code: [ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift) · Updated 2026-11-16T22:35:37+00:00 · 68 saved runs
+**Dashboard:** https://zhulinsen.github.io/alphasift/ · Code: [ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift) · Updated 2026-11-17T10:35:24+00:00 · 83 saved runs
 
 > For research only, not investment advice. Returns are close-to-close after a round-trip cost, ignore dividends, and small samples are noisy.
 
@@ -10,27 +10,27 @@ Every trading day after the close, a GitHub Action runs each built-in strategy w
 
 | Market | Strategy | Runs | T+5 n | T+5 excess | T+5 beat | T+20 n | T+20 excess | T+20 beat |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| cn | 均衡多因子 | 4 | 5 | +0.24% | 20% | 0 | – | – |
-| cn | 蓝筹收益质量 | 4 | 5 | -0.82% | 40% | 0 | – | – |
-| cn | 资金热度 | 4 | 5 | +4.20% | 80% | 0 | – | – |
-| cn | 双低选股 | 4 | 5 | -1.02% | 40% | 0 | – | – |
-| cn | 低波质量 | 4 | 5 | -3.31% | 20% | 0 | – | – |
-| cn | 趋势质量 | 4 | 5 | +1.41% | 60% | 0 | – | – |
-| cn | 超跌反转 | 4 | 5 | -2.07% | 20% | 0 | – | – |
-| cn | 稳健价值 | 4 | 5 | -1.82% | 20% | 0 | – | – |
-| cn | 缩量回踩 | 4 | 5 | +1.49% | 80% | 0 | – | – |
-| cn | 放量突破 | 4 | 1 | -1.84% | 0% | 0 | – | – |
-| hk | 全球低估值 | 4 | 5 | +1.12% | 60% | 0 | – | – |
-| in | 全球低估值 | 4 | 5 | -1.84% | 20% | 0 | – | – |
-| jp | 全球低估值 | 4 | 5 | +5.03% | 100% | 0 | – | – |
-| kr | 全球低估值 | 4 | 5 | +6.47% | 100% | 0 | – | – |
-| tw | 全球低估值 | 4 | 5 | -4.14% | 0% | 0 | – | – |
+| cn | 均衡多因子 | 5 | 5 | +0.24% | 20% | 0 | – | – |
+| cn | 蓝筹收益质量 | 5 | 5 | -0.82% | 40% | 0 | – | – |
+| cn | 资金热度 | 5 | 5 | +4.20% | 80% | 0 | – | – |
+| cn | 双低选股 | 5 | 5 | -1.02% | 40% | 0 | – | – |
+| cn | 低波质量 | 5 | 5 | -3.31% | 20% | 0 | – | – |
+| cn | 趋势质量 | 5 | 5 | +1.41% | 60% | 0 | – | – |
+| cn | 超跌反转 | 5 | 5 | -2.07% | 20% | 0 | – | – |
+| cn | 稳健价值 | 5 | 5 | -1.82% | 20% | 0 | – | – |
+| cn | 缩量回踩 | 5 | 5 | +1.49% | 80% | 0 | – | – |
+| cn | 放量突破 | 5 | 1 | -1.84% | 0% | 0 | – | – |
+| hk | 全球低估值 | 5 | 5 | +1.12% | 60% | 0 | – | – |
+| in | 全球低估值 | 5 | 5 | -1.84% | 20% | 0 | – | – |
+| jp | 全球低估值 | 5 | 5 | +5.03% | 100% | 0 | – | – |
+| kr | 全球低估值 | 5 | 5 | +6.47% | 100% | 0 | – | – |
+| tw | 全球低估值 | 5 | 5 | -4.14% | 0% | 0 | – | – |
 | us | 全球低估值 | 4 | 0 | – | – | 0 | – | – |
 | us | US Momentum Quality | 4 | 0 | – | – | 0 | – | – |
 
 ## Latest session
 
-- **asia** finished 2026-11-16T10:37:36+00:00: 15/15 strategies ok
+- **asia** finished 2026-11-17T10:34:55+00:00: 15/15 strategies ok
 - **us** finished 2026-11-16T22:35:32+00:00: 2/2 strategies ok
 
 Raw runs: [`data/runs/`](data/runs) · derived site data: [`site/`](site)
