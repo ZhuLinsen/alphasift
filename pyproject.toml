@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alphasift"
-version = "0.2.0"
+version = "0.3.0"
 description = "Full-market stock discovery for AI agents: YAML strategies, optional LLM ranking, sector-diversified picks and T+N evaluation across CN, US, HK, JP, KR, TW and IN"
 readme = "README.md"
 license = "Apache-2.0"
@@ -13,7 +13,6 @@ requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.0",
     "pyyaml>=6.0",
-    "litellm>=1.0",
     "efinance>=0.4",
     "akshare>=1.10",
     "baostock>=0.8.9",

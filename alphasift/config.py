@@ -5,6 +5,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from alphasift.llm_client import gateway_api_keys, gateway_base_url, normalize_model, split_model
+
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _PACKAGE_DIR = Path(__file__).resolve().parent
 DEFAULT_POST_ANALYZERS = ["scorecard"]
@@ -260,7 +262,7 @@ class Config:
     snapshot_fallback_max_age_hours: float | None = None
 
     def has_llm_config(self) -> bool:
-        """Return whether any supported LiteLLM configuration is present."""
+        """Return whether LLM ranking is configured, including legacy YAML to diagnose."""
         return any([
             bool(self.llm_api_key),
             bool(self.llm_base_url and self.llm_model.startswith("ollama/")),
@@ -446,12 +448,12 @@ def _resolve_llm_model(channels: list[dict[str, object]]) -> str:
         or ""
     ).strip()
     if explicit:
-        return _normalize_litellm_model(explicit)
+        return normalize_model(explicit)
 
     for channel in channels:
         models = channel.get("models", [])
         if isinstance(models, list) and models:
-            return _normalize_litellm_model(str(models[0]), str(channel.get("protocol", "openai")))
+            return normalize_model(str(models[0]), str(channel.get("protocol", "openai")))
 
     if os.getenv("OLLAMA_API_BASE"):
         ollama_model = os.getenv("OLLAMA_MODEL", "").strip()
@@ -459,53 +461,32 @@ def _resolve_llm_model(channels: list[dict[str, object]]) -> str:
     if os.getenv("DEEPSEEK_API_KEY"):
         return "deepseek/deepseek-chat"
     if os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEYS"):
-        return _normalize_litellm_model(os.getenv("GEMINI_MODEL", DEFAULT_LLM_MODEL), "gemini")
-    if os.getenv("OPENAI_API_KEY"):
-        return _normalize_litellm_model(os.getenv("OPENAI_MODEL", "gpt-4o-mini"), "openai")
-    if os.getenv("AIHUBMIX_KEY"):
-        return _normalize_litellm_model(os.getenv("OPENAI_MODEL", "gpt-4o-mini"), "openai")
+        return normalize_model(os.getenv("GEMINI_MODEL", DEFAULT_LLM_MODEL), "gemini")
+    if os.getenv("OPENAI_API_KEY") or os.getenv("AIHUBMIX_KEY"):
+        return normalize_model(os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
     return DEFAULT_LLM_MODEL
-
-
-def _normalize_litellm_model(model: str, protocol: str = "openai") -> str:
-    model = model.strip()
-    if "/" in model:
-        return model
-    if protocol == "ollama":
-        return f"ollama/{model}"
-    if protocol == "gemini":
-        return f"gemini/{model}"
-    if protocol == "deepseek":
-        return f"deepseek/{model}"
-    return f"openai/{model}"
 
 
 def _resolve_llm_api_key(model: str) -> str:
     explicit = os.getenv("LLM_API_KEY", "").strip()
     if explicit:
         return explicit
-    if model.startswith("gemini/"):
-        keys = _parse_csv_env("GEMINI_API_KEYS", [])
-        return keys[0] if keys else os.getenv("GEMINI_API_KEY", "")
-    if model.startswith("deepseek/"):
-        return os.getenv("DEEPSEEK_API_KEY", "")
-    if model.startswith("anthropic/"):
-        return os.getenv("ANTHROPIC_API_KEY", "")
-    if os.getenv("AIHUBMIX_KEY"):
+    provider, _ = split_model(model)
+    if provider == "openai" and os.getenv("AIHUBMIX_KEY"):
         return os.getenv("AIHUBMIX_KEY", "")
-    if model.startswith("openai/"):
-        return os.getenv("OPENAI_API_KEY", "")
-    return os.getenv("OPENAI_API_KEY", "")
+    keys = gateway_api_keys(provider)
+    return keys[0] if keys else ""
 
 
 def _resolve_llm_base_url(model: str) -> str:
     explicit = os.getenv("LLM_BASE_URL", "").strip()
     if explicit:
         return explicit
-    if model.startswith("ollama/"):
+    provider, _ = split_model(model)
+    if provider == "ollama":
         return os.getenv("OLLAMA_API_BASE", "")
-    if os.getenv("AIHUBMIX_KEY"):
-        return os.getenv("AIHUBMIX_BASE_URL", "https://api.aihubmix.com/v1")
-    if model.startswith("openai/"):
+    if provider in {"openai", "gemini", "deepseek", "anthropic"}:
+        if os.getenv("AIHUBMIX_KEY"):
+            return gateway_base_url("aihubmix")
         return os.getenv("OPENAI_BASE_URL", "")
-    return os.getenv("OPENAI_BASE_URL", "")
+    return ""

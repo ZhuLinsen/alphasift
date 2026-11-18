@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- LLM 排序移除 LiteLLM 依赖，改用 `requests` 调用 OpenAI 兼容的 Chat Completions 接口。供应商密钥和地址、`LLM_API_KEY` / `LLM_MODEL` / `LLM_BASE_URL`、多渠道配置，以及 `LITELLM_MODEL`、`AGENT_LITELLM_MODEL`、`LITELLM_FALLBACK_MODELS` 兼容变量继续生效。请求超时或所有尝试失败时沿用规则排序。
+- **迁移**。删除 `LITELLM_CONFIG`，按原顺序将 YAML 的路由写入 `LLM_CHANNELS`。为每个渠道设置 `LLM_<NAME>_PROTOCOL=openai`，把原路由的 `api_base`、密钥和实际模型分别填入 `BASE_URL`、`API_KEY`（或 `API_KEYS`）和 `MODELS`。使用 Claude 的原生协议渠道需改用 `https://api.anthropic.com/v1` 的 OpenAI 兼容接口。排序和 `doctor data-sources --no-live` 会提示迁移。完整示例见[配置参考](configuration.md#迁移-router-yaml)。
+
 ## Unreleased
 
 - 韩国估值：覆盖率改为统计真正拿到 PE 或 PB 的股票数（此前只统计请求成功数，接口格式变化导致全部为 N/A 时会被当成完整，覆盖掉有估值的缓存）；快照预算已用完时跳过 Naver，不再额外多跑 5 秒；复用 HTTP 连接，实测韩国快照约 14 秒降到 6 秒

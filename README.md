@@ -123,13 +123,13 @@ Write your own in `strategies/`. See the [strategy guide](docs/strategy-guide.md
 
 ## Configuration
 
-Copy `.env.example` to `.env`. AlphaSift reads LiteLLM-style settings, so it can reuse the configuration of [daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis). The most common settings:
+Copy `.env.example` to `.env`. LLM ranking uses an OpenAI-compatible HTTP endpoint. `LITELLM_MODEL`, `AGENT_LITELLM_MODEL`, and `LITELLM_FALLBACK_MODELS` keep their names for compatibility.
 
 | Variable | Purpose | Default |
 |---|---|---|
 | `LITELLM_MODEL` | Main model, `provider/model` | `gemini/gemini-2.5-flash` |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | Provider key for LLM ranking | - |
-| `LLM_CHANNELS` / `LITELLM_CONFIG` | Multi-channel or LiteLLM Router config | - |
+| `LLM_CHANNELS` | Ordered channels with per-channel endpoints, keys and models | - |
 | `TUSHARE_TOKEN` | Puts Tushare first in the A-share chain | - |
 | `SNAPSHOT_SOURCE_PRIORITY` | Override the A-share source order | depends on token |
 | `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | Time budget per snapshot source | `60` |
@@ -137,7 +137,7 @@ Copy `.env.example` to `.env`. AlphaSift reads LiteLLM-style settings, so it can
 | `ALPHASIFT_DATA_DIR` | Runs, caches and source health | `./data` |
 | `DSA_API_URL` | Enable the optional DSA deep-analysis step | - |
 
-The full list is in [docs/configuration.md](docs/configuration.md).
+See the [configuration reference](docs/configuration.md) for the full list. For a Router YAML setup, remove `LITELLM_CONFIG` and [migrate to `LLM_CHANNELS`](docs/configuration.md#迁移-router-yaml).
 
 ## More features
 

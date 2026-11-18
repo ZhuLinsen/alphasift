@@ -15,6 +15,18 @@ from alphasift.snapshot import (
 )
 
 
+def test_doctor_reports_unsupported_router_yaml_without_opening_it(monkeypatch, capsys):
+    monkeypatch.setenv("LITELLM_CONFIG", "/private/removed-router.yaml")
+    monkeypatch.setattr(sys, "argv", ["alphasift", "doctor", "data-sources", "--no-live", "--json"])
+
+    main()
+
+    payload = json.loads(capsys.readouterr().out)
+    assert any("Unset LITELLM_CONFIG" in note and "LLM_CHANNELS=primary,backup" in note
+               for note in payload["recommendations"])
+    assert "/private/removed-router.yaml" not in json.dumps(payload)
+
+
 def test_snapshot_source_health_snapshot_reports_disabled_failures(monkeypatch):
     _SOURCE_HEALTH.clear()
     monkeypatch.setattr("alphasift.snapshot.time.monotonic", lambda: 100.0)

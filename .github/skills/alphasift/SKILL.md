@@ -24,7 +24,7 @@ alphasift 包已安装在当前 Python 环境中。如未安装，先执行：
 pip install -e .
 ```
 
-如需 LLM 排序，可设置 `LITELLM_MODEL`、`LLM_CHANNELS`、`LITELLM_CONFIG` 或旧变量 `LLM_API_KEY/LLM_MODEL/LLM_BASE_URL`。也可直接复用 `daily_stock_analysis` 的 LiteLLM 配置字段，包括 `OPENAI_*`、`GEMINI_*`、`DEEPSEEK_API_KEY`、`OLLAMA_API_BASE`。策略 YAML 可通过 `scoring_profile`、`risk_profile`、`portfolio_profile`、`scorecard_profile`、`event_profile` 覆盖默认规则、事件偏好和候选上下文来源权重。LLM 会输出候选行业/主题标签；如候选提供 `industry/concepts/board_heat_score/board_heat_trend_score`，会作为 LLM、主题热度因子与组合分散层锚点；history sidecar 可回填持续性、降温和状态字段。默认组合分散层会用这些标签映射风险桶，降低同一拥挤交易重复占位。
+LLM 排序调用 OpenAI 兼容接口，可设置 `LITELLM_MODEL`、`LLM_CHANNELS` 或 `LLM_API_KEY`、`LLM_MODEL`、`LLM_BASE_URL`。`LITELLM_MODEL`、`AGENT_LITELLM_MODEL` 和 `LITELLM_FALLBACK_MODELS` 的变量名仅为兼容而保留。若设置了 `LITELLM_CONFIG`，请删除该变量并迁移到 `LLM_CHANNELS`。策略 YAML 可通过 `scoring_profile`、`risk_profile`、`portfolio_profile`、`scorecard_profile`、`event_profile` 覆盖默认规则、事件偏好和候选上下文来源权重。LLM 会输出候选行业/主题标签；如候选提供 `industry/concepts/board_heat_score/board_heat_trend_score`，会作为 LLM、主题热度因子与组合分散层锚点；history sidecar 可回填持续性、降温和状态字段。默认组合分散层会用这些标签映射风险桶，降低同一拥挤交易重复占位。
 
 L3 默认启用本地 `scorecard` 后置评分器，也可追加 `dsa` 或 `external_http`。如需 DSA 后置分析，设置 `DSA_API_URL`；DSA 只作为后置增强，不参与全市场初筛。
 

@@ -123,13 +123,13 @@ alphasift evaluate <run_id> --with-price-path --explain
 
 ## 設定
 
-`.env.example` を `.env` にコピーします。AlphaSift は LiteLLM 形式の設定を読むので、[daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis) の設定を使い回せます。よく使う設定：
+`.env.example` を `.env` にコピーします。LLM の順位付けは OpenAI 互換の HTTP API を使用します。`LITELLM_MODEL`、`AGENT_LITELLM_MODEL`、`LITELLM_FALLBACK_MODELS` の変数名は互換性のために残しています。
 
 | 変数 | 用途 | デフォルト |
 |---|---|---|
 | `LITELLM_MODEL` | メインのモデル。`provider/model` の形式 | `gemini/gemini-2.5-flash` |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM による順位付けのためのプロバイダーのキー | - |
-| `LLM_CHANNELS` / `LITELLM_CONFIG` | マルチチャンネルまたは LiteLLM Router の設定 | - |
+| `LLM_CHANNELS` | チャンネルの順序と各チャンネルの URL、キー、モデル | - |
 | `TUSHARE_TOKEN` | A 株の連鎖で Tushare を先頭にします | - |
 | `SNAPSHOT_SOURCE_PRIORITY` | A 株のソースの順序を上書きします | トークンによる |
 | `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | スナップショットのソースごとの時間の予算 | `60` |
@@ -137,7 +137,7 @@ alphasift evaluate <run_id> --with-price-path --explain
 | `ALPHASIFT_DATA_DIR` | 実行、キャッシュ、ソースの健全性 | `./data` |
 | `DSA_API_URL` | 任意の DSA による詳細な分析の段階を有効にします | - |
 
-すべての一覧は [docs/configuration.md](docs/configuration.md) にあります。
+すべての一覧は [docs/configuration.md](docs/configuration.md) にあります。Router YAML を使用していた場合は、`LITELLM_CONFIG` を削除して [`LLM_CHANNELS` に移行](docs/configuration.md#迁移-router-yaml)してください。
 
 ## その他の機能
 

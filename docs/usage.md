@@ -102,7 +102,7 @@ JSON 输出同时包含原始 `source_health` counters、聚合后的 `health_su
 alphasift screen balanced_alpha
 ```
 
-复用其他项目的 LiteLLM 配置文件：
+从其他项目的 `.env` 复用受支持的 LLM 环境变量。Router YAML 的迁移步骤见[配置参考](configuration.md#迁移-router-yaml)。
 
 ```bash
 alphasift --env-file /home/ubuntu/daily_ai_assistant/.env screen balanced_alpha
