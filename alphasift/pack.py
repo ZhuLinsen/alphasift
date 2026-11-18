@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import socket
 import threading
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
@@ -24,9 +25,9 @@ import pandas as pd
 import requests
 
 from alphasift.config import Config
-from alphasift.daily import _BAOSTOCK_LOCK, _to_baostock_code
+from alphasift.daily import _BAOSTOCK_LOCK, _to_baostock_code, fetch_daily_history
 from alphasift.markets import get_market, latest_settled_close
-from alphasift.snapshot import fetch_snapshot_with_fallback
+from alphasift.snapshot import fetch_cn_snapshot, fetch_snapshot_with_fallback
 
 DEFAULT_DAYS = 250
 DEFAULT_TAG = "data-cn"
@@ -43,6 +44,15 @@ _BAOSTOCK_FIELDS = ("date", "open", "high", "low", "close", "preclose", "volume"
 _CODE_PATTERN = re.compile(r"(?:(?:sh|sz|bj)\.?)?([0-9]{1,6})(?:\.(?:sh|ss|sz|bj)|\.0)?", re.I)
 _A_SHARE = ("600", "601", "603", "605", "688", "689", "000", "001", "002", "003", "300", "301", "4", "8", "920")
 _CN_TZ = ZoneInfo(get_market("cn").timezone)
+# Raw quote columns the existing CN snapshot sources keep next to the normalized ones:
+# source -> (open, high, low, previous close, volume, shares per volume unit).
+_SNAPSHOT_QUOTES = {
+    "sina": ("open", "high", "low", "settlement", "volume", 1),
+    "efinance": ("今开", "最高", "最低", "昨日收盘", "成交量", 100),
+    "akshare_em": ("今开", "最高", "最低", "昨收", "成交量", 100),
+}
+_REFERENCE_CODES = ("000001", "600519", "601398")
+_MAX_FAILED_CODES = 0.05
 _PACK_THREAD_LOCK = threading.Lock()
 logger = logging.getLogger(__name__)
 
@@ -87,19 +97,20 @@ class IncrementalProvider(Protocol):
 
 
 class TickPlusProvider:
-    """TickPlus updatedaykline, available for about a week. Not live-verified.
+    """Optional TickPlus updatedaykline source, used only when TICKPLUS_API_KEY is set.
 
-    Fixture coverage follows the documented fields and the API's list format.
-    The documented endpoint uses HTTP and places the token in the query string.
+    Covers about a week. Not live-verified: fixture coverage follows the
+    documented fields and the API's list format. The documented endpoint uses
+    HTTP and places the key in the query string.
     """
 
     name = "tickplus"
 
     def fetch_day(self, trade_date: str) -> pd.DataFrame:
         day = _iso_date(trade_date)
-        token = os.getenv("TICKPLUS_TOKEN", "").strip()
+        token = os.getenv("TICKPLUS_API_KEY", "").strip()
         if not token:
-            raise PackError("TickPlus requires TICKPLUS_TOKEN")
+            raise PackError("TickPlus requires TICKPLUS_API_KEY")
         if day < (datetime.now(_CN_TZ).date() - timedelta(days=7)).isoformat():
             raise PackError("TickPlus updatedaykline only covers roughly the last week")
         query = urlencode({"symbol": "stock", "dividend": "1", "tradeDate": day, "token": token})
@@ -122,6 +133,57 @@ class TickPlusProvider:
         except ValueError:
             raise PackError("TickPlus updatedaykline returned invalid JSON") from None
         return _parse_tickplus_day(payload, day)
+
+
+class SnapshotProvider:
+    """Today's full-market bars from the project's existing CN snapshot sources.
+
+    Only valid for the latest settled session: a snapshot has no history, so
+    an older date is left to the daily-history gap fill.
+    """
+
+    name = "snapshot"
+
+    def __init__(self, config: Config | None = None) -> None:
+        self._config = config
+
+    def fetch_day(self, trade_date: str) -> pd.DataFrame:
+        day = _iso_date(trade_date)
+        if day != expected_trade_date():
+            raise PackError("A snapshot only covers the latest settled session")
+        config = self._config or Config.from_env()
+        for source in config.snapshot_source_priority:
+            if source not in _SNAPSHOT_QUOTES:
+                continue
+            try:
+                snapshot = fetch_cn_snapshot(source)
+                if snapshot.attrs.get("quote_date") not in (None, day):
+                    raise PackError("Snapshot quote date does not match the requested date")
+                bars = _normalize_day(_snapshot_bars(snapshot))
+            except Exception as exc:
+                logger.warning("Snapshot source %s cannot supply daily bars: %s", source, exc)
+                continue
+            self.name = f"snapshot:{source}"
+            return bars
+        raise PackError("No snapshot source supplied open/high/low/previous close")
+
+
+def _snapshot_bars(snapshot: pd.DataFrame) -> pd.DataFrame:
+    """Map a snapshot's raw quote columns onto the pack fields; drop untraded rows."""
+    frame = snapshot.copy()
+    if "close" not in frame.columns and "price" in frame.columns:
+        frame = frame.rename(columns={"price": "close"})
+    quotes = _SNAPSHOT_QUOTES.get(str(snapshot.attrs.get("snapshot_source", "")))
+    if quotes and "pre_close" not in frame.columns:
+        *names, lot = quotes
+        if all(name in frame.columns for name in names):
+            for key, name in zip(("open", "high", "low", "pre_close", "volume"), names):
+                frame[key] = pd.to_numeric(frame[name], errors="coerce")
+            frame["volume"] *= lot
+    if {"open", "volume"} <= set(frame.columns):
+        traded = pd.to_numeric(frame["open"], errors="coerce").gt(0) & pd.to_numeric(frame["volume"], errors="coerce").gt(0)
+        frame = frame.loc[traded]
+    return frame
 
 
 def _parse_tickplus_day(payload: object, trade_date: str) -> pd.DataFrame:
@@ -248,17 +310,18 @@ def stitch_snapshot(pack: DailyPack, snapshot: pd.DataFrame, trade_date: str | d
     """Return an in-memory pack with a provisional snapshot row appended.
 
     Requires code, open, high, low, close (or price), pre_close, volume in
-    shares, and amount in yuan. SnapshotStitchError gives a degradation note.
+    shares, and amount in yuan. Snapshots from sina, efinance and akshare_em
+    carry these under their own column names and are mapped automatically;
+    em_datacenter and tushare snapshots do not. SnapshotStitchError gives a
+    degradation note.
     """
     day = _iso_date(trade_date or datetime.now(_CN_TZ).date())
     if day <= pack.trade_date:
         return pack
     if snapshot.attrs.get("quote_date") not in (None, day):
         raise SnapshotStitchError("Snapshot stitch skipped: quote date does not match the requested date")
-    if "close" not in snapshot.columns:
-        snapshot = snapshot.rename(columns={"price": "close"})
     try:
-        bars = _normalize_day(snapshot)
+        bars = _normalize_day(_snapshot_bars(snapshot))
         meta = _snapshot_meta(snapshot)
         row = _from_day(day, bars, meta, _snapshot_source(snapshot))
         return _append(pack, row, meta)
@@ -457,7 +520,9 @@ def _normalize_day(frame: pd.DataFrame) -> pd.DataFrame:
 def _numeric_bars(frame: pd.DataFrame) -> pd.DataFrame:
     values = frame[list(FIELDS)].apply(pd.to_numeric, errors="coerce").astype(np.float32)
     values = values.loc[~values.isna().all(axis=1)]
-    if (not np.isfinite(values.to_numpy()).all() or (values[list(PRICE_FIELDS[:4])] <= 0).any().any()
+    # Amount may be unknown: the free daily K-line sources do not report it.
+    if (not np.isfinite(values.drop(columns="amount").to_numpy()).all() or np.isinf(values["amount"]).any()
+            or (values[list(PRICE_FIELDS[:4])] <= 0).any().any()
             or (values[["pre_close", "volume", "amount"]] < 0).any().any()):
         raise PackError("Daily bar has missing or invalid numeric fields")
     return values
@@ -527,6 +592,79 @@ def _baostock_session() -> Iterator:
                 logger.warning("Baostock logout failed")
 
 
+def _baostock_reachable() -> bool:
+    try:
+        import baostock.common.contants as constants
+
+        with socket.create_connection((constants.BAOSTOCK_SERVER_IP, constants.BAOSTOCK_SERVER_PORT), timeout=5):
+            return True
+    except Exception:
+        return False
+
+
+@contextmanager
+def _history_session(source: str = "auto") -> Iterator:
+    """Yield a Baostock session, or None to use the existing Sina and Tencent daily sources."""
+    if source not in ("auto", "baostock", "daily"):
+        raise PackError("history source must be auto, baostock or daily")
+    if source == "daily" or (source == "auto" and not _baostock_reachable()):
+        if source == "auto":
+            logger.warning("Baostock is unreachable, using the Sina and Tencent daily sources")
+        yield None
+        return
+    with _baostock_session() as bs:
+        yield bs
+
+
+def _source_frame(code: str, count: int, source: str) -> pd.DataFrame:
+    frame = fetch_daily_history(code, lookback_days=count, source=source, cache_write=False)
+    frame = frame.assign(date=pd.to_datetime(frame["date"]).dt.strftime("%Y-%m-%d"))
+    return frame.drop_duplicates("date").set_index("date").sort_index()
+
+
+def _session_dates(bs, start: str, end: str) -> list[str]:
+    if bs is not None:
+        return _baostock_dates(bs, start, end)
+    count = (datetime.now(_CN_TZ).date() - date.fromisoformat(start)).days + 10
+    days: set[str] = set()
+    for code in _REFERENCE_CODES:
+        try:
+            days.update(_source_frame(code, count, "sina").index)
+        except Exception as exc:
+            logger.warning("Trading calendar reference %s failed: %s", code, exc)
+    dates = sorted(day for day in days if start <= day <= end)
+    if not dates and not days:
+        raise PackError("No daily source returned a trading calendar")
+    return dates
+
+
+def _daily_source_history(code: str, dates: list[str]) -> pd.DataFrame:
+    """Unadjusted bars from Sina, with the previous close rebuilt from Tencent's qfq series.
+
+    The qfq/raw ratio changes only on an ex-rights date, where the reference
+    price is the prior close scaled by that change. Both series are rounded to
+    cents, so a change inside the rounding noise is treated as no event: a
+    very small dividend on a low-priced stock is missed. Amount is unknown.
+    """
+    count = (datetime.now(_CN_TZ).date() - date.fromisoformat(dates[0])).days + 10
+    raw = _source_frame(code, count, "sina")
+    adjusted = _source_frame(code, count, "tencent")["close"].reindex(raw.index)
+    known = raw.index.isin(dates)
+    if adjusted[known].isna().any():
+        raise PackError(f"Adjusted history does not cover the raw bars for {code}")
+    close = raw["close"]
+    factor = adjusted / close
+    previous = close.shift()
+    ratio = factor.shift() / factor
+    noise = np.maximum(0.002, 0.012 / adjusted.clip(lower=0.01))
+    pre_close = previous.where(~((ratio - 1).abs() > noise), (previous * ratio).round(2))
+    bars = raw.assign(pre_close=pre_close.fillna(raw["open"]), amount=np.nan)
+    bars = bars.loc[known & raw["volume"].gt(0)]
+    values = _numeric_bars(bars)
+    values.insert(0, "date", values.index)
+    return values.reset_index(drop=True)
+
+
 def _check_baostock(result) -> None:
     if result.error_code != "0":
         raise PackError(f"Baostock error {result.error_code}: {result.error_msg}")
@@ -585,7 +723,7 @@ def _resume_history(bs, cache: Path, code: str, dates: list[str]) -> pd.DataFram
     dst = cache / f"{code}.csv"
     if dst.exists():
         return pd.read_csv(dst, dtype={"date": str, **dict.fromkeys(FIELDS, np.float32)})
-    bars = _baostock_history(bs, code, dates[0], dates[-1])
+    bars = _baostock_history(bs, code, dates[0], dates[-1]) if bs is not None else _daily_source_history(code, dates)
     _history_positions(bars, dates)
     with TemporaryDirectory(prefix=".history-", dir=cache) as tmp:
         staged = Path(tmp) / dst.name
@@ -609,8 +747,17 @@ def _backfill_range(
     # Each file is a completed query for this exact date range (including empty results).
     cache = path / ".backfill" / f"{dates[0]}_{dates[-1]}"
     cache.mkdir(parents=True, exist_ok=True)
+    failed: list[str] = []
     for col, code in enumerate(codes):
-        bars = _resume_history(bs, cache, code, dates)
+        try:
+            bars = _resume_history(bs, cache, code, dates)
+        except Exception as exc:
+            # One bad code must not abort a full-market build; it is retried on the next run.
+            failed.append(code)
+            logger.warning("Daily history failed for %s: %s", code, exc)
+            if len(failed) > max(_MAX_FAILED_CODES * len(codes), 1):
+                raise PackError(f"Daily history failed for {len(failed)} codes, aborting") from None
+            continue
         index = _history_positions(bars, dates)
         for key in FIELDS:
             matrices[key][index, col] = bars[key]
@@ -622,10 +769,10 @@ def _backfill_range(
         missing = np.isnan(close[exc.bad]).any(axis=0)
         for code, retry in zip(codes, missing):
             if retry:
-                (cache / f"{code}.csv").unlink()
+                (cache / f"{code}.csv").unlink(missing_ok=True)
         raise
     return DailyPack(np.array(dates, dtype="U10"), np.array(codes, dtype="U6"), matrices,
-                     meta.reindex(codes).reset_index(), ("baostock",))
+                     meta.reindex(codes).reset_index(), ("baostock" if bs is not None else "sina+tencent",))
 
 
 def _latest_snapshot(config: Config) -> pd.DataFrame:
@@ -635,8 +782,13 @@ def _latest_snapshot(config: Config) -> pd.DataFrame:
 def backfill(
     directory: str | Path | None = None, *, days: int = DEFAULT_DAYS,
     codes_limit: int | None = None, trade_date: str | date | None = None, config: Config | None = None,
+    source: str = "auto",
 ) -> dict:
-    """Build the last N CN sessions using resumable per-code Baostock history."""
+    """Build the last N CN sessions from resumable per-code daily history.
+
+    ``source`` is ``baostock``, ``daily`` (the existing Sina and Tencent
+    daily sources) or ``auto``, which uses Baostock when it is reachable.
+    """
     if days < 1 or (codes_limit is not None and codes_limit < 1):
         raise PackError("days and codes_limit must be positive")
     config = config or Config.from_env()
@@ -647,11 +799,12 @@ def backfill(
     with _pack_lock(path, write=True):
         snapshot = _latest_snapshot(config)
         meta = _snapshot_meta(snapshot)
-        with _baostock_session() as bs:
-            dates = _baostock_dates(bs, start, end)[-days:]
+        with _history_session(source) as bs:
+            dates = _session_dates(bs, start, end)[-days:]
             if len(dates) != days:
-                raise PackError(f"Baostock returned only {len(dates)} of {days} requested trading sessions")
-            codes = sorted(_baostock_universe(bs, dates[0], dates[-1]) | set(meta.index))[:codes_limit]
+                raise PackError(f"Only {len(dates)} of {days} requested trading sessions are available")
+            universe = _baostock_universe(bs, dates[0], dates[-1]) if bs is not None else set()
+            codes = sorted(universe | {code for code in meta.index if code.startswith(_A_SHARE)})[:codes_limit]
             pack = _backfill_range(bs, path, dates, codes, meta)
         pack.sources += (_snapshot_source(snapshot),)
         return _save_pack(path, pack)
@@ -660,8 +813,14 @@ def backfill(
 def update(
     directory: str | Path | None = None, *, trade_date: str | date | None = None,
     days: int = DEFAULT_DAYS, provider: IncrementalProvider | None = None, config: Config | None = None,
+    source: str = "auto",
 ) -> dict:
-    """Append a session from the incremental provider and backfill any gaps with Baostock."""
+    """Append the target session and fill earlier gaps from daily history.
+
+    The target session comes from ``provider``; by default TickPlus when
+    TICKPLUS_API_KEY is set, then the existing snapshot sources. If none
+    supplies it, the session is rebuilt from daily history like any gap.
+    """
     if days < 1:
         raise PackError("days must be positive")
     config = config or Config.from_env()
@@ -679,25 +838,33 @@ def update(
             return pack.manifest
 
         incremental = None
-        provider = provider if provider is not None else TickPlusProvider()
-        if last.weekday() < 5:
+        if provider is not None:
+            providers = [provider]
+        else:
+            providers = [TickPlusProvider()] if os.getenv("TICKPLUS_API_KEY", "").strip() else []
+            providers.append(SnapshotProvider(config))
+        for provider in providers if last.weekday() < 5 else []:
             try:
                 incremental = _normalize_day(provider.fetch_day(end))
-                if incremental.empty:
-                    incremental = None
             except Exception:
                 # Provider exception messages can include request credentials.
-                logger.warning("Incremental pack fetch failed for %s, trying Baostock", end)
+                logger.warning("%s could not supply %s, trying the next source", provider.name, end)
+                continue
+            if not incremental.empty:
+                break
+            incremental = None
         gap_end = last if incremental is None else last - timedelta(days=1)
         gap = None
         snapshot = None
         if first <= gap_end:
-            with _baostock_session() as bs:
-                dates = _baostock_dates(bs, first.isoformat(), gap_end.isoformat())
+            with _history_session(source) as bs:
+                dates = _session_dates(bs, first.isoformat(), gap_end.isoformat())
                 if dates:
                     snapshot = _latest_snapshot(config)
                     meta = _snapshot_meta(snapshot)
-                    codes = set(pack.codes) | set(meta.index) | _baostock_universe(bs, dates[0], dates[-1])
+                    codes = set(pack.codes) | {code for code in meta.index if code.startswith(_A_SHARE)}
+                    if bs is not None:
+                        codes |= _baostock_universe(bs, dates[0], dates[-1])
                     if incremental is not None:
                         codes.update(incremental["code"])
                     previous = int(np.isfinite(pack.matrices["close"][-1]).sum())

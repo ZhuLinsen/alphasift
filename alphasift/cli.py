@@ -369,7 +369,11 @@ def main():
     pull_parser.add_argument("--tag", default=None, help="Release 标签，默认 data-cn")
     info_parser = pack_sub.add_parser("info", help="查看已校验的数据包及新鲜度")
     info_parser.add_argument("--trade-date", help="预期交易日 YYYY-MM-DD，默认按 A 股收盘时间估算")
-    build_parser = pack_sub.add_parser("build", help="用 Baostock 回填 A 股日线包")
+    build_parser = pack_sub.add_parser("build", help="用日线历史回填 A 股日线包")
+    build_parser.add_argument(
+        "--source", choices=["auto", "baostock", "daily"], default="auto",
+        help="历史数据源：baostock、daily（现有新浪和腾讯日线源）或 auto（Baostock 可连时优先）",
+    )
     build_parser.add_argument("--days", type=int, help="回填交易日数量，默认 250")
     build_parser.add_argument("--codes-limit", type=int, help="仅处理排序后的前 N 个代码，用于小样本验证")
     build_parser.add_argument("--trade-date", help="回填截止日期 YYYY-MM-DD")
@@ -874,7 +878,7 @@ def main():
             else:
                 result = pack.backfill(
                     directory, days=args.days if args.days is not None else pack.DEFAULT_DAYS,
-                    codes_limit=args.codes_limit, trade_date=args.trade_date, config=config,
+                    codes_limit=args.codes_limit, trade_date=args.trade_date, config=config, source=args.source,
                 )
         except (OSError, RuntimeError, ValueError) as exc:
             parser.error(str(exc))

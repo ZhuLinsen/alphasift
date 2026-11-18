@@ -21,6 +21,12 @@ DATES = ("2025-01-06", "2025-01-07", "2025-01-08")
 CODES = ("000001", "000002", "600000")
 
 
+@pytest.fixture(autouse=True)
+def _offline(monkeypatch):
+    monkeypatch.setattr(pack, "_baostock_reachable", lambda: True)
+    monkeypatch.delenv("TICKPLUS_API_KEY", raising=False)
+
+
 def _pack(dates=DATES, codes=CODES):
     close = np.arange(len(dates) * len(codes), dtype=np.float32).reshape(len(dates), len(codes)) + 10
     matrices = {key: close.copy() for key in pack.FIELDS}
@@ -149,6 +155,128 @@ def test_stitch_requires_snapshot_ohlc_and_keeps_missing_codes():
         pack.stitch_snapshot(original, snapshot.drop(columns=["high", "low", "open", "pre_close"]), "2025-01-09")
     with pytest.raises(pack.SnapshotStitchError, match="quote date"):
         pack.stitch_snapshot(original, snapshot, "2025-01-10")
+
+
+def _source_snapshot(source):
+    names = dict(zip(("open", "high", "low", "pre_close", "volume"), pack._SNAPSHOT_QUOTES[source][:5]))
+    extra = ["600001", "600002", "600003"]
+    frame = pd.DataFrame({
+        "code": ["000001", "000002", "600000", *extra], "name": ["样本"] * 6, "price": [11.0, 20.0, 5.0, 5.0, 5.0, 5.0],
+        names["open"]: [10.5, 0.0, 5.0, 5.0, 5.0, 5.0], names["high"]: [11.2, 0.0, 5.1, 5.1, 5.1, 5.1],
+        names["low"]: [10.4, 0.0, 4.9, 4.9, 4.9, 4.9], names["pre_close"]: [10.0, 20.0, 5.0, 5.0, 5.0, 5.0],
+        names["volume"]: [300, 0, 50, 50, 50, 50], "amount": [3300.0, 0.0, 250.0, 250.0, 250.0, 250.0],
+    })
+    frame.attrs["snapshot_source"] = source
+    return frame
+
+
+@pytest.mark.parametrize(("source", "shares"), [("sina", 300), ("efinance", 30000), ("akshare_em", 30000)])
+def test_stitch_maps_existing_snapshot_sources_and_drops_untraded_rows(source, shares):
+    codes = ("000001", "000002", "600000", "600001", "600002", "600003")
+    stitched = pack.stitch_snapshot(_pack(codes=codes), _source_snapshot(source), "2025-01-09")
+    row = stitched.history("000001").iloc[-1]
+    assert (row["open"], row["high"], row["low"], row["close"], row["pre_close"]) == (10.5, 11.2, 10.4, 11.0, 10.0)
+    assert row["volume"] == shares
+    # 000002 did not trade: no bar, rather than a zero-price one.
+    assert np.isnan(stitched.history("000002", include_missing=True)["close"].iloc[-1])
+
+
+def test_snapshot_provider_uses_first_source_with_quotes(monkeypatch):
+    monkeypatch.setattr(pack, "expected_trade_date", lambda: "2025-01-09")
+    calls = []
+
+    def fetch(source):
+        calls.append(source)
+        if source == "sina":
+            raise RuntimeError("sina down")
+        return _source_snapshot(source)
+
+    monkeypatch.setattr(pack, "fetch_cn_snapshot", fetch)
+    config = SimpleNamespace(snapshot_source_priority=["em_datacenter", "sina", "efinance", "akshare_em"])
+    provider = pack.SnapshotProvider(config)
+    bars = provider.fetch_day("2025-01-09")
+    assert calls == ["sina", "efinance"]  # em_datacenter has no open/high/low/previous close
+    assert provider.name == "snapshot:efinance"
+    assert bars["code"].tolist() == ["000001", "600000", "600001", "600002", "600003"]
+    with pytest.raises(pack.PackError, match="latest settled session"):
+        provider.fetch_day("2025-01-08")
+
+
+def _daily_sources(monkeypatch, raw_close, adjusted_close, volume=None):
+    days = ["2025-01-03", *DATES]
+    calls = []
+
+    def fetch(code, *, lookback_days, source, cache_write):
+        assert not cache_write
+        calls.append((code, source))
+        close = raw_close if source == "sina" else adjusted_close
+        frame = pd.DataFrame({"date": days, "open": close, "high": close, "low": close, "close": close})
+        frame["volume"] = volume.get(code, 100) if volume else 100
+        frame["amount"] = np.nan
+        return frame
+
+    monkeypatch.setattr(pack, "fetch_daily_history", fetch)
+    return calls
+
+
+def test_daily_sources_rebuild_previous_close_on_ex_date_only(monkeypatch):
+    # 10 -> 10.5, then a 1.00 cash dividend (reference 9.50), then 9.7. The qfq
+    # series carries a one-cent rounding wobble on the first day, which is not an event.
+    _daily_sources(monkeypatch, [10.0, 10.5, 9.6, 9.7], [9.05, 9.5, 9.6, 9.7])
+    bars = pack._daily_source_history("000001", list(DATES))
+    assert bars["date"].tolist() == list(DATES)
+    np.testing.assert_allclose(bars["pre_close"], [10.0, 9.5, 9.6], rtol=1e-6)
+    assert bars["amount"].isna().all()
+
+    built = pack.DailyPack(
+        np.array(DATES), np.array(["000001"]),
+        {key: bars[key].to_numpy(dtype=np.float32)[:, None] for key in pack.FIELDS},
+        pd.DataFrame({"code": ["000001"]}), ("sina+tencent",),
+    )
+    np.testing.assert_allclose(pack.forward_adjust(built)["close"][:, 0], [9.5, 9.6, 9.7], rtol=1e-6)
+
+
+def test_backfill_from_daily_sources_skips_suspended_days_and_tolerates_one_bad_code(tmp_path, monkeypatch):
+    monkeypatch.setattr(pack, "_baostock_reachable", lambda: False)
+    listed = (*CODES, "000003", "000004", "000005", "000006", "200002")
+    monkeypatch.setattr(pack, "_latest_snapshot", lambda config: _daily(listed))
+    flat = [10.0, 10.0, 10.0, 10.0]
+    calls = _daily_sources(monkeypatch, flat, flat, volume={"000001": [100, 100, 0, 100]})
+    fetch = pack.fetch_daily_history
+
+    def flaky(code, **kwargs):
+        if code == "000003":
+            raise RuntimeError("source down")
+        return fetch(code, **kwargs)
+
+    monkeypatch.setattr(pack, "fetch_daily_history", flaky)
+    manifest = pack.backfill(tmp_path, days=3, trade_date=DATES[-1])
+    loaded = pack.load_pack(tmp_path)
+    assert manifest["sources"][0] == "sina+tencent"
+    assert loaded.dates.tolist() == list(DATES)
+    assert loaded.history("000001")["date"].tolist() == [DATES[0], DATES[2]]
+    assert loaded.history("000003").empty
+    assert "200002" not in loaded.codes  # B shares in a snapshot are not part of the pack
+    assert ("000001", "sina") in calls and ("000001", "tencent") in calls
+
+    calls.clear()
+    pack.backfill(tmp_path, days=3, trade_date=DATES[-1])
+    assert {code for code, _ in calls if code not in pack._REFERENCE_CODES} == set()
+
+
+def test_update_prefers_tickplus_only_when_key_is_set(tmp_path, monkeypatch):
+    pack.save_pack(tmp_path, _pack())
+    monkeypatch.setattr(pack, "_latest_snapshot", lambda config: _daily())
+    used = []
+    for cls, price in ((pack.TickPlusProvider, 30), (pack.SnapshotProvider, 20)):
+        monkeypatch.setattr(cls, "fetch_day", lambda self, day, price=price: used.append(type(self).__name__) or _daily(price=price))
+    pack.update(tmp_path, trade_date="2025-01-09")
+    assert used == ["SnapshotProvider"]
+
+    monkeypatch.setenv("TICKPLUS_API_KEY", "fixture-key")
+    pack.update(tmp_path, trade_date="2025-01-10")
+    assert used == ["SnapshotProvider", "TickPlusProvider"]
+    assert pack.load_pack(tmp_path).matrices["close"][-1, 0] == 30
 
 
 class _DayProvider:
@@ -364,7 +492,7 @@ def _tickplus(monkeypatch):
             return cls(2025, 1, 9, 16, tzinfo=tz)
 
     monkeypatch.setattr(pack, "datetime", _Clock)
-    monkeypatch.setenv("TICKPLUS_TOKEN", "fixture+token-secret")
+    monkeypatch.setenv("TICKPLUS_API_KEY", "fixture+token-secret")
     return "2025-01-09"
 
 
@@ -438,6 +566,7 @@ def test_cli_pack_info_and_build(tmp_path, monkeypatch, capsys):
 
     def backfill(directory, **kwargs):
         calls.append((directory, kwargs["days"], kwargs["codes_limit"]))
+        assert kwargs["source"] == "auto"
         return {"market": "cn"}
 
     monkeypatch.setattr(pack, "backfill", backfill)
@@ -450,12 +579,13 @@ def test_cli_pack_info_and_build(tmp_path, monkeypatch, capsys):
 def test_build_script_dispatches_update(tmp_path, monkeypatch, capsys):
     def update(directory, **kwargs):
         assert directory == tmp_path
-        assert kwargs == {"days": 30, "trade_date": "2025-01-10"}
+        assert kwargs == {"days": 30, "trade_date": "2025-01-10", "source": "daily"}
         return {"market": "cn"}
 
     monkeypatch.setattr(pack, "update", update)
     monkeypatch.setattr(sys, "argv", [
         "build_pack.py", "update", "--dir", str(tmp_path), "--days", "30", "--trade-date", "2025-01-10",
+        "--source", "daily",
     ])
     build_pack.main()
     assert json.loads(capsys.readouterr().out) == {"market": "cn"}
