@@ -60,7 +60,18 @@ The current `RunReport` schema version is `1`. Stable top-level fields:
 - `summary_cards`: compact metric cards with `label`, `value`, and `status`.
 - `source_health`: snapshot source, source errors, degradation notes, daily enrichment status.
 - `top_picks`: UI-ready pick cards with identity, scores, risk, topic, daily quality, and post-analysis fields.
-- `evaluation`: optional T+N evaluation summary and evaluated pick cards when `--evaluate` is used.
+- `evaluation`: optional evaluation summary and evaluated pick cards when `--evaluate` is used.
+
+## T+N 窗口评估
+
+`evaluate <run_id> --window N` 的 JSON 和 JSONL 评估头部包含 `horizon_days`、`entry_mode`（`close` 或 `next_open`）、`pending_count`、`untradable_count` 和 `untradable_share_pct`。不可成交比例以所有候选为分母，结果单位为百分比，候选数为零时为 `null`。
+
+- `entry_price` 为保存时的选股价。`next_open` 模式使用 `entry_open` 记录候选入场日的历史开盘价，缺失时为 `null`。`entry_date` 和 `exit_date` 采用 `YYYY-MM-DD` 格式，未确定日期为 `null`。`exit_date` 为实际退出日期。
+- `status` 和 `path_status` 可为 `untradable_limit_up`，此时收益为空。缺少有效入场开盘价的候选以 `missing` 为 `status`，`no_entry_open` 为 `path_status`。
+- `tradability_flags` 可包含 `entry_delayed_missing_bar` 或 `exit_delayed_limit_down`。一字跌停后尚无可退出日时，`status` 和 `path_status` 均为 `pending`。
+- `benchmark_return_pct` 在评估头部表示基准自身 T+N 窗口的收益，在候选中表示与候选实际入场及退出日期匹配的基准收益。基准缺对应日期或开盘价时，候选的基准收益和 `excess_return_pct` 为 `null`，`degradation` 记录原因。
+
+`evaluate-strategies --window ... --json` 在顶层包含 `entry_mode`。每个策略的 `window_summaries` 包含 `untradable_count`、`untradable_share_pct`、`pick_status_counts`、`tradability_flag_counts` 和 `benchmark_errors`。
 
 ## Run index metadata
 

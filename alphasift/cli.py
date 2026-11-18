@@ -202,6 +202,7 @@ def main():
     ep.add_argument("--failed-breakout-pct", type=float, default=None, help="突破失败判定的最高收益百分比")
     ep.add_argument("--with-price-path", action="store_true", help="额外抓取日 K 路径，计算最大回撤和最大浮盈")
     ep.add_argument("--price-path-lookback-days", type=int, default=None, help="价格路径日 K 回看天数")
+    ep.add_argument("--window", type=int, help="单个 T+N 交易日窗口，例如 5")
 
     # evaluate-batch
     ebp = sub.add_parser("evaluate-batch", help="批量评估最近保存的选股结果并按策略聚合")
@@ -243,10 +244,15 @@ def main():
         "--window",
         default=None,
         help=(
-            "逗号分隔的 T+N 交易日窗口，例如 5,10,20：按入场后第 N 个交易日收盘计算收益，"
+            "逗号分隔的 T+N 交易日窗口，例如 5,10,20：按截止日后第 N 根日 K 收盘计算收益，"
             "并与所在市场基准指数同期收益对比；未满 N 日的记为 pending。和 --price-path-lookback-days 互斥"
         ),
     )
+    for command in (ep, esp):
+        command.add_argument(
+            "--entry-mode", choices=("close", "next_open"), default="close",
+            help="T+N 入场价：close 为截止日收盘（默认），next_open 为之后首根日 K 的开盘价",
+        )
 
     # runs
     rp = sub.add_parser("runs", help="列出已保存的运行")
@@ -491,6 +497,10 @@ def main():
                     )
 
     elif args.command == "evaluate":
+        if args.window is not None and args.window <= 0:
+            parser.error("--window must be a positive integer")
+        if args.entry_mode == "next_open" and args.window is None:
+            parser.error("--entry-mode next_open requires --window")
         config = Config.from_env()
         result = evaluate_saved_run(
             args.run,
@@ -500,6 +510,8 @@ def main():
             failed_breakout_pct=args.failed_breakout_pct,
             with_price_path=args.with_price_path or None,
             price_path_lookback_days=args.price_path_lookback_days,
+            horizon_days=args.window,
+            entry_mode=args.entry_mode,
         )
         if args.save:
             save_evaluation_result(result, data_dir=config.data_dir)
@@ -556,6 +568,8 @@ def main():
             parser.error(str(exc))
         if windows and args.price_path_lookback_days is not None:
             parser.error("--window is incompatible with --price-path-lookback-days for this command")
+        if args.entry_mode == "next_open" and not windows:
+            parser.error("--entry-mode next_open requires --window")
 
         if windows:
             result = evaluate_saved_runs_by_windows(
@@ -568,6 +582,7 @@ def main():
                 follow_through_pct=args.follow_through_pct,
                 failed_breakout_pct=args.failed_breakout_pct,
                 failure_sample_limit=args.failure_samples,
+                entry_mode=args.entry_mode,
             )
         else:
             result = evaluate_saved_runs(
@@ -591,6 +606,7 @@ def main():
             "cost_bps": result.get("cost_bps"),
             "with_price_path": result.get("with_price_path"),
             "price_path_window_days": result.get("price_path_window_days", []),
+            "entry_mode": result.get("entry_mode", args.entry_mode),
             "strategy_summaries": result.get("strategy_summaries", []),
             "event_signal_review": result.get("event_signal_review", {}),
             "failure_review": result.get("failure_review", {}),
@@ -1398,19 +1414,33 @@ def _format_evaluation_explain(result) -> str:
             f"median_return={result.median_return_pct} win_rate={result.win_rate}"
         ),
     ]
+    next_open = result.entry_mode == "next_open"
+    if result.horizon_days is not None:
+        lines.append(
+            f"window=T+{result.horizon_days} entry_mode={result.entry_mode} "
+            f"pending={result.pending_count} avg_excess={_fmt_pct(result.average_excess_return_pct)}"
+        )
+    if next_open:
+        lines.append(
+            f"untradable={result.untradable_count} "
+            f"untradable_share={_fmt_pct(result.untradable_share_pct)}"
+        )
     if result.saved_path:
         lines.append(f"saved_path={result.saved_path}")
     if result.degradation:
         lines.append("degradation=" + " | ".join(result.degradation))
-    lines.append("rank code name entry current return_pct status shape max_dd max_runup")
+    columns = "rank code name entry current return_pct status shape max_dd max_runup"
+    lines.append(columns + (" path_status flags" if next_open else ""))
     for pick in result.picks:
+        entry = _fmt_optional_float(pick.entry_open if next_open else pick.entry_price)
         current = "-" if pick.current_price is None else f"{pick.current_price:.2f}"
         ret = "-" if pick.return_pct is None else f"{pick.return_pct:.2f}%"
         lines.append(
             f"{pick.rank:<4} {pick.code:<8} {pick.name:<10} "
-            f"{pick.entry_price:<8.2f} {current:<8} {ret:<9} {pick.status:<10} "
+            f"{entry:<8} {current:<8} {ret:<9} {pick.status:<10} "
             f"{pick.shape_status or '-':<24} "
             f"{_fmt_pct(pick.max_drawdown_pct):<8} {_fmt_pct(pick.max_runup_pct)}"
+            + (f" {pick.path_status or '-'} {','.join(pick.tradability_flags) or '-'}" if next_open else "")
         )
     return "\n".join(lines)
 
@@ -1479,7 +1509,7 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
     ]
     if result.get("price_path_window_days"):
         windows = ",".join(f"{item}d" for item in result.get("price_path_window_days", []))
-        lines.append(f"windows={windows}")
+        lines.append(f"windows={windows} entry_mode={result.get('entry_mode', 'close')}")
     if result.get("strategy_summaries", []) and isinstance(result.get("strategy_summaries"), list):
         sample = result["strategy_summaries"][0]
         if isinstance(sample, dict) and sample.get("window_summaries") is not None:
@@ -1517,6 +1547,14 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
                         f"t={window.get('breakout_follow_through_count', 0)} "
                         f"pending={window.get('pending_count', 0)} "
                         f"m={window.get('missing_count', 0)}"
+                        + (
+                            f" untradable={window.get('untradable_count', 0)} "
+                            f"untradable_share={_fmt_pct(window.get('untradable_share_pct'))}"
+                            if result.get("entry_mode") == "next_open" else ""
+                        )
+                        + "".join(
+                            f" {flag}={count}" for flag, count in window.get("tradability_flag_counts", {}).items()
+                        )
                         + (
                             f" bench_error={window['benchmark_errors'][0]}"
                             if window.get("benchmark_errors") else ""
