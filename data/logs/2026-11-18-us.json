@@ -1,0 +1,27 @@
+{
+  "session": "us",
+  "date": "2026-11-18",
+  "finished_at": "2026-11-18T22:35:32+00:00",
+  "entries": [
+    {
+      "market": "us",
+      "strategy": "global_value",
+      "status": "ok",
+      "run_id": "96281996813e",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.0
+    },
+    {
+      "market": "us",
+      "strategy": "us_momentum_quality",
+      "status": "ok",
+      "run_id": "8cd58ac4aead",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.1
+    }
+  ]
+}
