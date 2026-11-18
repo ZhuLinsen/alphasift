@@ -180,6 +180,24 @@ curl "http://127.0.0.1:8765/strategy-run-summary?limit=50"
 alphasift evaluate <run_id> --with-price-path --explain
 ```
 
+## A 股离线日线包
+
+```bash
+alphasift pack pull
+alphasift pack info --trade-date 2026-11-18
+ALPHASIFT_PACK_DIR=data/pack/sample alphasift pack build --days 250 --codes-limit 30
+python3 scripts/build_pack.py backfill --days 250 --trade-date 2026-11-18
+python3 scripts/build_pack.py update --days 250 --trade-date 2026-11-19
+```
+
+`pull` 从 GitHub Release 拉取清单，校验 SHA-256；本地文件已与清单一致时跳过下载。`info` 输出校验后的清单和 `fresh` 字段。省略 `--trade-date` 时，按 A 股收盘时间和工作日估算预期交易日，节假日可显式指定。
+
+默认保留 250 个交易日。Baostock 按代码回填，同一日期范围复用已下载的日线。省略 `--codes-limit` 可构建全量包。增量更新优先取 TickPlus 日线，缺口或取数失败时由 Baostock 补齐。
+
+`daily.npz` 保存不复权价格和交易所昨收，停牌及未上市的日期留空。Python 接口 `load_pack` 读取原始矩阵，`forward_adjust` 按昨收动态计算前复权，成交量（股）和成交额（元）保留原值。`stitch_snapshot` 仅在内存中拼接当日快照，需要代码、开高低收（收盘可用 `price`）、昨收、成交量和成交额。现有归一化 A 股快照缺少部分必要字段时会返回明确的降级错误。
+
+本次仅提供 A 股包、命令和接口。选股流水线接入与 Release 发布工作流在后续版本实现。
+
 ## Python 调用
 
 ```python

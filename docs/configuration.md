@@ -160,6 +160,16 @@ tushare -> sina -> efinance -> akshare_em -> em_datacenter
 | 候选级上下文 | `news,fund_flow,announcement,quote` | 新闻、资金流、公告、腾讯行情估值/换手率 |
 | 失败降级 | source health 熔断 + daily history cache + snapshot last-good cache | stale/fallback/source_errors 元数据 |
 
+### A 股离线日线包
+
+| 环境变量 | 默认值 | 用途 |
+|----------|--------|------|
+| `ALPHASIFT_PACK_DIR` | `<ALPHASIFT_DATA_DIR>/pack/cn` | 包文件及按日期范围保存的 `.backfill/` 续传缓存 |
+| `ALPHASIFT_PACK_REPO` | `ZhuLinsen/alphasift` | `pack pull` 的 GitHub Release 仓库，默认标签为 `data-cn` |
+| `TICKPLUS_TOKEN` | 未设置 | `scripts/build_pack.py update` 的可选增量凭据；未配置时由 Baostock 取数 |
+
+TickPlus `updatedaykline` 约提供最近一周的不复权日线，接口使用 HTTP 并在查询串传递 token。本次仅用按文档字段构造的离线样例验证，尚未进行实盘接口验证。名称、行业、估值和市值等元数据来自构建或更新时的最新可用快照，源缺失的可选字段可省略。
+
 ## L3 后置分析器
 
 默认启用本地 `scorecard`，即使不配置外部系统，也会有一层稳定、低成本的候选复核评分。
