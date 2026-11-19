@@ -1,0 +1,26 @@
+{
+  "schema_version": 3,
+  "run_id": "6cf0641cad4d",
+  "strategy": "volume_breakout",
+  "market": "cn",
+  "strategy_version": "1.2",
+  "strategy_category": "trend",
+  "created_at": "2026-11-19T10:34:34.730091+00:00",
+  "picks": 4,
+  "snapshot_count": 5220,
+  "after_filter_count": 4,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 0,
+  "degradation": [],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": true,
+  "daily_enrich_count": 32,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/6cf0641cad4d.json",
+  "report_path": "track/data/runs/6cf0641cad4d.md"
+}

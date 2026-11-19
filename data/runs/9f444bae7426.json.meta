@@ -1,0 +1,26 @@
+{
+  "schema_version": 3,
+  "run_id": "9f444bae7426",
+  "strategy": "low_volatility_quality",
+  "market": "cn",
+  "strategy_version": "1.0",
+  "strategy_category": "quality",
+  "created_at": "2026-11-19T10:33:11.588157+00:00",
+  "picks": 5,
+  "snapshot_count": 5220,
+  "after_filter_count": 44,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 0,
+  "degradation": [],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": true,
+  "daily_enrich_count": 100,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/9f444bae7426.json",
+  "report_path": "track/data/runs/9f444bae7426.md"
+}
