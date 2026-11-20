@@ -12,7 +12,7 @@ from pathlib import Path
 
 from alphasift.audit import audit_project
 from alphasift.config import Config
-from alphasift.doctor import doctor_data_sources, write_doctor_report
+from alphasift.doctor import doctor_data_sources, doctor_radar_readiness, write_doctor_report
 from alphasift.dsa import check_dsa_readiness
 from alphasift.evaluate import evaluate_saved_run, evaluate_saved_runs, evaluate_saved_runs_by_windows
 from alphasift.hotspot import (
@@ -362,11 +362,19 @@ def main():
     drp.add_argument("--output", default=None, help="额外写出 JSON 诊断报告")
     drp.add_argument("--json", action="store_true", help="以 JSON 输出")
     drp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
+    rdp = doctor_sub.add_parser("radar", help="检查 A 股日线包、形态模板、AI 赛道与 IM 推送就绪状态")
+    rdp.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
+    rdp.add_argument("--trade-date", default=None, help="预期交易日 YYYY-MM-DD")
+    rdp.add_argument("--json", action="store_true", help="以 JSON 输出")
+    rdp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
 
     pp = sub.add_parser("pack", help="管理 A 股离线日线包")
     pack_sub = pp.add_subparsers(dest="pack_command", required=True)
     pull_parser = pack_sub.add_parser("pull", help="从 GitHub Release 拉取并校验数据包")
     pull_parser.add_argument("--tag", default=None, help="Release 标签，默认 data-cn")
+    pull_parser.add_argument("--trade-date", default=None, help="预期交易日 YYYY-MM-DD（轮询新鲜度用）")
+    pull_parser.add_argument("--wait-sec", type=float, default=0.0, help="若远端包未更新至目标日，最多等待秒数，默认 0")
+    pull_parser.add_argument("--poll-sec", type=float, default=30.0, help="轮询间隔秒数，默认 30")
     info_parser = pack_sub.add_parser("info", help="查看已校验的数据包及新鲜度")
     info_parser.add_argument("--trade-date", help="预期交易日 YYYY-MM-DD，默认按 A 股收盘时间估算")
     build_parser = pack_sub.add_parser("build", help="用日线历史回填 A 股日线包")
@@ -419,6 +427,23 @@ def main():
     pat_replay.add_argument("--output-json", default=None, help="写出 JSON 回放报告")
     pat_replay.add_argument("--output-md", default=None, help="写出 Markdown 回放报告")
     pat_replay.add_argument("--json", action="store_true", help="以 JSON 输出")
+
+    # daily-report (CN daily report + IM card + idempotent push)
+    drpt = sub.add_parser("daily-report", help="生成 A 股结构化日报 report.json、<1200 字卡片并支持幂等 IM 推送")
+    drpt.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
+    drpt.add_argument("--trade-date", default=None, help="指定交易日 YYYY-MM-DD")
+    drpt.add_argument("--run-id", action="append", default=None, help="附加已保存策略运行 ID/路径，可重复")
+    drpt.add_argument("--runs-dir", default=None, help="从目录自动附带该日保存的 CN 策略运行")
+    drpt.add_argument("--no-announcements", action="store_true", help="跳过候选股近期公告负面关键词排雷")
+    drpt.add_argument("--announcement-max-codes", type=int, default=12, help="公告排雷最多抽检前 N 只候选，默认 12")
+    drpt.add_argument("--output-json", default=None, help="写出 DailyReport report.json 路径")
+    drpt.add_argument("--output-card", default=None, help="额外写出 <1200 字 IM Markdown 卡片路径")
+    drpt.add_argument("--push", action="store_true", help="按已配置渠道幂等推送到企微/飞书/Telegram（无配置静默跳过）")
+    drpt.add_argument("--channel", action="append", default=None, help="仅推送指定渠道（wecom/feishu/telegram），可重复")
+    drpt.add_argument("--force-push", action="store_true", help="忽略同交易日幂等锁强制重发")
+    drpt.add_argument("--dry-run-push", action="store_true", help="演练推送流程，不实际发送请求也不写状态")
+    drpt.add_argument("--json", action="store_true", help="以 JSON 输出")
+    drpt.add_argument("--explain", action="store_true", help="输出紧凑摘要与 IM 卡片预览")
 
     args = parser.parse_args()
     _apply_env_file_args(args.env_file)
@@ -891,6 +916,16 @@ def main():
                 print(json.dumps(result, ensure_ascii=False, indent=2))
             else:
                 print(_format_dsa_readiness_explain(result))
+        elif args.doctor_command == "radar":
+            result = doctor_radar_readiness(
+                config,
+                pack_dir=Path(args.pack_dir).expanduser() if args.pack_dir else None,
+                trade_date=args.trade_date,
+            )
+            if args.explain and not args.json:
+                print(_format_radar_doctor_explain(result))
+            else:
+                print(json.dumps(result, ensure_ascii=False, indent=2))
         else:
             parser.error("doctor requires a subcommand, e.g. doctor data-sources")
 
@@ -904,7 +939,17 @@ def main():
         directory = pack.pack_dir(config)
         try:
             if args.pack_command == "pull":
-                result = pack.pull(directory, tag=args.tag if args.tag is not None else pack.DEFAULT_TAG)
+                tag = args.tag if args.tag is not None else pack.DEFAULT_TAG
+                if (args.wait_sec and args.wait_sec > 0) or args.trade_date:
+                    result = pack.pull_with_wait(
+                        directory,
+                        tag=tag,
+                        expected_trade_date=args.trade_date,
+                        max_wait_sec=args.wait_sec,
+                        poll_interval_sec=args.poll_sec,
+                    )
+                else:
+                    result = pack.pull(directory, tag=tag)
             elif args.pack_command == "info":
                 data = pack.load_pack(directory)
                 expected = args.trade_date or pack.expected_trade_date()
@@ -1010,6 +1055,48 @@ def main():
                 print(json.dumps(report, ensure_ascii=False, indent=2))
             else:
                 print(render_replay_markdown(report))
+
+    elif args.command == "daily-report":
+        from alphasift import pack
+        from alphasift.daily_report import build_daily_report, write_daily_card, write_daily_report
+        from alphasift.notify import push_daily_report
+
+        config = Config.from_env()
+        directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
+        try:
+            daily_pack = pack.load_pack(directory)
+            runs = _load_daily_report_runs(
+                config,
+                run_refs=args.run_id,
+                runs_dir=Path(args.runs_dir).expanduser() if args.runs_dir else None,
+                trade_date=args.trade_date or daily_pack.trade_date,
+            )
+            report = build_daily_report(
+                daily_pack,
+                trade_date=args.trade_date,
+                strategy_runs=runs,
+                include_announcements=not args.no_announcements,
+                announcement_max_codes=args.announcement_max_codes,
+                announcement_cache_dir=config.data_dir / "candidate_context_cache",
+            )
+            if args.output_json:
+                write_daily_report(args.output_json, report)
+            if args.output_card:
+                write_daily_card(args.output_card, report["im_card_markdown"])
+            if args.push or args.dry_run_push:
+                report["push"] = push_daily_report(
+                    report,
+                    config=config,
+                    channels=args.channel,
+                    force=args.force_push,
+                    dry_run=args.dry_run_push,
+                )
+        except (OSError, RuntimeError, ValueError, IndexError) as exc:
+            parser.error(str(exc))
+        if args.explain and not args.json:
+            print(_format_daily_report_explain(report))
+        else:
+            print(json.dumps(report, ensure_ascii=False, indent=2))
 
     else:
         parser.print_help()
@@ -2386,6 +2473,65 @@ def _format_pattern_scan_explain(scan_result, *, limit: int = 20) -> str:
                 f"  {sig.code} {sig.name or '-':<8} {sig.industry or '-':<8} "
                 f"chg={sig.change_pct:+5.2f}% amt={amt_m:<7} ov10={ov}{obs}"
             )
+    return "\n".join(lines)
+
+
+def _load_daily_report_runs(
+    config: Config,
+    *,
+    run_refs: list[str] | None,
+    runs_dir: Path | None,
+    trade_date: str,
+) -> list:
+    loaded = []
+    seen_ids: set[str] = set()
+    for ref in run_refs or []:
+        sr = load_screen_result(ref, data_dir=config.data_dir)
+        if sr.run_id not in seen_ids:
+            seen_ids.add(sr.run_id)
+            loaded.append(sr)
+    if runs_dir is not None and runs_dir.is_dir():
+        for path in sorted(runs_dir.glob("*.json")):
+            try:
+                sr = load_screen_result(path, data_dir=config.data_dir)
+            except Exception:  # noqa: BLE001
+                continue
+            if sr.market == "cn" and (not sr.created_at or sr.created_at.startswith(trade_date)):
+                if sr.run_id not in seen_ids:
+                    seen_ids.add(sr.run_id)
+                    loaded.append(sr)
+    return loaded
+
+
+def _format_radar_doctor_explain(payload: dict) -> str:
+    pk = payload.get("pack") or {}
+    pt = payload.get("patterns") or {}
+    nt = payload.get("notify") or {}
+    llm = payload.get("llm") or {}
+    lines = [
+        f"radar_doctor status={payload.get('status')} pack_valid={pk.get('valid')} "
+        f"pack_date={pk.get('trade_date')} expected={pk.get('expected_trade_date')} fresh={pk.get('fresh')}",
+        f"patterns total={pt.get('total')} active={pt.get('active_count')} "
+        f"experimental={pt.get('experimental_count')} sync_ok={pt.get('mirror_sync_ok')}",
+        f"notify channels={','.join(nt.get('configured_channels') or []) or 'none'} "
+        f"llm={llm.get('ai_track_mode')}",
+    ]
+    for rec in payload.get("recommendations") or []:
+        lines.append(f"  recommendation: {rec}")
+    return "\n".join(lines)
+
+
+def _format_daily_report_explain(report: dict) -> str:
+    lines = [
+        report.get("im_card_markdown", ""),
+        f"--- im_card_chars={report.get('im_card_chars')} schema=DailyReport v{report.get('schema_version')}",
+    ]
+    push = report.get("push")
+    if isinstance(push, dict):
+        lines.append(
+            f"push status={push.get('status')} sent={push.get('sent')} "
+            f"skipped={len(push.get('skipped') or [])} errors={len(push.get('errors') or [])}"
+        )
     return "\n".join(lines)
 
 

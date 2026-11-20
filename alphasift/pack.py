@@ -344,10 +344,16 @@ def _parse_tickplus_day(payload: object, trade_date: str) -> pd.DataFrame:
 
 
 def pack_dir(config: Config | None = None) -> Path:
-    """Resolve the pack directory from environment and AlphaSift's data dir."""
-    config = config or Config.from_env()
+    """Resolve the pack directory from config override, environment, or AlphaSift's data dir."""
+    if config is not None and config.daily_pack_dir is not None:
+        return Path(config.daily_pack_dir).expanduser()
     override = os.getenv("ALPHASIFT_PACK_DIR", "").strip()
-    return Path(override).expanduser() if override else config.data_dir / "pack" / "cn"
+    if override:
+        return Path(override).expanduser()
+    resolved = config or Config.from_env()
+    if resolved.daily_pack_dir is not None:
+        return Path(resolved.daily_pack_dir).expanduser()
+    return resolved.data_dir / "pack" / "cn"
 
 
 def expected_trade_date(now: datetime | None = None) -> str:
@@ -492,6 +498,64 @@ def pull(directory: str | Path | None = None, *, repo: str | None = None, tag: s
         _load_pack(stage)
         _publish(stage, path)
     return remote
+
+
+def pull_with_wait(
+    directory: str | Path | None = None,
+    *,
+    repo: str | None = None,
+    tag: str = DEFAULT_TAG,
+    expected_trade_date: str | date | None = None,
+    max_wait_sec: float = 0.0,
+    poll_interval_sec: float = 30.0,
+    sleep_fn=time.sleep,
+) -> dict:
+    """Pull ``data-cn`` release pack, optionally polling until ``expected_trade_date`` arrives."""
+    target = _iso_date(expected_trade_date) if expected_trade_date is not None else expected_trade_date_str()
+    budget = max(0.0, float(max_wait_sec))
+    interval = max(0.1, float(poll_interval_sec))
+    waited = 0.0
+    attempts = 0
+    last_manifest: dict | None = None
+    last_error: Exception | None = None
+
+    while True:
+        attempts += 1
+        try:
+            manifest = pull(directory, repo=repo, tag=tag)
+            last_manifest = manifest
+            if target is None or str(manifest.get("trade_date", "")) >= target:
+                return {
+                    **manifest,
+                    "expected_trade_date": target,
+                    "fresh": True if target is None else str(manifest.get("trade_date", "")) >= target,
+                    "attempts": attempts,
+                    "waited_sec": round(waited, 2),
+                }
+        except (OSError, PackError) as exc:
+            last_error = exc
+
+        if waited >= budget:
+            if last_manifest is not None:
+                return {
+                    **last_manifest,
+                    "expected_trade_date": target,
+                    "fresh": False if target is not None else True,
+                    "attempts": attempts,
+                    "waited_sec": round(waited, 2),
+                }
+            if last_error is not None:
+                raise last_error
+            raise PackError("Pack pull failed without manifest")
+
+        step = min(interval, budget - waited)
+        if step > 0:
+            sleep_fn(step)
+            waited += step
+
+
+def expected_trade_date_str() -> str:
+    return expected_trade_date()
 
 
 def _download(base: str, dst: Path) -> None:
