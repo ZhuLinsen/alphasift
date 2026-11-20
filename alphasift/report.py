@@ -218,6 +218,11 @@ def _evaluation_summary(
         "average_return_pct": evaluation.average_return_pct,
         "median_return_pct": evaluation.median_return_pct,
         "win_rate": evaluation.win_rate,
+        "entry_mode": evaluation.entry_mode,
+        "horizon_days": evaluation.horizon_days,
+        "pending_count": evaluation.pending_count,
+        "untradable_count": evaluation.untradable_count,
+        "untradable_share_pct": evaluation.untradable_share_pct,
         "missing_count": len(evaluation.missing_codes),
         "missing_codes": list(evaluation.missing_codes),
         "degradation": list(evaluation.degradation),
@@ -241,6 +246,7 @@ def _evaluation_pick_card(pick: PickEvaluation) -> dict[str, Any]:
         "code": pick.code,
         "name": pick.name,
         "entry_price": _round_value(pick.entry_price),
+        "entry_open": _round_value(pick.entry_open),
         "current_price": _round_value(pick.current_price),
         "return_pct": _round_value(pick.return_pct),
         "status": pick.status,
@@ -253,6 +259,9 @@ def _evaluation_pick_card(pick: PickEvaluation) -> dict[str, Any]:
         "shape_status": pick.shape_status,
         "shape_tags": list(pick.shape_tags),
         "path_status": pick.path_status,
+        "entry_date": pick.entry_date,
+        "exit_date": pick.exit_date,
+        "tradability_flags": list(pick.tradability_flags),
         "max_drawdown_pct": _round_value(pick.max_drawdown_pct),
         "max_runup_pct": _round_value(pick.max_runup_pct),
     }
@@ -269,10 +278,26 @@ def _render_evaluation_markdown(evaluation: dict[str, Any]) -> list[str]:
         f"- median_return_pct: {_fmt(evaluation.get('median_return_pct'))}",
         f"- win_rate: {_fmt(evaluation.get('win_rate'))}",
         f"- missing_count: {_fmt(evaluation.get('missing_count'))}",
-        "",
-        "| # | Code | Name | Return % | Status | Shape | Max DD | Max Runup |",
-        "|---:|---|---|---:|---|---|---:|---:|",
     ]
+    next_open = evaluation.get("entry_mode") == "next_open"
+    if evaluation.get("horizon_days") is not None:
+        lines.extend([
+            f"- window: T+{evaluation['horizon_days']}",
+            f"- entry_mode: {_fmt(evaluation.get('entry_mode'))}",
+            f"- pending_count: {_fmt(evaluation.get('pending_count'))}",
+        ])
+    if next_open:
+        lines.extend([
+            f"- untradable_count: {_fmt(evaluation.get('untradable_count'))}",
+            f"- untradable_share_pct: {_fmt(evaluation.get('untradable_share_pct'))}",
+        ])
+        lines.extend(f"- {_md(note)}" for note in evaluation.get("degradation", []))
+    lines.extend([
+        "",
+        "| # | Code | Name | Return % | Status | Shape | Max DD | Max Runup |"
+        + (" Path status | Tradability flags |" if next_open else ""),
+        "|---:|---|---|---:|---|---|---:|---:|" + ("---|---|" if next_open else ""),
+    ])
     for pick in evaluation.get("picks", []) or []:
         lines.append(
             "| "
@@ -280,6 +305,10 @@ def _render_evaluation_markdown(evaluation: dict[str, Any]) -> list[str]:
             f"{_md(pick.get('return_pct'))} | {_md(pick.get('status'))} | "
             f"{_md(pick.get('shape_status'))} | {_md(pick.get('max_drawdown_pct'))} | "
             f"{_md(pick.get('max_runup_pct'))} |"
+            + (
+                f" {_md(pick.get('path_status'))} | {_md(', '.join(pick.get('tradability_flags', [])))} |"
+                if next_open else ""
+            )
         )
     return lines
 

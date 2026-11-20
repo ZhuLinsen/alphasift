@@ -256,17 +256,22 @@ alphasift evaluate-batch --limit 20 --explain
 alphasift runs --strategy dual_low --json
 ```
 
-评估会用保存时价格与评估时最新快照价格计算 T+N 收益、胜率、缺失报价、交易成本扣减、等权组合摘要和形态后验标签。启用 `--with-price-path` 后，会额外估算最大回撤和最大浮盈。
+未指定 `--window` 时，评估用保存时价格与最新快照价格计算收益、胜率、缺失报价、交易成本扣减、等权组合摘要和形态后验标签。启用 `--with-price-path` 后，会额外估算最大回撤和最大浮盈。
 `evaluate-batch` / `evaluate-strategies` 还会输出 `failure_review` 和 `event_signal_review`，用于定位反复失效的策略、事件信号、风险 flag、形态状态和数据问题，并沉淀可偏好/规避的事件标签。`event_signal_review.strategy_patch_suggestions` 会把策略级事件胜率转换成可审阅的 `screening.event_profile` YAML 片段，方便后续把稳定的 prefer/avoid 结论落回策略。
 
 多窗口 T+N 基准对比（例如同时检查 T+5 / T+10 / T+20 相对于市场基准指数的超额收益）：
 
 ```bash
 alphasift evaluate-strategies --market cn --window 5,10,20 --explain
-alphasift evaluate-strategies --market us --window 5,10,20 --json
+alphasift evaluate-strategies --market us --window 5,10,20 --entry-mode next_open --json
+alphasift evaluate <run_id> --window 5 --entry-mode next_open --explain
 ```
 
-自动化公开跟踪脚本（`scripts/track_record.py`）用于批量跑完同一交易时段的全部分市场策略、执行多窗口基准评估并生成看板站点数据：
+`--entry-mode close` 是默认的收盘入场口径。`--entry-mode next_open` 适用于收盘后才拿到报告的场景，从入场截止日后首根可用日 K 的开盘价算起。首根日 K 计为 T+1，包含其最高和最低价，第 N 根日 K 的收盘价为计划退出价。停牌或缺日 K 时等待个股首个可用交易日入场，基准有对应的更早交易日时会标记 `entry_delayed_missing_bar`。个股缺开盘价时显示 `no_entry_open`。基准采用个股实际入场日的开盘价和退出日的收盘价，缺价时仅展示个股收益，并提示原因。
+
+A 股开盘一字涨停的候选记为 `untradable_limit_up`，摘要单列数量和占候选总数的百分比。计划退出日一字跌停时，标记 `exit_delayed_limit_down` 并顺延到首个可退出日的收盘。未能退出或日 K 数量不足的窗口显示 `pending`。不可成交和未完成样本均不计入平均收益和胜率。
+
+自动化公开跟踪脚本（`scripts/track_record.py`）沿用默认的收盘入场口径。脚本批量跑完同一交易时段的全部分市场策略、执行多窗口基准评估并生成看板站点数据：
 
 ```bash
 python scripts/track_record.py screen --session asia --track track
