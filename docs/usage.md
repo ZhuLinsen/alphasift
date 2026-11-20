@@ -202,7 +202,7 @@ python3 scripts/build_pack.py update --days 250 --trade-date 2026-11-19
 
 `daily.npz` 保存不复权价格和交易所昨收，停牌及未上市的日期留空。Python 接口 `load_pack` 读取原始矩阵，`forward_adjust` 按昨收动态计算前复权，成交量（股）和成交额（元）保留原值。`stitch_snapshot` 仅在内存中拼接当日快照，需要代码、开高低收（收盘可用 `price`）、昨收、成交量和成交额。`sina`、`efinance`、`akshare_em` 快照自带这些字段并会自动映射，未成交的行不写入；`em_datacenter` 和 `tushare` 快照缺少这些字段，会返回明确的降级错误。
 
-本次仅提供 A 股包、命令和接口。选股流水线接入与 Release 发布工作流在后续版本实现。
+当本地存在有效且新鲜的 A 股数据包时（默认 `ALPHASIFT_DAILY_PACK_ENABLED=1`），`screen` 运行 `volume_breakout`、`shrink_pullback` 等需要日 K 的 A 股策略会自动使用 `alphasift/pack_features.py` 向量化计算全部初筛候选的日线指标，不再受默认 Top-100 补日线截断限制；若包缺失、损坏或过期且无法从快照拼接，则自动回退现有逐只补日线路径并记录 `degradation`。其他 6 个市场不触发数据包路径。
 
 ## Python 调用
 

@@ -235,6 +235,8 @@ class Config:
     daily_fetch_max_workers: int = 1
     daily_history_cache_dir: Path | None = None
     daily_history_cache_ttl_hours: int = 24
+    daily_pack_enabled: bool = True
+    daily_pack_dir: Path | None = None
 
     # Independent risk layer.
     risk_enabled: bool = True
@@ -377,6 +379,8 @@ class Config:
                     )
                 ),
             ),
+            daily_pack_enabled=_parse_bool_env("ALPHASIFT_DAILY_PACK_ENABLED", True),
+            daily_pack_dir=_parse_optional_path_env("ALPHASIFT_PACK_DIR"),
             risk_enabled=_parse_bool_env("RISK_ENABLED", True),
             risk_max_penalty=_parse_float_env("RISK_MAX_PENALTY", 12.0),
             risk_veto_high=_parse_bool_env("RISK_VETO_HIGH", False),
