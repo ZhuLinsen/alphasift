@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
-from typing import Protocol
+from typing import Any, Protocol
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
@@ -53,6 +53,7 @@ _SNAPSHOT_QUOTES = {
     "sina": ("open", "high", "low", "settlement", "volume", 1),
     "efinance": ("今开", "最高", "最低", "昨日收盘", "成交量", 100),
     "akshare_em": ("今开", "最高", "最低", "昨收", "成交量", 100),
+    "em_datacenter": ("OPEN_PRICE", "HIGH_PRICE", "LOW_PRICE", "PRE_CLOSE_PRICE", "VOLUME", 100),
 }
 _REFERENCE_CODES = ("000001", "600519", "601398")
 _MAX_FAILED_CODES = 0.05
@@ -450,13 +451,63 @@ def forward_adjust(pack: DailyPack, *, rtol: float = 1e-5) -> dict[str, np.ndarr
     }
 
 
+def pack_price_paths(
+    pack: DailyPack,
+    codes: Sequence[str] | None = None,
+    *,
+    adjusted: bool = True,
+    include_raw: bool = True,
+) -> dict[str, pd.DataFrame]:
+    """Extract per-code OHLCV price path DataFrames from ``pack`` for evaluation.
+
+    When ``include_raw=True``, also attaches unadjusted ``raw_open``, ``raw_high``,
+    ``raw_low``, ``raw_close`` and ``raw_pre_close`` (rounded to 4 decimals to
+    remove float32 storage drift) so CN price-limit checks evaluate exact raw quotes.
+    """
+    mats = forward_adjust(pack) if adjusted else pack.matrices
+    if codes is None:
+        target_codes = [str(c) for c in pack.codes]
+    else:
+        seen: set[str] = set()
+        target_codes = []
+        for raw in codes:
+            try:
+                norm = _code(raw)
+            except PackError:
+                continue
+            if norm not in seen:
+                seen.add(norm)
+                target_codes.append(norm)
+
+    dates = pack.dates
+    out: dict[str, pd.DataFrame] = {}
+    for code in target_codes:
+        idx = int(pack.codes.searchsorted(code))
+        if idx >= len(pack.codes) or pack.codes[idx] != code:
+            continue
+        data: dict[str, Any] = {
+            "date": dates,
+            **{key: mats[key][:, idx].astype(np.float64) for key in FIELDS},
+        }
+        if include_raw:
+            for key in PRICE_FIELDS:
+                data[f"raw_{key}"] = np.round(pack.matrices[key][:, idx].astype(np.float64), 4)
+        frame = pd.DataFrame(data)
+        valid = frame["close"].notna() & (frame["close"] > 0)
+        frame = frame.loc[valid].reset_index(drop=True)
+        if not frame.empty:
+            frame.attrs["daily_source"] = "daily_pack"
+            out[code] = frame
+    return out
+
+
 def stitch_snapshot(pack: DailyPack, snapshot: pd.DataFrame, trade_date: str | date | None = None) -> DailyPack:
     """Return an in-memory pack with a provisional snapshot row appended.
 
     Requires code, open, high, low, close (or price), pre_close, volume in
-    shares, and amount in yuan. Snapshots from sina, efinance and akshare_em
-    carry these under their own column names and are mapped automatically;
-    em_datacenter and tushare snapshots do not. SnapshotStitchError gives a
+    shares, and amount in yuan. Snapshots from sina, efinance, akshare_em and
+    em_datacenter carry these under their own column names and are mapped
+    automatically; tushare snapshots do not. SnapshotStitchError gives a
     degradation note.
     """
     day = _iso_date(trade_date or datetime.now(_CN_TZ).date())

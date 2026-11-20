@@ -34,14 +34,44 @@ def compute_pack_daily_features(
     *,
     codes: Sequence[str] | None = None,
     as_of_index: int | None = None,
+    trade_date: str | None = None,
 ) -> pd.DataFrame:
-    """Forward-adjust ``daily_pack`` and compute daily features vectorized."""
-    adjusted = forward_adjust(daily_pack)
+    """Slice to ``trade_date``/``as_of_index`` BEFORE ``forward_adjust``, then compute features."""
+    dates = [str(d) for d in daily_pack.dates]
+    total_dates = len(dates)
+    if total_dates == 0 or len(daily_pack.codes) == 0:
+        return pd.DataFrame(columns=_FEATURE_COLUMNS)
+
+    if trade_date is not None:
+        if trade_date not in dates:
+            raise ValueError(f"trade_date {trade_date!r} not found in DailyPack ({dates[0]}..{dates[-1]})")
+        end_idx = dates.index(trade_date) + 1
+    elif as_of_index is not None:
+        end_idx = as_of_index + 1 if as_of_index >= 0 else total_dates + as_of_index + 1
+        if end_idx <= 0 or end_idx > total_dates:
+            raise IndexError(f"as_of_index {as_of_index} out of range for {total_dates} sessions")
+    else:
+        end_idx = total_dates
+
+    if end_idx < total_dates:
+        # Slice strictly BEFORE forward_adjust so future splits never rescale past MAs.
+        work_pack = DailyPack(
+            dates=daily_pack.dates[:end_idx],
+            codes=daily_pack.codes,
+            matrices={k: v[:end_idx] for k, v in daily_pack.matrices.items()},
+            meta=daily_pack.meta,
+            sources=daily_pack.sources,
+            manifest=daily_pack.manifest,
+        )
+    else:
+        work_pack = daily_pack
+
+    adjusted = forward_adjust(work_pack)
     return compute_matrix_daily_features(
-        daily_pack.codes,
+        work_pack.codes,
         adjusted,
         selected_codes=codes,
-        as_of_index=as_of_index,
+        as_of_index=None,
     )
 
 

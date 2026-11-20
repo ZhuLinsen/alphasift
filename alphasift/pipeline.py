@@ -296,11 +296,15 @@ def screen(
         enriched: pd.DataFrame | None = None
         if active_pack is not None:
             try:
-                enriched, matched_count = _attach_pack_daily_features(df, active_pack)
+                quote_date = str(snapshot_df.attrs.get("quote_date") or "").strip()[:10] or None
+                enriched, matched_count = _attach_pack_daily_features(
+                    df, active_pack, as_of_date=quote_date
+                )
                 daily_enriched = True
                 daily_enrich_count = matched_count
+                used_date = quote_date if (quote_date and quote_date < active_pack.trade_date) else active_pack.trade_date
                 enrich_summary = (
-                    f"Daily K-line enrichment via CN pack ({active_pack.trade_date}) "
+                    f"Daily K-line enrichment via CN pack ({used_date}) "
                     f"matched {matched_count} of {after_filter_count} snapshot-filtered candidates"
                 )
                 if explain_filters or matched_count < after_filter_count:
@@ -881,11 +885,23 @@ def _resolve_cn_daily_pack(
     return active_pack
 
 
-def _attach_pack_daily_features(df: pd.DataFrame, active_pack: DailyPack) -> tuple[pd.DataFrame, int]:
+def _attach_pack_daily_features(
+    df: pd.DataFrame,
+    active_pack: DailyPack,
+    *,
+    as_of_date: str | None = None,
+) -> tuple[pd.DataFrame, int]:
     enriched = df.copy()
     code_col = "code" if "code" in enriched.columns else "代码"
     norm_codes = [normalize_code(v, allow_ticker=False) for v in enriched[code_col]]
-    features_df = compute_pack_daily_features(active_pack, codes=norm_codes)
+    target_trade_date: str | None = None
+    if as_of_date and as_of_date < active_pack.trade_date:
+        eligible = [str(d) for d in active_pack.dates if str(d) <= as_of_date]
+        if eligible:
+            target_trade_date = eligible[-1]
+    features_df = compute_pack_daily_features(
+        active_pack, codes=norm_codes, trade_date=target_trade_date
+    )
     by_code = features_df.set_index("code").to_dict(orient="index") if not features_df.empty else {}
     matched = sum(1 for c in norm_codes if c in by_code)
 

@@ -170,7 +170,10 @@ def _source_snapshot(source):
     return frame
 
 
-@pytest.mark.parametrize(("source", "shares"), [("sina", 300), ("efinance", 30000), ("akshare_em", 30000)])
+@pytest.mark.parametrize(
+    ("source", "shares"),
+    [("sina", 300), ("efinance", 30000), ("akshare_em", 30000), ("em_datacenter", 30000)],
+)
 def test_stitch_maps_existing_snapshot_sources_and_drops_untraded_rows(source, shares):
     codes = ("000001", "000002", "600000", "600001", "600002", "600003")
     stitched = pack.stitch_snapshot(_pack(codes=codes), _source_snapshot(source), "2025-01-09")
@@ -192,14 +195,152 @@ def test_snapshot_provider_uses_first_source_with_quotes(monkeypatch):
         return _source_snapshot(source)
 
     monkeypatch.setattr(pack, "fetch_cn_snapshot", fetch)
-    config = SimpleNamespace(snapshot_source_priority=["em_datacenter", "sina", "efinance", "akshare_em"])
+    config = SimpleNamespace(snapshot_source_priority=["tushare", "sina", "efinance", "akshare_em"])
     provider = pack.SnapshotProvider(config)
     bars = provider.fetch_day("2025-01-09")
-    assert calls == ["sina", "efinance"]  # em_datacenter has no open/high/low/previous close
+    assert calls == ["sina", "efinance"]  # tushare has no open/high/low/previous close
     assert provider.name == "snapshot:efinance"
     assert bars["code"].tolist() == ["000001", "600000", "600001", "600002", "600003"]
     with pytest.raises(pack.PackError, match="latest settled session"):
         provider.fetch_day("2025-01-08")
+
+
+def test_snapshot_provider_uses_em_datacenter_and_drops_suspended(monkeypatch):
+    monkeypatch.setattr(pack, "expected_trade_date", lambda: "2026-11-20")
+    snap = pd.DataFrame([
+        {
+            "code": "000001", "name": "平安", "price": 11.2, "amount": 5.6e8,
+            "OPEN_PRICE": 11.0, "HIGH_PRICE": 11.3, "LOW_PRICE": 10.9,
+            "PRE_CLOSE_PRICE": 11.05, "VOLUME": 500000,
+        },
+        {
+            "code": "920000", "name": "凤凰", "price": 22.5, "amount": 2.7e7,
+            "OPEN_PRICE": 22.0, "HIGH_PRICE": 22.9, "LOW_PRICE": 21.8,
+            "PRE_CLOSE_PRICE": 21.9, "VOLUME": 12000,
+        },
+        {
+            "code": "000635", "name": "停牌股", "price": 10.0, "amount": 0.0,
+            "OPEN_PRICE": "-", "HIGH_PRICE": "-", "LOW_PRICE": "-",
+            "PRE_CLOSE_PRICE": 10.0, "VOLUME": "-",
+        },
+    ])
+    snap.attrs.update(snapshot_source="em_datacenter", quote_date="2026-11-20")
+    monkeypatch.setattr(pack, "fetch_cn_snapshot", lambda source: snap)
+
+    config = SimpleNamespace(snapshot_source_priority=["em_datacenter", "sina"])
+    provider = pack.SnapshotProvider(config)
+    bars = provider.fetch_day("2026-11-20")
+
+    assert provider.name == "snapshot:em_datacenter"
+    assert bars["code"].tolist() == ["000001", "920000"]
+    assert bars.loc[bars["code"] == "920000", "volume"].iloc[0] == pytest.approx(1_200_000.0)
+
+
+def test_pack_price_paths_qfq_raw_limit_and_next_open_eval(tmp_path):
+    from alphasift.evaluate import evaluate_saved_run
+    from alphasift.models import Pick, ScreenResult
+    from alphasift.store import save_screen_result
+
+    dates = tuple(d.strftime("%Y-%m-%d") for d in pd.bdate_range("2026-04-01", periods=10))
+    codes = ("000001", "000002", "920000")
+    mats = {field: np.full((10, 3), np.nan, dtype=np.float32) for field in pack.FIELDS}
+    for t in range(10):
+        # 000001 normal post-entry 2-for-1 split at t=7
+        px = 20.0 if t < 7 else 10.0 * (1.02 ** (t - 7))
+        pre = 20.0 if t < 7 else (10.0 if t == 7 else mats["close"][t - 1, 0])
+        mats["open"][t, 0] = px
+        mats["high"][t, 0] = px * 1.01
+        mats["low"][t, 0] = px * 0.99
+        mats["close"][t, 0] = px
+        mats["pre_close"][t, 0] = pre
+        mats["volume"][t, 0] = 1_000_000.0
+        mats["amount"][t, 0] = 10_000_000.0
+
+        # 000002: pre_close=10.15 on t=4, t=5 opens at 1-price LU=11.17 (10.15*1.10=11.165 -> 11.17),
+        # then undergoes 0.909 ex-dividend at t=6 so forward-adjusted prices alone would distort tick math.
+        if t < 5:
+            p2 = 10.15
+            pc2 = 10.15
+            o2 = h2 = lo2 = c2 = p2
+        elif t == 5:
+            pc2 = 10.15
+            o2 = h2 = lo2 = c2 = 11.17
+        elif t == 6:
+            pc2 = 10.15  # ~1.02 ex-div factor
+            o2 = h2 = lo2 = c2 = 10.15
+        else:
+            pc2 = 10.15
+            o2 = h2 = lo2 = c2 = 10.15
+        mats["open"][t, 1] = o2
+        mats["high"][t, 1] = h2
+        mats["low"][t, 1] = lo2
+        mats["close"][t, 1] = c2
+        mats["pre_close"][t, 1] = pc2
+        mats["volume"][t, 1] = 1_000_000.0
+        mats["amount"][t, 1] = 10_000_000.0
+
+        if t != 2:
+            mats["open"][t, 2] = 8.0
+            mats["high"][t, 2] = 8.2
+            mats["low"][t, 2] = 7.9
+            mats["close"][t, 2] = 8.0
+            mats["pre_close"][t, 2] = 8.0
+            mats["volume"][t, 2] = 500_000.0
+            mats["amount"][t, 2] = 4_000_000.0
+
+    meta = pd.DataFrame({"code": list(codes), "name": ["平安", "一字涨停股", "凤凰"]})
+    raw_pack = pack.DailyPack(np.array(dates), np.array(codes), mats, meta, ("test",))
+
+    adj_paths = pack.pack_price_paths(raw_pack, codes=["sz.000001", "000002", "920000", "600999"], adjusted=True)
+    raw_paths = pack.pack_price_paths(raw_pack, codes=["000001"], adjusted=False)
+
+    assert sorted(adj_paths) == ["000001", "000002", "920000"]
+    assert len(adj_paths["920000"]) == 9  # NaN row excluded
+    assert adj_paths["000001"].loc[0, "close"] == pytest.approx(10.0, rel=1e-4)
+    assert raw_paths["000001"].loc[0, "close"] == pytest.approx(20.0, rel=1e-4)
+    assert adj_paths["000002"].loc[5, "raw_open"] == 11.17
+    assert adj_paths["000002"].loc[5, "raw_pre_close"] == 10.15
+
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="r_pack_eval",
+            created_at=f"{dates[4]}T20:00:00+08:00",
+            picks=[
+                Pick(rank=1, code="000001", name="平安", final_score=80.0, screen_score=80.0, price=20.0),
+                Pick(rank=2, code="000002", name="一字涨停股", final_score=78.0, screen_score=78.0, price=10.15),
+            ],
+        ),
+        data_dir=tmp_path,
+    )
+    bench = pd.DataFrame({"date": list(dates), "open": [3000.0] * len(dates), "close": [3000.0] * len(dates)})
+    res = evaluate_saved_run(
+        "r_pack_eval",
+        config=SimpleNamespace(
+            data_dir=tmp_path,
+            evaluation_cost_bps=0.0,
+            evaluation_follow_through_pct=3.0,
+            evaluation_failed_breakout_pct=-5.0,
+            evaluation_price_path_enabled=True,
+            evaluation_price_path_lookback_days=20,
+            daily_source="auto",
+            daily_fetch_retries=0,
+            daily_fetch_max_workers=1,
+            daily_history_cache_dir=None,
+            daily_history_cache_ttl_hours=0,
+        ),
+        current_snapshot=pd.DataFrame(columns=["code", "price"]),
+        price_paths=adj_paths,
+        with_price_path=False,
+        horizon_days=3,
+        entry_mode="next_open",
+        benchmark_paths={"cn": bench},
+    )
+    assert res.picks[0].status == "ok"
+    assert res.picks[1].status == "untradable_limit_up"
+    assert res.untradable_count == 1
+    assert res.untradable_share_pct == 50.0
 
 
 def _daily_sources(monkeypatch, raw_close, adjusted_close, volume=None):

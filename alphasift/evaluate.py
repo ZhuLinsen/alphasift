@@ -917,6 +917,11 @@ def _next_open_path_metrics(
         suspended = pd.to_numeric(volume, errors="coerce").eq(0).fillna(False)
         df = df.loc[~suspended].copy()
     df["previous_close"] = df["close"].shift()
+    if "raw_pre_close" in df.columns:
+        prev_raw = df["raw_close"].shift() if "raw_close" in df.columns else pd.Series(float("nan"), index=df.index)
+        df["raw_previous_close"] = df["raw_pre_close"].where(df["raw_pre_close"].gt(0), prev_raw)
+    elif "raw_close" in df.columns:
+        df["raw_previous_close"] = df["raw_close"].shift()
     bars = _completed_sessions(_filter_path_after_entry(df, cutoff), market, now=as_of)
     if bars.empty:
         return {**empty, "path_status": "pending", "path_days": 0}
@@ -957,7 +962,22 @@ def _cn_price_limit(code: str, name: str) -> float:
 
 
 def _one_price_limit(bar: pd.Series, change: float, extreme: str) -> bool:
-    opening, previous_close, edge = bar["open"], bar["previous_close"], bar[extreme]
+    raw_edge_col = f"raw_{extreme}"
+    if (
+        "raw_open" in bar
+        and "raw_previous_close" in bar
+        and raw_edge_col in bar
+        and pd.notna(bar["raw_open"])
+        and pd.notna(bar["raw_previous_close"])
+        and pd.notna(bar[raw_edge_col])
+        and float(bar["raw_open"]) > 0
+        and float(bar["raw_previous_close"]) > 0
+    ):
+        opening = float(bar["raw_open"])
+        previous_close = float(bar["raw_previous_close"])
+        edge = float(bar[raw_edge_col])
+    else:
+        opening, previous_close, edge = bar["open"], bar["previous_close"], bar[extreme]
     if pd.isna(opening) or pd.isna(previous_close) or pd.isna(edge):
         return False
     # Round half up before comparing so a quote one tick below the limit
@@ -1235,6 +1255,11 @@ def _normalize_price_path(path: pd.DataFrame, *, fill_missing_extremes: bool = T
         df[column] = pd.to_numeric(df[column], errors="coerce").replace(
             [float("inf"), float("-inf")], float("nan")
         )
+    for raw_col in ("raw_open", "raw_high", "raw_low", "raw_close", "raw_pre_close"):
+        if raw_col in df.columns:
+            df[raw_col] = pd.to_numeric(df[raw_col], errors="coerce").replace(
+                [float("inf"), float("-inf")], float("nan")
+            )
     valid = df["close"].notna() & (df["close"] > 0)
     if "date" in df.columns:
         parsed_dates = pd.to_datetime(df["date"], errors="coerce")

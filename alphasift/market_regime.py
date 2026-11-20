@@ -7,7 +7,7 @@ only; they never alter strategy scoring or weights.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import date
 import re
 from typing import Any
@@ -73,6 +73,8 @@ class MarketRegimeSnapshot:
     regime_stage_label: str
     regime_reasons: list[str]
     usage_policy: str = "reporting_and_slice_only"
+    median_return_pct: float | None = None
+    return_distribution: dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -405,6 +407,18 @@ def _snapshot_at_index(masks: dict[str, np.ndarray], t: int) -> MarketRegimeSnap
     declining_count = int((act & (close_t < pc_t - 1e-6)).sum())
     flat_count = max(0, traded_count - advancing_count - declining_count)
     advance_ratio_pct = round((advancing_count / traded_count) * 100.0, 2) if traded_count > 0 else 0.0
+    valid_pcts = ret_t[act] * 100.0
+    valid_pcts = valid_pcts[np.isfinite(valid_pcts)]
+    median_return_pct = round(float(np.median(valid_pcts)), 2) if valid_pcts.size > 0 else None
+    return_distribution = {
+        "le_neg7": int((valid_pcts <= -7.0).sum()),
+        "neg7_neg3": int(((valid_pcts > -7.0) & (valid_pcts <= -3.0)).sum()),
+        "neg3_0": int(((valid_pcts > -3.0) & (valid_pcts < -1e-4)).sum()),
+        "flat": int((np.abs(valid_pcts) <= 1e-4).sum()),
+        "pos0_3": int(((valid_pcts > 1e-4) & (valid_pcts < 3.0)).sum()),
+        "pos3_7": int(((valid_pcts >= 3.0) & (valid_pcts < 7.0)).sum()),
+        "ge_pos7": int((valid_pcts >= 7.0).sum()),
+    }
 
     lu = masks["is_limit_up"][t]
     lu_non_st = lu & non_st
@@ -506,6 +520,8 @@ def _snapshot_at_index(masks: dict[str, np.ndarray], t: int) -> MarketRegimeSnap
         regime_stage=stage,
         regime_stage_label=stage_label,
         regime_reasons=reasons,
+        median_return_pct=median_return_pct,
+        return_distribution=return_distribution,
     )
 
 
