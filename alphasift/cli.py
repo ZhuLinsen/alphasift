@@ -363,6 +363,21 @@ def main():
     drp.add_argument("--json", action="store_true", help="以 JSON 输出")
     drp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
 
+    pp = sub.add_parser("pack", help="管理 A 股离线日线包")
+    pack_sub = pp.add_subparsers(dest="pack_command", required=True)
+    pull_parser = pack_sub.add_parser("pull", help="从 GitHub Release 拉取并校验数据包")
+    pull_parser.add_argument("--tag", default=None, help="Release 标签，默认 data-cn")
+    info_parser = pack_sub.add_parser("info", help="查看已校验的数据包及新鲜度")
+    info_parser.add_argument("--trade-date", help="预期交易日 YYYY-MM-DD，默认按 A 股收盘时间估算")
+    build_parser = pack_sub.add_parser("build", help="用日线历史回填 A 股日线包")
+    build_parser.add_argument(
+        "--source", choices=["auto", "baostock", "yfinance", "daily"], default="auto",
+        help="历史数据源：baostock、yfinance、daily（现有新浪和腾讯日线源）或 auto（Baostock 可连时优先，否则走批量 yfinance）",
+    )
+    build_parser.add_argument("--days", type=int, help="回填交易日数量，默认 250")
+    build_parser.add_argument("--codes-limit", type=int, help="仅处理排序后的前 N 个代码，用于小样本验证")
+    build_parser.add_argument("--trade-date", help="回填截止日期 YYYY-MM-DD")
+
     # quickstart
     qp = sub.add_parser(
         "quickstart",
@@ -847,6 +862,27 @@ def main():
 
     elif args.command == "quickstart":
         _run_quickstart(strategy=args.strategy, max_output=args.max_output)
+
+    elif args.command == "pack":
+        from alphasift import pack
+
+        config = Config.from_env()
+        directory = pack.pack_dir(config)
+        try:
+            if args.pack_command == "pull":
+                result = pack.pull(directory, tag=args.tag if args.tag is not None else pack.DEFAULT_TAG)
+            elif args.pack_command == "info":
+                data = pack.load_pack(directory)
+                expected = args.trade_date or pack.expected_trade_date()
+                result = {**data.manifest, "expected_trade_date": expected, "fresh": pack.is_fresh(data, expected)}
+            else:
+                result = pack.backfill(
+                    directory, days=args.days if args.days is not None else pack.DEFAULT_DAYS,
+                    codes_limit=args.codes_limit, trade_date=args.trade_date, config=config, source=args.source,
+                )
+        except (OSError, RuntimeError, ValueError) as exc:
+            parser.error(str(exc))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
 
     else:
         parser.print_help()

@@ -180,6 +180,30 @@ curl "http://127.0.0.1:8765/strategy-run-summary?limit=50"
 alphasift evaluate <run_id> --with-price-path --explain
 ```
 
+## A 股离线日线包
+
+```bash
+alphasift pack pull
+alphasift pack info --trade-date 2026-11-18
+ALPHASIFT_PACK_DIR=data/pack/sample alphasift pack build --days 250 --codes-limit 30
+python3 scripts/build_pack.py backfill --days 250 --trade-date 2026-11-18
+python3 scripts/build_pack.py update --days 250 --trade-date 2026-11-19
+```
+
+`pull` 从 GitHub Release 拉取清单，校验 SHA-256；本地文件已与清单一致时跳过下载。`info` 输出校验后的清单和 `fresh` 字段。省略 `--trade-date` 时，按 A 股收盘时间和工作日估算预期交易日，节假日可显式指定。
+
+默认保留 250 个交易日，数据全部来自项目现有数据源。省略 `--codes-limit` 可构建全量包。
+
+- **回填与补缺口**：按代码在 `.backfill/` 保存断点结果并支持续传。`--source auto`（默认）在 Baostock 可连时优先用它（自带交易所昨收）；否则走批量 `yfinance`（按 100 只分批取 `auto_adjust=False, actions=True`，用 `Stock Splits` 还原不复权 OHLCV，并用 `Adj Close` 比值还原除权日昨收，北交所等无 Yahoo 代码的标的回退现有日线源）。`--source daily` 强制走新浪不复权日线加腾讯前复权日线。
+- **每日增量**：`update` 优先尝试现有全市场快照源（`sina`、`efinance`、`akshare_em`），拿不到开高低和昨收时自动降级到腾讯批量行情（`qt.gtimg.cn`，含当日开高低收、昨收、成交量和成交额），只适用于最近一个已收盘交易日；仍失败时再按代码从日线补齐。
+- **TickPlus（可选）**：设置 `TICKPLUS_API_KEY` 后，`update` 优先用它取当日全市场日线。
+
+批量 `yfinance` 与新浪加腾讯路径的历史成交额均留空（每日增量进来的记录带有真实成交额）；单个代码取数失败会跳过并在下次运行重试，失败超过 5% 则中止。
+
+`daily.npz` 保存不复权价格和交易所昨收，停牌及未上市的日期留空。Python 接口 `load_pack` 读取原始矩阵，`forward_adjust` 按昨收动态计算前复权，成交量（股）和成交额（元）保留原值。`stitch_snapshot` 仅在内存中拼接当日快照，需要代码、开高低收（收盘可用 `price`）、昨收、成交量和成交额。`sina`、`efinance`、`akshare_em` 快照自带这些字段并会自动映射，未成交的行不写入；`em_datacenter` 和 `tushare` 快照缺少这些字段，会返回明确的降级错误。
+
+本次仅提供 A 股包、命令和接口。选股流水线接入与 Release 发布工作流在后续版本实现。
+
 ## Python 调用
 
 ```python
