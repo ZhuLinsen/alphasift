@@ -204,6 +204,14 @@ python3 scripts/build_pack.py update --days 250 --trade-date 2026-11-19
 
 当本地存在有效且新鲜的 A 股数据包时（默认 `ALPHASIFT_DAILY_PACK_ENABLED=1`），`screen` 运行 `volume_breakout`、`shrink_pullback` 等需要日 K 的 A 股策略会自动使用 `alphasift/pack_features.py` 向量化计算全部初筛候选的日线指标，不再受默认 Top-100 补日线截断限制；若包缺失、损坏或过期且无法从快照拼接，则自动回退现有逐只补日线路径并记录 `degradation`。其他 6 个市场不触发数据包路径。
 
+## A 股盘面统计（仅供报告与切片）
+
+```bash
+# 查看盘面宽度、涨跌停/封板率、连板梯队与客观阶段标签（仅适用于 A 股数据包，不调整策略权重）
+alphasift market-stats --explain
+alphasift market-stats --days 10 --json
+```
+
 ## Python 调用
 
 ```python
