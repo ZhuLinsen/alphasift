@@ -386,6 +386,14 @@ def main():
     qp.add_argument("--strategy", default="dual_low", help="演示用策略，默认 dual_low")
     qp.add_argument("--max-output", type=int, default=5, help="演示输出候选数")
 
+    # market-stats (CN pack only)
+    msp = sub.add_parser("market-stats", help="计算 A 股离线日线包的客观盘面宽度、连板梯队与阶段标签")
+    msp.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
+    msp.add_argument("--trade-date", default=None, help="指定交易日 YYYY-MM-DD（仅计算至该日，无前瞻）")
+    msp.add_argument("--days", type=int, default=1, help="输出最近 N 个交易日统计，默认 1")
+    msp.add_argument("--json", action="store_true", help="以 JSON 输出")
+    msp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
+
     args = parser.parse_args()
     _apply_env_file_args(args.env_file)
 
@@ -883,6 +891,35 @@ def main():
         except (OSError, RuntimeError, ValueError) as exc:
             parser.error(str(exc))
         print(json.dumps(result, ensure_ascii=False, indent=2))
+
+    elif args.command == "market-stats":
+        from alphasift import pack
+        from alphasift.market_regime import compute_market_regime, compute_market_regime_series
+
+        config = Config.from_env()
+        directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
+        try:
+            daily_pack = pack.load_pack(directory)
+            if args.days <= 1:
+                items = [compute_market_regime(daily_pack, trade_date=args.trade_date)]
+            else:
+                if args.trade_date is not None:
+                    dates = [str(d) for d in daily_pack.dates]
+                    if args.trade_date not in dates:
+                        raise ValueError(f"trade_date {args.trade_date!r} not found in DailyPack")
+                    end_idx = dates.index(args.trade_date)
+                else:
+                    end_idx = len(daily_pack.dates) - 1
+                series = compute_market_regime_series(daily_pack, end_index=end_idx)
+                items = series[-max(1, int(args.days)):]
+        except (OSError, RuntimeError, ValueError, IndexError) as exc:
+            parser.error(str(exc))
+
+        if args.explain and not args.json:
+            print(_format_market_stats_explain(items))
+        else:
+            payload: object = items[0].to_dict() if args.days <= 1 else [item.to_dict() for item in items]
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
 
     else:
         parser.print_help()
@@ -2220,6 +2257,25 @@ def _split_csv_args(values: list[str] | None) -> list[str] | None:
     for value in values:
         result.extend(item.strip() for item in value.split(",") if item.strip())
     return result
+
+
+def _format_market_stats_explain(items: list) -> str:
+    lines = ["date       stage       up%    lu  brk  seal%   ld  maxLB  prevLU%   amt_yi"]
+    for item in items:
+        seal = "-" if item.seal_rate_pct is None else f"{item.seal_rate_pct:5.1f}"
+        prev_ret = "-" if item.prev_limit_up_avg_return_pct is None else f"{item.prev_limit_up_avg_return_pct:+6.2f}"
+        amt = "-" if item.total_amount_yi is None else f"{item.total_amount_yi:8.1f}"
+        stage_disp = f"{item.regime_stage}({item.regime_stage_label})"
+        lines.append(
+            f"{item.trade_date} {stage_disp:<11} {item.advance_ratio_pct:5.1f} "
+            f"{item.non_st_limit_up_count:4d} {item.non_st_broken_board_count:4d} {seal:>6} "
+            f"{item.non_st_limit_down_count:4d} {item.max_consecutive_limit_up:6d} {prev_ret:>8} {amt:>8}"
+        )
+    if items:
+        last = items[-1]
+        ladder = ", ".join(f"{k}板:{v}" for k, v in last.consecutive_board_ladder.items()) or "无"
+        lines.append(f"ladder={ladder} reasons={'; '.join(last.regime_reasons)} policy={last.usage_policy}")
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":
