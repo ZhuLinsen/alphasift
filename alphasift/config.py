@@ -258,6 +258,15 @@ class Config:
     # Data directory
     data_dir: Path = _PROJECT_ROOT / "data"
 
+    # Optional IM notification webhooks (idle unless explicitly configured).
+    wecom_webhook_url: str = ""
+    feishu_webhook_url: str = ""
+    feishu_webhook_secret: str = ""
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+    notify_state_path: Path = _PROJECT_ROOT / "data" / "notify_state.json"
+    notify_timeout_sec: float = 10.0
+
     # Optional guardrail for last-good snapshot fallback freshness.
     snapshot_fallback_max_age_hours: float | None = None
 
@@ -399,6 +408,26 @@ class Config:
                 int(os.getenv("EVALUATION_PRICE_PATH_LOOKBACK_DAYS", "90")),
             ),
             data_dir=data_dir,
+            wecom_webhook_url=(
+                os.getenv("ALPHASIFT_WECOM_WEBHOOK_URL") or os.getenv("WECOM_WEBHOOK_URL", "")
+            ).strip(),
+            feishu_webhook_url=(
+                os.getenv("ALPHASIFT_FEISHU_WEBHOOK_URL") or os.getenv("FEISHU_WEBHOOK_URL", "")
+            ).strip(),
+            feishu_webhook_secret=(
+                os.getenv("ALPHASIFT_FEISHU_WEBHOOK_SECRET") or os.getenv("FEISHU_WEBHOOK_SECRET", "")
+            ).strip(),
+            telegram_bot_token=(
+                os.getenv("ALPHASIFT_TELEGRAM_BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN", "")
+            ).strip(),
+            telegram_chat_id=(
+                os.getenv("ALPHASIFT_TELEGRAM_CHAT_ID") or os.getenv("TELEGRAM_CHAT_ID", "")
+            ).strip(),
+            notify_state_path=(
+                _parse_optional_path_env("ALPHASIFT_NOTIFY_STATE_PATH")
+                or (data_dir / "notify_state.json")
+            ),
+            notify_timeout_sec=max(1.0, _parse_float_env("ALPHASIFT_NOTIFY_TIMEOUT_SEC", 10.0)),
         )
 
 

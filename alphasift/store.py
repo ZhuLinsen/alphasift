@@ -51,6 +51,8 @@ def load_screen_result(run_ref: str | Path, *, data_dir: Path) -> ScreenResult:
     filtered = {key: value for key, value in data.items() if key in result_fields}
     # Runs without a market predate multi-market support and were A-share.
     filtered["market"] = filtered.get("market") or "cn"
+    if not filtered.get("track"):
+        filtered["track"] = "ai" if filtered.get("llm_ranked") else "rules"
     loaded = ScreenResult(**filtered)
     loaded.saved_path = str(path)
     return loaded

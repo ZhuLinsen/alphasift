@@ -223,6 +223,19 @@ alphasift patterns replay --output-json local/pattern_replay.json --output-md lo
 
 短线接力谱系仅提供盘面连板梯队与昨涨停溢价统计，不出个股买卖信号；`overhead_supply_10pct` 仅作特征输出与切片观测，不做硬筛一票否决。
 
+## 结构化日报、IM 推送与就绪诊断
+
+```bash
+# 打包与推送就绪自检（不会打印任何 Webhook 或 Token 密钥）
+alphasift doctor radar --explain
+
+# 生成结构化 report.json 与 <1200 字 IM 卡片，并按配置幂等推送（无 Webhook 时静默跳过）
+alphasift daily-report --output-json local/report.json --output-card local/card.md --push --explain
+```
+
+- **IM 渠道环境变量**：支持企业微信（`WECOM_WEBHOOK_URL`）、飞书机器人（`FEISHU_WEBHOOK_URL`，可选加签密钥 `FEISHU_WEBHOOK_SECRET`）与 Telegram（`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`）。同一交易日同一渠道默认防重发（`--force-push` 可覆盖）；未配置任何渠道时静默跳过。
+- **公告排雷**：默认对重点候选做最佳实践式近期公告负面关键词抽检；离线或接口异常时降级写入 `degradation`，不影响日报生成。
+
 ## Python 调用
 
 ```python
