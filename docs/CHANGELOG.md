@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- A 股离线日线包：新增支持断点续传的回填（Baostock，Baostock 不可连时自动走批量 `yfinance`，也可用 `--source daily` 走新浪加腾讯）、基于现有快照源与腾讯批量行情（`qt.gtimg.cn`）的每日增量、可选的 TickPlus 增量（`TICKPLUS_API_KEY`）、SHA-256 校验、动态前复权和快照拼接接口，提供 `alphasift pack pull/info/build` 及构建脚本。选股流水线接入和发布工作流将在后续版本实现。
+- A 股全市场向量化选股接入（P1-1）：新增 `alphasift/pack_features.py` 对 250 日数据包矩阵向量化计算与 `daily.py` 同口径的 23 项日线指标；`screen()` 在 A 股且存在新鲜数据包时自动对全部快照初筛候选计算日 K 特征（不再受 Top-100 截断限制），数据包缺失、损坏或过期无法拼接时自动回退原有逐只补日线路径；新增 `ALPHASIFT_DAILY_PACK_ENABLED` 配置与 `markets.py` `supports_daily_pack` 能力位，非 A 股市场零改动
+- A 股离线日线包：新增支持断点续传的回填（Baostock，Baostock 不可连时自动走批量 `yfinance`，也可用 `--source daily` 走新浪加腾讯）、基于现有快照源与腾讯批量行情（`qt.gtimg.cn`）的每日增量、可选的 TickPlus 增量（`TICKPLUS_API_KEY`）、SHA-256 校验、动态前复权和快照拼接接口，提供 `alphasift pack pull/info/build` 及构建脚本。Release 自动发布工作流将在后续版本实现。
 - 韩国估值：覆盖率改为统计真正拿到 PE 或 PB 的股票数（此前只统计请求成功数，接口格式变化导致全部为 N/A 时会被当成完整，覆盖掉有估值的缓存）；快照预算已用完时跳过 Naver，不再额外多跑 5 秒；复用 HTTP 连接，实测韩国快照约 14 秒降到 6 秒
 - T+N 评估：历史数据里没有入场交易日收盘价时标记为 `no_entry_close`，不再退回用保存的选股价（盘中、未复权）去比复权收盘价，否则拆股后会算出虚假的 −50%
 - T+N 基准对比：只有部分选股有基准数据时，基准和超额只覆盖这些选股；新增 `benchmark_pick_count` 和同一批选股的平均收益 `average_matched_return_pct`（两者相减恒等于超额），CLI 在覆盖不全时显示 `bench_n=k/n matched_ret=...`
