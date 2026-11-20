@@ -1,0 +1,32 @@
+name: bottom_volume_yang
+display_name: 底部倍量阳
+family: bottom_reversal
+status: experimental
+version: "1.0"
+description: 股价处于近60日低位且自高点回落充分后，放倍量收出实体饱满的强势阳线
+tags: [bottom_reversal, volume, atr_normalized]
+market_scope: [cn]
+min_history_days: 60
+
+universe:
+  exclude_st: true
+  proxy_amount_min: 80000000
+  close_min: 2.0
+
+mode: direct
+conditions:
+  - feature: pos_in_60d
+    max: 0.42
+  - feature: drawdown_from_60d_high_pct
+    max: -15.0
+  - feature: vol_ratio_5d
+    min: 1.8
+  - feature: vol_ratio_1d
+    min: 1.8
+  - feature: ret_limit_ratio
+    min: 0.35
+    max: 0.99
+  - feature: body_atr
+    min: 1.2
+  - feature: close_pos_in_bar
+    min: 0.65

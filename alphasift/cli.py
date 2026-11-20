@@ -394,6 +394,32 @@ def main():
     msp.add_argument("--json", action="store_true", help="以 JSON 输出")
     msp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
 
+    # patterns (CN pack only)
+    patp = sub.add_parser("patterns", help="A 股日线矩阵形态管理、扫描与 250 日 next_open 回放")
+    pat_sub = patp.add_subparsers(dest="patterns_command", required=True)
+    pat_list = pat_sub.add_parser("list", help="列出内置 A 股形态模板")
+    pat_list.add_argument("--include-experimental", action="store_true", help="包含尚未达毕业门槛的 experimental 形态")
+    pat_list.add_argument("--json", action="store_true", help="以 JSON 输出")
+
+    pat_scan = pat_sub.add_parser("scan", help="使用 A 股日线包进行无状态形态扫描")
+    pat_scan.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
+    pat_scan.add_argument("--pattern", action="append", default=None, help="只扫描指定形态，可重复")
+    pat_scan.add_argument("--trade-date", default=None, help="按截止交易日扫描（无前瞻）")
+    pat_scan.add_argument("--include-experimental", action="store_true", help="同时扫描 experimental 形态")
+    pat_scan.add_argument("--limit", type=int, default=20, help="--explain 模式下每个形态最多展示前 N 只，默认 20")
+    pat_scan.add_argument("--json", action="store_true", help="以 JSON 输出")
+    pat_scan.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
+
+    pat_replay = pat_sub.add_parser("replay", help="对形态做 250 日 next_open 回放、阶段切片与毕业门槛判定")
+    pat_replay.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
+    pat_replay.add_argument("--pattern", action="append", default=None, help="只回放指定形态，可重复")
+    pat_replay.add_argument("--benchmark-csv", default=None, help="可选基准 OHLC CSV（date,open,close）")
+    pat_replay.add_argument("--warmup-days", type=int, default=60, help="形态预热交易日数，默认 60")
+    pat_replay.add_argument("--cost-bps", type=float, default=0.0, help="扣减双边交易成本（bps）")
+    pat_replay.add_argument("--output-json", default=None, help="写出 JSON 回放报告")
+    pat_replay.add_argument("--output-md", default=None, help="写出 Markdown 回放报告")
+    pat_replay.add_argument("--json", action="store_true", help="以 JSON 输出")
+
     args = parser.parse_args()
     _apply_env_file_args(args.env_file)
 
@@ -920,6 +946,70 @@ def main():
         else:
             payload: object = items[0].to_dict() if args.days <= 1 else [item.to_dict() for item in items]
             print(json.dumps(payload, ensure_ascii=False, indent=2))
+
+    elif args.command == "patterns":
+        from alphasift import pack
+        from alphasift.pattern_replay import load_cn_benchmark, render_replay_markdown, replay_patterns
+        from alphasift.patterns import list_patterns, scan_patterns
+
+        config = Config.from_env()
+        if args.patterns_command == "list":
+            specs = list_patterns(include_experimental=args.include_experimental)
+            if args.json:
+                print(json.dumps([asdict(s) for s in specs], ensure_ascii=False, indent=2))
+            else:
+                print(f"patterns={len(specs)}")
+                for spec in specs:
+                    aligned = f" aligned={spec.aligned_strategy}" if spec.aligned_strategy else ""
+                    print(
+                        f"  {spec.name:<24} {spec.display_name:<10} "
+                        f"[{spec.family}/{spec.mode}] status={spec.status}{aligned}"
+                    )
+        elif args.patterns_command == "scan":
+            directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
+            try:
+                daily_pack = pack.load_pack(directory)
+                result = scan_patterns(
+                    daily_pack,
+                    patterns=args.pattern,
+                    trade_date=args.trade_date,
+                    include_experimental=args.include_experimental,
+                )
+            except (OSError, RuntimeError, ValueError, IndexError) as exc:
+                parser.error(str(exc))
+            if args.explain and not args.json:
+                print(_format_pattern_scan_explain(result, limit=args.limit))
+            else:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+        else:
+            directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
+            try:
+                daily_pack = pack.load_pack(directory)
+                bench = load_cn_benchmark(
+                    Path(args.benchmark_csv).expanduser() if args.benchmark_csv else None,
+                    lookback_days=max(len(daily_pack.dates) + 40, 320),
+                )
+                report = replay_patterns(
+                    daily_pack,
+                    patterns=args.pattern,
+                    benchmark_df=bench,
+                    warmup_days=args.warmup_days,
+                    cost_bps=args.cost_bps,
+                )
+            except (OSError, RuntimeError, ValueError, IndexError) as exc:
+                parser.error(str(exc))
+            if args.output_json:
+                out_json = Path(args.output_json)
+                out_json.parent.mkdir(parents=True, exist_ok=True)
+                out_json.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            if args.output_md:
+                out_md = Path(args.output_md)
+                out_md.parent.mkdir(parents=True, exist_ok=True)
+                out_md.write_text(render_replay_markdown(report), encoding="utf-8")
+            if args.json:
+                print(json.dumps(report, ensure_ascii=False, indent=2))
+            else:
+                print(render_replay_markdown(report))
 
     else:
         parser.print_help()
@@ -2275,6 +2365,27 @@ def _format_market_stats_explain(items: list) -> str:
         last = items[-1]
         ladder = ", ".join(f"{k}板:{v}" for k, v in last.consecutive_board_ladder.items()) or "无"
         lines.append(f"ladder={ladder} reasons={'; '.join(last.regime_reasons)} policy={last.usage_policy}")
+    return "\n".join(lines)
+
+
+def _format_pattern_scan_explain(scan_result, *, limit: int = 20) -> str:
+    reg = scan_result.market_regime
+    lines = [
+        f"trade_date={scan_result.trade_date} universe={scan_result.universe_count} "
+        f"regime={reg.regime_stage}({reg.regime_stage_label}) lu={reg.non_st_limit_up_count} "
+        f"ld={reg.non_st_limit_down_count} policy={scan_result.usage_policy}"
+    ]
+    for pattern_name in scan_result.patterns_evaluated:
+        items = scan_result.signals_by_pattern.get(pattern_name, [])
+        lines.append(f"[{pattern_name}] hits={len(items)}")
+        for sig in items[: max(1, int(limit))]:
+            obs = f" obs={sig.observe_date}(-{sig.observe_lag_days}d)" if sig.observe_date else ""
+            ov = f"{sig.overhead_supply_10pct:.1f}%" if sig.overhead_supply_10pct is not None else "-"
+            amt_m = f"{sig.proxy_amount / 1e8:.2f}亿" if sig.proxy_amount is not None else "-"
+            lines.append(
+                f"  {sig.code} {sig.name or '-':<8} {sig.industry or '-':<8} "
+                f"chg={sig.change_pct:+5.2f}% amt={amt_m:<7} ov10={ov}{obs}"
+            )
     return "\n".join(lines)
 
 

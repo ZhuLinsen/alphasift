@@ -1,0 +1,36 @@
+name: box_breakout
+display_name: 箱体突破
+family: breakout
+status: experimental
+version: "1.0"
+description: 站上20日线且前期窄幅横盘箱体后，首次放量阳线向上突破20日高点（与 volume_breakout 策略对齐）
+aligned_strategy: volume_breakout
+tags: [breakout, volume, consolidation]
+market_scope: [cn]
+min_history_days: 60
+
+universe:
+  exclude_st: true
+  proxy_amount_min: 100000000
+  close_min: 2.0
+
+mode: direct
+conditions:
+  - feature: price_above_ma20
+    equals: true
+  - feature: prev_below_prev_high_20d
+    equals: true
+  - feature: prev_range_20d_atr
+    max: 4.5
+  - feature: breakout_20d_atr
+    min: 0.15
+    max: 2.5
+  - feature: vol_ratio_20d
+    min: 1.5
+  - feature: body_atr
+    min: 0.8
+  - feature: ret_limit_ratio
+    min: 0.25
+    max: 0.99
+  - feature: close_pos_in_bar
+    min: 0.60
