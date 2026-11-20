@@ -250,7 +250,7 @@ def test_backfill_from_daily_sources_skips_suspended_days_and_tolerates_one_bad_
         return fetch(code, **kwargs)
 
     monkeypatch.setattr(pack, "fetch_daily_history", flaky)
-    manifest = pack.backfill(tmp_path, days=3, trade_date=DATES[-1])
+    manifest = pack.backfill(tmp_path, days=3, trade_date=DATES[-1], source="daily")
     loaded = pack.load_pack(tmp_path)
     assert manifest["sources"][0] == "sina+tencent"
     assert loaded.dates.tolist() == list(DATES)
@@ -260,8 +260,155 @@ def test_backfill_from_daily_sources_skips_suspended_days_and_tolerates_one_bad_
     assert ("000001", "sina") in calls and ("000001", "tencent") in calls
 
     calls.clear()
-    pack.backfill(tmp_path, days=3, trade_date=DATES[-1])
+    pack.backfill(tmp_path, days=3, trade_date=DATES[-1], source="daily")
     assert {code for code, _ in calls if code not in pack._REFERENCE_CODES} == set()
+
+
+def _yf_multi_frame(ticker_frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    return pd.concat(ticker_frames, axis=1)
+
+
+def test_yfinance_bars_unsplits_and_roundtrips_forward_adjust():
+    # Simulate 002594-style 3-for-1 split + dividend on 2025-01-08:
+    # Raw prices: day1=330 (vol=1000), day2=337 (vol=1200), day3=111.42 (vol=3600), day4=112.00 (vol=3000)
+    # Ex-date pre_close on day3 = 111.01 (derived from raw_close * adj_prev / adj_cur)
+    idx = pd.to_datetime(["2025-01-03", "2025-01-06", "2025-01-07", "2025-01-08", "2025-01-09"])
+    frame = pd.DataFrame({
+        "Open": [328.0 / 3, 330.0 / 3, 335.0 / 3, 112.01, 111.50],
+        "High": [332.0 / 3, 333.0 / 3, 338.0 / 3, 112.50, 113.00],
+        "Low": [327.0 / 3, 329.0 / 3, 334.0 / 3, 109.77, 110.80],
+        "Close": [330.0 / 3, 330.0 / 3, 337.0 / 3, 111.42, 112.00],
+        "Adj Close": [108.0, 108.0, 110.2909, 111.0054, 111.5833],
+        "Volume": [3000.0, 3000.0, 3600.0, 3600.0, 3000.0],
+        "Dividends": [0.0, 0.0, 0.0, 1.32466, 0.0],
+        "Stock Splits": [0.0, 0.0, 0.0, 3.0, 0.0],
+    }, index=idx)
+    bars = pack._yfinance_bars_from_frame(frame, ["2025-01-06", "2025-01-07", "2025-01-08", "2025-01-09"])
+    assert bars["date"].tolist() == ["2025-01-06", "2025-01-07", "2025-01-08", "2025-01-09"]
+    np.testing.assert_allclose(bars["close"], [330.0, 337.0, 111.42, 112.0], rtol=1e-4)
+    np.testing.assert_allclose(bars["volume"], [1000.0, 1200.0, 3600.0, 3000.0], rtol=1e-4)
+    assert bars.loc[1, "pre_close"] == pytest.approx(330.0, abs=0.01)
+    assert bars.loc[2, "pre_close"] == pytest.approx(110.70, abs=0.02)
+    assert bars["amount"].isna().all()
+
+    built = pack.DailyPack(
+        np.array(bars["date"].tolist()), np.array(["002594"]),
+        {key: bars[key].to_numpy(dtype=np.float32)[:, None] for key in pack.FIELDS},
+        pd.DataFrame({"code": ["002594"]}), ("yfinance",),
+    )
+    adj_close = pack.forward_adjust(built)["close"][:, 0]
+    # Adjusted return from day 2 to day 3 matches Adj Close return within rounding
+    assert (adj_close[2] / adj_close[1]) == pytest.approx(111.0054 / 110.2909, rel=5e-4)
+
+
+def test_backfill_auto_uses_yfinance_resumes_and_tolerates_one_bad_code(tmp_path, monkeypatch):
+    monkeypatch.setattr(pack, "_baostock_reachable", lambda: False)
+    listed = (*CODES, "000003")
+    monkeypatch.setattr(pack, "_latest_snapshot", lambda config: _daily(listed))
+    idx = pd.to_datetime(["2025-01-03", *DATES])
+    downloads = []
+
+    def fake_yf(tickers, *, start, end, actions=True):
+        downloads.append(list(tickers) if isinstance(tickers, list) else [tickers])
+        frames = {}
+        for tk in downloads[-1]:
+            if tk == "000003.SZ":
+                continue
+            # 000001 has a cash dividend on 2025-01-08
+            if tk == "000001.SZ":
+                frames[tk] = pd.DataFrame({
+                    "Open": [10.0, 10.2, 10.5, 9.6],
+                    "High": [10.1, 10.6, 10.6, 9.8],
+                    "Low": [9.9, 10.1, 10.3, 9.4],
+                    "Close": [10.0, 10.5, 10.5, 9.6],
+                    "Adj Close": [9.0, 9.45, 9.5, 9.6],
+                    "Volume": [1000.0, 1100.0, 1200.0, 1300.0],
+                    "Dividends": [0.0, 0.0, 0.0, 1.0],
+                    "Stock Splits": [0.0, 0.0, 0.0, 0.0],
+                }, index=idx)
+            else:
+                frames[tk] = pd.DataFrame({
+                    "Open": [20.0, 20.0, 20.0, 20.0],
+                    "High": [21.0, 21.0, 21.0, 21.0],
+                    "Low": [19.0, 19.0, 19.0, 19.0],
+                    "Close": [20.0, 20.0, 20.0, 20.0],
+                    "Adj Close": [20.0, 20.0, 20.0, 20.0],
+                    "Volume": [500.0, 500.0, 500.0, 500.0],
+                    "Dividends": [0.0, 0.0, 0.0, 0.0],
+                    "Stock Splits": [0.0, 0.0, 0.0, 0.0],
+                }, index=idx)
+        return _yf_multi_frame(frames)
+
+    monkeypatch.setattr(pack, "_yf_download", fake_yf)
+    manifest = pack.backfill(tmp_path, days=3, trade_date=DATES[-1])
+    loaded = pack.load_pack(tmp_path)
+    assert manifest["sources"][0] == "yfinance"
+    assert loaded.dates.tolist() == list(DATES)
+    assert loaded.history("000001")["pre_close"].tolist() == pytest.approx([10.0, 10.5, 9.5], abs=0.02)
+    assert loaded.history("000003").empty
+
+    downloads.clear()
+    pack.backfill(tmp_path, days=3, trade_date=DATES[-1])
+    # Calendar call still runs, but all cached codes skip bulk download except missing 000003 retry
+    assert len(downloads) == 2
+    assert downloads[1] == ["000003.SZ"]
+
+
+def _qt_line(sym: str, code: str, dt: str, o: float, h: float, low_p: float, c: float, pc: float, vol: float, amt_w: float) -> str:
+    fields = [""] * 46
+    fields[0] = "51"
+    fields[1] = "样本"
+    fields[2] = code
+    fields[3] = str(c)
+    fields[4] = str(pc)
+    fields[5] = str(o)
+    fields[6] = str(vol)
+    fields[30] = dt
+    fields[33] = str(h)
+    fields[34] = str(low_p)
+    fields[37] = str(amt_w)
+    return f'v_{sym}="{"~".join(fields)}";'
+
+
+def test_tencent_quote_provider_units_and_update_fallback(tmp_path, monkeypatch):
+    monkeypatch.setattr(pack, "expected_trade_date", lambda: "2025-01-09")
+    monkeypatch.setattr(pack, "fetch_cn_snapshot", lambda source: (_ for _ in ()).throw(RuntimeError("down")))
+    base = _pack(codes=("000001", "000002", "688981", "689009", "920002"))
+    pack.save_pack(tmp_path, base)
+    monkeypatch.setattr(pack, "_latest_snapshot", lambda config: pd.DataFrame({"code": list(base.codes)}))
+
+    lines = "\n".join([
+        _qt_line("sz000001", "000001", "20250109150000", 11.9, 12.2, 11.8, 12.1, 12.0, 1000, 120.0),
+        _qt_line("sh688981", "688981", "20250109150000", 90.0, 92.0, 89.0, 91.0, 90.5, 50000, 455.0),
+        _qt_line("sh689009", "689009", "20250109150000", 34.0, 34.5, 33.5, 34.2, 34.0, 20000, 68.4),
+        _qt_line("bj920002", "920002", "20250109150000", 41.0, 42.0, 40.5, 41.5, 41.0, 300, 124.5),
+        _qt_line("sz000002", "000002", "20250109150000", 0.0, 0.0, 0.0, 8.0, 8.0, 0, 0.0),
+    ])
+
+    class _FakeResp:
+        def raise_for_status(self):
+            pass
+
+        @property
+        def content(self):
+            return lines.encode("gbk")
+
+    monkeypatch.setattr(pack.requests.Session, "get", lambda self, url, **kwargs: _FakeResp())
+    bars = pack.TencentQuoteProvider(codes=list(base.codes), batch_size=3, workers=2, batch_delay_sec=0.0).fetch_day("2025-01-09")
+    by_code = bars.set_index("code")
+    assert list(by_code.index) == ["000001", "688981", "689009", "920002"]  # 000002 suspended dropped
+    assert by_code.loc["000001", "volume"] == 100000  # lots * 100
+    assert by_code.loc["000001", "amount"] == pytest.approx(1200000.0)
+    assert by_code.loc["688981", "volume"] == 50000  # STAR shares * 1
+    assert by_code.loc["689009", "volume"] == 20000  # CDR shares * 1
+    assert by_code.loc["920002", "volume"] == 30000  # BJ lots * 100
+
+    with pytest.raises(pack.PackError, match="no bars for 2025-01-10"):
+        pack.TencentQuoteProvider(codes=["000001"], batch_delay_sec=0.0).fetch_day("2025-01-10")
+
+    manifest = pack.update(tmp_path, trade_date="2025-01-09", config=SimpleNamespace(snapshot_source_priority=["sina"]))
+    assert "tencent_quote" in manifest["sources"]
+    assert pack.load_pack(tmp_path).trade_date == "2025-01-09"
 
 
 def test_update_prefers_tickplus_only_when_key_is_set(tmp_path, monkeypatch):

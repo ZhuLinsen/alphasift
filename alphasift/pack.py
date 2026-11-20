@@ -11,11 +11,13 @@ import re
 import socket
 import threading
 from collections.abc import Iterator, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import time
 from typing import Protocol
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
@@ -23,9 +25,10 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 import requests
+from requests.adapters import HTTPAdapter
 
 from alphasift.config import Config
-from alphasift.daily import _BAOSTOCK_LOCK, _to_baostock_code, fetch_daily_history
+from alphasift.daily import _BAOSTOCK_LOCK, _to_baostock_code, _to_tencent_code, fetch_daily_history
 from alphasift.markets import get_market, latest_settled_close
 from alphasift.snapshot import fetch_cn_snapshot, fetch_snapshot_with_fallback
 
@@ -54,7 +57,25 @@ _SNAPSHOT_QUOTES = {
 _REFERENCE_CODES = ("000001", "600519", "601398")
 _MAX_FAILED_CODES = 0.05
 _PACK_THREAD_LOCK = threading.Lock()
+_TENCENT_QUOTE_URL = "https://qt.gtimg.cn/q="
+_TENCENT_HEADERS = {"User-Agent": "Mozilla/5.0"}
+_YFINANCE_BATCH_SIZE = 100
+_YFINANCE_CHUNK_DELAY_SEC = 0.25
 logger = logging.getLogger(__name__)
+
+
+def _tencent_volume_multiplier(code: str) -> int:
+    """STAR (688) and CDR (689) report Tencent volume in shares; others use lots."""
+    return 1 if code.startswith(("688", "689")) else 100
+
+
+def _tencent_session(workers: int = 2) -> requests.Session:
+    session = requests.Session()
+    pool = max(4, int(workers))
+    adapter = HTTPAdapter(pool_connections=pool, pool_maxsize=pool)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
 
 
 class PackError(ValueError):
@@ -166,6 +187,123 @@ class SnapshotProvider:
             self.name = f"snapshot:{source}"
             return bars
         raise PackError("No snapshot source supplied open/high/low/previous close")
+
+
+class TencentQuoteProvider:
+    """Today's full-market bars from Tencent batch quotes (qt.gtimg.cn)."""
+
+    name = "tencent_quote"
+
+    def __init__(
+        self,
+        codes: Sequence[str] | None = None,
+        *,
+        config: Config | None = None,
+        batch_size: int = 80,
+        workers: int = 2,
+        batch_delay_sec: float = 0.15,
+    ) -> None:
+        self._codes = list(dict.fromkeys(_code(c) for c in codes)) if codes else []
+        self._config = config
+        self._batch_size = max(1, int(batch_size))
+        self._workers = max(1, int(workers))
+        self._batch_delay_sec = max(0.0, float(batch_delay_sec))
+
+    def fetch_day(self, trade_date: str) -> pd.DataFrame:
+        day = _iso_date(trade_date)
+        codes = list(self._codes)
+        if not codes:
+            snapshot = _latest_snapshot(self._config or Config.from_env())
+            codes = sorted({c for c in snapshot["code"].map(_code) if c.startswith(_A_SHARE)})
+        if not codes:
+            raise PackError("No A-share codes available for Tencent batch quotes")
+        chunks = [codes[i:i + self._batch_size] for i in range(0, len(codes), self._batch_size)]
+        local_state = threading.local()
+        created_sessions: list[requests.Session] = []
+        sessions_lock = threading.Lock()
+
+        def fetch_chunk(idx_chunk: tuple[int, list[str]]) -> list[dict[str, object]]:
+            idx, chunk = idx_chunk
+            if idx > 0 and self._batch_delay_sec > 0:
+                time.sleep(self._batch_delay_sec)
+            session = getattr(local_state, "session", None)
+            if session is None:
+                session = _tencent_session(self._workers)
+                local_state.session = session
+                with sessions_lock:
+                    created_sessions.append(session)
+            symbols = ",".join(_to_tencent_code(c) for c in chunk)
+            resp = session.get(f"{_TENCENT_QUOTE_URL}{symbols}", headers=_TENCENT_HEADERS, timeout=10)
+            resp.raise_for_status()
+            text = resp.content.decode("gbk", errors="replace")
+            return _parse_tencent_quote_lines(text, day)
+
+        rows: list[dict[str, object]] = []
+        indexed_chunks = list(enumerate(chunks))
+        try:
+            if self._workers <= 1 or len(chunks) <= 1:
+                for item in indexed_chunks:
+                    rows.extend(fetch_chunk(item))
+            else:
+                with ThreadPoolExecutor(max_workers=min(self._workers, len(chunks))) as pool:
+                    for chunk_rows in pool.map(fetch_chunk, indexed_chunks):
+                        rows.extend(chunk_rows)
+        finally:
+            for sess in created_sessions:
+                sess.close()
+        if not rows:
+            raise PackError(f"Tencent batch quotes returned no bars for {day}")
+        frame = pd.DataFrame(rows, columns=["code", *FIELDS]).drop_duplicates("code", keep="last")
+        return _normalize_day(frame).reset_index(drop=True)
+
+
+def _parse_tencent_quote_lines(text: str, trade_date: str) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for line in text.splitlines():
+        if "=\"" not in line:
+            continue
+        body = line.split("=\"", 1)[1].rsplit("\";", 1)[0]
+        parts = body.split("~")
+        if len(parts) <= 37:
+            continue
+        raw_code = parts[2].strip()
+        if not raw_code:
+            continue
+        try:
+            code = _code(raw_code)
+        except PackError:
+            continue
+        digits = "".join(ch for ch in parts[30] if ch.isdigit())
+        if len(digits) < 8:
+            continue
+        quote_date = f"{digits[:4]}-{digits[4:6]}-{digits[6:8]}"
+        if quote_date != trade_date:
+            continue
+        try:
+            close_v = float(parts[3])
+            pre_close_v = float(parts[4])
+            open_v = float(parts[5])
+            high_v = float(parts[33])
+            low_v = float(parts[34])
+            vol_v = float(parts[6])
+            amt_wan = float(parts[37]) if parts[37].strip() else 0.0
+        except ValueError:
+            continue
+        if not all(np.isfinite(v) for v in (close_v, pre_close_v, open_v, high_v, low_v, vol_v, amt_wan)):
+            continue
+        if open_v <= 0 or close_v <= 0 or high_v <= 0 or low_v <= 0 or pre_close_v <= 0 or vol_v <= 0 or amt_wan < 0:
+            continue
+        rows.append({
+            "code": code,
+            "open": open_v,
+            "high": high_v,
+            "low": low_v,
+            "close": close_v,
+            "pre_close": pre_close_v,
+            "volume": vol_v * _tencent_volume_multiplier(code),
+            "amount": amt_wan * 10000.0,
+        })
+    return rows
 
 
 def _snapshot_bars(snapshot: pd.DataFrame) -> pd.DataFrame:
@@ -603,17 +741,22 @@ def _baostock_reachable() -> bool:
 
 
 @contextmanager
-def _history_session(source: str = "auto") -> Iterator:
-    """Yield a Baostock session, or None to use the existing Sina and Tencent daily sources."""
-    if source not in ("auto", "baostock", "daily"):
-        raise PackError("history source must be auto, baostock or daily")
-    if source == "daily" or (source == "auto" and not _baostock_reachable()):
-        if source == "auto":
-            logger.warning("Baostock is unreachable, using the Sina and Tencent daily sources")
-        yield None
+def _history_session(source: str = "auto") -> Iterator[tuple[object | None, str]]:
+    """Yield ``(baostock_session_or_none, mode)`` where mode is baostock, yfinance or daily."""
+    if source not in ("auto", "baostock", "yfinance", "daily"):
+        raise PackError("history source must be auto, baostock, yfinance or daily")
+    if source == "daily":
+        yield None, "daily"
+        return
+    if source == "yfinance":
+        yield None, "yfinance"
+        return
+    if source == "auto" and not _baostock_reachable():
+        logger.warning("Baostock is unreachable, using batched yfinance daily history")
+        yield None, "yfinance"
         return
     with _baostock_session() as bs:
-        yield bs
+        yield bs, "baostock"
 
 
 def _source_frame(code: str, count: int, source: str) -> pd.DataFrame:
@@ -622,20 +765,173 @@ def _source_frame(code: str, count: int, source: str) -> pd.DataFrame:
     return frame.drop_duplicates("date").set_index("date").sort_index()
 
 
-def _session_dates(bs, start: str, end: str) -> list[str]:
+def _to_yahoo_cn_symbol(code: str) -> str | None:
+    normalized = _code(code)
+    if normalized.startswith(("6", "9", "5")):
+        return f"{normalized}.SS"
+    if normalized.startswith(("0", "3")):
+        return f"{normalized}.SZ"
+    return None
+
+
+def _yf_download(
+    tickers: str | list[str],
+    *,
+    start: str,
+    end: str,
+    actions: bool = True,
+) -> pd.DataFrame:
+    import yfinance as yf
+
+    return yf.download(
+        tickers,
+        start=start,
+        end=end,
+        interval="1d",
+        auto_adjust=False,
+        actions=actions,
+        group_by="ticker",
+        progress=False,
+        threads=True,
+    )
+
+
+def _extract_yf_frame(raw: pd.DataFrame, symbol: str, *, single: bool) -> pd.DataFrame:
+    if raw is None or raw.empty:
+        return pd.DataFrame()
+    if isinstance(raw.columns, pd.MultiIndex):
+        if symbol not in raw.columns.get_level_values(0):
+            return pd.DataFrame()
+        return raw[symbol].copy()
+    return raw.copy() if single else pd.DataFrame()
+
+
+def _session_dates(bs, start: str, end: str, *, mode: str = "daily") -> list[str]:
     if bs is not None:
         return _baostock_dates(bs, start, end)
-    count = (datetime.now(_CN_TZ).date() - date.fromisoformat(start)).days + 10
     days: set[str] = set()
-    for code in _REFERENCE_CODES:
+    if mode == "yfinance":
+        end_pad = (date.fromisoformat(end) + timedelta(days=3)).isoformat()
+        symbols = [sym for code in _REFERENCE_CODES if (sym := _to_yahoo_cn_symbol(code)) is not None]
         try:
-            days.update(_source_frame(code, count, "sina").index)
+            raw = _yf_download(symbols, start=start, end=end_pad, actions=False)
+            for sym in symbols:
+                sub = _extract_yf_frame(raw, sym, single=len(symbols) == 1)
+                if sub.empty or "Close" not in sub.columns:
+                    continue
+                valid = sub.dropna(subset=["Close"])
+                if not valid.empty:
+                    idx = pd.to_datetime(valid.index, errors="coerce")
+                    days.update(idx[~idx.isna()].strftime("%Y-%m-%d").tolist())
         except Exception as exc:
-            logger.warning("Trading calendar reference %s failed: %s", code, exc)
+            logger.warning("Yahoo trading calendar reference failed: %s", exc)
+    if not days:
+        count = max((datetime.now(_CN_TZ).date() - date.fromisoformat(start)).days + 20, 30)
+        for code in _REFERENCE_CODES:
+            try:
+                days.update(_source_frame(code, count, "sina").index)
+            except Exception as exc:
+                logger.warning("Trading calendar reference %s failed: %s", code, exc)
     dates = sorted(day for day in days if start <= day <= end)
     if not dates and not days:
         raise PackError("No daily source returned a trading calendar")
     return dates
+
+
+def _yfinance_bars_from_frame(frame: pd.DataFrame, dates: list[str]) -> pd.DataFrame:
+    """Convert a yfinance auto_adjust=False, actions=True DataFrame to unadjusted pack bars."""
+    if frame is None or frame.empty:
+        return pd.DataFrame(columns=["date", *FIELDS])
+    required_ohlcv = ("Open", "High", "Low", "Close", "Volume")
+    if any(col not in frame.columns for col in required_ohlcv):
+        return pd.DataFrame(columns=["date", *FIELDS])
+
+    sub = frame.copy()
+    idx = pd.to_datetime(sub.index, errors="coerce")
+    sub = sub.loc[~idx.isna()].copy()
+    if sub.empty:
+        return pd.DataFrame(columns=["date", *FIELDS])
+    sub.index = idx[~idx.isna()].strftime("%Y-%m-%d")
+    sub = sub[~sub.index.duplicated(keep="last")].sort_index()
+    sub = sub.loc[sub.index <= dates[-1]]
+    if sub.empty:
+        return pd.DataFrame(columns=["date", *FIELDS])
+
+    for col in (*required_ohlcv, "Adj Close", "Dividends", "Stock Splits"):
+        if col in sub.columns:
+            sub[col] = pd.to_numeric(sub[col], errors="coerce")
+
+    valid_close = np.isfinite(sub["Close"]) & sub["Close"].gt(0)
+    sub = sub.loc[valid_close].copy()
+    if sub.empty:
+        return pd.DataFrame(columns=["date", *FIELDS])
+
+    splits = sub["Stock Splits"].fillna(0.0) if "Stock Splits" in sub.columns else pd.Series(0.0, index=sub.index)
+    factors = splits.where(splits > 0, 1.0).to_numpy(dtype=np.float64)
+    cum_split = np.cumprod(factors[::-1])[::-1]
+    future_split = np.ones_like(cum_split)
+    if len(cum_split) > 1:
+        future_split[:-1] = cum_split[1:]
+    sub["_cum_split"] = future_split
+
+    traded = (
+        np.isfinite(sub["Open"]) & sub["Open"].gt(0)
+        & np.isfinite(sub["High"]) & sub["High"].gt(0)
+        & np.isfinite(sub["Low"]) & sub["Low"].gt(0)
+        & np.isfinite(sub["Close"]) & sub["Close"].gt(0)
+        & np.isfinite(sub["Volume"]) & sub["Volume"].gt(0)
+    )
+    sub = sub.loc[traded].copy()
+    if sub.empty:
+        return pd.DataFrame(columns=["date", *FIELDS])
+
+    mult = sub["_cum_split"].to_numpy(dtype=np.float64)
+    raw_open = np.round(sub["Open"].to_numpy(dtype=np.float64) * mult, 4)
+    raw_high = np.round(sub["High"].to_numpy(dtype=np.float64) * mult, 4)
+    raw_low = np.round(sub["Low"].to_numpy(dtype=np.float64) * mult, 4)
+    raw_close = np.round(sub["Close"].to_numpy(dtype=np.float64) * mult, 4)
+    raw_vol = sub["Volume"].to_numpy(dtype=np.float64) / mult
+
+    pre_close = np.empty(len(sub), dtype=np.float64)
+    pre_close[0] = raw_open[0]
+    if len(sub) > 1:
+        pre_close[1:] = raw_close[:-1]
+
+    divs = sub["Dividends"].fillna(0.0).to_numpy(dtype=np.float64) if "Dividends" in sub.columns else np.zeros(len(sub))
+    s_vals = (
+        sub["Stock Splits"].fillna(0.0).to_numpy(dtype=np.float64)
+        if "Stock Splits" in sub.columns
+        else np.zeros(len(sub))
+    )
+    adj_close = (
+        sub["Adj Close"].to_numpy(dtype=np.float64)
+        if "Adj Close" in sub.columns
+        else np.full(len(sub), np.nan)
+    )
+    for i in range(1, len(sub)):
+        if divs[i] > 0 or s_vals[i] > 0:
+            p_adj, c_adj = adj_close[i - 1], adj_close[i]
+            if np.isfinite(p_adj) and np.isfinite(c_adj) and p_adj > 0 and c_adj > 0:
+                derived = round(float(raw_close[i] * (p_adj / c_adj)), 2)
+                if derived > 0:
+                    pre_close[i] = derived
+
+    out = pd.DataFrame({
+        "date": sub.index.to_numpy(dtype=str),
+        "open": raw_open,
+        "high": raw_high,
+        "low": raw_low,
+        "close": raw_close,
+        "pre_close": pre_close,
+        "volume": raw_vol,
+        "amount": np.nan,
+    })
+    out = out.loc[out["date"].isin(set(dates))].copy()
+    if out.empty:
+        return pd.DataFrame(columns=["date", *FIELDS])
+    values = _numeric_bars(out)
+    values.insert(0, "date", out.loc[values.index, "date"].tolist())
+    return values.reset_index(drop=True)
 
 
 def _daily_source_history(code: str, dates: list[str]) -> pd.DataFrame:
@@ -719,16 +1015,21 @@ def _baostock_history(bs, code: str, first: str, last: str) -> pd.DataFrame:
     return bars
 
 
+def _write_history_cache(cache: Path, code: str, bars: pd.DataFrame) -> None:
+    dst = cache / f"{code}.csv"
+    with TemporaryDirectory(prefix=".history-", dir=cache) as tmp:
+        staged = Path(tmp) / dst.name
+        bars.to_csv(staged, index=False)
+        staged.replace(dst)
+
+
 def _resume_history(bs, cache: Path, code: str, dates: list[str]) -> pd.DataFrame:
     dst = cache / f"{code}.csv"
     if dst.exists():
         return pd.read_csv(dst, dtype={"date": str, **dict.fromkeys(FIELDS, np.float32)})
     bars = _baostock_history(bs, code, dates[0], dates[-1]) if bs is not None else _daily_source_history(code, dates)
     _history_positions(bars, dates)
-    with TemporaryDirectory(prefix=".history-", dir=cache) as tmp:
-        staged = Path(tmp) / dst.name
-        bars.to_csv(staged, index=False)
-        staged.replace(dst)
+    _write_history_cache(cache, code, bars)
     return bars
 
 
@@ -740,27 +1041,113 @@ def _history_positions(bars: pd.DataFrame, dates: list[str]) -> np.ndarray:
     return positions
 
 
+def _backfill_yfinance(
+    cache: Path,
+    dates: list[str],
+    codes: list[str],
+    *,
+    batch_size: int = _YFINANCE_BATCH_SIZE,
+) -> tuple[dict[int, pd.DataFrame], list[str]]:
+    results: dict[int, pd.DataFrame] = {}
+    failed: list[str] = []
+    max_failures = max(_MAX_FAILED_CODES * len(codes), 1)
+    pending: list[tuple[int, str, str]] = []
+
+    for col, code in enumerate(codes):
+        dst = cache / f"{code}.csv"
+        if dst.exists():
+            results[col] = pd.read_csv(dst, dtype={"date": str, **dict.fromkeys(FIELDS, np.float32)})
+            continue
+        symbol = _to_yahoo_cn_symbol(code)
+        if symbol is None:
+            try:
+                bars = _daily_source_history(code, dates)
+                _history_positions(bars, dates)
+                _write_history_cache(cache, code, bars)
+                results[col] = bars
+            except Exception as exc:
+                failed.append(code)
+                logger.warning("Daily history failed for %s: %s", code, exc)
+                if len(failed) > max_failures:
+                    raise PackError(f"Daily history failed for {len(failed)} codes, aborting") from None
+            continue
+        pending.append((col, code, symbol))
+
+    start_pad = (date.fromisoformat(dates[0]) - timedelta(days=15)).isoformat()
+    end_pad = (date.fromisoformat(dates[-1]) + timedelta(days=3)).isoformat()
+    chunks = [pending[i:i + batch_size] for i in range(0, len(pending), batch_size)]
+
+    for chunk_idx, chunk in enumerate(chunks):
+        if chunk_idx > 0 and _YFINANCE_CHUNK_DELAY_SEC > 0:
+            time.sleep(_YFINANCE_CHUNK_DELAY_SEC)
+        symbols = [sym for _, _, sym in chunk]
+        try:
+            raw = _yf_download(symbols, start=start_pad, end=end_pad, actions=True)
+        except Exception as exc:
+            for _, code, _ in chunk:
+                failed.append(code)
+                logger.warning("yfinance chunk download failed for %s: %s", code, exc)
+                if len(failed) > max_failures:
+                    raise PackError(f"Daily history failed for {len(failed)} codes, aborting") from None
+            continue
+
+        for col, code, sym in chunk:
+            try:
+                sub = _extract_yf_frame(raw, sym, single=len(chunk) == 1)
+                if sub.empty or "Close" not in sub.columns or sub["Close"].dropna().empty:
+                    raise PackError(f"yfinance returned no daily bars for {sym}")
+                bars = _yfinance_bars_from_frame(sub, dates)
+                _history_positions(bars, dates)
+                _write_history_cache(cache, code, bars)
+                results[col] = bars
+            except Exception as exc:
+                failed.append(code)
+                logger.warning("Daily history failed for %s: %s", code, exc)
+                if len(failed) > max_failures:
+                    raise PackError(f"Daily history failed for {len(failed)} codes, aborting") from None
+
+    return results, failed
+
+
 def _backfill_range(
-    bs, path: Path, dates: list[str], codes: list[str], meta: pd.DataFrame, *, previous: int = 0,
+    bs,
+    path: Path,
+    dates: list[str],
+    codes: list[str],
+    meta: pd.DataFrame,
+    *,
+    previous: int = 0,
+    mode: str | None = None,
 ) -> DailyPack:
+    resolved_mode = mode or ("baostock" if bs is not None else "daily")
     matrices = _empty_matrices(len(dates), len(codes))
     # Each file is a completed query for this exact date range (including empty results).
     cache = path / ".backfill" / f"{dates[0]}_{dates[-1]}"
     cache.mkdir(parents=True, exist_ok=True)
     failed: list[str] = []
-    for col, code in enumerate(codes):
-        try:
-            bars = _resume_history(bs, cache, code, dates)
-        except Exception as exc:
-            # One bad code must not abort a full-market build; it is retried on the next run.
-            failed.append(code)
-            logger.warning("Daily history failed for %s: %s", code, exc)
-            if len(failed) > max(_MAX_FAILED_CODES * len(codes), 1):
-                raise PackError(f"Daily history failed for {len(failed)} codes, aborting") from None
-            continue
-        index = _history_positions(bars, dates)
-        for key in FIELDS:
-            matrices[key][index, col] = bars[key]
+    max_failures = max(_MAX_FAILED_CODES * len(codes), 1)
+
+    if resolved_mode == "yfinance" and bs is None:
+        loaded, failed = _backfill_yfinance(cache, dates, codes)
+        for col, bars in loaded.items():
+            index = _history_positions(bars, dates)
+            for key in FIELDS:
+                matrices[key][index, col] = bars[key]
+    else:
+        for col, code in enumerate(codes):
+            try:
+                bars = _resume_history(bs, cache, code, dates)
+            except Exception as exc:
+                # One bad code must not abort a full-market build; it is retried on the next run.
+                failed.append(code)
+                logger.warning("Daily history failed for %s: %s", code, exc)
+                if len(failed) > max_failures:
+                    raise PackError(f"Daily history failed for {len(failed)} codes, aborting") from None
+                continue
+            index = _history_positions(bars, dates)
+            for key in FIELDS:
+                matrices[key][index, col] = bars[key]
+
     close = matrices["close"]
     try:
         _check_coverage(dates, close, previous=previous)
@@ -771,8 +1158,18 @@ def _backfill_range(
             if retry:
                 (cache / f"{code}.csv").unlink(missing_ok=True)
         raise
-    return DailyPack(np.array(dates, dtype="U10"), np.array(codes, dtype="U6"), matrices,
-                     meta.reindex(codes).reset_index(), ("baostock" if bs is not None else "sina+tencent",))
+    source_label = (
+        "baostock"
+        if resolved_mode == "baostock"
+        else ("yfinance" if resolved_mode == "yfinance" else "sina+tencent")
+    )
+    return DailyPack(
+        np.array(dates, dtype="U10"),
+        np.array(codes, dtype="U6"),
+        matrices,
+        meta.reindex(codes).reset_index(),
+        (source_label,),
+    )
 
 
 def _latest_snapshot(config: Config) -> pd.DataFrame:
@@ -786,8 +1183,9 @@ def backfill(
 ) -> dict:
     """Build the last N CN sessions from resumable per-code daily history.
 
-    ``source`` is ``baostock``, ``daily`` (the existing Sina and Tencent
-    daily sources) or ``auto``, which uses Baostock when it is reachable.
+    ``source`` is ``baostock``, ``yfinance``, ``daily`` (Sina and Tencent
+    daily sources) or ``auto``, which uses Baostock when reachable and batched
+    yfinance otherwise.
     """
     if days < 1 or (codes_limit is not None and codes_limit < 1):
         raise PackError("days and codes_limit must be positive")
@@ -799,13 +1197,13 @@ def backfill(
     with _pack_lock(path, write=True):
         snapshot = _latest_snapshot(config)
         meta = _snapshot_meta(snapshot)
-        with _history_session(source) as bs:
-            dates = _session_dates(bs, start, end)[-days:]
+        with _history_session(source) as (bs, mode):
+            dates = _session_dates(bs, start, end, mode=mode)[-days:]
             if len(dates) != days:
                 raise PackError(f"Only {len(dates)} of {days} requested trading sessions are available")
             universe = _baostock_universe(bs, dates[0], dates[-1]) if bs is not None else set()
             codes = sorted(universe | {code for code in meta.index if code.startswith(_A_SHARE)})[:codes_limit]
-            pack = _backfill_range(bs, path, dates, codes, meta)
+            pack = _backfill_range(bs, path, dates, codes, meta, mode=mode)
         pack.sources += (_snapshot_source(snapshot),)
         return _save_pack(path, pack)
 
@@ -818,8 +1216,9 @@ def update(
     """Append the target session and fill earlier gaps from daily history.
 
     The target session comes from ``provider``; by default TickPlus when
-    TICKPLUS_API_KEY is set, then the existing snapshot sources. If none
-    supplies it, the session is rebuilt from daily history like any gap.
+    TICKPLUS_API_KEY is set, then existing snapshot sources, then Tencent
+    batch quotes. If none supplies it, the session is rebuilt from daily
+    history like any gap.
     """
     if days < 1:
         raise PackError("days must be positive")
@@ -843,6 +1242,7 @@ def update(
         else:
             providers = [TickPlusProvider()] if os.getenv("TICKPLUS_API_KEY", "").strip() else []
             providers.append(SnapshotProvider(config))
+            providers.append(TencentQuoteProvider(codes=sorted(pack.codes), config=config))
         for provider in providers if last.weekday() < 5 else []:
             try:
                 incremental = _normalize_day(provider.fetch_day(end))
@@ -857,8 +1257,8 @@ def update(
         gap = None
         snapshot = None
         if first <= gap_end:
-            with _history_session(source) as bs:
-                dates = _session_dates(bs, first.isoformat(), gap_end.isoformat())
+            with _history_session(source) as (bs, mode):
+                dates = _session_dates(bs, first.isoformat(), gap_end.isoformat(), mode=mode)
                 if dates:
                     snapshot = _latest_snapshot(config)
                     meta = _snapshot_meta(snapshot)
@@ -868,7 +1268,10 @@ def update(
                     if incremental is not None:
                         codes.update(incremental["code"])
                     previous = int(np.isfinite(pack.matrices["close"][-1]).sum())
-                    gap = _backfill_range(bs, path, dates, sorted(codes), meta, previous=previous)
+                    gap = _backfill_range(
+                        bs, path, dates, sorted(codes), meta,
+                        previous=previous, mode=mode,
+                    )
         if gap is None and incremental is None:
             return pack.manifest
         if snapshot is None:

@@ -26,8 +26,8 @@ def main() -> None:
         command.add_argument("--trade-date", help="Target date in YYYY-MM-DD format")
         command.add_argument("--dir", type=Path, help="Override the configured pack directory")
         command.add_argument(
-            "--source", choices=["auto", "baostock", "daily"], default="auto",
-            help="History source: baostock, the existing Sina and Tencent daily sources, or auto",
+            "--source", choices=["auto", "baostock", "yfinance", "daily"], default="auto",
+            help="History source: baostock, yfinance, daily (Sina+Tencent) or auto",
         )
     args = parser.parse_args()
     try:

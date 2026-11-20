@@ -371,8 +371,8 @@ def main():
     info_parser.add_argument("--trade-date", help="预期交易日 YYYY-MM-DD，默认按 A 股收盘时间估算")
     build_parser = pack_sub.add_parser("build", help="用日线历史回填 A 股日线包")
     build_parser.add_argument(
-        "--source", choices=["auto", "baostock", "daily"], default="auto",
-        help="历史数据源：baostock、daily（现有新浪和腾讯日线源）或 auto（Baostock 可连时优先）",
+        "--source", choices=["auto", "baostock", "yfinance", "daily"], default="auto",
+        help="历史数据源：baostock、yfinance、daily（现有新浪和腾讯日线源）或 auto（Baostock 可连时优先，否则走批量 yfinance）",
     )
     build_parser.add_argument("--days", type=int, help="回填交易日数量，默认 250")
     build_parser.add_argument("--codes-limit", type=int, help="仅处理排序后的前 N 个代码，用于小样本验证")

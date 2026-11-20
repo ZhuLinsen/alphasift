@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- A 股离线日线包：新增基于现有日线源（Baostock，或新浪加腾讯）的断点回填、基于现有快照源的每日增量、可选的 TickPlus 增量（`TICKPLUS_API_KEY`）、SHA-256 校验、动态前复权和快照拼接接口，提供 `alphasift pack pull/info/build` 及构建脚本。选股流水线接入和发布工作流将在后续版本实现。
+- A 股离线日线包：新增支持断点续传的回填（Baostock，Baostock 不可连时自动走批量 `yfinance`，也可用 `--source daily` 走新浪加腾讯）、基于现有快照源与腾讯批量行情（`qt.gtimg.cn`）的每日增量、可选的 TickPlus 增量（`TICKPLUS_API_KEY`）、SHA-256 校验、动态前复权和快照拼接接口，提供 `alphasift pack pull/info/build` 及构建脚本。选股流水线接入和发布工作流将在后续版本实现。
 - 韩国估值：覆盖率改为统计真正拿到 PE 或 PB 的股票数（此前只统计请求成功数，接口格式变化导致全部为 N/A 时会被当成完整，覆盖掉有估值的缓存）；快照预算已用完时跳过 Naver，不再额外多跑 5 秒；复用 HTTP 连接，实测韩国快照约 14 秒降到 6 秒
 - T+N 评估：历史数据里没有入场交易日收盘价时标记为 `no_entry_close`，不再退回用保存的选股价（盘中、未复权）去比复权收盘价，否则拆股后会算出虚假的 −50%
 - T+N 基准对比：只有部分选股有基准数据时，基准和超额只覆盖这些选股；新增 `benchmark_pick_count` 和同一批选股的平均收益 `average_matched_return_pct`（两者相减恒等于超额），CLI 在覆盖不全时显示 `bench_n=k/n matched_ret=...`
