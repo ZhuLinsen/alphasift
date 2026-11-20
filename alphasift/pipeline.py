@@ -29,6 +29,17 @@ from alphasift.normalize import (
     safe_int as _safe_int,
     safe_text,
 )
+from alphasift.daily import _DAILY_FEATURE_DEFAULTS
+from alphasift.pack import (
+    DailyPack,
+    PackError,
+    SnapshotStitchError,
+    expected_trade_date,
+    load_pack,
+    pack_dir,
+    stitch_snapshot,
+)
+from alphasift.pack_features import compute_pack_daily_features
 from alphasift.post_analysis import normalize_post_analyzers, run_post_analyzers
 from alphasift.ranker import rank_candidates_with_metadata
 from alphasift.risk import (
@@ -68,6 +79,7 @@ def screen(
     config: Config | None = None,
     snapshot_df: pd.DataFrame | None = None,
     allow_snapshot_refetch: bool = True,
+    daily_pack: DailyPack | None = None,
 ) -> ScreenResult:
     """Execute stock screening with the given strategy.
 
@@ -259,6 +271,7 @@ def screen(
             snapshot_count=snapshot_count,
             after_filter_count=0,
             run_id=run_id,
+            track="rules",
             degradation=[*degradation, "No candidates after hard filter"],
             snapshot_source=snapshot_source,
             source_errors=source_errors,
@@ -273,64 +286,102 @@ def screen(
     daily_enriched = False
     daily_enrich_count = 0
     if daily_needed or daily_requested:
-        provisional = _sort_screened_candidates(compute_screen_scores(df, screening), screening)
-        enrich_count = min(daily_limit, len(provisional))
-        daily_candidates = provisional.head(enrich_count)
-        # config.daily_source's "auto" chain (tushare/tencent/sina/akshare/baostock)
-        # is CN-only and cannot resolve Yahoo symbols, so default non-CN runs to
-        # the yfinance adapter unless the caller explicitly configured a source.
-        effective_daily_source = (
-            "yfinance" if market != "cn" and config.daily_source in ("auto", "")
-            else config.daily_source
+        active_pack = _resolve_cn_daily_pack(
+            market=market,
+            snapshot_df=snapshot_df,
+            config=config,
+            daily_pack=daily_pack,
+            degradation=degradation,
         )
-        try:
-            enriched = enrich_daily_features(
-                daily_candidates,
-                max_rows=enrich_count,
-                lookback_days=config.daily_lookback_days,
-                source=effective_daily_source,
-                fetch_retries=config.daily_fetch_retries,
-                max_workers=config.daily_fetch_max_workers,
-                cache_policy=lambda: _screening_daily_cache_kwargs(config, market),
-            )
-            daily_enriched = True
-            daily_errors = [str(item) for item in enriched.attrs.get("daily_errors", [])]
-            daily_enrich_count = int(enriched.attrs.get("daily_success_count", len(enriched)))
-            daily_source_counts = dict(enriched.attrs.get("daily_source_counts", {}) or {})
-            daily_quality_flag_counts = dict(enriched.attrs.get("daily_quality_flag_counts", {}) or {})
-            daily_source_order_notes = [str(item) for item in enriched.attrs.get("daily_source_order_notes", [])]
-            daily_source_health_notes = _daily_source_health_notes(
-                dict(enriched.attrs.get("daily_source_health", {}) or {})
-            )
-            enrich_summary = (
-                f"Daily K-line enrichment attempted {enrich_count} candidates, "
-                f"succeeded {daily_enrich_count} of {after_filter_count} snapshot-filtered candidates"
-            )
-            if explain_filters or daily_enrich_count < enrich_count:
-                degradation.append(enrich_summary)
-            else:
-                logger.info("%s", enrich_summary)
-            if daily_source_counts:
-                source_summary = ", ".join(
-                    f"{name}={count}" for name, count in sorted(daily_source_counts.items())
+        enriched: pd.DataFrame | None = None
+        if active_pack is not None:
+            try:
+                enriched, matched_count = _attach_pack_daily_features(df, active_pack)
+                daily_enriched = True
+                daily_enrich_count = matched_count
+                enrich_summary = (
+                    f"Daily K-line enrichment via CN pack ({active_pack.trade_date}) "
+                    f"matched {matched_count} of {after_filter_count} snapshot-filtered candidates"
                 )
-                if explain_filters:
-                    degradation.append(f"Daily K-line sources: {source_summary}")
+                if explain_filters or matched_count < after_filter_count:
+                    degradation.append(enrich_summary)
                 else:
-                    logger.info("Daily K-line sources: %s", source_summary)
-            if daily_quality_flag_counts:
-                flag_summary = ", ".join(
-                    f"{name}={count}" for name, count in sorted(daily_quality_flag_counts.items())
+                    logger.info("%s", enrich_summary)
+                if explain_filters:
+                    degradation.append(f"Daily K-line sources: pack={matched_count}")
+            except Exception as exc:
+                degradation.append(f"CN daily pack fallback: {exc}")
+                enriched = None
+
+        if enriched is None:
+            provisional = _sort_screened_candidates(compute_screen_scores(df, screening), screening)
+            enrich_count = min(daily_limit, len(provisional))
+            daily_candidates = provisional.head(enrich_count)
+            # config.daily_source's "auto" chain (tushare/tencent/sina/akshare/baostock)
+            # is CN-only and cannot resolve Yahoo symbols, so default non-CN runs to
+            # the yfinance adapter unless the caller explicitly configured a source.
+            effective_daily_source = (
+                "yfinance" if market != "cn" and config.daily_source in ("auto", "")
+                else config.daily_source
+            )
+            try:
+                enriched = enrich_daily_features(
+                    daily_candidates,
+                    max_rows=enrich_count,
+                    lookback_days=config.daily_lookback_days,
+                    source=effective_daily_source,
+                    fetch_retries=config.daily_fetch_retries,
+                    max_workers=config.daily_fetch_max_workers,
+                    cache_policy=lambda: _screening_daily_cache_kwargs(config, market),
                 )
-                degradation.append(f"Daily K-line quality flags: {flag_summary}")
-            if daily_source_order_notes:
-                degradation.append("Daily K-line source ordering: " + " | ".join(daily_source_order_notes[:3]))
-            if daily_source_health_notes:
-                degradation.append("Daily K-line source health: " + "; ".join(daily_source_health_notes))
-            if daily_errors:
-                sample = " | ".join(daily_errors[:5])
-                suffix = f" | +{len(daily_errors) - 5} more" if len(daily_errors) > 5 else ""
-                degradation.append(f"Daily K-line enrichment row errors: {sample}{suffix}")
+                daily_enriched = True
+                daily_errors = [str(item) for item in enriched.attrs.get("daily_errors", [])]
+                daily_enrich_count = int(enriched.attrs.get("daily_success_count", len(enriched)))
+                daily_source_counts = dict(enriched.attrs.get("daily_source_counts", {}) or {})
+                daily_quality_flag_counts = dict(enriched.attrs.get("daily_quality_flag_counts", {}) or {})
+                daily_source_order_notes = [str(item) for item in enriched.attrs.get("daily_source_order_notes", [])]
+                daily_source_health_notes = _daily_source_health_notes(
+                    dict(enriched.attrs.get("daily_source_health", {}) or {})
+                )
+                enrich_summary = (
+                    f"Daily K-line enrichment attempted {enrich_count} candidates, "
+                    f"succeeded {daily_enrich_count} of {after_filter_count} snapshot-filtered candidates"
+                )
+                if explain_filters or daily_enrich_count < enrich_count:
+                    degradation.append(enrich_summary)
+                else:
+                    logger.info("%s", enrich_summary)
+                if daily_source_counts:
+                    source_summary = ", ".join(
+                        f"{name}={count}" for name, count in sorted(daily_source_counts.items())
+                    )
+                    if explain_filters:
+                        degradation.append(f"Daily K-line sources: {source_summary}")
+                    else:
+                        logger.info("Daily K-line sources: %s", source_summary)
+                if daily_quality_flag_counts:
+                    flag_summary = ", ".join(
+                        f"{name}={count}" for name, count in sorted(daily_quality_flag_counts.items())
+                    )
+                    degradation.append(f"Daily K-line quality flags: {flag_summary}")
+                if daily_source_order_notes:
+                    degradation.append("Daily K-line source ordering: " + " | ".join(daily_source_order_notes[:3]))
+                if daily_source_health_notes:
+                    degradation.append("Daily K-line source health: " + "; ".join(daily_source_health_notes))
+                if daily_errors:
+                    sample = " | ".join(daily_errors[:5])
+                    suffix = f" | +{len(daily_errors) - 5} more" if len(daily_errors) > 5 else ""
+                    degradation.append(f"Daily K-line enrichment row errors: {sample}{suffix}")
+            except Exception as exc:
+                if daily_needed:
+                    raise RuntimeError(
+                        "Daily K-line enrichment is required by this strategy but failed: "
+                        f"{exc}"
+                    ) from exc
+                degradation.append(f"Daily K-line enrichment skipped: {exc}")
+                enriched = None
+
+        if enriched is not None:
             if daily_needed:
                 if explain_filters:
                     daily_waterfall = hard_filter_waterfall(enriched, screening.hard_filters)
@@ -356,13 +407,6 @@ def screen(
                     after_filter_count = len(df)
             else:
                 df = enriched
-        except Exception as exc:
-            if daily_needed:
-                raise RuntimeError(
-                    "Daily K-line enrichment is required by this strategy but failed: "
-                    f"{exc}"
-                ) from exc
-            degradation.append(f"Daily K-line enrichment skipped: {exc}")
 
     if df.empty:
         return ScreenResult(
@@ -373,6 +417,7 @@ def screen(
             snapshot_count=snapshot_count,
             after_filter_count=0,
             run_id=run_id,
+            track="rules",
             degradation=[*degradation, "No candidates after daily hard filter"],
             snapshot_source=snapshot_source,
             source_errors=source_errors,
@@ -555,6 +600,7 @@ def screen(
         after_filter_count=after_filter_count,
         picks=picks,
         run_id=run_id,
+        track="ai" if llm_ranked else "rules",
         llm_ranked=llm_ranked,
         llm_market_view=llm_market_view,
         llm_selection_logic=llm_selection_logic,
@@ -789,6 +835,78 @@ def _format_filter_waterfall(steps: list[dict[str, object]], *, limit: int = 8) 
     if hidden > 0:
         parts.append(f"+{hidden} more")
     return "; ".join(parts)
+
+
+def _resolve_cn_daily_pack(
+    *,
+    market: str,
+    snapshot_df: pd.DataFrame,
+    config: Config,
+    daily_pack: DailyPack | None,
+    degradation: list[str],
+) -> DailyPack | None:
+    if not get_market(market).supports_daily_pack:
+        return None
+    if daily_pack is None and not config.daily_pack_enabled:
+        return None
+    if daily_pack is not None:
+        active_pack = daily_pack
+    else:
+        pack_path = config.daily_pack_dir or pack_dir(config)
+        if not (pack_path / "manifest.json").is_file():
+            return None
+        try:
+            active_pack = load_pack(pack_path)
+        except (PackError, OSError) as exc:
+            degradation.append(f"CN daily pack fallback: {exc}")
+            return None
+
+    quote_date = str(snapshot_df.attrs.get("quote_date") or "").strip()[:10]
+    target_date = quote_date or expected_trade_date()
+    if active_pack.trade_date < target_date:
+        try:
+            active_pack = stitch_snapshot(active_pack, snapshot_df, trade_date=target_date)
+        except SnapshotStitchError as exc:
+            degradation.append(
+                f"CN daily pack stale ({active_pack.trade_date} < {target_date}; {exc}); "
+                "falling back to per-code daily enrichment"
+            )
+            return None
+        if active_pack.trade_date < target_date:
+            degradation.append(
+                f"CN daily pack stale ({active_pack.trade_date} < {target_date}); "
+                "falling back to per-code daily enrichment"
+            )
+            return None
+    return active_pack
+
+
+def _attach_pack_daily_features(df: pd.DataFrame, active_pack: DailyPack) -> tuple[pd.DataFrame, int]:
+    enriched = df.copy()
+    code_col = "code" if "code" in enriched.columns else "代码"
+    norm_codes = [normalize_code(v, allow_ticker=False) for v in enriched[code_col]]
+    features_df = compute_pack_daily_features(active_pack, codes=norm_codes)
+    by_code = features_df.set_index("code").to_dict(orient="index") if not features_df.empty else {}
+    matched = sum(1 for c in norm_codes if c in by_code)
+
+    columns: dict[str, list[object]] = {col: [] for col in _DAILY_FEATURE_DEFAULTS}
+    for code in norm_codes:
+        feat = by_code.get(code)
+        if feat is None:
+            for col, default in _DAILY_FEATURE_DEFAULTS.items():
+                if col == "daily_quality_score":
+                    columns[col].append(0.0)
+                elif col == "daily_quality_flags":
+                    columns[col].append("missing_in_pack")
+                else:
+                    columns[col].append(default)
+        else:
+            for col, default in _DAILY_FEATURE_DEFAULTS.items():
+                columns[col].append(feat.get(col, default))
+
+    for col, values in columns.items():
+        enriched[col] = values
+    return enriched, matched
 
 
 def _safe_text(v: object) -> str:

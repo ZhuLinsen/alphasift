@@ -1,0 +1,49 @@
+name: shooting_star_confirm
+display_name: 仙人指路确认
+family: breakout
+status: experimental
+version: "1.0"
+description: 放量长上影试盘后1-5个交易日未有效跌破试盘最低价，并放量阳线站上试盘最高价（无状态观察/确认）
+tags: [breakout, observe_confirm, upper_shadow]
+market_scope: [cn]
+min_history_days: 60
+
+universe:
+  exclude_st: true
+  proxy_amount_min: 100000000
+  close_min: 2.0
+
+mode: observe_confirm
+min_wait_days: 1
+lookback_days: 5
+invalidation:
+  rule: close_below_observe_low
+  tolerance_atr: 0.2
+
+observe:
+  - feature: price_above_ma20
+    equals: true
+  - feature: pos_in_60d
+    min: 0.45
+  - feature: upper_shadow_atr
+    min: 1.0
+  - feature: upper_shadow_to_range
+    min: 0.45
+  - feature: vol_ratio_20d
+    min: 1.3
+  - feature: change_pct
+    min: -1.5
+    max: 6.5
+
+confirm:
+  - feature: price_above_ma20
+    equals: true
+  - feature: close_above_observe_high
+    equals: true
+  - feature: body_atr
+    min: 0.5
+  - feature: vol_ratio_20d
+    min: 1.1
+  - feature: ret_limit_ratio
+    min: 0.15
+    max: 0.99

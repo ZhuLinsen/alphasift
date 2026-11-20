@@ -210,6 +210,7 @@ class ScreenResult:
     after_filter_count: int = 0
     picks: list[Pick] = field(default_factory=list)
     run_id: str = ""
+    track: str = ""
     llm_ranked: bool = False
     llm_market_view: str = ""
     llm_selection_logic: str = ""
@@ -228,6 +229,10 @@ class ScreenResult:
     portfolio_concentration_notes: list[str] = field(default_factory=list)
     saved_path: str = ""
     created_at: str = field(default_factory=now_iso)
+
+    def __post_init__(self) -> None:
+        if not self.track:
+            self.track = "ai" if self.llm_ranked else "rules"
 
 
 @dataclass

@@ -10,11 +10,15 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from alphasift.config import Config
-from alphasift.doctor import doctor_data_sources
+from alphasift.daily_report import build_daily_report
+from alphasift.doctor import doctor_data_sources, doctor_radar_readiness
+from alphasift.market_regime import compute_market_regime, compute_market_regime_series
 from alphasift.overview import build_overview
+from alphasift.pack import PackError, load_pack, pack_dir
+from alphasift.patterns import list_patterns, scan_patterns
 from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.report import build_run_report_payload
-from alphasift.result_schema import screen_result_schema
+from alphasift.result_schema import daily_report_schema, screen_result_schema
 from alphasift.run_history import build_strategy_run_summary
 from alphasift.source_history import build_data_source_history
 from alphasift.store import list_saved_runs, load_screen_result
@@ -37,6 +41,8 @@ def build_api_response(
         return 200, {"status": "ok", "service": "alphasift", "schema_version": 1}
     if path == "/result-schema":
         return 200, screen_result_schema()
+    if path == "/daily-report-schema":
+        return 200, daily_report_schema()
     if path == "/overview":
         return 200, build_overview(
             config,
@@ -213,6 +219,61 @@ def build_api_response(
             compare_snapshot_sources=_bool_param(params, "compare_snapshot_sources", False),
         )
         return 200, result.to_dict()
+    if path == "/doctor/radar":
+        return 200, doctor_radar_readiness(
+            config,
+            trade_date=_single(params, "trade_date") or None,
+        )
+    if path == "/patterns":
+        include_exp = _bool_param(params, "include_experimental", True)
+        return 200, {
+            "schema_version": 1,
+            "patterns": [asdict(item) for item in list_patterns(include_experimental=include_exp)],
+        }
+    if path in {"/market-stats", "/patterns/scan", "/daily-report"}:
+        try:
+            daily_pack = load_pack(pack_dir(config))
+        except (OSError, PackError, ValueError) as exc:
+            return 503, {
+                "error": "pack_unavailable",
+                "message": f"CN DailyPack unavailable: {exc}",
+            }
+        trade_date = _single(params, "trade_date") or None
+        try:
+            if path == "/market-stats":
+                days = max(1, min(250, _int_param(params, "days", 1)))
+                if days <= 1:
+                    return 200, compute_market_regime(daily_pack, trade_date=trade_date).to_dict()
+                if trade_date is not None:
+                    dates = [str(d) for d in daily_pack.dates]
+                    if trade_date not in dates:
+                        raise ValueError(f"trade_date {trade_date!r} not found in DailyPack")
+                    end_idx = dates.index(trade_date)
+                else:
+                    end_idx = len(daily_pack.dates) - 1
+                series = compute_market_regime_series(daily_pack, end_index=end_idx)[-days:]
+                return 200, {"schema_version": 1, "days": [item.to_dict() for item in series]}
+            if path == "/patterns/scan":
+                patterns = _multi(params, "pattern") or None
+                include_exp = _bool_param(params, "include_experimental", False)
+                return 200, scan_patterns(
+                    daily_pack,
+                    patterns=patterns,
+                    trade_date=trade_date,
+                    include_experimental=include_exp,
+                ).to_dict()
+            # /daily-report
+            include_ann = _bool_param(params, "announcements", False)
+            ann_max = max(0, min(30, _int_param(params, "announcement_max_codes", 8)))
+            return 200, build_daily_report(
+                daily_pack,
+                trade_date=trade_date,
+                include_announcements=include_ann,
+                announcement_max_codes=ann_max,
+                announcement_cache_dir=config.data_dir / "candidate_context_cache",
+            )
+        except (ValueError, IndexError, FileNotFoundError) as exc:
+            return 400, {"error": "invalid_request", "message": str(exc)}
     return 404, {
         "error": "not_found",
         "path": path,
@@ -268,6 +329,7 @@ def _index_payload() -> dict[str, Any]:
         "endpoints": [
             "/health",
             "/result-schema",
+            "/daily-report-schema",
             "/overview",
             "/strategies",
             "/strategy",
@@ -283,6 +345,11 @@ def _index_payload() -> dict[str, Any]:
             "/runs",
             "/report",
             "/doctor/data-sources",
+            "/doctor/radar",
+            "/market-stats",
+            "/patterns",
+            "/patterns/scan",
+            "/daily-report",
         ],
     }
 

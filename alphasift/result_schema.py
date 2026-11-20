@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 SCREEN_RESULT_SCHEMA_VERSION = 1
+DAILY_REPORT_SCHEMA_VERSION = 1
 
 SCREEN_RESULT_SCHEMA: dict[str, object] = {
     "schema_version": SCREEN_RESULT_SCHEMA_VERSION,
@@ -11,6 +12,7 @@ SCREEN_RESULT_SCHEMA: dict[str, object] = {
     "top_level_fields": [
         "strategy",
         "market",
+        "track",
         "strategy_version",
         "strategy_category",
         "snapshot_count",
@@ -107,4 +109,42 @@ def screen_result_schema() -> dict[str, object]:
         if isinstance(value, list)
         else value
         for key, value in SCREEN_RESULT_SCHEMA.items()
+    }
+
+
+DAILY_REPORT_SCHEMA: dict[str, object] = {
+    "schema_version": DAILY_REPORT_SCHEMA_VERSION,
+    "object": "DailyReport",
+    "top_level_fields": [
+        "schema_version",
+        "object",
+        "trade_date",
+        "pack_trade_date",
+        "market",
+        "generated_at",
+        "usage_policy",
+        "market_regime",
+        "strategies",
+        "patterns",
+        "announcement_risks",
+        "degradation",
+        "im_card_markdown",
+        "im_card_chars",
+        "non_goals",
+    ],
+    "pattern_sections": ["active", "experimental"],
+    "im_card_max_chars": 1199,
+    "non_goals": [
+        "量化形态观测与回测基准，非投资建议。",
+        "Market regime stage is reporting and slice metadata only; never adjusts strategy weights.",
+        "Relay statistics do not generate stock-picking signals.",
+    ],
+}
+
+
+def daily_report_schema() -> dict[str, object]:
+    """Return a copy of the stable DailyReport schema metadata."""
+    return {
+        key: list(value) if isinstance(value, list) else value
+        for key, value in DAILY_REPORT_SCHEMA.items()
     }

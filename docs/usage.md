@@ -180,6 +180,62 @@ curl "http://127.0.0.1:8765/strategy-run-summary?limit=50"
 alphasift evaluate <run_id> --with-price-path --explain
 ```
 
+## A 股离线日线包
+
+```bash
+alphasift pack pull
+alphasift pack info --trade-date 2026-11-18
+ALPHASIFT_PACK_DIR=data/pack/sample alphasift pack build --days 250 --codes-limit 30
+python3 scripts/build_pack.py backfill --days 250 --trade-date 2026-11-18
+python3 scripts/build_pack.py update --days 250 --trade-date 2026-11-19
+```
+
+`pull` 从 GitHub Release 拉取清单，校验 SHA-256；本地文件已与清单一致时跳过下载。`info` 输出校验后的清单和 `fresh` 字段。省略 `--trade-date` 时，按 A 股收盘时间和工作日估算预期交易日，节假日可显式指定。
+
+默认保留 250 个交易日，数据全部来自项目现有数据源。省略 `--codes-limit` 可构建全量包。
+
+- **回填与补缺口**：按代码在 `.backfill/` 保存断点结果并支持续传。`--source auto`（默认）在 Baostock 可连时优先用它（自带交易所昨收）；否则走批量 `yfinance`（按 100 只分批取 `auto_adjust=False, actions=True`，用 `Stock Splits` 还原不复权 OHLCV，并用 `Adj Close` 比值还原除权日昨收，北交所等无 Yahoo 代码的标的回退现有日线源）。`--source daily` 强制走新浪不复权日线加腾讯前复权日线。
+- **每日增量**：`update` 优先尝试现有全市场快照源（`sina`、`efinance`、`akshare_em`），拿不到开高低和昨收时自动降级到腾讯批量行情（`qt.gtimg.cn`，含当日开高低收、昨收、成交量和成交额），只适用于最近一个已收盘交易日；仍失败时再按代码从日线补齐。
+- **TickPlus（可选）**：设置 `TICKPLUS_API_KEY` 后，`update` 优先用它取当日全市场日线。
+
+批量 `yfinance` 与新浪加腾讯路径的历史成交额均留空（每日增量进来的记录带有真实成交额）；单个代码取数失败会跳过并在下次运行重试，失败超过 5% 则中止。
+
+`daily.npz` 保存不复权价格和交易所昨收，停牌及未上市的日期留空。Python 接口 `load_pack` 读取原始矩阵，`forward_adjust` 按昨收动态计算前复权，成交量（股）和成交额（元）保留原值。`stitch_snapshot` 仅在内存中拼接当日快照，需要代码、开高低收（收盘可用 `price`）、昨收、成交量和成交额。`sina`、`efinance`、`akshare_em` 快照自带这些字段并会自动映射，未成交的行不写入；`em_datacenter` 和 `tushare` 快照缺少这些字段，会返回明确的降级错误。
+
+当本地存在有效且新鲜的 A 股数据包时（默认 `ALPHASIFT_DAILY_PACK_ENABLED=1`），`screen` 运行 `volume_breakout`、`shrink_pullback` 等需要日 K 的 A 股策略会自动使用 `alphasift/pack_features.py` 向量化计算全部初筛候选的日线指标，不再受默认 Top-100 补日线截断限制；若包缺失、损坏或过期且无法从快照拼接，则自动回退现有逐只补日线路径并记录 `degradation`。其他 6 个市场不触发数据包路径。
+
+## A 股盘面统计与无状态形态引擎
+
+两项能力均**仅适用于 A 股数据包（其他 6 个市场不动）**：
+
+```bash
+# 查看盘面宽度、涨跌停/封板率、连板梯队与客观阶段标签（仅供报告和切片，不调整策略权重）
+alphasift market-stats --explain
+alphasift market-stats --days 10 --json
+
+# 列出与扫描无状态形态；默认仅扫描通过 250 日门槛的 active 形态，加 --include-experimental 包含观察期形态
+alphasift patterns list --include-experimental
+alphasift patterns scan --include-experimental --explain
+
+# 250 日 next_open 回放、形态 × 阶段切片、上方 10% 筹码切片及毕业判定（样本 >= 200 且 T+5 超额 > 0）
+alphasift patterns replay --output-json local/pattern_replay.json --output-md local/pattern_replay.md
+```
+
+短线接力谱系仅提供盘面连板梯队与昨涨停溢价统计，不出个股买卖信号；`overhead_supply_10pct` 仅作特征输出与切片观测，不做硬筛一票否决。
+
+## 结构化日报、IM 推送与就绪诊断
+
+```bash
+# 打包与推送就绪自检（不会打印任何 Webhook 或 Token 密钥）
+alphasift doctor radar --explain
+
+# 生成结构化 report.json 与 <1200 字 IM 卡片，并按配置幂等推送（无 Webhook 时静默跳过）
+alphasift daily-report --output-json local/report.json --output-card local/card.md --push --explain
+```
+
+- **IM 渠道环境变量**：支持企业微信（`WECOM_WEBHOOK_URL`）、飞书机器人（`FEISHU_WEBHOOK_URL`，可选加签密钥 `FEISHU_WEBHOOK_SECRET`）与 Telegram（`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`）。同一交易日同一渠道默认防重发（`--force-push` 可覆盖）；未配置任何渠道时静默跳过。
+- **公告排雷**：默认对重点候选做最佳实践式近期公告负面关键词抽检；离线或接口异常时降级写入 `degradation`，不影响日报生成。
+
 ## Python 调用
 
 ```python

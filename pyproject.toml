@@ -35,7 +35,7 @@ include-package-data = true
 include = ["alphasift*"]
 
 [tool.setuptools.package-data]
-alphasift = ["strategies/*.yaml"]
+alphasift = ["strategies/*.yaml", "patterns/*.yaml"]
 
 [tool.setuptools.data-files]
 "." = ["SKILL.md", ".env.example", "LICENSE"]

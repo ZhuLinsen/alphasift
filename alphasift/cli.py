@@ -12,7 +12,7 @@ from pathlib import Path
 
 from alphasift.audit import audit_project
 from alphasift.config import Config
-from alphasift.doctor import doctor_data_sources, write_doctor_report
+from alphasift.doctor import doctor_data_sources, doctor_radar_readiness, write_doctor_report
 from alphasift.dsa import check_dsa_readiness
 from alphasift.evaluate import evaluate_saved_run, evaluate_saved_runs, evaluate_saved_runs_by_windows
 from alphasift.hotspot import (
@@ -368,6 +368,29 @@ def main():
     drp.add_argument("--output", default=None, help="额外写出 JSON 诊断报告")
     drp.add_argument("--json", action="store_true", help="以 JSON 输出")
     drp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
+    rdp = doctor_sub.add_parser("radar", help="检查 A 股日线包、形态模板、AI 赛道与 IM 推送就绪状态")
+    rdp.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
+    rdp.add_argument("--trade-date", default=None, help="预期交易日 YYYY-MM-DD")
+    rdp.add_argument("--json", action="store_true", help="以 JSON 输出")
+    rdp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
+
+    pp = sub.add_parser("pack", help="管理 A 股离线日线包")
+    pack_sub = pp.add_subparsers(dest="pack_command", required=True)
+    pull_parser = pack_sub.add_parser("pull", help="从 GitHub Release 拉取并校验数据包")
+    pull_parser.add_argument("--tag", default=None, help="Release 标签，默认 data-cn")
+    pull_parser.add_argument("--trade-date", default=None, help="预期交易日 YYYY-MM-DD（轮询新鲜度用）")
+    pull_parser.add_argument("--wait-sec", type=float, default=0.0, help="若远端包未更新至目标日，最多等待秒数，默认 0")
+    pull_parser.add_argument("--poll-sec", type=float, default=30.0, help="轮询间隔秒数，默认 30")
+    info_parser = pack_sub.add_parser("info", help="查看已校验的数据包及新鲜度")
+    info_parser.add_argument("--trade-date", help="预期交易日 YYYY-MM-DD，默认按 A 股收盘时间估算")
+    build_parser = pack_sub.add_parser("build", help="用日线历史回填 A 股日线包")
+    build_parser.add_argument(
+        "--source", choices=["auto", "baostock", "yfinance", "daily"], default="auto",
+        help="历史数据源：baostock、yfinance、daily（现有新浪和腾讯日线源）或 auto（Baostock 可连时优先，否则走批量 yfinance）",
+    )
+    build_parser.add_argument("--days", type=int, help="回填交易日数量，默认 250")
+    build_parser.add_argument("--codes-limit", type=int, help="仅处理排序后的前 N 个代码，用于小样本验证")
+    build_parser.add_argument("--trade-date", help="回填截止日期 YYYY-MM-DD")
 
     # quickstart
     qp = sub.add_parser(
@@ -376,6 +399,57 @@ def main():
     )
     qp.add_argument("--strategy", default="dual_low", help="演示用策略，默认 dual_low")
     qp.add_argument("--max-output", type=int, default=5, help="演示输出候选数")
+
+    # market-stats (CN pack only)
+    msp = sub.add_parser("market-stats", help="计算 A 股离线日线包的客观盘面宽度、连板梯队与阶段标签")
+    msp.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
+    msp.add_argument("--trade-date", default=None, help="指定交易日 YYYY-MM-DD（仅计算至该日，无前瞻）")
+    msp.add_argument("--days", type=int, default=1, help="输出最近 N 个交易日统计，默认 1")
+    msp.add_argument("--json", action="store_true", help="以 JSON 输出")
+    msp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
+
+    # patterns (CN pack only)
+    patp = sub.add_parser("patterns", help="A 股日线矩阵形态管理、扫描与 250 日 next_open 回放")
+    pat_sub = patp.add_subparsers(dest="patterns_command", required=True)
+    pat_list = pat_sub.add_parser("list", help="列出内置 A 股形态模板")
+    pat_list.add_argument("--include-experimental", action="store_true", help="包含尚未达毕业门槛的 experimental 形态")
+    pat_list.add_argument("--json", action="store_true", help="以 JSON 输出")
+
+    pat_scan = pat_sub.add_parser("scan", help="使用 A 股日线包进行无状态形态扫描")
+    pat_scan.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
+    pat_scan.add_argument("--pattern", action="append", default=None, help="只扫描指定形态，可重复")
+    pat_scan.add_argument("--trade-date", default=None, help="按截止交易日扫描（无前瞻）")
+    pat_scan.add_argument("--include-experimental", action="store_true", help="同时扫描 experimental 形态")
+    pat_scan.add_argument("--limit", type=int, default=20, help="--explain 模式下每个形态最多展示前 N 只，默认 20")
+    pat_scan.add_argument("--json", action="store_true", help="以 JSON 输出")
+    pat_scan.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
+
+    pat_replay = pat_sub.add_parser("replay", help="对形态做 250 日 next_open 回放、阶段切片与毕业门槛判定")
+    pat_replay.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
+    pat_replay.add_argument("--pattern", action="append", default=None, help="只回放指定形态，可重复")
+    pat_replay.add_argument("--benchmark-csv", default=None, help="可选基准 OHLC CSV（date,open,close）")
+    pat_replay.add_argument("--warmup-days", type=int, default=60, help="形态预热交易日数，默认 60")
+    pat_replay.add_argument("--cost-bps", type=float, default=0.0, help="扣减双边交易成本（bps）")
+    pat_replay.add_argument("--output-json", default=None, help="写出 JSON 回放报告")
+    pat_replay.add_argument("--output-md", default=None, help="写出 Markdown 回放报告")
+    pat_replay.add_argument("--json", action="store_true", help="以 JSON 输出")
+
+    # daily-report (CN daily report + IM card + idempotent push)
+    drpt = sub.add_parser("daily-report", help="生成 A 股结构化日报 report.json、<1200 字卡片并支持幂等 IM 推送")
+    drpt.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
+    drpt.add_argument("--trade-date", default=None, help="指定交易日 YYYY-MM-DD")
+    drpt.add_argument("--run-id", action="append", default=None, help="附加已保存策略运行 ID/路径，可重复")
+    drpt.add_argument("--runs-dir", default=None, help="从目录自动附带该日保存的 CN 策略运行")
+    drpt.add_argument("--no-announcements", action="store_true", help="跳过候选股近期公告负面关键词排雷")
+    drpt.add_argument("--announcement-max-codes", type=int, default=12, help="公告排雷最多抽检前 N 只候选，默认 12")
+    drpt.add_argument("--output-json", default=None, help="写出 DailyReport report.json 路径")
+    drpt.add_argument("--output-card", default=None, help="额外写出 <1200 字 IM Markdown 卡片路径")
+    drpt.add_argument("--push", action="store_true", help="按已配置渠道幂等推送到企微/飞书/Telegram（无配置静默跳过）")
+    drpt.add_argument("--channel", action="append", default=None, help="仅推送指定渠道（wecom/feishu/telegram），可重复")
+    drpt.add_argument("--force-push", action="store_true", help="忽略同交易日幂等锁强制重发")
+    drpt.add_argument("--dry-run-push", action="store_true", help="演练推送流程，不实际发送请求也不写状态")
+    drpt.add_argument("--json", action="store_true", help="以 JSON 输出")
+    drpt.add_argument("--explain", action="store_true", help="输出紧凑摘要与 IM 卡片预览")
 
     args = parser.parse_args()
     _apply_env_file_args(args.env_file)
@@ -858,11 +932,187 @@ def main():
                 print(json.dumps(result, ensure_ascii=False, indent=2))
             else:
                 print(_format_dsa_readiness_explain(result))
+        elif args.doctor_command == "radar":
+            result = doctor_radar_readiness(
+                config,
+                pack_dir=Path(args.pack_dir).expanduser() if args.pack_dir else None,
+                trade_date=args.trade_date,
+            )
+            if args.explain and not args.json:
+                print(_format_radar_doctor_explain(result))
+            else:
+                print(json.dumps(result, ensure_ascii=False, indent=2))
         else:
             parser.error("doctor requires a subcommand, e.g. doctor data-sources")
 
     elif args.command == "quickstart":
         _run_quickstart(strategy=args.strategy, max_output=args.max_output)
+
+    elif args.command == "pack":
+        from alphasift import pack
+
+        config = Config.from_env()
+        directory = pack.pack_dir(config)
+        try:
+            if args.pack_command == "pull":
+                tag = args.tag if args.tag is not None else pack.DEFAULT_TAG
+                if (args.wait_sec and args.wait_sec > 0) or args.trade_date:
+                    result = pack.pull_with_wait(
+                        directory,
+                        tag=tag,
+                        expected_trade_date=args.trade_date,
+                        max_wait_sec=args.wait_sec,
+                        poll_interval_sec=args.poll_sec,
+                    )
+                else:
+                    result = pack.pull(directory, tag=tag)
+            elif args.pack_command == "info":
+                data = pack.load_pack(directory)
+                expected = args.trade_date or pack.expected_trade_date()
+                result = {**data.manifest, "expected_trade_date": expected, "fresh": pack.is_fresh(data, expected)}
+            else:
+                result = pack.backfill(
+                    directory, days=args.days if args.days is not None else pack.DEFAULT_DAYS,
+                    codes_limit=args.codes_limit, trade_date=args.trade_date, config=config, source=args.source,
+                )
+        except (OSError, RuntimeError, ValueError) as exc:
+            parser.error(str(exc))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+
+    elif args.command == "market-stats":
+        from alphasift import pack
+        from alphasift.market_regime import compute_market_regime, compute_market_regime_series
+
+        config = Config.from_env()
+        directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
+        try:
+            daily_pack = pack.load_pack(directory)
+            if args.days <= 1:
+                items = [compute_market_regime(daily_pack, trade_date=args.trade_date)]
+            else:
+                if args.trade_date is not None:
+                    dates = [str(d) for d in daily_pack.dates]
+                    if args.trade_date not in dates:
+                        raise ValueError(f"trade_date {args.trade_date!r} not found in DailyPack")
+                    end_idx = dates.index(args.trade_date)
+                else:
+                    end_idx = len(daily_pack.dates) - 1
+                series = compute_market_regime_series(daily_pack, end_index=end_idx)
+                items = series[-max(1, int(args.days)):]
+        except (OSError, RuntimeError, ValueError, IndexError) as exc:
+            parser.error(str(exc))
+
+        if args.explain and not args.json:
+            print(_format_market_stats_explain(items))
+        else:
+            payload: object = items[0].to_dict() if args.days <= 1 else [item.to_dict() for item in items]
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+
+    elif args.command == "patterns":
+        from alphasift import pack
+        from alphasift.pattern_replay import load_cn_benchmark, render_replay_markdown, replay_patterns
+        from alphasift.patterns import list_patterns, scan_patterns
+
+        config = Config.from_env()
+        if args.patterns_command == "list":
+            specs = list_patterns(include_experimental=args.include_experimental)
+            if args.json:
+                print(json.dumps([asdict(s) for s in specs], ensure_ascii=False, indent=2))
+            else:
+                print(f"patterns={len(specs)}")
+                for spec in specs:
+                    aligned = f" aligned={spec.aligned_strategy}" if spec.aligned_strategy else ""
+                    print(
+                        f"  {spec.name:<24} {spec.display_name:<10} "
+                        f"[{spec.family}/{spec.mode}] status={spec.status}{aligned}"
+                    )
+        elif args.patterns_command == "scan":
+            directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
+            try:
+                daily_pack = pack.load_pack(directory)
+                result = scan_patterns(
+                    daily_pack,
+                    patterns=args.pattern,
+                    trade_date=args.trade_date,
+                    include_experimental=args.include_experimental,
+                )
+            except (OSError, RuntimeError, ValueError, IndexError) as exc:
+                parser.error(str(exc))
+            if args.explain and not args.json:
+                print(_format_pattern_scan_explain(result, limit=args.limit))
+            else:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+        else:
+            directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
+            try:
+                daily_pack = pack.load_pack(directory)
+                bench = load_cn_benchmark(
+                    Path(args.benchmark_csv).expanduser() if args.benchmark_csv else None,
+                    lookback_days=max(len(daily_pack.dates) + 40, 320),
+                )
+                report = replay_patterns(
+                    daily_pack,
+                    patterns=args.pattern,
+                    benchmark_df=bench,
+                    warmup_days=args.warmup_days,
+                    cost_bps=args.cost_bps,
+                )
+            except (OSError, RuntimeError, ValueError, IndexError) as exc:
+                parser.error(str(exc))
+            if args.output_json:
+                out_json = Path(args.output_json)
+                out_json.parent.mkdir(parents=True, exist_ok=True)
+                out_json.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            if args.output_md:
+                out_md = Path(args.output_md)
+                out_md.parent.mkdir(parents=True, exist_ok=True)
+                out_md.write_text(render_replay_markdown(report), encoding="utf-8")
+            if args.json:
+                print(json.dumps(report, ensure_ascii=False, indent=2))
+            else:
+                print(render_replay_markdown(report))
+
+    elif args.command == "daily-report":
+        from alphasift import pack
+        from alphasift.daily_report import build_daily_report, write_daily_card, write_daily_report
+        from alphasift.notify import push_daily_report
+
+        config = Config.from_env()
+        directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
+        try:
+            daily_pack = pack.load_pack(directory)
+            runs = _load_daily_report_runs(
+                config,
+                run_refs=args.run_id,
+                runs_dir=Path(args.runs_dir).expanduser() if args.runs_dir else None,
+                trade_date=args.trade_date or daily_pack.trade_date,
+            )
+            report = build_daily_report(
+                daily_pack,
+                trade_date=args.trade_date,
+                strategy_runs=runs,
+                include_announcements=not args.no_announcements,
+                announcement_max_codes=args.announcement_max_codes,
+                announcement_cache_dir=config.data_dir / "candidate_context_cache",
+            )
+            if args.output_json:
+                write_daily_report(args.output_json, report)
+            if args.output_card:
+                write_daily_card(args.output_card, report["im_card_markdown"])
+            if args.push or args.dry_run_push:
+                report["push"] = push_daily_report(
+                    report,
+                    config=config,
+                    channels=args.channel,
+                    force=args.force_push,
+                    dry_run=args.dry_run_push,
+                )
+        except (OSError, RuntimeError, ValueError, IndexError) as exc:
+            parser.error(str(exc))
+        if args.explain and not args.json:
+            print(_format_daily_report_explain(report))
+        else:
+            print(json.dumps(report, ensure_ascii=False, indent=2))
 
     else:
         parser.print_help()
@@ -2222,6 +2472,105 @@ def _split_csv_args(values: list[str] | None) -> list[str] | None:
     for value in values:
         result.extend(item.strip() for item in value.split(",") if item.strip())
     return result
+
+
+def _format_market_stats_explain(items: list) -> str:
+    lines = ["date       stage       up%    lu  brk  seal%   ld  maxLB  prevLU%   amt_yi"]
+    for item in items:
+        seal = "-" if item.seal_rate_pct is None else f"{item.seal_rate_pct:5.1f}"
+        prev_ret = "-" if item.prev_limit_up_avg_return_pct is None else f"{item.prev_limit_up_avg_return_pct:+6.2f}"
+        amt = "-" if item.total_amount_yi is None else f"{item.total_amount_yi:8.1f}"
+        stage_disp = f"{item.regime_stage}({item.regime_stage_label})"
+        lines.append(
+            f"{item.trade_date} {stage_disp:<11} {item.advance_ratio_pct:5.1f} "
+            f"{item.non_st_limit_up_count:4d} {item.non_st_broken_board_count:4d} {seal:>6} "
+            f"{item.non_st_limit_down_count:4d} {item.max_consecutive_limit_up:6d} {prev_ret:>8} {amt:>8}"
+        )
+    if items:
+        last = items[-1]
+        ladder = ", ".join(f"{k}板:{v}" for k, v in last.consecutive_board_ladder.items()) or "无"
+        lines.append(f"ladder={ladder} reasons={'; '.join(last.regime_reasons)} policy={last.usage_policy}")
+    return "\n".join(lines)
+
+
+def _format_pattern_scan_explain(scan_result, *, limit: int = 20) -> str:
+    reg = scan_result.market_regime
+    lines = [
+        f"trade_date={scan_result.trade_date} universe={scan_result.universe_count} "
+        f"regime={reg.regime_stage}({reg.regime_stage_label}) lu={reg.non_st_limit_up_count} "
+        f"ld={reg.non_st_limit_down_count} policy={scan_result.usage_policy}"
+    ]
+    for pattern_name in scan_result.patterns_evaluated:
+        items = scan_result.signals_by_pattern.get(pattern_name, [])
+        lines.append(f"[{pattern_name}] hits={len(items)}")
+        for sig in items[: max(1, int(limit))]:
+            obs = f" obs={sig.observe_date}(-{sig.observe_lag_days}d)" if sig.observe_date else ""
+            ov = f"{sig.overhead_supply_10pct:.1f}%" if sig.overhead_supply_10pct is not None else "-"
+            amt_m = f"{sig.proxy_amount / 1e8:.2f}亿" if sig.proxy_amount is not None else "-"
+            lines.append(
+                f"  {sig.code} {sig.name or '-':<8} {sig.industry or '-':<8} "
+                f"chg={sig.change_pct:+5.2f}% amt={amt_m:<7} ov10={ov}{obs}"
+            )
+    return "\n".join(lines)
+
+
+def _load_daily_report_runs(
+    config: Config,
+    *,
+    run_refs: list[str] | None,
+    runs_dir: Path | None,
+    trade_date: str,
+) -> list:
+    loaded = []
+    seen_ids: set[str] = set()
+    for ref in run_refs or []:
+        sr = load_screen_result(ref, data_dir=config.data_dir)
+        if sr.run_id not in seen_ids:
+            seen_ids.add(sr.run_id)
+            loaded.append(sr)
+    if runs_dir is not None and runs_dir.is_dir():
+        for path in sorted(runs_dir.glob("*.json")):
+            try:
+                sr = load_screen_result(path, data_dir=config.data_dir)
+            except Exception:  # noqa: BLE001
+                continue
+            if sr.market == "cn" and (not sr.created_at or sr.created_at.startswith(trade_date)):
+                if sr.run_id not in seen_ids:
+                    seen_ids.add(sr.run_id)
+                    loaded.append(sr)
+    return loaded
+
+
+def _format_radar_doctor_explain(payload: dict) -> str:
+    pk = payload.get("pack") or {}
+    pt = payload.get("patterns") or {}
+    nt = payload.get("notify") or {}
+    llm = payload.get("llm") or {}
+    lines = [
+        f"radar_doctor status={payload.get('status')} pack_valid={pk.get('valid')} "
+        f"pack_date={pk.get('trade_date')} expected={pk.get('expected_trade_date')} fresh={pk.get('fresh')}",
+        f"patterns total={pt.get('total')} active={pt.get('active_count')} "
+        f"experimental={pt.get('experimental_count')} sync_ok={pt.get('mirror_sync_ok')}",
+        f"notify channels={','.join(nt.get('configured_channels') or []) or 'none'} "
+        f"llm={llm.get('ai_track_mode')}",
+    ]
+    for rec in payload.get("recommendations") or []:
+        lines.append(f"  recommendation: {rec}")
+    return "\n".join(lines)
+
+
+def _format_daily_report_explain(report: dict) -> str:
+    lines = [
+        report.get("im_card_markdown", ""),
+        f"--- im_card_chars={report.get('im_card_chars')} schema=DailyReport v{report.get('schema_version')}",
+    ]
+    push = report.get("push")
+    if isinstance(push, dict):
+        lines.append(
+            f"push status={push.get('status')} sent={push.get('sent')} "
+            f"skipped={len(push.get('skipped') or [])} errors={len(push.get('errors') or [])}"
+        )
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":

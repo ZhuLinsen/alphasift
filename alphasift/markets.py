@@ -37,6 +37,8 @@ class MarketSpec:
     yahoo_exchanges: tuple[str, ...] = ()
     # A-share conventions (ST names, limit-up boards, EastMoney industries).
     cn_rules: bool = False
+    # Offline daily bar pack supported for full-market vectorized screening.
+    supports_daily_pack: bool = False
     # Local regular-session open (HH:MM). A run created before the open was
     # priced off the previous close, so that day's bar is entirely post-entry.
     session_open: str = "09:30"
@@ -57,7 +59,7 @@ MARKETS: dict[str, MarketSpec] = {
     spec.id: spec
     for spec in (
         MarketSpec(
-            "cn", "China A-shares", "CNY", "Asia/Shanghai", cn_rules=True,
+            "cn", "China A-shares", "CNY", "Asia/Shanghai", cn_rules=True, supports_daily_pack=True,
             benchmark="sh000300", benchmark_name="CSI 300", usd_rate=7.2,
         ),
         MarketSpec(
