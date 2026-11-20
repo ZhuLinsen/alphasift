@@ -266,6 +266,7 @@ class Config:
     telegram_chat_id: str = ""
     notify_state_path: Path = _PROJECT_ROOT / "data" / "notify_state.json"
     notify_timeout_sec: float = 10.0
+    dashboard_url: str = "https://zhulinsen.github.io/alphasift/"
 
     # Optional guardrail for last-good snapshot fallback freshness.
     snapshot_fallback_max_age_hours: float | None = None
@@ -428,6 +429,10 @@ class Config:
                 or (data_dir / "notify_state.json")
             ),
             notify_timeout_sec=max(1.0, _parse_float_env("ALPHASIFT_NOTIFY_TIMEOUT_SEC", 10.0)),
+            dashboard_url=(
+                os.getenv("ALPHASIFT_DASHBOARD_URL") or "https://zhulinsen.github.io/alphasift/"
+            ).strip()
+            or "https://zhulinsen.github.io/alphasift/",
         )
 
 

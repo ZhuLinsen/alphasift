@@ -4,13 +4,16 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from datetime import datetime, timezone
+import fcntl
 import hashlib
 import hmac
 import json
 import os
 from pathlib import Path
+import threading
 import time
 from typing import Any
 
@@ -18,8 +21,11 @@ import requests
 
 from alphasift.config import Config
 from alphasift.daily_report import IM_CARD_MAX_CHARS, ensure_im_card_length, render_daily_im_card
+from alphasift.timeutil import parse_timestamp
 
 SUPPORTED_CHANNELS: tuple[str, ...] = ("wecom", "feishu", "telegram")
+_PROCESS_LOCK = threading.Lock()
+_PENDING_LEASE_SEC = 120.0
 
 
 def configured_channels(config: Config) -> list[str]:
@@ -84,9 +90,23 @@ def _load_state(path: Path) -> dict[str, dict[str, Any]]:
 
 def _save_state(path: Path, state: dict[str, dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(f"{path.suffix}.tmp.{os.getpid()}")
+    tmp = path.with_suffix(f"{path.suffix}.tmp.{os.getpid()}.{threading.get_ident()}")
     tmp.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     os.replace(tmp, path)
+
+
+@contextmanager
+def _ledger_lock(ledger_path: Path) -> Iterator[None]:
+    """Serialize push ledger access across threads and OS processes."""
+    lock_path = ledger_path.with_name(f".{ledger_path.name}.lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with _PROCESS_LOCK:
+        with open(lock_path, "a+", encoding="utf-8") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _send_wecom(
@@ -198,25 +218,66 @@ def push_daily_report(
             "errors": [],
         }
 
+    if report.get("pack_is_stale") and not force:
+        return {
+            "status": "skipped_stale_pack",
+            "trade_date": trade_date,
+            "pack_trade_date": report.get("pack_trade_date"),
+            "stale_reason": report.get("stale_reason"),
+            "card_chars": len(card),
+            "sent": [],
+            "skipped": [{"channel": channel, "reason": "stale_pack"} for channel in target_channels],
+            "errors": [],
+        }
+
     ledger_path = Path(state_path) if state_path is not None else cfg.notify_state_path
-    state = _load_state(ledger_path)
     content_hash = hashlib.sha256(card.encode("utf-8")).hexdigest()[:16]
     title = f"AlphaSift A股量化观测日报 ({trade_date})"
 
     sent: list[str] = []
     skipped: list[dict[str, str]] = []
     errors: list[dict[str, str]] = []
-    state_dirty = False
 
     for channel in target_channels:
         key = f"{trade_date}:{channel}"
-        if not force and key in state:
-            skipped.append({"channel": channel, "reason": "duplicate_same_trade_date"})
-            continue
-        if dry_run:
-            skipped.append({"channel": channel, "reason": "dry_run"})
-            continue
+        claim_record: dict[str, Any] | None = None
 
+        with _ledger_lock(ledger_path):
+            state = _load_state(ledger_path)
+            existing = state.get(key)
+            if isinstance(existing, dict) and not force:
+                existing_status = existing.get("status")
+                if existing_status in (None, "sent"):
+                    skipped.append({"channel": channel, "reason": "duplicate_same_trade_date"})
+                    continue
+                if existing_status == "pending":
+                    claimed_dt = parse_timestamp(existing.get("claimed_at"))
+                    if (
+                        claimed_dt is not None
+                        and (datetime.now(timezone.utc) - claimed_dt).total_seconds() < _PENDING_LEASE_SEC
+                    ):
+                        skipped.append({"channel": channel, "reason": "in_progress_concurrent"})
+                        continue
+                # status == "failed" or expired pending lease falls through to automatic retry.
+
+            if dry_run:
+                skipped.append({"channel": channel, "reason": "dry_run"})
+                continue
+
+            attempts = int(existing.get("attempts", 0) or 0) + 1 if isinstance(existing, dict) else 1
+            claim_record = {
+                "status": "pending",
+                "trade_date": trade_date,
+                "channel": channel,
+                "claimed_at": datetime.now(timezone.utc).isoformat(),
+                "pid": os.getpid(),
+                "attempts": attempts,
+                "content_sha256": content_hash,
+            }
+            state[key] = claim_record
+            _save_state(ledger_path, state)
+
+        send_error: str | None = None
         try:
             if channel == "wecom":
                 _send_wecom(
@@ -243,21 +304,28 @@ def push_daily_report(
                     post_fn=post_fn,
                 )
         except Exception as exc:  # noqa: BLE001
-            errors.append({"channel": channel, "error": _redact_error(exc, cfg)})
-            continue
+            send_error = _redact_error(exc, cfg)
 
-        sent.append(channel)
-        state[key] = {
-            "trade_date": trade_date,
-            "channel": channel,
-            "sent_at": datetime.now(timezone.utc).isoformat(),
-            "content_sha256": content_hash,
-            "chars": len(card),
-        }
-        state_dirty = True
-
-    if state_dirty:
-        _save_state(ledger_path, state)
+        with _ledger_lock(ledger_path):
+            latest_state = _load_state(ledger_path)
+            if send_error is not None:
+                latest_state[key] = {
+                    **(claim_record or {}),
+                    "status": "failed",
+                    "failed_at": datetime.now(timezone.utc).isoformat(),
+                    "last_error": send_error,
+                }
+                _save_state(ledger_path, latest_state)
+                errors.append({"channel": channel, "error": send_error})
+            else:
+                latest_state[key] = {
+                    **(claim_record or {}),
+                    "status": "sent",
+                    "sent_at": datetime.now(timezone.utc).isoformat(),
+                    "chars": len(card),
+                }
+                _save_state(ledger_path, latest_state)
+                sent.append(channel)
 
     if errors and sent:
         status = "partial"
@@ -265,8 +333,13 @@ def push_daily_report(
         status = "error"
     elif sent:
         status = "ok"
+    elif any(
+        s["reason"] in {"duplicate_same_trade_date", "in_progress_concurrent"}
+        for s in skipped
+    ):
+        status = "skipped_duplicate"
     else:
-        status = "skipped_duplicate" if any(s["reason"] == "duplicate_same_trade_date" for s in skipped) else "dry_run"
+        status = "dry_run"
 
     return {
         "status": status,
