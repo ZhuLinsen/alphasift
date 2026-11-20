@@ -1,0 +1,157 @@
+{
+  "session": "asia",
+  "date": "2026-11-20",
+  "finished_at": "2026-11-20T10:35:49+00:00",
+  "entries": [
+    {
+      "market": "cn",
+      "strategy": "balanced_alpha",
+      "status": "ok",
+      "run_id": "903f276257ea",
+      "picks": 5,
+      "snapshot_source": "em_datacenter",
+      "degradation": 3,
+      "seconds": 0.1
+    },
+    {
+      "market": "cn",
+      "strategy": "blue_chip_income",
+      "status": "ok",
+      "run_id": "94878e573030",
+      "picks": 5,
+      "snapshot_source": "em_datacenter",
+      "degradation": 3,
+      "seconds": 0.1
+    },
+    {
+      "market": "cn",
+      "strategy": "capital_heat",
+      "status": "ok",
+      "run_id": "abe4d5b9ce5a",
+      "picks": 5,
+      "snapshot_source": "em_datacenter",
+      "degradation": 3,
+      "seconds": 0.0
+    },
+    {
+      "market": "cn",
+      "strategy": "dual_low",
+      "status": "ok",
+      "run_id": "2c6037453680",
+      "picks": 5,
+      "snapshot_source": "em_datacenter",
+      "degradation": 3,
+      "seconds": 0.1
+    },
+    {
+      "market": "cn",
+      "strategy": "low_volatility_quality",
+      "status": "ok",
+      "run_id": "1dc905bbd73b",
+      "picks": 5,
+      "snapshot_source": "em_datacenter",
+      "degradation": 3,
+      "seconds": 66.9
+    },
+    {
+      "market": "cn",
+      "strategy": "momentum_quality",
+      "status": "ok",
+      "run_id": "a86b9166d90c",
+      "picks": 5,
+      "snapshot_source": "em_datacenter",
+      "degradation": 3,
+      "seconds": 0.1
+    },
+    {
+      "market": "cn",
+      "strategy": "oversold_reversal",
+      "status": "ok",
+      "run_id": "6a11bbd1a8a4",
+      "picks": 5,
+      "snapshot_source": "em_datacenter",
+      "degradation": 3,
+      "seconds": 0.1
+    },
+    {
+      "market": "cn",
+      "strategy": "quality_value",
+      "status": "ok",
+      "run_id": "71432366dbdd",
+      "picks": 5,
+      "snapshot_source": "em_datacenter",
+      "degradation": 3,
+      "seconds": 0.1
+    },
+    {
+      "market": "cn",
+      "strategy": "shrink_pullback",
+      "status": "ok",
+      "run_id": "25f961fa86dc",
+      "picks": 5,
+      "snapshot_source": "em_datacenter",
+      "degradation": 3,
+      "seconds": 48.7
+    },
+    {
+      "market": "cn",
+      "strategy": "volume_breakout",
+      "status": "ok",
+      "run_id": "34d37cfe27c6",
+      "picks": 1,
+      "snapshot_source": "em_datacenter",
+      "degradation": 3,
+      "seconds": 12.9
+    },
+    {
+      "market": "hk",
+      "strategy": "global_value",
+      "status": "ok",
+      "run_id": "e347268087b6",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.1
+    },
+    {
+      "market": "jp",
+      "strategy": "global_value",
+      "status": "ok",
+      "run_id": "4cfbc2370262",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.1
+    },
+    {
+      "market": "kr",
+      "strategy": "global_value",
+      "status": "ok",
+      "run_id": "5d5a100be65f",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.0
+    },
+    {
+      "market": "tw",
+      "strategy": "global_value",
+      "status": "ok",
+      "run_id": "f98603d79f74",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.0
+    },
+    {
+      "market": "in",
+      "strategy": "global_value",
+      "status": "ok",
+      "run_id": "ddc8088385f0",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.0
+    }
+  ]
+}
