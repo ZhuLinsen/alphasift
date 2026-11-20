@@ -1,0 +1,34 @@
+name: ma20_shrink_pullback
+display_name: 20日线缩量回踩
+family: trend_continuation
+status: experimental
+version: "1.0"
+description: 均线多头排列下缩量回踩20日均线附近，波动受控且未破位（与 shrink_pullback 策略对齐）
+aligned_strategy: shrink_pullback
+tags: [trend_continuation, pullback, ma20]
+market_scope: [cn]
+min_history_days: 60
+
+universe:
+  exclude_st: true
+  proxy_amount_min: 80000000
+  close_min: 2.0
+
+mode: direct
+conditions:
+  - feature: ma_bullish
+    equals: true
+  - feature: ma20_slope_5d_pct
+    min: 0.0
+  - feature: pullback_to_ma20_atr
+    min: -0.6
+    max: 1.2
+  - feature: low_to_ma20_atr
+    max: 0.6
+  - feature: vol_ratio_20d
+    max: 0.95
+  - feature: atr20_pct
+    max: 6.5
+  - feature: ret_limit_ratio
+    min: -0.35
+    max: 0.45

@@ -204,13 +204,24 @@ python3 scripts/build_pack.py update --days 250 --trade-date 2026-11-19
 
 当本地存在有效且新鲜的 A 股数据包时（默认 `ALPHASIFT_DAILY_PACK_ENABLED=1`），`screen` 运行 `volume_breakout`、`shrink_pullback` 等需要日 K 的 A 股策略会自动使用 `alphasift/pack_features.py` 向量化计算全部初筛候选的日线指标，不再受默认 Top-100 补日线截断限制；若包缺失、损坏或过期且无法从快照拼接，则自动回退现有逐只补日线路径并记录 `degradation`。其他 6 个市场不触发数据包路径。
 
-## A 股盘面统计（仅供报告与切片）
+## A 股盘面统计与无状态形态引擎
+
+两项能力均**仅适用于 A 股数据包（其他 6 个市场不动）**：
 
 ```bash
-# 查看盘面宽度、涨跌停/封板率、连板梯队与客观阶段标签（仅适用于 A 股数据包，不调整策略权重）
+# 查看盘面宽度、涨跌停/封板率、连板梯队与客观阶段标签（仅供报告和切片，不调整策略权重）
 alphasift market-stats --explain
 alphasift market-stats --days 10 --json
+
+# 列出与扫描无状态形态；默认仅扫描通过 250 日门槛的 active 形态，加 --include-experimental 包含观察期形态
+alphasift patterns list --include-experimental
+alphasift patterns scan --include-experimental --explain
+
+# 250 日 next_open 回放、形态 × 阶段切片、上方 10% 筹码切片及毕业判定（样本 >= 200 且 T+5 超额 > 0）
+alphasift patterns replay --output-json local/pattern_replay.json --output-md local/pattern_replay.md
 ```
+
+短线接力谱系仅提供盘面连板梯队与昨涨停溢价统计，不出个股买卖信号；`overhead_supply_10pct` 仅作特征输出与切片观测，不做硬筛一票否决。
 
 ## Python 调用
 
