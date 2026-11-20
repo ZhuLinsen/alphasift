@@ -265,6 +265,11 @@ class PickEvaluation:
     horizon_days: int | None = None
     benchmark_return_pct: float | None = None
     excess_return_pct: float | None = None
+    entry_mode: str = "close"
+    entry_open: float | None = None
+    entry_date: str | None = None
+    exit_date: str | None = None
+    tradability_flags: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -290,3 +295,6 @@ class EvaluationResult:
     benchmark_return_pct: float | None = None
     average_excess_return_pct: float | None = None
     pending_count: int = 0
+    entry_mode: str = "close"
+    untradable_count: int = 0
+    untradable_share_pct: float | None = None
