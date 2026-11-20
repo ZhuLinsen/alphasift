@@ -7,6 +7,28 @@ name: CN daily data pack
 on:
   schedule:
     - cron: "45 8 * * 1-5" # 16:45 Beijing on weekdays, after CN close
+  workflow_call:
+    inputs:
+      mode:
+        description: "update (incremental with backfill fallback) or backfill (fresh 250d build)"
+        required: false
+        type: string
+        default: "update"
+      days:
+        description: "Window length in trading days"
+        required: false
+        type: string
+        default: "250"
+      trade_date:
+        description: "Optional target trade date (YYYY-MM-DD)"
+        required: false
+        type: string
+        default: ""
+      source:
+        description: "Historical source (auto, yfinance, baostock, daily)"
+        required: false
+        type: string
+        default: "auto"
   workflow_dispatch:
     inputs:
       mode:

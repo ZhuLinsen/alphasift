@@ -181,12 +181,20 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
     html = html_path.read_text(encoding="utf-8")
     for marker in (
         "量化形态观测与回测基准",
+        "renderCnHero",
+        "renderReturnDistSvg",
         "renderMiniKline",
         "renderPatternRadar",
         "renderTrackComparison",
         "untradable_share_pct",
+        "未评估",
+        "样本不足",
+        "trend_ai",
+        "universe_baseline",
+        "by_overhead_supply",
         "muted-cell",
         "site/patterns.json",
+        "site/report.json",
     ):
         assert marker in html
 
@@ -206,10 +214,12 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
     assert "Cloudflare Pages" in dep_text
     assert "track-record" in dep_text
     assert "doctor radar" in dep_text
+    assert "ALPHASIFT_DASHBOARD_URL" in dep_text
 
 
 def test_workflows_valid_yaml_and_no_secret_echo() -> None:
     root = Path(__file__).resolve().parents[1] / ".github" / "workflows"
+    loaded: dict[str, dict] = {}
     for name in ("data-pack.yml", "track-record.yml"):
         wf_path = root / name
         assert wf_path.is_file()
@@ -220,3 +230,19 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
         assert "jobs" in data and data["jobs"]
         assert "echo ${{ secrets." not in text
         assert 'echo "$TICKPLUS_API_KEY"' not in text
+        loaded[name] = (data, text)
+
+    # data-pack.yml exposes workflow_call with strictly string inputs for reuse.
+    dp_data, _ = loaded["data-pack.yml"]
+    dp_on = dp_data.get("on") if "on" in dp_data else dp_data[True]
+    wf_call_inputs = dp_on["workflow_call"]["inputs"]
+    assert all(spec["type"] == "string" for spec in wf_call_inputs.values())
+
+    # track-record.yml chains pack -> record, evaluates with --pack-dir, and builds after daily-report.
+    tr_data, tr_text = loaded["track-record.yml"]
+    assert "pack" in tr_data["jobs"]
+    assert tr_data["jobs"]["pack"]["uses"] == "./.github/workflows/data-pack.yml"
+    assert tr_data["jobs"]["record"]["needs"] == ["pack"]
+    step_names = [s.get("name", "") for s in tr_data["jobs"]["record"]["steps"]]
+    assert step_names.index("Daily report and optional IM push") < step_names.index("Build site data")
+    assert "evaluate --track track --markets" in tr_text and '--pack-dir "$ALPHASIFT_PACK_DIR"' in tr_text

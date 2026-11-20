@@ -200,7 +200,7 @@ python3 scripts/build_pack.py update --days 250 --trade-date 2026-11-19
 
 批量 `yfinance` 与新浪加腾讯路径的历史成交额均留空（每日增量进来的记录带有真实成交额）；单个代码取数失败会跳过并在下次运行重试，失败超过 5% 则中止。
 
-`daily.npz` 保存不复权价格和交易所昨收，停牌及未上市的日期留空。Python 接口 `load_pack` 读取原始矩阵，`forward_adjust` 按昨收动态计算前复权，成交量（股）和成交额（元）保留原值。`stitch_snapshot` 仅在内存中拼接当日快照，需要代码、开高低收（收盘可用 `price`）、昨收、成交量和成交额。`sina`、`efinance`、`akshare_em` 快照自带这些字段并会自动映射，未成交的行不写入；`em_datacenter` 和 `tushare` 快照缺少这些字段，会返回明确的降级错误。
+`daily.npz` 保存不复权价格和交易所昨收，停牌及未上市的日期留空。Python 接口 `load_pack` 读取原始矩阵，`forward_adjust` 按昨收动态计算前复权（**历史特征与形态回放先按目标日期截断再前复权，避免未来除权回改历史均值**），成交量（股）和成交额（元）保留原值。`stitch_snapshot` 仅在内存中拼接当日快照，需要代码、开高低收（收盘可用 `price`）、昨收、成交量和成交额。`sina`、`efinance`、`akshare_em` 与 `em_datacenter`（含北交所）快照均带完整 OHLCV 与 `MAX_TRADE_DATE` 日期校验并会自动映射，未成交的行不写入；`tushare` 快照缺少部分字段，会返回明确的降级错误。
 
 当本地存在有效且新鲜的 A 股数据包时（默认 `ALPHASIFT_DAILY_PACK_ENABLED=1`），`screen` 运行 `volume_breakout`、`shrink_pullback` 等需要日 K 的 A 股策略会自动使用 `alphasift/pack_features.py` 向量化计算全部初筛候选的日线指标，不再受默认 Top-100 补日线截断限制；若包缺失、损坏或过期且无法从快照拼接，则自动回退现有逐只补日线路径并记录 `degradation`。其他 6 个市场不触发数据包路径。
 
@@ -229,13 +229,14 @@ alphasift patterns replay --output-json local/pattern_replay.json --output-md lo
 # 打包与推送就绪自检（不会打印任何 Webhook 或 Token 密钥）
 alphasift doctor radar --explain
 
-# 生成结构化 report.json 与 <1200 字 IM 卡片，并按配置幂等推送（无 Webhook 时静默跳过）
-alphasift daily-report --output-json local/report.json --output-card local/card.md --push --explain
+# 生成结构化 report.json 与 <1200 字 IM 卡片（公告排雷预警置顶，完整候选/形态与 AI 归因详见网页看板），并按配置幂等推送
+alphasift daily-report --expected-trade-date 2026-11-20 --allow-stale-pack --output-json local/report.json --output-card local/card.md --push --explain
 ```
 
-- **IM 渠道环境变量**：支持企业微信（`WECOM_WEBHOOK_URL`）、飞书机器人（`FEISHU_WEBHOOK_URL`，可选加签密钥 `FEISHU_WEBHOOK_SECRET`）与 Telegram（`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`）。同一交易日同一渠道默认防重发（`--force-push` 可覆盖）；未配置任何渠道时静默跳过。
-- **公告排雷**：默认对重点候选做最佳实践式近期公告负面关键词抽检；离线或接口异常时降级写入 `degradation`，不影响日报生成。
-- **公开战绩双赛道（`scripts/track_record.py`）**：保留原有规则榜（`track=rules`）；当环境配置了 LLM Key 时，会在规则 pass 完成后自动追加 A 股 `AI` 赛道（`track=ai`，默认 `--ai-track auto`，LLM 超时/降级不影响规则榜落盘，无 Key 的 fork 自动仅跑规则榜）。若有本地日线包，会一并记录形态雷达快照（含 20 日迷你 K 线）到 `site/patterns.json`。Fork 启用、GitHub Pages 与 Cloudflare Pages 镜像步骤见 [deployment.md](deployment.md)。
+- **IM 渠道环境变量**：支持企业微信（`WECOM_WEBHOOK_URL`）、飞书机器人（`FEISHU_WEBHOOK_URL`，可选加签密钥 `FEISHU_WEBHOOK_SECRET`）与 Telegram（`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`），以及卡片详情跳转链接 `ALPHASIFT_DASHBOARD_URL`（或 `--detail-url`）。同一交易日同一渠道加进程/文件锁并发去重，失败自动落盘并允许下次自动重试；若 `--expected-trade-date` 检出旧包（`pack_is_stale=True`），默认跳过未强制推送（`skipped_stale_pack`）。未配置任何渠道时静默跳过。
+- **CLI 与 HTTP 同源输入**：`alphasift daily-report` 与 HTTP `/daily-report` 共用 `load_daily_report_runs()`（按沪深交易时段归属日加载规则榜与 AI 榜并生成 `ai_highlights`）。
+- **公告排雷**：默认对重点候选做近期公告负面关键词抽检，**卡片内优先预留公告预警篇幅并置于策略与形态概览之前**；离线或接口异常时降级写入 `degradation`，不影响日报生成。
+- **公开战绩双赛道（`scripts/track_record.py`）**：保留原有规则榜（`track=rules`）；当环境配置了 LLM Key 时，会在规则 pass 完成后自动追加 A 股 `AI` 赛道（`track=ai`，默认 `--ai-track auto`，LLM 超时/降级不影响规则榜落盘，无 Key 的 fork 自动仅跑规则榜）。**规则 vs AI 严格按同一策略共同信号日配对计算差值（配对天数 < 10 隐藏差值），单列 AI 缺失率与重合度。** 若有本地日线包，会一并记录盘面 7 桶收益分布、中位数收益与形态雷达快照（含 20 日迷你 K 线）到 `site/patterns.json`。Fork 启用、GitHub Pages 与 Cloudflare Pages 镜像步骤见 [deployment.md](deployment.md)。
 
 ## Python 调用
 
@@ -272,11 +273,12 @@ alphasift evaluate <run_id> --window 5 --entry-mode next_open --explain
 
 A 股开盘一字涨停的候选记为 `untradable_limit_up`，摘要单列数量和占候选总数的百分比。计划退出日一字跌停时，标记 `exit_delayed_limit_down` 并顺延到首个可退出日的收盘。未能退出或日 K 数量不足的窗口显示 `pending`。不可成交和未完成样本均不计入平均收益和胜率。
 
-自动化公开跟踪脚本（`scripts/track_record.py`）沿用默认的收盘入场口径。脚本批量跑完同一交易时段的全部分市场策略、执行多窗口基准评估并生成看板站点数据：
+自动化公开跟踪脚本（`scripts/track_record.py`）支持分段成交口径（默认 `--entry-mode auto`，由 `ALPHASIFT_NEXT_OPEN_SWITCH_DATE` 控制，默认 `2026-11-21`，可用 `--next-open-from` 覆盖）：切换日之前的历史运行保留 `close` 口径并将不可成交比例标记为 `未评估`（`untradable_share_pct = null`）；切换日起自动按 `--entry-mode next_open` 结合 DailyPack 未复权原始价格判定 A 股一字涨跌停。脚本批量跑完同一交易时段的全部分市场策略、执行多窗口基准评估并生成看板站点数据：
 
 ```bash
-python scripts/track_record.py screen --session asia --track track
-python scripts/track_record.py evaluate --markets cn,hk --track track
+python scripts/track_record.py screen --session asia --track track --pack-dir "$ALPHASIFT_PACK_DIR"
+python scripts/track_record.py patterns --track track --pack-dir "$ALPHASIFT_PACK_DIR" --expected-trade-date 2026-11-20 --with-replay
+python scripts/track_record.py evaluate --markets cn,hk --track track --pack-dir "$ALPHASIFT_PACK_DIR"
 python scripts/track_record.py build --track track
 ```
 
