@@ -1,0 +1,99 @@
+name: CN daily data pack
+
+# Build and publish the CN unadjusted daily pack (`daily.npz`, `meta.csv.gz`,
+# `manifest.json`) to the `data-cn` GitHub Release using public free sources by
+# default, with optional TickPlus incremental acceleration when configured.
+
+on:
+  schedule:
+    - cron: "45 8 * * 1-5" # 16:45 Beijing on weekdays, after CN close
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "update (incremental with backfill fallback) or backfill (fresh 250d build)"
+        type: choice
+        options: [update, backfill]
+        default: update
+      days:
+        description: "Window length in trading days"
+        required: false
+        default: "250"
+      trade_date:
+        description: "Optional target trade date (YYYY-MM-DD)"
+        required: false
+        default: ""
+      source:
+        description: "Historical source (auto, yfinance, baostock, daily)"
+        type: choice
+        options: [auto, yfinance, baostock, daily]
+        default: auto
+
+permissions:
+  contents: read
+
+concurrency:
+  group: data-pack-cn
+  cancel-in-progress: false
+
+jobs:
+  publish-pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      ALPHASIFT_PACK_DIR: ${{ github.workspace }}/pack
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: python -m pip install -e .
+
+      - name: Pull existing data-cn pack when updating
+        if: (inputs.mode || 'update') == 'update'
+        env:
+          ALPHASIFT_PACK_REPO: ${{ github.repository }}
+        run: alphasift pack pull || echo "::notice::no prior data-cn release found; will initialize via backfill"
+
+      - name: Build or update CN daily pack
+        env:
+          TICKPLUS_API_KEY: ${{ secrets.TICKPLUS_API_KEY }}
+        run: |
+          set -euo pipefail
+          mode="${{ inputs.mode || 'update' }}"
+          days="${{ inputs.days || '250' }}"
+          source="${{ inputs.source || 'auto' }}"
+          trade_date="${{ inputs.trade_date || '' }}"
+          if [ "$mode" = "update" ] && [ ! -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
+            mode="backfill"
+          fi
+          extra_args=(--days "$days" --source "$source")
+          if [ -n "$trade_date" ]; then
+            extra_args+=(--trade-date "$trade_date")
+          fi
+          python scripts/build_pack.py "$mode" "${extra_args[@]}"
+          alphasift doctor radar --pack-dir "$ALPHASIFT_PACK_DIR" --explain
+
+      - name: Publish data-cn Release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          notes="AlphaSift A 股离线日线包（仅供量化研究与个人回测使用，不构成投资建议）。"
+          if gh release view data-cn >/dev/null 2>&1; then
+            gh release upload data-cn \
+              "$ALPHASIFT_PACK_DIR/daily.npz" \
+              "$ALPHASIFT_PACK_DIR/meta.csv.gz" \
+              "$ALPHASIFT_PACK_DIR/manifest.json" \
+              --clobber
+          else
+            gh release create data-cn \
+              "$ALPHASIFT_PACK_DIR/daily.npz" \
+              "$ALPHASIFT_PACK_DIR/meta.csv.gz" \
+              "$ALPHASIFT_PACK_DIR/manifest.json" \
+              --title "CN Daily Pack (data-cn)" \
+              --notes "$notes"
+          fi

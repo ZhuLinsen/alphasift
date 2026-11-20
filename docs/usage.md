@@ -235,6 +235,7 @@ alphasift daily-report --output-json local/report.json --output-card local/card.
 
 - **IM 渠道环境变量**：支持企业微信（`WECOM_WEBHOOK_URL`）、飞书机器人（`FEISHU_WEBHOOK_URL`，可选加签密钥 `FEISHU_WEBHOOK_SECRET`）与 Telegram（`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`）。同一交易日同一渠道默认防重发（`--force-push` 可覆盖）；未配置任何渠道时静默跳过。
 - **公告排雷**：默认对重点候选做最佳实践式近期公告负面关键词抽检；离线或接口异常时降级写入 `degradation`，不影响日报生成。
+- **公开战绩双赛道（`scripts/track_record.py`）**：保留原有规则榜（`track=rules`）；当环境配置了 LLM Key 时，会在规则 pass 完成后自动追加 A 股 `AI` 赛道（`track=ai`，默认 `--ai-track auto`，LLM 超时/降级不影响规则榜落盘，无 Key 的 fork 自动仅跑规则榜）。若有本地日线包，会一并记录形态雷达快照（含 20 日迷你 K 线）到 `site/patterns.json`。Fork 启用、GitHub Pages 与 Cloudflare Pages 镜像步骤见 [deployment.md](deployment.md)。
 
 ## Python 调用
 
