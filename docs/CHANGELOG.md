@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- LLM 排序移除 LiteLLM 依赖，改用 `requests` 调用 OpenAI 兼容的 Chat Completions 接口。供应商密钥和地址、`LLM_API_KEY` / `LLM_MODEL` / `LLM_BASE_URL`、多渠道配置，以及 `LITELLM_MODEL`、`AGENT_LITELLM_MODEL`、`LITELLM_FALLBACK_MODELS` 兼容变量继续生效。请求超时或所有尝试失败时沿用规则排序。
+- **迁移**。删除 `LITELLM_CONFIG`，按原顺序将 YAML 的路由写入 `LLM_CHANNELS`。为每个渠道设置 `LLM_<NAME>_PROTOCOL=openai`，把原路由的 `api_base`、密钥和实际模型分别填入 `BASE_URL`、`API_KEY`（或 `API_KEYS`）和 `MODELS`。使用 Claude 的原生协议渠道需改用 `https://api.anthropic.com/v1` 的 OpenAI 兼容接口。排序和 `doctor data-sources --no-live` 会提示迁移。完整示例见[配置参考](configuration.md#迁移-router-yaml)。
+
 ## Unreleased
 
 - T+N 评估新增 `--entry-mode next_open`，按首根日 K 开盘价入场，基准匹配实际入场和退出日期。A 股单列开盘一字涨停的不可成交占比，退出遇一字跌停时顺延。默认模式和公开战绩继续使用收盘入场口径。

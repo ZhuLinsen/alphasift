@@ -89,7 +89,7 @@ alphasift 负责 L1（硬筛）和 L2（排序）。L3 是后置分析器框架�
 - **多因子候选画像**：每只候选输出价值、流动性、动量、反转、活跃度、稳定性、市值、主题热度和热度趋势等因子分
 - **LLM 结构化软判断**：LLM 只在候选池内做跨股票比较，输出全局市场判断、选择逻辑、组合风险、候选 thesis、行业/主题、风险、催化、标签和信心分；若快照或外部数据提供 `industry/concepts/board_heat_score/board_heat_trend_score`，会作为 LLM 判断锚点；`--candidate-context-file` 可按 `code` 对齐候选级新闻、公告、资金流或自定义研究摘要，抓取上下文会带来源数、来源置信度、来源权重分、公告类别、事件标签和负面风险标签
 - **组合分散覆盖层**：LLM 标注行业/主题后，默认按行业风险桶对重复候选做温和扣分；若 LLM 缺失行业标签但候选有 `industry`，会用结构化行业作后备锚点
-- **LiteLLM 配置复用**：兼容主模型、fallback、多渠道和 Router YAML，方便复用作者其他项目配置
+- **OpenAI 兼容 HTTP 客户端**：直接调用 Chat Completions 接口，按配置顺序尝试主模型、多渠道和备用模型。请求超时或所有尝试失败时沿用规则排序
 - **独立风险层**：在 LLM 后对过热、弱信号、低置信度等风险做统一扣分或剔除
 - **候选级日 K 增强**：只对 L1 后 Top N 候选补充 MA、60 日涨幅、MACD/RSI、signal_score、20 日突破幅度、区间振幅、20 日量能比、实体强度、MA20 回踩距离和平台持续天数；`DAILY_SOURCE=auto` 且配置了 Tushare token 时会先试 `tushare`，否则优先走 `tencent`、`sina` 直连源，再降级到 `akshare`、`baostock`；低质量、拉取失败或 stale cache 行会进入最终风险扣分
 - **默认 L3 评分器**：本地 `scorecard` 默认启用，作为最终候选的轻量一致性复核

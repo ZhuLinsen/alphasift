@@ -1,6 +1,6 @@
 # 配置参考
 
-这份文档集中说明 `.env`、LiteLLM、数据源和 L3 后置分析器配置。最小运行不需要 LLM key，只要在命令里加 `--no-llm`。
+这份文档说明 `.env`、LLM 排序、数据源和 L3 后置分析器配置。使用 `--no-llm` 可以直接按规则排序。
 
 ## 最小配置
 
@@ -32,10 +32,10 @@ TUSHARE_TOKEN=...
 | 变量 | 必须 | 说明 | 默认值 |
 |------|------|------|--------|
 | `LITELLM_MODEL` | 推荐 | 主模型，兼容 daily_stock_analysis，格式 `provider/model` | `gemini/gemini-2.5-flash` |
+| `AGENT_LITELLM_MODEL` | 否 | 主模型的兼容变量，优先级低于 `LITELLM_MODEL` 和 `LLM_MODEL` | - |
 | `LITELLM_FALLBACK_MODELS` | 否 | 备选模型，逗号分隔 | - |
 | `LLM_CHANNELS` | 否 | 多渠道配置，配合 `LLM_{NAME}_*` 使用 | - |
-| `LITELLM_CONFIG` | 否 | 高级 LiteLLM Router YAML 配置文件路径 | - |
-| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM 排序时至少一种 | 供应商 API Key，兼容 daily_stock_analysis 配置 | - |
+| `GEMINI_API_KEY` / `GEMINI_API_KEYS` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | 按供应商 | `GEMINI_API_KEYS` 接受逗号分隔的密钥并优先于 `GEMINI_API_KEY` | - |
 | `OPENAI_BASE_URL` / `OLLAMA_API_BASE` | 否 | OpenAI 兼容接口或 Ollama 地址 | - |
 | `LLM_API_KEY` | 否 | 旧版兼容 API Key，会优先覆盖供应商 key | - |
 | `LLM_MODEL` | 否 | 旧版兼容模型名；`LITELLM_MODEL` 优先 | `gemini/gemini-2.5-flash` |
@@ -43,7 +43,9 @@ TUSHARE_TOKEN=...
 | `LLM_CONTEXT` | 否 | 传给 LLM 的市场、新闻或主题上下文 | - |
 | `LLM_TEMPERATURE` | 否 | LLM 排序温度，默认偏确定性 | `0.2` |
 | `LLM_JSON_MODE` | 否 | 是否请求 JSON response_format，不支持时自动降级 | `true` |
-| `LLM_SILENT` | 否 | 是否抑制 LiteLLM 调用日志，避免污染 CLI JSON 或摘要输出 | `true` |
+| `LLM_SILENT` | 否 | 关闭 HTTP 状态调试日志。排序失败仍记录脱敏警告 | `true` |
+| `LLM_TIMEOUT_SEC` | 否 | 单次请求超时秒数。超时后回退到规则排序 | `60` |
+| `LLM_MAX_TOKENS` | 否 | 单次响应的 token 上限 | `2048` |
 | `LLM_RANK_WEIGHT` | 否 | LLM 排序对最终分数的权重 | `0.40` |
 | `LLM_CANDIDATE_MULTIPLIER` | 否 | 送入 LLM 的候选倍数，相对 max_output | `6` |
 | `LLM_MAX_CANDIDATES` | 否 | 单次最多送入 LLM 的候选数 | `30` |
@@ -96,28 +98,48 @@ TUSHARE_TOKEN=...
 | `ALPHASIFT_DATA_DIR` | 否 | 运行记录和评估结果目录 | `./data` |
 | `STRATEGIES_DIR` | 否 | 策略目录路径 | 自动查找 |
 
-## LiteLLM 配置兼容
+## LLM 网关与渠道
 
-AlphaSift 兼容 `daily_stock_analysis` 的 LiteLLM 配置习惯：
+AlphaSift 直接调用 OpenAI 兼容的 Chat Completions 接口。`LITELLM_MODEL`、`AGENT_LITELLM_MODEL` 和 `LITELLM_FALLBACK_MODELS` 的变量名仅为兼容旧配置而保留。
+
+主模型按 `LITELLM_MODEL` → `LLM_MODEL` → `AGENT_LITELLM_MODEL` → 首个已启用渠道的首个模型解析。未指定模型且没有渠道模型时，沿用 Ollama、DeepSeek、Gemini、OpenAI、AIHubMix 的自动选择顺序。使用 Ollama 自动选择时，请同时设置 `OLLAMA_MODEL`。`LLM_API_KEY` 和 `LLM_BASE_URL` 优先于主模型的供应商默认值。
+
+`provider/model` 中的第一个前缀用于选择网关，请求发送剩余的模型 ID。例如 `openrouter/anthropic/claude-…` 发往 OpenRouter 的模型 ID 为 `anthropic/claude-…`。自定义兼容接口可通过 `LLM_BASE_URL` 或渠道配置指定。
+
+| 前缀 | 默认 Base URL | 密钥变量 | 供应商文档 |
+|---|---|---|---|
+| `openai` | `https://api.openai.com/v1` | `OPENAI_API_KEY` | [Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) |
+| `deepseek` | `https://api.deepseek.com` | `DEEPSEEK_API_KEY` | [Your First API Call](https://api-docs.deepseek.com/) |
+| `gemini` | `https://generativelanguage.googleapis.com/v1beta/openai` | `GEMINI_API_KEYS` / `GEMINI_API_KEY` | [OpenAI compatibility](https://ai.google.dev/gemini-api/docs/openai) |
+| `anthropic` | `https://api.anthropic.com/v1` | `ANTHROPIC_API_KEY` | [OpenAI SDK compatibility](https://platform.claude.com/docs/en/cli-sdks-libraries/libraries/openai-sdk) |
+| `ollama` | `http://localhost:11434/v1` | 可不填 | [OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility) |
+| `openrouter` | `https://openrouter.ai/api/v1` | `OPENROUTER_API_KEY` | [API Reference](https://openrouter.ai/docs/api_reference/overview) |
+| `dashscope` / `qwen` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `DASHSCOPE_API_KEY` / `QWEN_API_KEY` | [Base URL overview](https://docs.modelstudio.console.alibabacloud.com/en/model-studio/base-url) |
+| `zhipu` | `https://open.bigmodel.cn/api/paas/v4` | `ZHIPU_API_KEY` / `ZAI_API_KEY` | [快速开始](https://docs.bigmodel.cn/cn/guide/start/quick-start) |
+| `moonshot` | `https://api.moonshot.cn/v1` | `MOONSHOT_API_KEY` | [Chat Completions](https://platform.kimi.com/docs/api/chat) |
+| `aihubmix` | `https://aihubmix.com/v1` | `AIHUBMIX_KEY` / `AIHUBMIX_API_KEY` | [SDK 集成](https://api.aihubmix.com/ecosystem) |
+
+客户端为 `OLLAMA_API_BASE` 补齐 `/v1`。`OPENAI_BASE_URL` 和 `AIHUBMIX_BASE_URL` 可覆盖相应的默认地址。跨供应商的直连备用模型使用各自的地址和密钥。
+
+渠道和渠道内的模型、密钥均按逗号分隔的顺序尝试。客户端先试主模型匹配的渠道密钥，再试主模型的直连配置，接着尝试其余渠道模型及 `LITELLM_FALLBACK_MODELS`。`LLM_<NAME>_API_KEYS` 优先于 `LLM_<NAME>_API_KEY`，`LLM_<NAME>_ENABLED=false` 可跳过指定渠道。`LLM_<NAME>_PROTOCOL` 默认为 `openai`，也可用上表除 `anthropic` 外的前缀选择对应的兼容网关。
+
+### 迁移 Router YAML
+
+删除 `LITELLM_CONFIG`，将 YAML 的每个路由按原顺序写入 `LLM_CHANNELS`。把原路由的 `api_base`、`api_key` 和实际 `model` 分别填入渠道的 `BASE_URL`、`API_KEY`（多密钥用 `API_KEYS`）和 `MODELS`。如果主模型使用了 YAML 中的路由别名，请改为实际模型 ID 或由首个渠道模型确定主模型。Claude 渠道请使用 `PROTOCOL=openai` 和 `https://api.anthropic.com/v1`。
 
 ```env
-LLM_CHANNELS=primary
+LLM_CHANNELS=primary,backup
 LLM_PRIMARY_PROTOCOL=openai
 LLM_PRIMARY_BASE_URL=https://api.deepseek.com/v1
-LLM_PRIMARY_API_KEYS=sk-xxx,sk-yyy
+LLM_PRIMARY_API_KEYS=key1,key2
 LLM_PRIMARY_MODELS=deepseek-chat,deepseek-reasoner
-LITELLM_MODEL=openai/deepseek-chat
-LITELLM_FALLBACK_MODELS=openai/gpt-4o-mini,anthropic/claude-3-5-sonnet
+LLM_BACKUP_PROTOCOL=openai
+LLM_BACKUP_BASE_URL=https://api.openai.com/v1
+LLM_BACKUP_API_KEY=your_openai_key
+LLM_BACKUP_MODELS=gpt-4o-mini
 ```
 
-也支持更简单的单供应商配置：
-
-```env
-GEMINI_API_KEY=...
-LITELLM_MODEL=gemini/gemini-2.5-flash
-```
-
-如果已有 `daily_stock_analysis` 的 `.env`，通常可以复用其中的 `LITELLM_MODEL`、`LITELLM_FALLBACK_MODELS`、`LLM_CHANNELS`、`LLM_{NAME}_*`、`OPENAI_*`、`GEMINI_*`、`DEEPSEEK_*`、`OLLAMA_API_BASE` 等字段。
+检测到 `LITELLM_CONFIG` 或原生协议的渠道时，排序会回退到规则分数并给出迁移提示。可用 `alphasift doctor data-sources --no-live` 查看提示。
 
 CLI 也支持显式加载外部 `.env`，可重复传入：
 

@@ -140,7 +140,7 @@ LLM 输出：
 8. `watch_items` 和 `invalidators`：后续跟踪项和会推翻候选逻辑的观察点
 
 LLM 只能在候选池内重排，不能推荐候选池外股票，也不能替代硬筛条件。
-LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代码检查；不满足阈值时会重试，仍失败则回退到 `screen_score`。调用层支持 LiteLLM JSON mode、fallback models、多渠道 key/base_url 解析和高级 Router YAML。
+LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代码检查；不满足阈值时会重试，仍失败则回退到 `screen_score`。客户端通过 OpenAI 兼容的 Chat Completions 接口请求 JSON 输出，支持多渠道、多密钥和备用模型。
 
 ## 后验评估与形态标签
 
@@ -177,18 +177,18 @@ LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代
 
 ### LLM 配置
 
-为便于复用 `daily_stock_analysis` 的配置，AlphaSift 支持同一套 LiteLLM 环境变量：
+以下环境变量可从 `daily_stock_analysis` 复用。前三个模型变量名仅为兼容旧配置而保留。
 
 - `LITELLM_MODEL`
+- `AGENT_LITELLM_MODEL`
 - `LITELLM_FALLBACK_MODELS`
 - `LLM_CHANNELS` + `LLM_{NAME}_PROTOCOL/BASE_URL/API_KEY/API_KEYS/MODELS/ENABLED`
-- `LITELLM_CONFIG`
 - `OPENAI_API_KEY` / `OPENAI_BASE_URL`
 - `GEMINI_API_KEY` / `GEMINI_API_KEYS`
 - `DEEPSEEK_API_KEY`
 - `OLLAMA_API_BASE`
 
-旧变量 `LLM_API_KEY`、`LLM_MODEL`、`LLM_BASE_URL` 仍兼容。
+旧变量 `LLM_API_KEY`、`LLM_MODEL`、`LLM_BASE_URL` 仍兼容。Router YAML 的迁移步骤见[配置参考](configuration.md#迁移-router-yaml)。
 
 ## 风险覆盖层
 

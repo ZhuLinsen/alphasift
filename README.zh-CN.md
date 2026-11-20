@@ -123,13 +123,13 @@ alphasift evaluate <run_id> --with-price-path --explain
 
 ## 配置
 
-复制 `.env.example` 为 `.env`。AlphaSift 兼容 LiteLLM 风格配置，可以直接复用 [daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis) 的配置。常用项：
+复制 `.env.example` 为 `.env`。LLM 排序调用 OpenAI 兼容 HTTP 接口。`LITELLM_MODEL`、`AGENT_LITELLM_MODEL` 和 `LITELLM_FALLBACK_MODELS` 的变量名仅为兼容旧配置而保留。
 
 | 变量 | 作用 | 默认值 |
 |---|---|---|
 | `LITELLM_MODEL` | 主模型，格式 `provider/model` | `gemini/gemini-2.5-flash` |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM 排序所用的供应商 key | - |
-| `LLM_CHANNELS` / `LITELLM_CONFIG` | 多渠道或 LiteLLM Router 配置 | - |
+| `LLM_CHANNELS` | 按顺序配置渠道，每个渠道可指定地址、密钥和模型 | - |
 | `TUSHARE_TOKEN` | A 股数据源链路中 Tushare 优先 | - |
 | `SNAPSHOT_SOURCE_PRIORITY` | 手动指定 A 股数据源顺序 | 取决于是否配置 token |
 | `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | 单个快照源的时间预算 | `60` |
@@ -137,7 +137,7 @@ alphasift evaluate <run_id> --with-price-path --explain
 | `ALPHASIFT_DATA_DIR` | 运行记录、缓存、数据源健康记录目录 | `./data` |
 | `DSA_API_URL` | 启用可选的 DSA 单股深度分析 | - |
 
-完整列表见 [docs/configuration.md](docs/configuration.md)。
+完整列表见[配置参考](docs/configuration.md)。如果之前使用 Router YAML，请删除 `LITELLM_CONFIG` 并[迁移到 `LLM_CHANNELS`](docs/configuration.md#迁移-router-yaml)。
 
 ## 更多功能
 

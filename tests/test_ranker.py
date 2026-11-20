@@ -1,15 +1,19 @@
 import json
-import sys
-import types
+from unittest.mock import Mock
 
+import pytest
+import requests
+
+from alphasift.config import Config
+from alphasift.llm_client import LLMClientError
 from alphasift.models import Pick
 from alphasift.ranker import (
-    _build_litellm_attempts,
     _build_ranking_prompt,
     _call_llm,
     _parse_ranking_response,
     _parse_ranking_response_detail,
     rank_candidates,
+    rank_candidates_with_metadata,
 )
 
 
@@ -207,90 +211,145 @@ def test_rank_candidates_blends_screen_and_llm_scores(monkeypatch):
     assert ranked[1].final_score == 72.0
 
 
-def test_call_llm_sets_generation_bounds_and_disables_sdk_retries(monkeypatch):
-    captured = {}
+def _chat_response(content: str, status: int = 200) -> requests.Response:
+    response = requests.Response()
+    response.status_code = status
+    body = {"choices": [{"message": {"content": content}}]} if status == 200 else {"error": {"message": content}}
+    response._content = json.dumps(body).encode()
+    return response
 
-    class FakeMessage:
-        content = '{"ranked": []}'
 
-    class FakeChoice:
-        message = FakeMessage()
-
-    class FakeResponse:
-        choices = [FakeChoice()]
-
-    fake_litellm = types.ModuleType("litellm")
-
-    def fake_completion(**kwargs):
-        captured.update(kwargs)
-        return FakeResponse()
-
-    setattr(fake_litellm, "completion", fake_completion)
-    monkeypatch.setitem(sys.modules, "litellm", fake_litellm)
+def test_call_llm_sends_chat_completion_with_generation_bounds(monkeypatch):
+    post = Mock(return_value=_chat_response('{"ranked": []}'))
+    monkeypatch.setattr("alphasift.llm_client.requests.post", post)
 
     response = _call_llm(
         "prompt",
         api_key="key",
         model="openai/local-model",
-        base_url="http://localhost:8000/v1",
+        base_url="http://localhost:8000/v1/",
+        temperature=0.3,
         timeout_sec=7,
         max_tokens=321,
     )
 
     assert response == '{"ranked": []}'
-    assert captured["timeout"] == 7
-    assert captured["max_tokens"] == 321
-    assert captured["num_retries"] == 0
-
-
-def test_call_llm_does_not_retry_without_json_mode_on_timeout(monkeypatch):
-    calls = []
-    fake_litellm = types.ModuleType("litellm")
-
-    def fake_completion(**kwargs):
-        calls.append(kwargs)
-        raise TimeoutError("APITimeoutError - Request timed out")
-
-    setattr(fake_litellm, "completion", fake_completion)
-    monkeypatch.setitem(sys.modules, "litellm", fake_litellm)
-
-    try:
-        _call_llm(
-            "prompt",
-            api_key="key",
-            model="openai/local-model",
-            base_url="http://localhost:8000/v1",
-            json_mode=True,
-            fallback_models=["openai/backup-model"],
-        )
-    except TimeoutError:
-        pass
-
-    assert len(calls) == 1
-    assert calls[0]["response_format"] == {"type": "json_object"}
-
-
-def test_build_litellm_attempts_uses_matching_channel_keys():
-    attempts = _build_litellm_attempts(
-        "openai/deepseek-chat",
-        api_key="fallback-key",
-        base_url="https://fallback.example/v1",
-        channels=[
-            {
-                "name": "primary",
-                "protocol": "openai",
-                "base_url": "https://api.deepseek.com/v1",
-                "api_keys": ["key1", "key2"],
-                "models": ["deepseek-chat"],
-                "enabled": True,
-            }
-        ],
+    post.assert_called_once_with(
+        "http://localhost:8000/v1/chat/completions",
+        headers={"Authorization": "Bearer key"},
+        json={
+            "model": "local-model",
+            "messages": [{"role": "user", "content": "prompt"}],
+            "temperature": 0.3,
+            "max_tokens": 321,
+            "response_format": {"type": "json_object"},
+        },
+        timeout=7,
+        allow_redirects=False,
     )
 
-    assert attempts[0]["api_key"] == "key1"
-    assert attempts[0]["api_base"] == "https://api.deepseek.com/v1"
-    assert attempts[1]["api_key"] == "key2"
-    assert attempts[-1]["api_key"] == "fallback-key"
+
+@pytest.mark.parametrize("fail_after_json_retry", [False, True])
+def test_call_llm_does_not_retry_or_try_fallback_after_timeout(monkeypatch, fail_after_json_retry):
+    responses = [_chat_response("unsupported response_format", 400)] if fail_after_json_retry else []
+    post = Mock(side_effect=[*responses, requests.Timeout("Request timed out")])
+    monkeypatch.setattr("alphasift.llm_client.requests.post", post)
+
+    with pytest.raises(LLMClientError, match="timed out") as error:
+        _call_llm(
+            "prompt", api_key="key", model="openai/local-model", base_url="http://localhost:8000/v1",
+            json_mode=True, fallback_models=["openai/backup-model"],
+        )
+
+    assert error.value.timed_out
+    assert post.call_count == len(responses) + 1
+    assert post.call_args_list[0].kwargs["json"]["response_format"] == {"type": "json_object"}
+
+
+def test_call_llm_retries_same_attempt_without_json_mode(monkeypatch):
+    post = Mock(side_effect=[
+        _chat_response("unsupported response_format json_object", 400),
+        _chat_response('{"ranked": []}'),
+    ])
+    monkeypatch.setattr("alphasift.llm_client.requests.post", post)
+
+    result = _call_llm(
+        "prompt", api_key="key", model="openai/local-model", base_url="http://localhost:8000/v1",
+        fallback_models=["openai/backup"], max_tokens=None,
+    )
+
+    first, second = post.call_args_list
+    assert result == '{"ranked": []}'
+    assert first.args == second.args
+    first_payload = first.kwargs.pop("json")
+    second_payload = second.kwargs.pop("json")
+    assert first.kwargs == second.kwargs
+    assert first_payload.pop("response_format") == {"type": "json_object"}
+    assert first_payload == second_payload
+    assert "max_tokens" not in second_payload
+
+
+@pytest.mark.parametrize("retries", [0, 1])
+def test_ranker_retries_low_coverage_up_to_configured_limit(monkeypatch, retries):
+    post = Mock(side_effect=[
+        _chat_response('{"ranked": []}'),
+        _chat_response('{"ranked": [{"code": "000001"}]}'),
+    ])
+    monkeypatch.setattr("alphasift.llm_client.requests.post", post)
+    monkeypatch.setenv("LLM_MAX_RETRIES", str(retries))
+    picks = [Pick(rank=1, code="000001", name="平安银行", screen_score=80, final_score=80)]
+    result = rank_candidates_with_metadata(
+        picks, "", "key", "openai/test", "https://gateway.test/v1",
+        max_retries=Config.from_env().llm_max_retries, json_mode=False,
+    )
+
+    assert result.ranked is bool(retries)
+    assert post.call_count == retries + 1
+    assert all("response_format" not in call.kwargs["json"] for call in post.call_args_list)
+
+
+@pytest.mark.parametrize("timeout", [False, True])
+def test_ranker_degrades_on_http_error_or_timeout_without_leaking_keys(monkeypatch, caplog, timeout):
+    key = "private-example-api-key"
+    upstream = "sk-different-private-upstream-key"
+    if timeout:
+        post = Mock(side_effect=requests.Timeout(f"Request for {key} and {upstream} timed out"))
+    else:
+        post = Mock(return_value=_chat_response(f"Bad bearer {key} for upstream {upstream}", 401))
+    monkeypatch.setattr("alphasift.llm_client.requests.post", post)
+    picks = [Pick(rank=1, code="000001", name="平安银行", screen_score=80, final_score=80)]
+    result = rank_candidates_with_metadata(picks, "", key, "openai/test", "https://gateway.test/v1")
+
+    assert result.picks == picks
+    assert not result.ranked
+    assert picks[0].llm_score is None
+    assert result.errors == [
+        "LLM request timed out" if timeout else "LLM HTTP 401 Unauthorized: Bad *** for upstream ***"
+    ]
+    assert "falling back to screen_score" in caplog.text
+    for secret in (key, upstream):
+        assert secret not in caplog.text
+        assert secret not in str(result.errors)
+    assert post.call_count == 1
+
+
+def test_ranker_discards_partial_ranking_when_coverage_retry_times_out(monkeypatch):
+    post = Mock(side_effect=[
+        _chat_response('{"ranked": [{"code": "000001", "llm_score": 99}]}'),
+        requests.ReadTimeout(),
+    ])
+    monkeypatch.setattr("alphasift.llm_client.requests.post", post)
+    picks = [
+        Pick(rank=1, code="000001", name="平安银行", screen_score=80, final_score=80),
+        Pick(rank=2, code="600000", name="浦发银行", screen_score=70, final_score=70),
+    ]
+
+    result = rank_candidates_with_metadata(picks, "", "key", "openai/test", "https://gateway.test/v1")
+
+    assert not result.ranked
+    assert result.picks is picks
+    assert [pick.llm_score for pick in result.picks] == [None, None]
+    assert result.errors == ["LLM request timed out"]
 
 
 def test_ranking_prompt_includes_structured_industry_context():

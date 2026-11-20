@@ -21,8 +21,8 @@ description: "全市场选股 Skill。Use when: 用户要按策略筛选 A 股�
 
 - 默认 `market="cn"`；`market` 也可以是 `us` / `hk` / `jp` / `kr` / `tw` / `in`（Yahoo 筛选器快照 + yfinance 日 K，代码为 Yahoo 代码如 `0700.HK`；无 hotspot/board_heat/tushare/候选级新闻等 A 股专属数据），需使用 `market_scope` 包含该市场的策略：`global_value`（us/hk/jp/kr/tw/in）或 `us_momentum_quality`（us）。韩国 PE/PB 来自 Naver Finance
 - 需要先在仓库根目录安装包：`pip install -e .`
-- 如需 LLM 排序，可设置 `LITELLM_MODEL`、`LLM_CHANNELS`、`LITELLM_CONFIG` 或旧变量 `LLM_API_KEY/LLM_MODEL/LLM_BASE_URL`
-- 可直接复用 `daily_stock_analysis` 的 LiteLLM 配置字段，包括 `OPENAI_*`、`GEMINI_*`、`DEEPSEEK_API_KEY`、`OLLAMA_API_BASE`
+- LLM 排序调用 OpenAI 兼容接口，可设置 `LITELLM_MODEL`、`LLM_CHANNELS` 或 `LLM_API_KEY`、`LLM_MODEL`、`LLM_BASE_URL`
+- `LITELLM_MODEL`、`AGENT_LITELLM_MODEL` 和 `LITELLM_FALLBACK_MODELS` 的变量名仅为兼容而保留，供应商密钥与地址环境变量也可复用。若设置了 `LITELLM_CONFIG`，请删除该变量并迁移到 `LLM_CHANNELS`
 - 策略 YAML 可通过 `scoring_profile`、`risk_profile`、`portfolio_profile`、`scorecard_profile` 覆盖默认规则
 - 策略 YAML 可通过 `event_profile` 配置偏好/规避事件、公告类别和候选上下文来源权重
 - LLM 会输出候选行业/主题标签；如候选提供 `industry/concepts/board_heat_score/board_heat_trend_score`，会作为 LLM、主题热度因子与组合分散层锚点；history sidecar 可回填持续性、降温和状态字段。默认组合分散层会用这些标签映射风险桶，降低同一拥挤交易重复占位

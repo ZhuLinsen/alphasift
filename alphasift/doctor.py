@@ -12,6 +12,7 @@ import pandas as pd
 
 from alphasift.config import Config
 from alphasift.daily import compute_daily_features, daily_source_health_snapshot, fetch_daily_history
+from alphasift.llm_client import configuration_error
 from alphasift.snapshot import (
     fetch_cn_snapshot,
     fetch_snapshot_with_fallback,
@@ -140,6 +141,8 @@ def doctor_data_sources(
         enabled=compare_snapshot_sources and market == "cn",
     )
     recommendations = _build_recommendations(snapshot, daily)
+    if error := configuration_error(config.llm_channels, str(config.llm_config_path or "")):
+        recommendations.append(error)
     statuses = [snapshot.status, daily.status if daily is not None else "skipped"]
     status = _overall_status(statuses)
     return DataSourcesDoctorResult(
