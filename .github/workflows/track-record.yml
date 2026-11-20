@@ -42,6 +42,8 @@ jobs:
       ALPHASIFT_SOURCE_HEALTH_PATH: ${{ github.workspace }}/state/source_health.json
       ALPHASIFT_DAILY_HISTORY_CACHE_DIR: ${{ github.workspace }}/state/daily_history
       ALPHASIFT_INDUSTRY_PROVIDER_CACHE_DIR: ${{ github.workspace }}/state/industry_provider_cache
+      ALPHASIFT_PACK_DIR: ${{ github.workspace }}/pack
+      ALPHASIFT_NOTIFY_STATE_PATH: ${{ github.workspace }}/state/notify_state.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -79,18 +81,53 @@ jobs:
           echo "markets=$markets" >> "$GITHUB_OUTPUT"
           echo "session=$session markets=$markets"
 
+      - name: Pull CN data pack
+        if: steps.session.outputs.session != 'us'
+        env:
+          ALPHASIFT_PACK_REPO: ${{ github.repository }}
+        run: |
+          alphasift pack pull --wait-sec 180 --poll-sec 30 || echo "::warning::data-cn pack unavailable; falling back to per-stock daily fetch"
+
       - name: Screen
         if: steps.session.outputs.session != 'rebuild'
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: |
           python scripts/track_record.py screen --track track \
-            --session "${{ steps.session.outputs.session }}" --markets "${{ steps.session.outputs.markets }}" \
+            --session "${{ steps.session.outputs.session }}" --markets "${{ steps.session.outputs.markets }}" --pack-dir "$ALPHASIFT_PACK_DIR" \
             || echo "::warning::no strategy saved a run this session"
+
+      - name: Record CN pattern board
+        if: steps.session.outputs.session == 'asia'
+        run: |
+          if [ -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
+            python scripts/track_record.py patterns --track track --pack-dir "$ALPHASIFT_PACK_DIR" --with-replay || echo "::warning::CN pattern board skipped"
+          fi
+
       - name: Evaluate T+N
         run: python scripts/track_record.py evaluate --track track --markets "${{ steps.session.outputs.markets }}"
       - name: Build site data
         run: |
           python scripts/track_record.py build --track track
           cp scripts/track_record_page.html track/index.html
+
+      - name: Daily report and optional IM push
+        if: steps.session.outputs.session == 'asia'
+        env:
+          WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
+            alphasift daily-report --pack-dir "$ALPHASIFT_PACK_DIR" --runs-dir track/data/runs --output-json track/site/report.json --push --explain || echo "::warning::daily-report skipped"
+          fi
 
       - name: Commit to track-record
         working-directory: track

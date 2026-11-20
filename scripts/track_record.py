@@ -40,6 +40,8 @@ SESSIONS = {"asia": ["cn", "hk", "jp", "kr", "tw", "in"], "us": ["us"]}
 WINDOWS = [5, 10, 20]
 SNAPSHOT_TIMEOUT_SEC = 5 * 60
 SCREEN_TIMEOUT_SEC = 20 * 60
+AI_SCREEN_TIMEOUT_SEC = 120
+AI_TRACK_MARKETS = frozenset({"cn"})
 MAX_MISSING_RETRY_DAYS = 90
 SKIPPED_STATUSES = frozenset({"skipped_holiday", "skipped_duplicate"})
 RECENT_DAYS_IN_SUMMARY = 30
@@ -239,7 +241,97 @@ def _print_entry(entry: dict[str, Any]) -> None:
     )
 
 
-def run_session(session: str, track: Path, *, markets: list[str] | None = None) -> dict[str, Any]:
+def _should_run_ai_track(market: str, ai_track: str, config: Any) -> bool:
+    mode = (ai_track or "auto").strip().lower()
+    if mode == "off" or market not in AI_TRACK_MARKETS:
+        return False
+    return bool(config.has_llm_config())
+
+
+def _ai_run_id(result: Any, expected_date: str) -> str:
+    base = str(getattr(result, "run_id", "") or "").strip()
+    if not base:
+        base = f"{result.strategy}_{expected_date}"
+    return base if base.endswith("-ai") else f"{base}-ai"
+
+
+def record_cn_patterns(
+    track: Path,
+    *,
+    pack_dir: Path | None = None,
+    trade_date: str | None = None,
+    require_exact_date: bool = False,
+    mini_kline_bars: int = 20,
+    max_signals_per_pattern: int = 10,
+    include_replay: bool = False,
+    replay_json_path: Path | None = None,
+) -> dict[str, Any] | None:
+    """Scan the CN DailyPack (all patterns) and persist daily pattern board snapshot."""
+    from alphasift.config import Config
+    from alphasift.pack import load_pack, pack_dir as resolve_pack_dir
+    from alphasift.patterns import extract_mini_kline_bars, scan_patterns
+
+    config = Config.from_env()
+    directory = Path(pack_dir).expanduser() if pack_dir is not None else resolve_pack_dir(config)
+    if not (directory / "manifest.json").is_file():
+        return None
+    daily_pack = load_pack(directory)
+    dates_set = {str(d) for d in daily_pack.dates}
+    if require_exact_date and trade_date and trade_date not in dates_set:
+        return None
+    target_date = trade_date if (trade_date and trade_date in dates_set) else None
+    scan = scan_patterns(daily_pack, trade_date=target_date, include_experimental=True)
+    payload = scan.to_dict()
+
+    sig_codes: list[str] = []
+    cap = max(1, int(max_signals_per_pattern))
+    for pat_name, items in payload.get("signals_by_pattern", {}).items():
+        trimmed = list(items)[:cap]
+        payload["signals_by_pattern"][pat_name] = trimmed
+        for item in trimmed:
+            sig_codes.append(str(item["code"]))
+
+    if sig_codes and mini_kline_bars > 0:
+        klines = extract_mini_kline_bars(
+            daily_pack,
+            sig_codes,
+            trade_date=scan.trade_date,
+            bars=mini_kline_bars,
+        )
+        for items in payload.get("signals_by_pattern", {}).values():
+            for item in items:
+                item["kline"] = klines.get(str(item["code"]), [])
+
+    out_dir = track / "data" / "patterns"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{scan.trade_date}.json"
+    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    if replay_json_path is not None and Path(replay_json_path).is_file():
+        replay_data = _read_json(Path(replay_json_path))
+        if isinstance(replay_data, dict):
+            (out_dir / "replay.json").write_text(
+                json.dumps(replay_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            )
+    elif include_replay:
+        from alphasift.pattern_replay import load_cn_benchmark, replay_patterns
+
+        bench = load_cn_benchmark(lookback_days=max(len(daily_pack.dates) + 40, 320))
+        replay_data = replay_patterns(daily_pack, benchmark_df=bench)
+        (out_dir / "replay.json").write_text(
+            json.dumps(replay_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+    return payload
+
+
+def run_session(
+    session: str,
+    track: Path,
+    *,
+    markets: list[str] | None = None,
+    ai_track: str = "auto",
+    pack_dir: Path | None = None,
+) -> dict[str, Any]:
     """Screen every strategy of every market in the session; never stop on one failure."""
     runs_dir = track / "data" / "runs"
     runs_dir.mkdir(parents=True, exist_ok=True)
@@ -249,6 +341,7 @@ def run_session(session: str, track: Path, *, markets: list[str] | None = None) 
     now_iso = _now()
     target_markets = list(markets or SESSIONS[session])
     entries: list[dict[str, Any]] = []
+    ai_entries: list[dict[str, Any]] = []
     try:
         from alphasift.config import Config
         from alphasift.pipeline import screen
@@ -258,22 +351,33 @@ def run_session(session: str, track: Path, *, markets: list[str] | None = None) 
         # Track record is an immutable daily ledger of live picks: never fall back
         # to stale last-good snapshot caches from earlier trading days.
         config = dataclasses.replace(Config.from_env(), fallback_snapshot_path=None)
-        recorded_dates: dict[tuple[str, str], set[str]] = {}
+        recorded_dates: dict[tuple[str, str, str], set[str]] = {}
         for existing in load_runs(track):
-            recorded_dates.setdefault((existing["market"], existing["strategy"]), set()).add(
-                existing["date"]
-            )
+            recorded_dates.setdefault(
+                (existing["market"], existing["strategy"], existing.get("track", "rules")),
+                set(),
+            ).add(existing["date"])
 
         for market in target_markets:
             strats = strategies_for(market)
             if not strats:
                 continue
             expected_date = session_date(market, now_iso)
-            if all(expected_date in recorded_dates.get((market, s), set()) for s in strats):
+            run_ai = _should_run_ai_track(market, ai_track, config)
+            rules_done = all(
+                expected_date in recorded_dates.get((market, s, "rules"), set())
+                for s in strats
+            )
+            ai_done = (not run_ai) or all(
+                expected_date in recorded_dates.get((market, s, "ai"), set())
+                for s in strats
+            )
+            if rules_done and ai_done:
                 for strategy in strats:
                     entry: dict[str, Any] = {
                         "market": market,
                         "strategy": strategy,
+                        "track": "rules",
                         "status": "skipped_duplicate",
                         "error": f"already recorded {expected_date}",
                         "seconds": 0.0,
@@ -301,6 +405,7 @@ def run_session(session: str, track: Path, *, markets: list[str] | None = None) 
                     entry = {
                         "market": market,
                         "strategy": strategy,
+                        "track": "rules",
                         "status": "timeout",
                         "error": msg,
                         "seconds": elapsed,
@@ -315,6 +420,7 @@ def run_session(session: str, track: Path, *, markets: list[str] | None = None) 
                     entry = {
                         "market": market,
                         "strategy": strategy,
+                        "track": "rules",
                         "status": "failed",
                         "error": msg,
                         "seconds": elapsed,
@@ -330,6 +436,7 @@ def run_session(session: str, track: Path, *, markets: list[str] | None = None) 
                     entry = {
                         "market": market,
                         "strategy": strategy,
+                        "track": "rules",
                         "status": status,
                         "error": detail,
                         "seconds": 0.0,
@@ -340,10 +447,11 @@ def run_session(session: str, track: Path, *, markets: list[str] | None = None) 
 
             effective_date = detail or expected_date
             for strategy in strats:
-                if effective_date in recorded_dates.get((market, strategy), set()):
+                if effective_date in recorded_dates.get((market, strategy, "rules"), set()):
                     entry = {
                         "market": market,
                         "strategy": strategy,
+                        "track": "rules",
                         "status": "skipped_duplicate",
                         "error": f"already recorded {effective_date}",
                         "seconds": 0.0,
@@ -353,7 +461,7 @@ def run_session(session: str, track: Path, *, markets: list[str] | None = None) 
                     continue
 
                 started = time.monotonic()
-                entry = {"market": market, "strategy": strategy}
+                entry = {"market": market, "strategy": strategy, "track": "rules"}
                 try:
                     result = call_with_timeout(
                         screen,
@@ -366,8 +474,9 @@ def run_session(session: str, track: Path, *, markets: list[str] | None = None) 
                         timeout_sec=SCREEN_TIMEOUT_SEC,
                         label=f"screen {market} {strategy}",
                     )
+                    result.track = "rules"
                     save_screen_result(result, data_dir=config.data_dir)
-                    recorded_dates.setdefault((market, strategy), set()).add(effective_date)
+                    recorded_dates.setdefault((market, strategy, "rules"), set()).add(effective_date)
                     entry.update(
                         status="ok",
                         run_id=result.run_id,
@@ -382,6 +491,74 @@ def run_session(session: str, track: Path, *, markets: list[str] | None = None) 
                 entry["seconds"] = round(time.monotonic() - started, 1)
                 _print_entry(entry)
                 entries.append(entry)
+
+            # Optional AI track (runs strictly after rules pass; timeout/degradation never breaks rules).
+            if run_ai:
+                for strategy in strats:
+                    if effective_date in recorded_dates.get((market, strategy, "ai"), set()):
+                        entry = {
+                            "market": market,
+                            "strategy": strategy,
+                            "track": "ai",
+                            "status": "skipped_duplicate",
+                            "error": f"already recorded ai {effective_date}",
+                            "seconds": 0.0,
+                        }
+                        _print_entry(entry)
+                        ai_entries.append(entry)
+                        continue
+                    started_ai = time.monotonic()
+                    ai_entry: dict[str, Any] = {"market": market, "strategy": strategy, "track": "ai"}
+                    try:
+                        ai_result = call_with_timeout(
+                            screen,
+                            strategy,
+                            market=market,
+                            use_llm=True,
+                            config=config,
+                            snapshot_df=market_snapshot,
+                            allow_snapshot_refetch=False,
+                            timeout_sec=AI_SCREEN_TIMEOUT_SEC,
+                            label=f"ai screen {market} {strategy}",
+                        )
+                        if not ai_result.llm_ranked:
+                            ai_entry.update(
+                                status="skipped_llm_degraded",
+                                error="; ".join(ai_result.degradation[:2]) or "llm_ranked=False",
+                            )
+                        else:
+                            ai_result.track = "ai"
+                            ai_result.run_id = _ai_run_id(ai_result, effective_date)
+                            save_screen_result(ai_result, data_dir=config.data_dir)
+                            recorded_dates.setdefault((market, strategy, "ai"), set()).add(effective_date)
+                            ai_entry.update(
+                                status="ok",
+                                run_id=ai_result.run_id,
+                                picks=len(ai_result.picks),
+                                snapshot_source=ai_result.snapshot_source,
+                                degradation=len(ai_result.degradation or []),
+                            )
+                    except TimeoutError:
+                        ai_entry.update(
+                            status="skipped_llm_timeout",
+                            error=f"ai exceeded {AI_SCREEN_TIMEOUT_SEC}s",
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        ai_entry.update(status="failed", error=_tail(str(exc)))
+                    ai_entry["seconds"] = round(time.monotonic() - started_ai, 1)
+                    _print_entry(ai_entry)
+                    ai_entries.append(ai_entry)
+
+            if market == "cn":
+                try:
+                    record_cn_patterns(
+                        track,
+                        pack_dir=pack_dir,
+                        trade_date=effective_date,
+                        require_exact_date=True,
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
     finally:
         if old_data_dir is None:
             os.environ.pop("ALPHASIFT_DATA_DIR", None)
@@ -393,7 +570,14 @@ def run_session(session: str, track: Path, *, markets: list[str] | None = None) 
             os.environ["TUSHARE_TRADE_DATE"] = old_tushare_date
 
     log_date = session_date(target_markets[0], now_iso) if target_markets else _today_cst()
-    log = {"session": session, "date": log_date, "finished_at": _now(), "entries": entries}
+    log: dict[str, Any] = {
+        "session": session,
+        "date": log_date,
+        "finished_at": _now(),
+        "entries": entries,
+    }
+    if ai_entries:
+        log["ai_entries"] = ai_entries
     log_path = track / "data" / "logs" / f"{log_date}-{session}.json"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log_path.write_text(json.dumps(log, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -568,6 +752,8 @@ def load_runs(track: Path) -> list[dict[str, Any]]:
             "run_id": data["run_id"],
             "market": market,
             "strategy": data.get("strategy", ""),
+            "track": str(data.get("track") or ("ai" if data.get("llm_ranked") else "rules")),
+            "llm_ranked": bool(data.get("llm_ranked", False)),
             "strategy_version": data.get("strategy_version", ""),
             "created_at": data.get("created_at", ""),
             "date": session_date(market, data.get("created_at", "")),
@@ -624,6 +810,23 @@ def build_site(track: Path) -> dict[str, Any]:
         (site / "days" / f"{day}.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
     markets = sorted({run["market"] for run in runs}, key=lambda m: list(SESSIONS["asia"] + SESSIONS["us"]).index(m))
+    sc = scorecard(runs, evaluation)
+    tc = track_comparison(sc)
+    pb = _build_pattern_board(track)
+    if pb is not None:
+        (site / "patterns.json").write_text(json.dumps(pb, ensure_ascii=False), encoding="utf-8")
+        pb_summary: dict[str, Any] | None = {
+            "latest": {
+                "trade_date": pb["latest"].get("trade_date"),
+                "market_regime": pb["latest"].get("market_regime"),
+                "counts_by_pattern": pb["latest"].get("counts_by_pattern", {}),
+            },
+            "history": pb["history"],
+            "has_replay": pb.get("replay") is not None,
+        }
+    else:
+        pb_summary = None
+
     summary = {
         "generated_at": _now(),
         "windows": WINDOWS,
@@ -632,7 +835,9 @@ def build_site(track: Path) -> dict[str, Any]:
             {"id": m, "name": get_market(m).name, "benchmark": get_market(m).benchmark_name} for m in markets
         ],
         "sessions": _latest_logs(track),
-        "scorecard": scorecard(runs, evaluation),
+        "scorecard": sc,
+        "track_comparison": tc,
+        "pattern_board": pb_summary,
         "trend": trend(runs, evaluation),
         "latest": _latest_runs(runs),
         "days": [{"date": day, "runs": len(by_day[day])} for day in sorted(by_day, reverse=True)],
@@ -675,20 +880,23 @@ def scorecard(runs: list[dict], evaluation: dict) -> list[dict[str, Any]]:
     ``matched_return_pct`` is the return over that same population, so
     matched return − benchmark = excess.
     """
-    groups: dict[tuple[str, str], list[dict]] = {}
+    groups: dict[tuple[str, str, str], list[dict]] = {}
     for run in runs:
-        groups.setdefault((run["market"], run["strategy"]), []).append(run)
+        groups.setdefault((run["market"], run["strategy"], run.get("track", "rules")), []).append(run)
     rows = []
-    for (market, strategy), group in sorted(groups.items()):
+    for (market, strategy, track_name), group in sorted(groups.items()):
         windows = {}
         for window in WINDOWS:
             outcomes = [o for _, o in _pick_outcomes(group, evaluation, window)]
             done = [o for o in outcomes if o["status"] == "ok" and o["return_pct"] is not None]
             matched = [o for o in done if o["excess_return_pct"] is not None]
+            untradable = sum(1 for o in outcomes if o["status"] == "untradable_limit_up")
             windows[str(window)] = {
                 "evaluated": len(done),
                 "pending": sum(1 for o in outcomes if o["status"] == "pending"),
-                "unavailable": sum(1 for o in outcomes if o["status"] not in {"ok", "pending"}),
+                "untradable": untradable,
+                "untradable_share_pct": _round((untradable / len(outcomes)) * 100.0, 2) if outcomes else 0.0,
+                "unavailable": sum(1 for o in outcomes if o["status"] not in {"ok", "pending", "untradable_limit_up"}),
                 "average_return_pct": _mean(o["return_pct"] for o in done),
                 "win_rate": _round(sum(o["return_pct"] > 0 for o in done) / len(done)) if done else None,
                 "matched": len(matched),
@@ -697,9 +905,100 @@ def scorecard(runs: list[dict], evaluation: dict) -> list[dict[str, Any]]:
                 "beat_rate": _round(sum(o["excess_return_pct"] > 0 for o in matched) / len(matched))
                 if matched else None,
             }
-        rows.append({"market": market, "strategy": strategy, "runs": len(group),
+        rows.append({"market": market, "strategy": strategy, "track": track_name, "runs": len(group),
                      "first_date": group[0]["date"], "last_date": group[-1]["date"], "windows": windows})
     return rows
+
+
+def track_comparison(scorecard_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Pair rules and ai rows per (market, strategy) for side-by-side excess comparison."""
+    paired: dict[tuple[str, str], dict[str, dict[str, Any]]] = {}
+    for row in scorecard_rows:
+        paired.setdefault((row["market"], row["strategy"]), {})[row.get("track", "rules")] = row
+    comparisons: list[dict[str, Any]] = []
+    for (market, strategy), by_track in sorted(paired.items()):
+        if "rules" not in by_track or "ai" not in by_track:
+            continue
+        r_row, a_row = by_track["rules"], by_track["ai"]
+        win_deltas: dict[str, Any] = {}
+        for window in WINDOWS:
+            w = str(window)
+            rw, aw = r_row["windows"].get(w, {}), a_row["windows"].get(w, {})
+            re, ae = rw.get("average_excess_return_pct"), aw.get("average_excess_return_pct")
+            win_deltas[w] = {
+                "rules_matched": rw.get("matched", 0),
+                "ai_matched": aw.get("matched", 0),
+                "rules_excess_pct": re,
+                "ai_excess_pct": ae,
+                "ai_minus_rules_pct": _round(ae - re) if (ae is not None and re is not None) else None,
+            }
+        comparisons.append({
+            "market": market,
+            "strategy": strategy,
+            "rules_runs": r_row["runs"],
+            "ai_runs": a_row["runs"],
+            "windows": win_deltas,
+        })
+    return comparisons
+
+
+def _build_pattern_board(track: Path) -> dict[str, Any] | None:
+    pat_dir = track / "data" / "patterns"
+    if not pat_dir.is_dir():
+        return None
+    files = sorted(p for p in pat_dir.glob("*.json") if p.name != "replay.json")
+    if not files:
+        return None
+    history: list[dict[str, Any]] = []
+    latest_payload: dict[str, Any] | None = None
+    for path in files[-15:]:
+        data = _read_json(path)
+        if not isinstance(data, dict) or not data.get("trade_date"):
+            continue
+        latest_payload = data
+        reg = data.get("market_regime") or {}
+        history.append({
+            "trade_date": data.get("trade_date"),
+            "regime_stage": reg.get("regime_stage"),
+            "regime_stage_label": reg.get("regime_stage_label"),
+            "advance_ratio_pct": reg.get("advance_ratio_pct"),
+            "non_st_limit_up_count": reg.get("non_st_limit_up_count"),
+            "non_st_limit_down_count": reg.get("non_st_limit_down_count"),
+            "max_consecutive_limit_up": reg.get("max_consecutive_limit_up"),
+            "counts_by_pattern": data.get("counts_by_pattern", {}),
+        })
+    if latest_payload is None:
+        return None
+    replay = _read_json(pat_dir / "replay.json")
+    replay_summary: dict[str, Any] | None = None
+    if isinstance(replay, dict):
+        replay_summary = {
+            "generated_at": replay.get("generated_at"),
+            "entry_mode": replay.get("entry_mode", "next_open"),
+            "benchmark": replay.get("benchmark", "sh000300"),
+            "pack_summary": replay.get("pack_summary"),
+            "regime_distribution": replay.get("regime_distribution"),
+            "patterns": [
+                {
+                    "pattern": item.get("pattern"),
+                    "display_name": item.get("display_name"),
+                    "family": item.get("family"),
+                    "mode": item.get("mode"),
+                    "untradable_count": item.get("untradable_count"),
+                    "untradable_share_pct": item.get("untradable_share_pct"),
+                    "horizons": item.get("horizons"),
+                    "graduation": item.get("graduation"),
+                    "by_regime": item.get("by_regime"),
+                    "by_overhead_supply": item.get("by_overhead_supply"),
+                }
+                for item in (replay.get("patterns") or [])
+            ],
+        }
+    return {
+        "latest": latest_payload,
+        "history": history,
+        "replay": replay_summary,
+    }
 
 
 def trend(runs: list[dict], evaluation: dict) -> dict[str, Any]:
@@ -724,11 +1023,11 @@ def trend(runs: list[dict], evaluation: dict) -> dict[str, Any]:
 
 
 def _latest_runs(runs: list[dict]) -> dict[str, list[dict]]:
-    latest: dict[tuple[str, str], dict] = {}
+    latest: dict[tuple[str, str, str], dict] = {}
     for run in runs:  # oldest first, so the last one wins
-        latest[(run["market"], run["strategy"])] = run
+        latest[(run["market"], run["strategy"], run.get("track", "rules"))] = run
     out: dict[str, list[dict]] = {}
-    for (market, _), run in sorted(latest.items()):
+    for (market, _, _), run in sorted(latest.items()):
         out.setdefault(market, []).append({k: v for k, v in run.items() if k != "path"})
     return out
 
@@ -778,8 +1077,9 @@ def render_readme(summary: dict[str, Any]) -> str:
     ]
     for row in summary["scorecard"]:
         w5, w20 = row["windows"]["5"], row["windows"]["20"]
+        track_suffix = " [AI]" if row.get("track") == "ai" else ""
         lines.append(
-            f"| {row['market']} | {names.get(row['strategy'], row['strategy'])} | {row['runs']} "
+            f"| {row['market']} | {names.get(row['strategy'], row['strategy'])}{track_suffix} | {row['runs']} "
             f"| {w5['matched']} | {_pct(w5['average_excess_return_pct'])} | {_rate(w5['beat_rate'])} "
             f"| {w20['matched']} | {_pct(w20['average_excess_return_pct'])} | {_rate(w20['beat_rate'])} |"
         )
@@ -834,23 +1134,43 @@ def _today_cst() -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=["screen", "evaluate", "build"])
+    parser.add_argument("command", choices=["screen", "evaluate", "build", "patterns"])
     parser.add_argument("--track", type=Path, required=True, help="checkout of the track-record branch")
     parser.add_argument("--session", choices=sorted(SESSIONS), default="asia")
     parser.add_argument("--markets", default="", help="comma-separated; defaults to the session's markets")
+    parser.add_argument(
+        "--ai-track", choices=["auto", "on", "off"], default="auto",
+        help="whether to run optional AI track on CN after rules pass (auto skips without LLM key)",
+    )
+    parser.add_argument("--pack-dir", type=Path, default=None, help="optional CN DailyPack directory")
+    parser.add_argument("--trade-date", default=None, help="optional trade date for patterns subcommand")
+    parser.add_argument("--with-replay", action="store_true", help="also run 250-day next_open replay for patterns board")
+    parser.add_argument("--replay-json", type=Path, default=None, help="existing replay JSON to attach to patterns board")
     args = parser.parse_args(argv)
     markets = [m.strip() for m in args.markets.split(",") if m.strip()] or SESSIONS[args.session]
 
     if args.command == "screen":
-        log = run_session(args.session, args.track, markets=markets)
-        ok = sum(1 for e in log["entries"] if e["status"] == "ok")
-        skipped = sum(1 for e in log["entries"] if e["status"] in SKIPPED_STATUSES)
-        print(f"{ok}/{len(log['entries']) - skipped} strategies saved a run ({skipped} skipped)")
-        if ok > 0 or (log["entries"] and skipped == len(log["entries"])):
+        log = run_session(
+            args.session, args.track, markets=markets, ai_track=args.ai_track, pack_dir=args.pack_dir
+        )
+        rules_entries = [e for e in log["entries"] if e.get("track", "rules") == "rules"]
+        ok = sum(1 for e in rules_entries if e["status"] == "ok")
+        skipped = sum(1 for e in rules_entries if e["status"] in SKIPPED_STATUSES)
+        print(f"{ok}/{len(rules_entries) - skipped} strategies saved a run ({skipped} skipped)")
+        if ok > 0 or (rules_entries and skipped == len(rules_entries)):
             return 0
         return 1
     if args.command == "evaluate":
         evaluate_markets(args.track, markets)
+        return 0
+    if args.command == "patterns":
+        record_cn_patterns(
+            args.track,
+            pack_dir=args.pack_dir,
+            trade_date=args.trade_date,
+            include_replay=args.with_replay,
+            replay_json_path=args.replay_json,
+        )
         return 0
     build_site(args.track)
     return 0
