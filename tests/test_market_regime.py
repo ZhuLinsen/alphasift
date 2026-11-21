@@ -178,6 +178,9 @@ def test_limit_masks_streaks_ladder_broken_boards_and_exclusions() -> None:
     assert snap.prev_limit_up_win_rate_pct == 100.0
     assert snap.prev_limit_up_avg_return_pct == pytest.approx(7.27, abs=0.02)
     assert snap.usage_policy == "reporting_and_slice_only"
+    assert snap.median_return_pct is not None
+    assert sum(snap.return_distribution.values()) == snap.traded_count
+    assert set(snap.return_distribution) == {"le_neg7", "neg7_neg3", "neg3_0", "flat", "pos0_3", "pos3_7", "ge_pos7"}
 
     # Suspended bar on day 3 is excluded from active mask and streaks
     masks_all = compute_limit_masks(pack)

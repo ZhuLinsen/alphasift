@@ -685,9 +685,11 @@ def _fetch_em_datacenter() -> pd.DataFrame:
             "ps": str(page_size),
             "p": str(page),
             "sty": "SECUCODE,SECURITY_CODE,SECURITY_NAME_ABBR,NEW_PRICE,"
+                   "OPEN_PRICE,HIGH_PRICE,LOW_PRICE,PRE_CLOSE_PRICE,VOLUME,"
                    "CHANGE_RATE,VOLUME_RATIO,DEAL_AMOUNT,TURNOVERRATE,"
-                   "PE9,PBNEWMRQ,TOTAL_MARKET_CAP,CIRCULATION_MARKET_CAP,INDUSTRY",
-            "filter": '(MARKET+in+("上交所主板","深交所主板","深交所创业板","上交所科创板","北交所"))',
+                   "PE9,PBNEWMRQ,TOTAL_MARKET_CAP,CIRCULATION_MARKET_CAP,INDUSTRY,"
+                   "MAX_TRADE_DATE",
+            "filter": '(MARKET+in+("上交所主板","深交所主板","深交所创业板","上交所科创板","北交所","北京证券交易所"))',
             "source": "SELECT_SECURITIES",
             "client": "WEB",
         }
@@ -879,7 +881,7 @@ def _prepare_tushare_snapshot(
 
 def _extract_cn_quote_date(df: pd.DataFrame) -> str | None:
     """Extract latest ISO trading date from common CN snapshot date columns."""
-    for col in ("trade_date", "date", "日期"):
+    for col in ("trade_date", "date", "日期", "MAX_TRADE_DATE"):
         if col not in df.columns:
             continue
         dates: list[str] = []

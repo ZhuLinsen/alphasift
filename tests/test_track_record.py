@@ -52,6 +52,10 @@ def test_scorecard_uses_one_population_for_return_and_excess(tmp_path):
     five = row["windows"]["5"]
 
     assert (five["evaluated"], five["pending"], five["unavailable"], five["matched"]) == (2, 1, 1, 1)
+    assert five["untradable"] is None
+    assert five["untradable_share_pct"] is None
+    assert five["untradable_assessed"] is False
+    assert row["entry_modes"] == ["close"]
     assert five["average_return_pct"] == 1.0
     assert five["win_rate"] == 0.5
     assert five["matched_return_pct"] == 4.0 and five["average_excess_return_pct"] == 3.0

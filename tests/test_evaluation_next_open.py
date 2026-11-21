@@ -315,3 +315,31 @@ def test_window_entry_mode_is_exposed_in_cli_json_and_text(next_open_run, monkey
     summary = capsys.readouterr().out
     assert "entry_mode=next_open" in summary
     assert "untradable=1 untradable_share=100.00%" in summary
+
+
+def test_one_price_limit_uses_raw_prices_across_post_entry_dividend(next_open_run):
+    # Pre-split adjusted prices (div factor 0.85): qfq 9.35 vs 8.54 fails tick-rounded limit check,
+    # whereas unadjusted raw_open=11.17 vs raw_pre_close=10.15 accurately catches the one-price limit-up.
+    stock = pd.DataFrame([
+        {
+            "date": "2025-03-03",
+            "open": 8.63, "high": 8.63, "low": 8.63, "close": 8.63,
+            "raw_open": 10.15, "raw_high": 10.15, "raw_low": 10.15, "raw_close": 10.15, "raw_pre_close": 10.15,
+        },
+        {
+            "date": "2025-03-04",
+            "open": 9.35, "high": 9.35, "low": 9.35, "close": 9.35,
+            "raw_open": 11.17, "raw_high": 11.17, "raw_low": 11.17, "raw_close": 11.17, "raw_pre_close": 10.15,
+        },
+        {
+            "date": "2025-03-05",
+            "open": 9.50, "high": 9.60, "low": 9.40, "close": 9.55,
+            "raw_open": 9.50, "raw_high": 9.60, "raw_low": 9.40, "raw_close": 9.55, "raw_pre_close": 9.49,
+        },
+    ])
+    run, config, snapshot = next_open_run({"000001": stock})
+    result = evaluate_saved_run(
+        run.run_id, config=config, current_snapshot=snapshot, entry_mode="next_open", horizon_days=1, cost_bps=0
+    )
+    assert result.picks[0].status == "untradable_limit_up"
+    assert result.untradable_count == 1

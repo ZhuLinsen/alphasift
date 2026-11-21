@@ -421,3 +421,35 @@ def test_pack_features_performance_250_by_5400():
     elapsed = time.perf_counter() - t0
     assert len(features) == n_codes
     assert elapsed < 3.0
+
+
+def test_pack_features_slice_before_forward_adjust_prevents_future_split_leakage():
+    dates = _dates(70, start="2026-01-05")
+    codes = np.array(["000001"], dtype="U6")
+    mats = {k: np.full((70, 1), np.nan, dtype=np.float32) for k in pack.FIELDS}
+    for t in range(70):
+        px = 20.0 + 0.1 * t if t < 65 else 10.0
+        pre = px if t < 65 else (mats["close"][t - 1, 0] * 0.5 if t == 65 else 10.0)
+        mats["open"][t, 0] = px
+        mats["high"][t, 0] = px * 1.01
+        mats["low"][t, 0] = px * 0.99
+        mats["close"][t, 0] = px
+        mats["pre_close"][t, 0] = pre
+        mats["volume"][t, 0] = 1_000_000.0
+        mats["amount"][t, 0] = px * 1_000_000.0
+
+    full_pack = pack.DailyPack(dates=dates, codes=codes, matrices=mats, meta=pd.DataFrame({"code": codes}), sources=("test",))
+    truncated_pack = pack.DailyPack(
+        dates=dates[:65],
+        codes=codes,
+        matrices={k: v[:65] for k, v in mats.items()},
+        meta=pd.DataFrame({"code": codes}),
+        sources=("test",),
+    )
+
+    as_of_feats = compute_pack_daily_features(full_pack, trade_date=str(dates[64]))
+    trunc_feats = compute_pack_daily_features(truncated_pack)
+    assert as_of_feats.loc[0, "ma20"] == trunc_feats.loc[0, "ma20"]
+    assert as_of_feats.loc[0, "ma60"] == trunc_feats.loc[0, "ma60"]
+    assert as_of_feats.loc[0, "prev_high_20d"] == trunc_feats.loc[0, "prev_high_20d"]
+    assert float(as_of_feats.loc[0, "ma20"]) > 20.0  # unscaled by day-65 future split

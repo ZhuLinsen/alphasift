@@ -13,7 +13,14 @@ import pytest
 
 from alphasift.cli import main as cli_main
 from alphasift.pack import DailyPack, FIELDS, save_pack
-from alphasift.pattern_replay import _summarize_stability, replay_patterns
+from alphasift.pattern_replay import (
+    _evaluate_graduation,
+    _summarize_horizon_obs,
+    _summarize_stability,
+    load_cn_benchmark,
+    render_replay_markdown,
+    replay_patterns,
+)
 from alphasift.patterns import (
     PatternSpec,
     build_pattern_context,
@@ -332,6 +339,9 @@ def test_replay_next_open_tradability_limit_down_roll_and_graduation(
     # 2 < 200 samples -> stays experimental
     assert item["graduation"]["passed"] is False
     assert item["graduation"]["recommended_status"] == "experimental"
+    assert rep["universe_baseline"]["t5"]["sessions"] > 0
+    assert rep["universe_baseline"]["t5"]["equal_weight_raw_mean_pct"] is not None
+    assert "全A等权超额" in render_replay_markdown(rep)
 
     # CLI patterns list smoke test
     pack_dir = tmp_path / "pack"
@@ -361,27 +371,86 @@ def test_cli_patterns_scan_json(tmp_path: Path, monkeypatch, capsys) -> None:
 
 def test_split_half_stability_and_sign_flip_rejection() -> None:
     mid = "2026-06-15"
+    h1_dates = [d.strftime("%Y-%m-%d") for d in pd.bdate_range("2026-03-01", periods=16)]
+    h2_dates = [d.strftime("%Y-%m-%d") for d in pd.bdate_range("2026-07-01", periods=16)]
     stable_obs = [
-        {"date": "2026-04-01" if i < 55 else "2026-08-01", "horizons": {"t5": {"status": "ok", "excess_return_pct": 1.2 + (i % 3) * 0.4}}}
-        for i in range(110)
+        {"date": h1_dates[i % 16], "horizons": {"t5": {"status": "ok", "excess_return_pct": 1.2 + (i % 3) * 0.4}}}
+        for i in range(55)
+    ] + [
+        {"date": h2_dates[i % 16], "horizons": {"t5": {"status": "ok", "excess_return_pct": 1.1 + (i % 3) * 0.4}}}
+        for i in range(55)
     ]
     st_ok = _summarize_stability(stable_obs, mid_date=mid, horizon=5)
     assert st_ok["n"] == 110
+    assert st_ok["signal_days"] == 32
     assert st_ok["h1_n"] == 55 and st_ok["h2_n"] == 55
+    assert st_ok["h1_days"] == 16 and st_ok["h2_days"] == 16
     assert st_ok["sign_consistent"] is True
     assert st_ok["stable_direction"] == "positive"
     assert st_ok["t_stat"] is not None and st_ok["t_stat"] > 1.96
     assert st_ok["stability_ready"] is True
 
+    # Same 110 signals crammed onto only 2 dates must NOT qualify under date-clustered stability.
+    clustered_2d = [
+        {"date": "2026-04-01" if i < 55 else "2026-08-01", "horizons": {"t5": {"status": "ok", "excess_return_pct": 1.5 + (i % 3) * 0.2}}}
+        for i in range(110)
+    ]
+    st_clust = _summarize_stability(clustered_2d, mid_date=mid, horizon=5)
+    assert st_clust["pooled_t_stat"] > 1.96
+    assert st_clust["signal_days"] == 2
+    assert st_clust["stability_ready"] is False
+
     flipped_obs = [
-        {"date": "2026-04-01", "horizons": {"t5": {"status": "ok", "excess_return_pct": 2.0}}}
-        for _ in range(60)
+        {"date": h1_dates[i % 16], "horizons": {"t5": {"status": "ok", "excess_return_pct": 2.0}}}
+        for i in range(60)
     ] + [
-        {"date": "2026-08-01", "horizons": {"t5": {"status": "ok", "excess_return_pct": -1.0}}}
-        for _ in range(60)
+        {"date": h2_dates[i % 16], "horizons": {"t5": {"status": "ok", "excess_return_pct": -1.0}}}
+        for i in range(60)
     ]
     st_flip = _summarize_stability(flipped_obs, mid_date=mid, horizon=5)
     assert st_flip["mean_pct"] == 0.5
     assert st_flip["sign_consistent"] is False
     assert st_flip["stable_direction"] == "mixed_or_insufficient"
     assert st_flip["stability_ready"] is False
+
+
+def test_graduation_requires_benchmark_matched_samples_and_benchmark_fallback(monkeypatch) -> None:
+    # 250 ok trades where only 40 matched benchmark -> must NOT graduate!
+    obs = [
+        {
+            "date": f"2026-05-{(i % 20) + 1:02d}",
+            "horizons": {"t5": {
+                "status": "ok",
+                "raw_return_pct": 3.0,
+                "excess_return_pct": 2.0 if i < 40 else None,
+                "exit_delayed": False,
+            }},
+        }
+        for i in range(250)
+    ]
+    t5 = _summarize_horizon_obs(obs, 5)
+    assert t5["scored"] == 250
+    assert t5["excess_scored"] == 40
+    assert t5["unmatched_benchmark"] == 210
+
+    dummy_spec = PatternSpec(
+        name="tmp_grad", display_name="G", family="breakout", status="experimental",
+        version="1.0", description="", mode="direct", min_history_days=60, universe={}, conditions=[],
+    )
+    grad = _evaluate_graduation(dummy_spec, t5)
+    assert grad["passed"] is False
+    assert grad["recommended_status"] == "experimental"
+    assert grad["t5_excess_scored"] == 40
+
+    # load_cn_benchmark falls back cleanly from Tencent failure to Sina
+    monkeypatch.setattr("alphasift.pattern_replay._time.sleep", lambda s: None)
+    monkeypatch.setattr(
+        "alphasift.pattern_replay._fetch_daily_tencent",
+        lambda sym, lookback_days=360: (_ for _ in ()).throw(TimeoutError("tencent down")),
+    )
+    monkeypatch.setattr(
+        "alphasift.pattern_replay._fetch_daily_sina",
+        lambda sym, lookback_days=360: pd.DataFrame([{"date": "2026-11-20", "open": 4000.0, "close": 4020.0}]),
+    )
+    bench = load_cn_benchmark(lookback_days=30)
+    assert len(bench) == 1 and bench.loc[0, "close"] == 4020.0

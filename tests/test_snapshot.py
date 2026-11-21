@@ -567,3 +567,80 @@ def test_page_budget_can_be_disabled(monkeypatch):
     budget = _PageBudget("sina", per_request_timeout=15.0)
 
     assert budget.request_timeout() == (5.0, 15.0)
+
+
+def test_fetch_em_datacenter_requests_ohlcv_bse_and_quote_date(monkeypatch):
+    from alphasift.snapshot import _fetch_em_datacenter
+
+    captured: list[dict] = []
+
+    class FakeResp:
+        def json(self):
+            return {
+                "success": True,
+                "result": {
+                    "count": 2,
+                    "data": [
+                        {
+                            "SECUCODE": "000001.SZ",
+                            "SECURITY_CODE": "000001",
+                            "SECURITY_NAME_ABBR": "平安银行",
+                            "NEW_PRICE": 11.2,
+                            "OPEN_PRICE": 11.0,
+                            "HIGH_PRICE": 11.3,
+                            "LOW_PRICE": 10.95,
+                            "PRE_CLOSE_PRICE": 11.05,
+                            "VOLUME": 500000,
+                            "CHANGE_RATE": 1.36,
+                            "VOLUME_RATIO": 1.2,
+                            "DEAL_AMOUNT": 560000000.0,
+                            "TURNOVERRATE": 0.8,
+                            "PE9": 5.5,
+                            "PBNEWMRQ": 0.6,
+                            "TOTAL_MARKET_CAP": 2.1e11,
+                            "CIRCULATION_MARKET_CAP": 2.1e11,
+                            "INDUSTRY": "银行",
+                            "MAX_TRADE_DATE": "2026-11-20",
+                        },
+                        {
+                            "SECUCODE": "920000.BJ",
+                            "SECURITY_CODE": "920000",
+                            "SECURITY_NAME_ABBR": "安徽凤凰",
+                            "NEW_PRICE": 22.5,
+                            "OPEN_PRICE": 22.0,
+                            "HIGH_PRICE": 22.9,
+                            "LOW_PRICE": 21.8,
+                            "PRE_CLOSE_PRICE": 21.9,
+                            "VOLUME": 12000,
+                            "CHANGE_RATE": 2.74,
+                            "VOLUME_RATIO": 1.4,
+                            "DEAL_AMOUNT": 27000000.0,
+                            "TURNOVERRATE": 2.1,
+                            "PE9": 18.0,
+                            "PBNEWMRQ": 2.4,
+                            "TOTAL_MARKET_CAP": 2.0e9,
+                            "CIRCULATION_MARKET_CAP": 1.2e9,
+                            "INDUSTRY": "汽车零部件",
+                            "MAX_TRADE_DATE": "2026-11-20",
+                        },
+                    ],
+                },
+            }
+
+    def fake_em_get(url, *, params, headers, timeout):
+        captured.append(params)
+        return FakeResp()
+
+    monkeypatch.setattr("alphasift.snapshot._eastmoney_get", fake_em_get)
+    df = _fetch_em_datacenter()
+
+    assert len(captured) == 1
+    sty = captured[0]["sty"]
+    for field in ("OPEN_PRICE", "HIGH_PRICE", "LOW_PRICE", "PRE_CLOSE_PRICE", "VOLUME", "MAX_TRADE_DATE"):
+        assert field in sty
+    assert "北京证券交易所" in captured[0]["filter"]
+    assert df.attrs["snapshot_source"] == "em_datacenter"
+    assert df.attrs["quote_date"] == "2026-11-20"
+    assert df["code"].tolist() == ["000001", "920000"]
+    assert df.loc[0, "OPEN_PRICE"] == 11.0
+    assert df.loc[1, "PRE_CLOSE_PRICE"] == 21.9

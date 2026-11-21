@@ -20,11 +20,13 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import inspect
 import json
 import os
 import statistics
 import sys
 import time
+from collections.abc import Sequence
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -45,6 +47,8 @@ AI_TRACK_MARKETS = frozenset({"cn"})
 MAX_MISSING_RETRY_DAYS = 90
 SKIPPED_STATUSES = frozenset({"skipped_holiday", "skipped_duplicate"})
 RECENT_DAYS_IN_SUMMARY = 30
+NEXT_OPEN_SWITCH_DATE = os.getenv("ALPHASIFT_NEXT_OPEN_SWITCH_DATE", "2026-11-21")
+MIN_PAIRED_AI_DAYS = 10
 PICK_FIELDS = ("rank", "code", "name", "industry", "price", "pe_ratio", "pb_ratio", "final_score")
 
 
@@ -260,7 +264,9 @@ def record_cn_patterns(
     *,
     pack_dir: Path | None = None,
     trade_date: str | None = None,
+    expected_trade_date: str | None = None,
     require_exact_date: bool = False,
+    allow_stale_pack: bool = False,
     mini_kline_bars: int = 20,
     max_signals_per_pattern: int = 10,
     include_replay: bool = False,
@@ -277,11 +283,22 @@ def record_cn_patterns(
         return None
     daily_pack = load_pack(directory)
     dates_set = {str(d) for d in daily_pack.dates}
+    target_expected = str(expected_trade_date or trade_date or "").strip() or None
+    pack_date = daily_pack.trade_date
+    pack_is_stale = bool(target_expected and pack_date < target_expected)
+
     if require_exact_date and trade_date and trade_date not in dates_set:
         return None
+    if pack_is_stale and not allow_stale_pack:
+        return None
+
     target_date = trade_date if (trade_date and trade_date in dates_set) else None
     scan = scan_patterns(daily_pack, trade_date=target_date, include_experimental=True)
     payload = scan.to_dict()
+    payload["expected_trade_date"] = target_expected or scan.trade_date
+    payload["pack_is_stale"] = pack_is_stale
+    if pack_is_stale:
+        payload["stale_reason"] = f"数据包截止 {pack_date}，落后目标交易日 {target_expected}（降级展示）"
 
     sig_codes: list[str] = []
     cap = max(1, int(max_signals_per_pattern))
@@ -342,6 +359,7 @@ def run_session(
     target_markets = list(markets or SESSIONS[session])
     entries: list[dict[str, Any]] = []
     ai_entries: list[dict[str, Any]] = []
+    effective_dates: dict[str, str] = {}
     try:
         from alphasift.config import Config
         from alphasift.pipeline import screen
@@ -373,6 +391,7 @@ def run_session(
                 for s in strats
             )
             if rules_done and ai_done:
+                effective_dates[market] = expected_date
                 for strategy in strats:
                     entry: dict[str, Any] = {
                         "market": market,
@@ -446,6 +465,7 @@ def run_session(
                 continue
 
             effective_date = detail or expected_date
+            effective_dates[market] = effective_date
             for strategy in strats:
                 if effective_date in recorded_dates.get((market, strategy, "rules"), set()):
                     entry = {
@@ -555,7 +575,9 @@ def run_session(
                         track,
                         pack_dir=pack_dir,
                         trade_date=effective_date,
+                        expected_trade_date=effective_date,
                         require_exact_date=True,
+                        allow_stale_pack=False,
                     )
                 except Exception:  # noqa: BLE001
                     pass
@@ -576,6 +598,8 @@ def run_session(
         "finished_at": _now(),
         "entries": entries,
     }
+    if effective_dates:
+        log["effective_dates"] = effective_dates
     if ai_entries:
         log["ai_entries"] = ai_entries
     log_path = track / "data" / "logs" / f"{log_date}-{session}.json"
@@ -650,12 +674,56 @@ def _is_run_final(
     )
 
 
-def evaluate_markets(track: Path, markets: list[str]) -> dict[str, Any]:
-    """T+N evaluation of every saved run in ``markets``; other markets keep their last result.
+def _prior_matches_mode(entry: dict[str, Any], target_mode: str) -> bool:
+    windows = entry.get("windows")
+    if not isinstance(windows, dict):
+        return False
+    return all(
+        ((windows.get(str(w)) or {}).get("entry_mode") or "close") == target_mode
+        for w in WINDOWS
+    )
 
-    A run whose windows have all completed is final and is not fetched again.
+
+def _load_cn_pack_price_paths(
+    pack_dir: Path | None,
+    config: Any,
+    codes: Sequence[str],
+) -> dict[str, Any]:
+    """Load CN forward-adjusted OHLCV DataFrames (plus raw quotes) from DailyPack."""
+    if not codes:
+        return {}
+    from alphasift.pack import load_pack, pack_dir as resolve_pack_dir, pack_price_paths
+
+    directory = Path(pack_dir).expanduser() if pack_dir is not None else resolve_pack_dir(config)
+    if not (directory / "manifest.json").is_file():
+        return {}
+    try:
+        daily_pack = load_pack(directory)
+        return pack_price_paths(daily_pack, codes=codes, adjusted=True, include_raw=True)
+    except (OSError, ValueError):
+        return {}
+
+
+def evaluate_markets(
+    track: Path,
+    markets: list[str],
+    *,
+    pack_dir: Path | None = None,
+    entry_mode: str = "auto",
+    next_open_from: str | None = None,
+) -> dict[str, Any]:
+    """T+N evaluation of saved runs in ``markets``.
+
+    ``entry_mode='auto'`` preserves historical ``close`` runs prior to
+    ``next_open_from`` (default ``NEXT_OPEN_SWITCH_DATE``) and switches runs on
+    or after that date to ``next_open`` with CN exchange limit-up/limit-down
+    tradability checks using unadjusted raw prices when available from DailyPack.
     """
     import pandas as pd
+
+    if entry_mode not in ("auto", "close", "next_open"):
+        raise ValueError("entry_mode must be 'auto', 'close', or 'next_open'")
+    switch_date = str(next_open_from or NEXT_OPEN_SWITCH_DATE).strip()
 
     old_data_dir = os.environ.get("ALPHASIFT_DATA_DIR")
     old_tushare_date = os.environ.pop("TUSHARE_TRADE_DATE", None)
@@ -669,45 +737,108 @@ def evaluate_markets(track: Path, markets: list[str]) -> dict[str, Any]:
         from alphasift.evaluate import evaluate_saved_run
         from alphasift.markets import get_market
 
-        config = Config.from_env()
-        no_snapshot = pd.DataFrame(columns=["code", "price"])  # T+N uses closes, not live quotes
-        benchmark_paths: dict[str, pd.DataFrame] = {}
+        sig_params = inspect.signature(evaluate_saved_run).parameters
+        has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig_params.values())
+        supports_entry_mode = has_var_kw or ("entry_mode" in sig_params)
+        supports_price_paths = has_var_kw or ("price_paths" in sig_params)
+        if entry_mode == "next_open" and not supports_entry_mode:
+            raise ValueError("evaluate_saved_run does not support entry_mode=next_open in this build")
 
-        for run in load_runs(track):
+        def _target_mode_for_run(run_item: dict[str, Any]) -> str:
+            if entry_mode == "auto":
+                if not supports_entry_mode:
+                    return "close"
+                return "next_open" if run_item["date"] >= switch_date else "close"
+            return entry_mode
+
+        config = Config.from_env()
+        no_snapshot = pd.DataFrame(columns=["code", "price"])  # T+N uses closes/pack, not live quotes
+        benchmark_paths: dict[str, pd.DataFrame] = {}
+        all_runs = load_runs(track)
+
+        cn_price_paths: dict[str, pd.DataFrame] = {}
+        if "cn" in markets and supports_price_paths:
+            cn_codes: list[str] = []
+            cn_has_benchmark = bool(get_market("cn").benchmark)
+            for run in all_runs:
+                if run["market"] != "cn":
+                    continue
+                prior = runs_out.get(run["run_id"])
+                allow_missing = _allow_missing_picks(run["created_at"], eval_now)
+                run_mode = _target_mode_for_run(run)
+                if (
+                    prior
+                    and prior.get("final")
+                    and _is_run_final(prior, has_benchmark=cn_has_benchmark, allow_missing=allow_missing)
+                    and _prior_matches_mode(prior, run_mode)
+                ):
+                    continue
+                cn_codes.extend(str(p.get("code", "")) for p in run.get("picks", []) if p.get("code"))
+            cn_price_paths = _load_cn_pack_price_paths(pack_dir, config, cn_codes)
+
+        for run in all_runs:
             if run["market"] not in markets:
                 continue
             has_benchmark = bool(get_market(run["market"]).benchmark)
             allow_missing = _allow_missing_picks(run["created_at"], eval_now)
+            run_mode = _target_mode_for_run(run)
             prior = runs_out.get(run["run_id"])
             if (
                 prior
                 and prior.get("final")
                 and _is_run_final(prior, has_benchmark=has_benchmark, allow_missing=allow_missing)
+                and _prior_matches_mode(prior, run_mode)
             ):
                 continue
             windows: dict[str, Any] = {}
             for window in WINDOWS:
+                eval_kwargs: dict[str, Any] = {
+                    "config": config,
+                    "current_snapshot": no_snapshot,
+                    "with_price_path": True,
+                    "horizon_days": window,
+                    "benchmark_paths": benchmark_paths,
+                }
+                if run["market"] == "cn" and cn_price_paths and supports_price_paths:
+                    eval_kwargs["price_paths"] = cn_price_paths
+                if supports_entry_mode and run_mode != "close":
+                    eval_kwargs["entry_mode"] = run_mode
                 try:
-                    result = evaluate_saved_run(
-                        run["path"], config=config, current_snapshot=no_snapshot,
-                        with_price_path=True, horizon_days=window, benchmark_paths=benchmark_paths,
-                    )
+                    result = evaluate_saved_run(run["path"], **eval_kwargs)
                 except Exception as exc:  # one broken run must not stop the record
                     windows[str(window)] = {"error": str(exc)[:300]}
                     continue
+
+                effective_mode = getattr(result, "entry_mode", run_mode) or run_mode
+                picks_out: dict[str, Any] = {}
+                for pick in result.picks:
+                    pick_entry: dict[str, Any] = {
+                        "status": pick.status,
+                        "return_pct": _round(pick.return_pct),
+                        "excess_return_pct": _round(pick.excess_return_pct),
+                    }
+                    if getattr(pick, "entry_open", None) is not None:
+                        pick_entry["entry_open"] = _round(pick.entry_open)
+                    if getattr(pick, "entry_date", None):
+                        pick_entry["entry_date"] = pick.entry_date
+                    if getattr(pick, "exit_date", None):
+                        pick_entry["exit_date"] = pick.exit_date
+                    if getattr(pick, "tradability_flags", None):
+                        pick_entry["tradability_flags"] = list(pick.tradability_flags)
+                    picks_out[pick.code] = pick_entry
+
                 window_payload: dict[str, Any] = {
+                    "entry_mode": effective_mode,
                     "benchmark": result.benchmark,
                     "benchmark_return_pct": result.benchmark_return_pct,
                     "pending": result.pending_count,
-                    "picks": {
-                        pick.code: {
-                            "status": pick.status,
-                            "return_pct": _round(pick.return_pct),
-                            "excess_return_pct": _round(pick.excess_return_pct),
-                        }
-                        for pick in result.picks
-                    },
+                    "picks": picks_out,
                 }
+                if effective_mode == "next_open":
+                    window_payload["untradable"] = getattr(result, "untradable_count", 0)
+                    window_payload["untradable_share_pct"] = _round(
+                        getattr(result, "untradable_share_pct", None), 2
+                    )
                 benchmark_errors = [
                     str(item) for item in (result.degradation or []) if str(item).startswith("Benchmark ")
                 ]
@@ -719,7 +850,10 @@ def evaluate_markets(track: Path, markets: list[str]) -> dict[str, Any]:
                 for item in windows.values()
             )
             runs_out[run["run_id"]] = {"evaluated_at": eval_now, "final": final, "windows": windows}
-            print(f"evaluated {run['market']:<3} {run['strategy']:<24} {run['run_id']} final={final}", flush=True)
+            print(
+                f"evaluated {run['market']:<3} {run['strategy']:<24} {run['run_id']} mode={run_mode} final={final}",
+                flush=True,
+            )
     finally:
         if old_data_dir is None:
             os.environ.pop("ALPHASIFT_DATA_DIR", None)
@@ -730,7 +864,12 @@ def evaluate_markets(track: Path, markets: list[str]) -> dict[str, Any]:
         else:
             os.environ["TUSHARE_TRADE_DATE"] = old_tushare_date
 
-    payload = {"evaluated_at": eval_now, "windows": WINDOWS, "runs": runs_out}
+    payload = {
+        "evaluated_at": eval_now,
+        "entry_mode_switch_date": switch_date,
+        "windows": WINDOWS,
+        "runs": runs_out,
+    }
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
     return payload
@@ -762,8 +901,13 @@ def load_runs(track: Path) -> list[dict[str, Any]]:
             "snapshot_source": data.get("snapshot_source", ""),
             "degradation": len(data.get("degradation") or []),
             "picks": [
-                {key: _round(pick.get(key)) if isinstance(pick.get(key), float) else pick.get(key)
-                 for key in PICK_FIELDS}
+                {
+                    **{
+                        key: _round(pick.get(key)) if isinstance(pick.get(key), float) else pick.get(key)
+                        for key in PICK_FIELDS
+                    },
+                    **({"ranking_reason": str(pick["ranking_reason"])} if pick.get("ranking_reason") else {}),
+                }
                 for pick in data.get("picks", []) if isinstance(pick, dict)
             ],
         })
@@ -784,6 +928,37 @@ def session_date(market: str, created_at: str) -> str:
     return created.astimezone(ZoneInfo(get_market(market).timezone)).date().isoformat()
 
 
+def _load_latest_report_summary(path: Path) -> dict[str, Any] | None:
+    data = _read_json(path)
+    if not isinstance(data, dict) or data.get("object") != "DailyReport":
+        return None
+    ann = data.get("announcement_risks") or {}
+    flagged = [
+        {
+            "code": item.get("code"),
+            "name": item.get("name"),
+            "negative_event_flags": list(item.get("negative_event_flags") or []),
+            "announcement_summary": item.get("announcement_summary", ""),
+        }
+        for item in (ann.get("flagged_items") or [])
+    ]
+    return {
+        "trade_date": data.get("trade_date"),
+        "pack_trade_date": data.get("pack_trade_date"),
+        "expected_trade_date": data.get("expected_trade_date"),
+        "pack_is_stale": bool(data.get("pack_is_stale", False)),
+        "stale_reason": data.get("stale_reason"),
+        "ai_highlights": list(data.get("ai_highlights") or []),
+        "announcement_risks": {
+            "checked_count": int(ann.get("checked_count") or 0),
+            "flagged_count": len(flagged),
+            "flagged_items": flagged,
+            "errors": list(ann.get("errors") or []),
+        },
+        "degradation": list(data.get("degradation") or []),
+    }
+
+
 def build_site(track: Path) -> dict[str, Any]:
     from alphasift.markets import get_market
     from alphasift.strategy import list_strategies
@@ -791,7 +966,9 @@ def build_site(track: Path) -> dict[str, Any]:
     site = track / "site"
     (site / "days").mkdir(parents=True, exist_ok=True)
     runs = load_runs(track)
-    evaluation = (_read_json(site / "evaluation.json") or {}).get("runs", {})
+    eval_payload = _read_json(site / "evaluation.json") or {}
+    evaluation = eval_payload.get("runs", {})
+    switch_date = eval_payload.get("entry_mode_switch_date") or NEXT_OPEN_SWITCH_DATE
     names = {info.name: info.display_name for info in list_strategies()}
 
     for run in runs:
@@ -811,15 +988,20 @@ def build_site(track: Path) -> dict[str, Any]:
 
     markets = sorted({run["market"] for run in runs}, key=lambda m: list(SESSIONS["asia"] + SESSIONS["us"]).index(m))
     sc = scorecard(runs, evaluation)
-    tc = track_comparison(sc)
+    tc = track_comparison(runs, evaluation)
     pb = _build_pattern_board(track)
     if pb is not None:
         (site / "patterns.json").write_text(json.dumps(pb, ensure_ascii=False), encoding="utf-8")
+        latest_pat = pb["latest"]
         pb_summary: dict[str, Any] | None = {
             "latest": {
-                "trade_date": pb["latest"].get("trade_date"),
-                "market_regime": pb["latest"].get("market_regime"),
-                "counts_by_pattern": pb["latest"].get("counts_by_pattern", {}),
+                "trade_date": latest_pat.get("trade_date"),
+                "pack_trade_date": latest_pat.get("pack_trade_date"),
+                "expected_trade_date": latest_pat.get("expected_trade_date"),
+                "pack_is_stale": bool(latest_pat.get("pack_is_stale", False)),
+                "stale_reason": latest_pat.get("stale_reason"),
+                "market_regime": latest_pat.get("market_regime"),
+                "counts_by_pattern": latest_pat.get("counts_by_pattern", {}),
             },
             "history": pb["history"],
             "has_replay": pb.get("replay") is not None,
@@ -827,9 +1009,11 @@ def build_site(track: Path) -> dict[str, Any]:
     else:
         pb_summary = None
 
+    latest_report = _load_latest_report_summary(site / "report.json")
     summary = {
         "generated_at": _now(),
         "windows": WINDOWS,
+        "entry_mode_switch_date": switch_date,
         "strategy_names": names,
         "markets": [
             {"id": m, "name": get_market(m).name, "benchmark": get_market(m).benchmark_name} for m in markets
@@ -838,7 +1022,9 @@ def build_site(track: Path) -> dict[str, Any]:
         "scorecard": sc,
         "track_comparison": tc,
         "pattern_board": pb_summary,
-        "trend": trend(runs, evaluation),
+        "latest_report": latest_report,
+        "trend": trend(runs, evaluation, track_filter="rules"),
+        "trend_ai": trend(runs, evaluation, track_filter="ai"),
         "latest": _latest_runs(runs),
         "days": [{"date": day, "runs": len(by_day[day])} for day in sorted(by_day, reverse=True)],
         "run_count": len(runs),
@@ -878,7 +1064,9 @@ def scorecard(runs: list[dict], evaluation: dict) -> list[dict[str, Any]]:
 
     Excess return and beat rate use only picks whose benchmark matched, and
     ``matched_return_pct`` is the return over that same population, so
-    matched return − benchmark = excess.
+    matched return − benchmark = excess. Pre-switchover close-mode windows report
+    ``untradable_share_pct = None`` (``untradable_assessed = False``) so historical
+    close runs are clearly marked unassessed rather than 0.0%.
     """
     groups: dict[tuple[str, str, str], list[dict]] = {}
     for run in runs:
@@ -886,16 +1074,43 @@ def scorecard(runs: list[dict], evaluation: dict) -> list[dict[str, Any]]:
     rows = []
     for (market, strategy, track_name), group in sorted(groups.items()):
         windows = {}
+        modes_seen: set[str] = set()
         for window in WINDOWS:
-            outcomes = [o for _, o in _pick_outcomes(group, evaluation, window)]
+            tagged: list[tuple[dict[str, Any], bool]] = []
+            for run in group:
+                item = ((evaluation.get(run["run_id"]) or {}).get("windows") or {}).get(str(window)) or {}
+                picks = item.get("picks") or {}
+                if not picks:
+                    continue
+                mode = str(item.get("entry_mode") or "close")
+                modes_seen.add(mode)
+                window_assessed = (mode == "next_open") or any(
+                    o.get("status") == "untradable_limit_up" or o.get("entry_mode") == "next_open"
+                    for o in picks.values()
+                )
+                for outcome in picks.values():
+                    tagged.append((outcome, window_assessed))
+
+            outcomes = [o for o, _ in tagged]
             done = [o for o in outcomes if o["status"] == "ok" and o["return_pct"] is not None]
             matched = [o for o in done if o["excess_return_pct"] is not None]
-            untradable = sum(1 for o in outcomes if o["status"] == "untradable_limit_up")
+            assessed_non_pending = [o for o, is_ok in tagged if is_ok and o["status"] != "pending"]
+            untradable_cnt = sum(1 for o in outcomes if o["status"] == "untradable_limit_up")
+            if assessed_non_pending:
+                untradable_val: int | None = untradable_cnt
+                untradable_share: float | None = _round((untradable_cnt / len(assessed_non_pending)) * 100.0, 2)
+                untradable_assessed = True
+            else:
+                untradable_val = None
+                untradable_share = None
+                untradable_assessed = False
+
             windows[str(window)] = {
                 "evaluated": len(done),
                 "pending": sum(1 for o in outcomes if o["status"] == "pending"),
-                "untradable": untradable,
-                "untradable_share_pct": _round((untradable / len(outcomes)) * 100.0, 2) if outcomes else 0.0,
+                "untradable": untradable_val,
+                "untradable_share_pct": untradable_share,
+                "untradable_assessed": untradable_assessed,
                 "unavailable": sum(1 for o in outcomes if o["status"] not in {"ok", "pending", "untradable_limit_up"}),
                 "average_return_pct": _mean(o["return_pct"] for o in done),
                 "win_rate": _round(sum(o["return_pct"] > 0 for o in done) / len(done)) if done else None,
@@ -905,38 +1120,139 @@ def scorecard(runs: list[dict], evaluation: dict) -> list[dict[str, Any]]:
                 "beat_rate": _round(sum(o["excess_return_pct"] > 0 for o in matched) / len(matched))
                 if matched else None,
             }
-        rows.append({"market": market, "strategy": strategy, "track": track_name, "runs": len(group),
-                     "first_date": group[0]["date"], "last_date": group[-1]["date"], "windows": windows})
+        rows.append({
+            "market": market,
+            "strategy": strategy,
+            "track": track_name,
+            "runs": len(group),
+            "first_date": group[0]["date"],
+            "last_date": group[-1]["date"],
+            "entry_modes": sorted(modes_seen) or ["close"],
+            "windows": windows,
+        })
     return rows
 
 
-def track_comparison(scorecard_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Pair rules and ai rows per (market, strategy) for side-by-side excess comparison."""
-    paired: dict[tuple[str, str], dict[str, dict[str, Any]]] = {}
-    for row in scorecard_rows:
-        paired.setdefault((row["market"], row["strategy"]), {})[row.get("track", "rules")] = row
-    comparisons: list[dict[str, Any]] = []
-    for (market, strategy), by_track in sorted(paired.items()):
-        if "rules" not in by_track or "ai" not in by_track:
+def _window_day_excess_stats(
+    run_item: dict[str, Any],
+    evaluation: dict[str, Any],
+    window: int,
+) -> tuple[float | None, dict[str, float]]:
+    win = ((evaluation.get(run_item["run_id"]) or {}).get("windows") or {}).get(str(window)) or {}
+    picks = win.get("picks") or {}
+    by_code: dict[str, float] = {}
+    for code, out in picks.items():
+        if out.get("status") == "ok" and out.get("excess_return_pct") is not None:
+            by_code[str(code)] = float(out["excess_return_pct"])
+    if not by_code:
+        return None, {}
+    return float(statistics.fmean(by_code.values())), by_code
+
+
+def track_comparison(
+    runs: list[dict],
+    evaluation: dict,
+    *,
+    min_paired_days: int = MIN_PAIRED_AI_DAYS,
+) -> list[dict[str, Any]]:
+    """Compare rules vs AI strictly over identical signal dates with attribution & missing rate."""
+    by_strat: dict[tuple[str, str], dict[str, dict[str, dict]]] = {}
+    for run in runs:
+        tr = run.get("track", "rules")
+        if tr not in {"rules", "ai"}:
             continue
-        r_row, a_row = by_track["rules"], by_track["ai"]
+        bucket = by_strat.setdefault((run["market"], run["strategy"]), {"rules": {}, "ai": {}})
+        # Keep the latest run if multiple runs exist on the same signal date.
+        bucket[tr][run["date"]] = run
+
+    comparisons: list[dict[str, Any]] = []
+    for (market, strategy), tracks in sorted(by_strat.items()):
+        rules_by_date, ai_by_date = tracks["rules"], tracks["ai"]
+        if not rules_by_date or not ai_by_date:
+            continue
+        common_dates_all = sorted(set(rules_by_date) & set(ai_by_date))
+        first_ai_date = min(ai_by_date)
+        eligible_rules_dates = sorted(d for d in rules_by_date if d >= first_ai_date)
+        ai_missing_days = sum(1 for d in eligible_rules_dates if d not in ai_by_date)
+        ai_missing_rate_pct = (
+            round((ai_missing_days / len(eligible_rules_dates)) * 100.0, 1)
+            if eligible_rules_dates
+            else 0.0
+        )
+
+        overlaps: list[float] = []
+        for d in common_dates_all:
+            r_codes = {str(p.get("code")) for p in rules_by_date[d].get("picks", []) if p.get("code")}
+            a_codes = {str(p.get("code")) for p in ai_by_date[d].get("picks", []) if p.get("code")}
+            union_cnt = len(r_codes | a_codes)
+            if union_cnt > 0:
+                overlaps.append(len(r_codes & a_codes) / union_cnt * 100.0)
+        avg_overlap_pct = _round(statistics.fmean(overlaps), 1) if overlaps else None
+
         win_deltas: dict[str, Any] = {}
         for window in WINDOWS:
-            w = str(window)
-            rw, aw = r_row["windows"].get(w, {}), a_row["windows"].get(w, {})
-            re, ae = rw.get("average_excess_return_pct"), aw.get("average_excess_return_pct")
-            win_deltas[w] = {
-                "rules_matched": rw.get("matched", 0),
-                "ai_matched": aw.get("matched", 0),
+            rules_day_vals: list[float] = []
+            ai_day_vals: list[float] = []
+            deltas: list[float] = []
+            ai_win_days = 0
+            rules_matched = 0
+            ai_matched = 0
+            ai_unique_vals: list[float] = []
+            rules_dropped_vals: list[float] = []
+
+            for d in common_dates_all:
+                r_mean, r_map = _window_day_excess_stats(rules_by_date[d], evaluation, window)
+                a_mean, a_map = _window_day_excess_stats(ai_by_date[d], evaluation, window)
+                if r_mean is None or a_mean is None:
+                    continue
+                rules_day_vals.append(r_mean)
+                ai_day_vals.append(a_mean)
+                delta = a_mean - r_mean
+                deltas.append(delta)
+                if delta > 0:
+                    ai_win_days += 1
+                rules_matched += len(r_map)
+                ai_matched += len(a_map)
+
+                r_set = set(r_map)
+                a_set = set(a_map)
+                for c in a_set - r_set:
+                    ai_unique_vals.append(a_map[c])
+                for c in r_set - a_set:
+                    rules_dropped_vals.append(r_map[c])
+
+            paired_days = len(deltas)
+            sample_sufficient = paired_days >= int(min_paired_days)
+            re = _round(statistics.fmean(rules_day_vals)) if rules_day_vals else None
+            ae = _round(statistics.fmean(ai_day_vals)) if ai_day_vals else None
+            win_deltas[str(window)] = {
+                "paired_days": paired_days,
+                "min_paired_days": int(min_paired_days),
+                "sample_sufficient": sample_sufficient,
+                "rules_matched": rules_matched,
+                "ai_matched": ai_matched,
                 "rules_excess_pct": re,
                 "ai_excess_pct": ae,
-                "ai_minus_rules_pct": _round(ae - re) if (ae is not None and re is not None) else None,
+                "ai_minus_rules_pct": _round(statistics.fmean(deltas)) if sample_sufficient else None,
+                "delta_hidden_reason": None if sample_sufficient else f"同日配对 {paired_days} < {int(min_paired_days)} 天",
+                "ai_win_days": ai_win_days,
+                "ai_win_day_rate": _round(ai_win_days / paired_days, 3) if paired_days else None,
+                "ai_unique_count": len(ai_unique_vals),
+                "ai_unique_excess_pct": _round(statistics.fmean(ai_unique_vals)) if ai_unique_vals else None,
+                "rules_dropped_count": len(rules_dropped_vals),
+                "rules_dropped_excess_pct": _round(statistics.fmean(rules_dropped_vals)) if rules_dropped_vals else None,
             }
+
         comparisons.append({
             "market": market,
             "strategy": strategy,
-            "rules_runs": r_row["runs"],
-            "ai_runs": a_row["runs"],
+            "rules_runs": len(rules_by_date),
+            "ai_runs": len(ai_by_date),
+            "common_days": len(common_dates_all),
+            "first_ai_date": first_ai_date,
+            "ai_missing_days": ai_missing_days,
+            "ai_missing_rate_pct": ai_missing_rate_pct,
+            "avg_pick_overlap_pct": avg_overlap_pct,
             "windows": win_deltas,
         })
     return comparisons
@@ -978,6 +1294,7 @@ def _build_pattern_board(track: Path) -> dict[str, Any] | None:
             "benchmark": replay.get("benchmark", "sh000300"),
             "pack_summary": replay.get("pack_summary"),
             "regime_distribution": replay.get("regime_distribution"),
+            "universe_baseline": replay.get("universe_baseline"),
             "patterns": [
                 {
                     "pattern": item.get("pattern"),
@@ -988,6 +1305,7 @@ def _build_pattern_board(track: Path) -> dict[str, Any] | None:
                     "untradable_share_pct": item.get("untradable_share_pct"),
                     "horizons": item.get("horizons"),
                     "graduation": item.get("graduation"),
+                    "stability": item.get("stability"),
                     "by_regime": item.get("by_regime"),
                     "by_overhead_supply": item.get("by_overhead_supply"),
                 }
@@ -1001,12 +1319,14 @@ def _build_pattern_board(track: Path) -> dict[str, Any] | None:
     }
 
 
-def trend(runs: list[dict], evaluation: dict) -> dict[str, Any]:
-    """Expanding mean excess return by entry date: market -> window -> strategy -> [[date, mean, n]]."""
+def trend(runs: list[dict], evaluation: dict, *, track_filter: str = "rules") -> dict[str, Any]:
+    """Expanding mean excess return by entry date for a single track (rules vs ai)."""
     out: dict[str, Any] = {}
     for window in WINDOWS:
         sums: dict[tuple[str, str], list[float]] = {}
         for run, outcome in _pick_outcomes(runs, evaluation, window):
+            if (run.get("track") or "rules") != track_filter:
+                continue
             if outcome["status"] != "ok" or outcome["excess_return_pct"] is None:
                 continue
             key = (run["market"], run["strategy"])
@@ -1143,7 +1463,23 @@ def main(argv: list[str] | None = None) -> int:
         help="whether to run optional AI track on CN after rules pass (auto skips without LLM key)",
     )
     parser.add_argument("--pack-dir", type=Path, default=None, help="optional CN DailyPack directory")
+    parser.add_argument(
+        "--entry-mode", choices=["auto", "close", "next_open"], default="auto",
+        help="evaluation entry timing (auto keeps legacy close prior to switch date and uses next_open afterwards)",
+    )
+    parser.add_argument(
+        "--next-open-from", default=None,
+        help="override cutoff signal date (YYYY-MM-DD) from which auto mode uses next_open",
+    )
     parser.add_argument("--trade-date", default=None, help="optional trade date for patterns subcommand")
+    parser.add_argument(
+        "--expected-trade-date", default=None,
+        help="target CN trade date for freshness checking; older packs are marked stale when --allow-stale-pack is set",
+    )
+    parser.add_argument(
+        "--allow-stale-pack", action="store_true",
+        help="allow older pack in patterns command while explicitly flagging pack_is_stale",
+    )
     parser.add_argument("--with-replay", action="store_true", help="also run 250-day next_open replay for patterns board")
     parser.add_argument("--replay-json", type=Path, default=None, help="existing replay JSON to attach to patterns board")
     args = parser.parse_args(argv)
@@ -1161,13 +1497,21 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         return 1
     if args.command == "evaluate":
-        evaluate_markets(args.track, markets)
+        evaluate_markets(
+            args.track,
+            markets,
+            pack_dir=args.pack_dir,
+            entry_mode=args.entry_mode,
+            next_open_from=args.next_open_from,
+        )
         return 0
     if args.command == "patterns":
         record_cn_patterns(
             args.track,
             pack_dir=args.pack_dir,
             trade_date=args.trade_date,
+            expected_trade_date=args.expected_trade_date,
+            allow_stale_pack=args.allow_stale_pack,
             include_replay=args.with_replay,
             replay_json_path=args.replay_json,
         )
