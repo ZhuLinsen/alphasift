@@ -5,10 +5,13 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 ![Markets](https://img.shields.io/badge/markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-orange)
+[![Live Dashboard](https://img.shields.io/badge/dashboard-live-22c55e.svg)](https://zhulinsen.github.io/alphasift/)
 
 English | [中文](README.zh-CN.md) | [日本語](README.ja.md)
 
-**Track record:** every built-in strategy runs after each close and its picks are measured at T+5 / T+10 / T+20 against the market benchmark — see the [dashboard](https://zhulinsen.github.io/alphasift/), the [daily report](https://zhulinsen.github.io/alphasift/site/daily_report.html) and the raw runs on the [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) branch.
+**Track record:** every built-in strategy runs after each close and its picks are measured at T+5 / T+10 / T+20 against the market benchmark — see the [live dashboard](https://zhulinsen.github.io/alphasift/), the [daily report](https://zhulinsen.github.io/alphasift/site/daily_report.html) and the raw runs on the [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) branch.
+
+[![AlphaSift Live Dashboard](docs/assets/dashboard-dark.png)](https://zhulinsen.github.io/alphasift/)
 
 ```text
 full market ──► L1 hard filters + factor scores ──► L2 LLM ranking (optional)
@@ -28,6 +31,11 @@ saved run ◄── L3 post-analysis ◄── risk overlay + sector diversity c
 - **Data sources heal themselves.** Source outcomes persist across runs, so dead sources are tried last. Each source has a time budget. A last-good snapshot is used, marked as stale, when every live source fails.
 - **Every run is checkable.** Save runs and evaluate them later with transaction costs, win rates, failure samples and optional price paths (max drawdown / run-up).
 - **Built for agents.** [SKILL.md](SKILL.md) describes the callable interface. `alphasift serve` exposes a read-only JSON API for dashboards and orchestrators.
+
+- **Daily research report & optional AI dual-track:** when an LLM key (`DEEPSEEK_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`) is configured, AlphaSift runs both the deterministic `rules` track and the `ai` re-ranking track on the same trading days (`--ai-track auto`), tracking paired excess attribution, announcement risk flags, cross-strategy consensus picks, and a printable standalone report (`alphasift daily-report --output-html`).
+- **Private offline data pack:** raw historical CN daily matrices stay in your local workspace (`ALPHASIFT_PACK_DIR`) or inside private GitHub Actions cache (`actions/cache`) and are never redistributed publicly.
+
+![AlphaSift Daily Research Report](docs/assets/daily-report.png)
 
 ## Quick start
 

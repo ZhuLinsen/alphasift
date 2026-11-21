@@ -5,10 +5,13 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 ![Markets](https://img.shields.io/badge/markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-orange)
+[![Live Dashboard](https://img.shields.io/badge/dashboard-live-22c55e.svg)](https://zhulinsen.github.io/alphasift/)
 
 [English](README.md) | 中文 | [日本語](README.ja.md)
 
-**公开记录：** 每个交易日收盘后自动运行全部内置策略并保存选股，之后按 T+5 / T+10 / T+20 和所在市场的基准指数比较——见[看板](https://zhulinsen.github.io/alphasift/)、[每日研报](https://zhulinsen.github.io/alphasift/site/daily_report.html)，原始数据在 [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) 分支。
+**公开记录：** 每个交易日收盘后自动运行全部内置策略并保存选股，之后按 T+5 / T+10 / T+20 和所在市场的基准指数比较——见[在线看板](https://zhulinsen.github.io/alphasift/)、[每日研报](https://zhulinsen.github.io/alphasift/site/daily_report.html)，原始数据在 [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) 分支。
+
+[![AlphaSift 在线战绩看板](docs/assets/dashboard-dark.png)](https://zhulinsen.github.io/alphasift/)
 
 ```text
 全市场 ──► L1 硬筛 + 因子打分 ──► L2 LLM 横向排序（可选）
@@ -28,6 +31,11 @@
 - **数据源自愈**：各数据源的成败跨运行保存，坏掉的源自动排到最后；每个源都有时间预算；所有实时源都失败时使用上次成功的快照，并明确标记为过期数据。
 - **每次运行都能检验**：保存运行结果，之后按 T+N 评估收益、胜率、交易成本和失败样本，可选抓取日 K 路径计算最大回撤和最大浮盈。
 - **为 Agent 设计**：[SKILL.md](SKILL.md) 描述可调用接口；`alphasift serve` 提供只读 JSON API，供面板和编排层使用。
+
+- **盘后投研日报与策略 + AI 双赛道对照**：配置任意 LLM Key（`DEEPSEEK_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`）后，`track-record` 自动在同一交易日并跑规则赛道（`rules`）与 AI 重排赛道（`ai`），输出同日配对超额归因、公告排雷、多策略共识榜及可打印独立 HTML 研报（`alphasift daily-report --output-html`）。
+- **私有化日线包设计**：全市场离线日线包仅在本地工作区（`ALPHASIFT_PACK_DIR`）或 GitHub Actions 私有缓存（`actions/cache`）中自建自用，绝不向公开 Release 上传二次分发原始行情。
+
+![AlphaSift 盘后量化投研日报](docs/assets/daily-report.png)
 
 ## 快速开始
 

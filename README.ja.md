@@ -5,10 +5,13 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 ![Markets](https://img.shields.io/badge/markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-orange)
+[![Live Dashboard](https://img.shields.io/badge/dashboard-live-22c55e.svg)](https://zhulinsen.github.io/alphasift/)
 
 [English](README.md) | [中文](README.zh-CN.md) | 日本語
 
-**公開トラックレコード：** 毎営業日の引け後に全内蔵戦略を自動実行して結果を保存し、T+5 / T+10 / T+20 で各市場のベンチマークに対する超過リターンを比較しています — [ダッシュボード](https://zhulinsen.github.io/alphasift/)、[日次レポート](https://zhulinsen.github.io/alphasift/site/daily_report.html)および生ログは [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) ブランチをご覧ください。
+**公開トラックレコード：** 毎営業日の引け後に全内蔵戦略を自動実行して結果を保存し、T+5 / T+10 / T+20 で各市場のベンチマークに対する超過リターンを比較しています — [ライブダッシュボード](https://zhulinsen.github.io/alphasift/)、[日次レポート](https://zhulinsen.github.io/alphasift/site/daily_report.html)および生ログは [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) ブランチをご覧ください。
+
+[![AlphaSift ライブダッシュボード](docs/assets/dashboard-dark.png)](https://zhulinsen.github.io/alphasift/)
 
 ```text
 full market ──► L1 hard filters + factor scores ──► L2 LLM ranking (optional)
@@ -28,6 +31,11 @@ saved run ◄── L3 post-analysis ◄── risk overlay + sector diversity c
 - **データソースは自己修復します。** ソースの結果は実行をまたいで保存されるので、使えないソースは最後に試されます。各ソースには時間の予算があります。生きているソースがすべて失敗したときは、最後に正常だったスナップショットを、古いものとして印を付けて使います。
 - **すべての実行を検証できます。** 実行を保存しておき、あとで取引コスト、勝率、失敗したサンプル、任意で価格の推移（最大ドローダウン／最大上昇）とともに評価します。
 - **エージェントのために作られています。** [SKILL.md](SKILL.md) に呼び出せるインターフェースを書いています。`alphasift serve` は、ダッシュボードやオーケストレーター向けに読み取り専用の JSON API を公開します。
+
+- **日次リサーチレポートと AI デュアルトラック：** LLM キー（`DEEPSEEK_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`）を設定すると、確定的な `rules` トラックに加えて `ai` 再ランク付けトラックを同日に並行実行し、同日ペアの超過リターン比較・開示リスク警告・複数戦略コンセンサス銘柄を含む印刷対応のスタンドアロン HTML レポート（`alphasift daily-report --output-html`）を生成します。
+- **日次データパックのプライベート運用：** 全市場の日次データパックはローカル環境（`ALPHASIFT_PACK_DIR`）または GitHub Actions のプライベートキャッシュ（`actions/cache`）内のみで管理され、公開リリースでの再配布は行いません。
+
+![AlphaSift 日次クオンツリサーチレポート](docs/assets/daily-report.png)
 
 ## クイックスタート
 
