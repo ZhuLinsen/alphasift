@@ -247,3 +247,24 @@ def test_mcp_round9_security_and_strict_schema_validation(tmp_path):
         raise AssertionError("Expected ValueError for conflicting Content-Length")
     except ValueError as exc:
         assert "Conflicting Content-Length" in str(exc)
+
+    # 6. Unknown tool arguments rejected via additionalProperties check
+    extra_arg = server.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 22,
+            "method": "tools/call",
+            "params": {"name": "alphasift_notify_status", "arguments": {"unexpected": True}},
+        }
+    )
+    assert extra_arg["error"]["code"] == -32602
+
+    # 7. Invalid request without "id" still returns -32600 instead of None
+    invalid_no_id = server.handle_request({})
+    assert invalid_no_id is not None and invalid_no_id["error"]["code"] == -32600
+
+    # 8. Whitespace lines before JSON-RPC message are skipped cleanly
+    ws_stream = io.BytesIO(b'   \n\t\r\n{"jsonrpc":"2.0","id":1,"method":"ping"}\n')
+    framing, payload = read_stdio_message(ws_stream)
+    assert framing == "line"
+    assert json.loads(payload)["method"] == "ping"

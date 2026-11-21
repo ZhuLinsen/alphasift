@@ -478,3 +478,65 @@ def test_pipeline_reuses_valid_snapshot_df_and_falls_back_when_incomplete(monkey
             config=config,
             snapshot_df=cn_tagged,
         )
+
+
+def test_screen_populates_topic_alignment_and_portfolio_exposure(tmp_path):
+    snapshot = pd.DataFrame([
+        {
+            "code": "601997",
+            "name": "贵阳银行",
+            "price": 6.0,
+            "amount": 200_000_000,
+            "total_mv": 20_000_000_000,
+            "pe_ratio": 5.0,
+            "pb_ratio": 0.4,
+            "change_pct": 1.0,
+            "turnover_rate": 2.0,
+            "volume_ratio": 1.2,
+            "industry": "银行",
+            "concepts": "高股息",
+            "board_heat_summary": "银行:72.0",
+        },
+        {
+            "code": "601117",
+            "name": "中国化学",
+            "price": 8.0,
+            "amount": 300_000_000,
+            "total_mv": 45_000_000_000,
+            "pe_ratio": 7.0,
+            "pb_ratio": 0.7,
+            "change_pct": 1.5,
+            "turnover_rate": 2.5,
+            "volume_ratio": 1.3,
+            "industry": "建筑施工",
+            "concepts": "中字头",
+            "board_heat_summary": "AI算力:88.0",
+        },
+        {
+            "code": "600741",
+            "name": "华域汽车",
+            "price": 16.0,
+            "amount": 250_000_000,
+            "total_mv": 48_000_000_000,
+            "pe_ratio": 8.0,
+            "pb_ratio": 0.8,
+            "change_pct": 0.8,
+            "turnover_rate": 1.8,
+            "volume_ratio": 1.1,
+            "industry": "汽车",
+            "concepts": "无人驾驶",
+            "board_heat_summary": "无人驾驶:81.0",
+        },
+    ])
+    snapshot.attrs["market"] = "cn"
+    snapshot.attrs["snapshot_source"] = "test"
+    cfg = Config(data_dir=tmp_path)
+    res = screen("dual_low", market="cn", max_output=2, use_llm=False, daily_enrich=False, config=cfg, snapshot_df=snapshot)
+    assert len(res.picks) == 2
+    by_code = {p.code: p for p in res.picks}
+    if "601997" in by_code:
+        assert by_code["601997"].topic_alignment_status == "aligned"
+        assert by_code["601997"].topic_alignment_role == "direct_industry"
+    assert isinstance(res.portfolio_topic_exposure, dict)
+    assert res.portfolio_topic_exposure
+    assert len(res.replacement_candidates) <= 1

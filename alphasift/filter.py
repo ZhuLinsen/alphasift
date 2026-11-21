@@ -206,24 +206,63 @@ def hard_filter_rejection_summary(
     return diagnostics
 
 
+def _step_quantiles(
+    df: pd.DataFrame,
+    active_mask: pd.Series,
+    value_columns: list[str] | None,
+) -> dict[str, float | int] | None:
+    col = _find_col(df, list(value_columns or []))
+    if not col or not active_mask.any():
+        return None
+    raw = df.loc[active_mask, col]
+    if pd.api.types.is_bool_dtype(raw):
+        return None
+    nums = pd.to_numeric(raw, errors="coerce")
+    if pd.api.types.is_bool_dtype(nums):
+        return None
+    nums = nums.astype("float64").dropna()
+    if nums.empty:
+        return None
+    q25, q50, q75 = nums.quantile([0.25, 0.50, 0.75]).tolist()
+    return {
+        "p25": round(float(q25), 4),
+        "p50": round(float(q50), 4),
+        "p75": round(float(q75), 4),
+        "valid_count": int(len(nums)),
+    }
+
+
 def hard_filter_waterfall(
     df: pd.DataFrame,
     filters: HardFilterConfig,
     *,
     sample_limit: int = 3,
+    include_quantiles: bool = False,
 ) -> list[dict[str, object]]:
-    """Return sequential hard-filter counts plus rejected row samples."""
+    """Return sequential hard-filter counts plus optional quantile diagnostics and rejected row samples."""
     if df.empty:
         return []
 
     mask = pd.Series(True, index=df.index)
     steps: list[dict[str, object]] = []
 
-    def record(label: str, next_mask: pd.Series, value_columns: list[str] | None = None) -> None:
+    def record(
+        label: str,
+        next_mask: pd.Series,
+        value_columns: list[str] | None = None,
+        *,
+        threshold: float | int | None = None,
+        bound: str = "",
+    ) -> None:
         nonlocal mask
         before = int(mask.sum())
         after = int(next_mask.sum())
         removed = before - after
+        quantiles = (
+            _step_quantiles(df, mask, value_columns)
+            if include_quantiles and before > 0 and value_columns
+            else None
+        )
         step: dict[str, object] = {
             "filter": label,
             "before": before,
@@ -231,6 +270,10 @@ def hard_filter_waterfall(
             "removed": removed,
             "removed_pct": round((removed / before * 100.0), 4) if before else 0.0,
         }
+        if include_quantiles and threshold is not None:
+            step["threshold"] = threshold
+        if quantiles is not None:
+            step["quantiles"] = quantiles
         if removed > 0 and sample_limit > 0:
             step["samples"] = _rejection_samples(
                 df.loc[mask & ~next_mask],
@@ -238,6 +281,12 @@ def hard_filter_waterfall(
                 limit=sample_limit,
             )
         suggestion = _waterfall_suggestion(label, before, after, removed)
+        if include_quantiles and before > 0 and (removed / before >= 0.90 or after == 0) and quantiles is not None and threshold is not None:
+            q_note = (
+                f"分布 p25={quantiles['p25']}, p50={quantiles['p50']}, p75={quantiles['p75']} "
+                f"(阈值 {bound or 'limit'}={threshold})"
+            )
+            suggestion = f"{suggestion}; {q_note}" if suggestion else f"当前阈值过严: {q_note}"
         if suggestion:
             step["suggestion"] = suggestion
         steps.append(step)
@@ -253,11 +302,11 @@ def hard_filter_waterfall(
 
     def record_min(label: str, columns: list[str], value: float | None) -> None:
         if value is not None:
-            record(label, _filter_min(df, mask, columns, value), columns)
+            record(label, _filter_min(df, mask, columns, value), columns, threshold=value, bound="min")
 
     def record_max(label: str, columns: list[str], value: float | None) -> None:
         if value is not None:
-            record(label, _filter_max(df, mask, columns, value), columns)
+            record(label, _filter_max(df, mask, columns, value), columns, threshold=value, bound="max")
 
     record_min("amount_min", ["amount", "成交额"], filters.amount_min)
     record_min("avg_amount_usd_min", ["avg_amount_usd"], filters.avg_amount_usd_min)

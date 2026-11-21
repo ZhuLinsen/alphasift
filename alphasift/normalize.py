@@ -71,7 +71,7 @@ def safe_float(value: object, default: float | None = None) -> float | None:
         parsed = float(text.replace("%", "").replace(",", ""))
     except (TypeError, ValueError):
         return default
-    if math.isnan(parsed):
+    if not math.isfinite(parsed):
         return default
     return parsed
 

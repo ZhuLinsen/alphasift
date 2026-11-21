@@ -376,6 +376,25 @@ def test_round9_key_origin_isolation_empty_content_fallback_and_userinfo_block(m
             temperature=0.2,
         )
 
+    # 3b. Query/fragment injection and empty-string Actions env fallbacks
+    with pytest.raises(LLMClientError, match="query and fragment disallowed"):
+        complete(
+            LLMAttempt("https://example.test/v1?api_key=bad", "m", "k"),
+            messages=[{"role": "user", "content": "hi"}],
+            temperature=0.2,
+        )
+
+    monkeypatch.setenv("LLM_CHANNELS", "primary")
+    monkeypatch.setenv("LLM_PRIMARY_PROTOCOL", "")
+    monkeypatch.setenv("LLM_PRIMARY_MODELS", "deepseek-chat")
+    monkeypatch.setenv("LLM_PRIMARY_BASE_URL", "https://api.deepseek.com")
+    monkeypatch.setenv("LLM_PRIMARY_API_KEY", "ds-k")
+    monkeypatch.setenv("LITELLM_FALLBACK_MODELS", "")
+    monkeypatch.setenv("GEMINI_MODEL", "")
+    cfg_empty = Config.from_env()
+    assert cfg_empty.llm_channels[0]["protocol"] == "openai"
+    assert cfg_empty.has_usable_llm_config() is True
+
     # 4. Empty/null assistant content raises so _call_llm falls through to fallback model
     empty_resp = requests.Response()
     empty_resp.status_code = 200

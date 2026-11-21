@@ -46,8 +46,9 @@ from alphasift.risk import (
     PORTFOLIO_DIVERSITY_SKIPPED_NOTE,
     apply_portfolio_overlay,
     apply_risk_overlay,
+    summarize_portfolio_exposure,
 )
-from alphasift.scorer import compute_screen_scores, factor_score_columns
+from alphasift.scorer import compute_screen_scores, explain_topic_alignment, factor_score_columns
 from alphasift.snapshot import _missing_required_columns, fetch_snapshot_with_fallback
 from alphasift.strategy import load_all_strategies
 
@@ -255,7 +256,11 @@ def screen(
     # 3. L1 hard filter. If a strategy needs daily features, first apply only
     # snapshot-safe filters, then enrich a narrowed candidate pool.
     if explain_filters:
-        snapshot_waterfall = hard_filter_waterfall(snapshot_df, snapshot_filters)
+        snapshot_waterfall = hard_filter_waterfall(
+            snapshot_df,
+            snapshot_filters,
+            include_quantiles=True,
+        )
         if snapshot_waterfall:
             degradation.append(
                 "Snapshot hard-filter waterfall: "
@@ -581,7 +586,8 @@ def screen(
         if PORTFOLIO_DIVERSITY_SKIPPED_NOTE in portfolio_concentration_notes:
             degradation.append(PORTFOLIO_DIVERSITY_SKIPPED_NOTE)
 
-    # 10. Trim to max_output
+    # 10. Trim to max_output (retaining deferred candidates for exposure diagnostics)
+    overflow_picks = picks[output_count:]
     picks = picks[:output_count]
 
     # 11. Optional L3 post-analysis, DSA is only one possible analyzer.
@@ -595,6 +601,19 @@ def screen(
             scorecard_profile=screening.scorecard_profile,
         )
         degradation.extend(post_degradation)
+
+    raw_bucket_cap = (screening.portfolio_profile or {}).get("max_same_bucket")
+    effective_bucket_cap = (
+        int(raw_bucket_cap)
+        if isinstance(raw_bucket_cap, (int, float)) and not isinstance(raw_bucket_cap, bool) and int(raw_bucket_cap) > 0
+        else config.portfolio_max_same_llm_sector
+    )
+    portfolio_topic_exposure, overconcentrated_topics, replacement_candidates = summarize_portfolio_exposure(
+        picks,
+        candidate_pool=overflow_picks,
+        max_same_bucket=effective_bucket_cap,
+        buckets=(screening.portfolio_profile or {}).get("buckets"),
+    )
 
     return ScreenResult(
         strategy=strategy,
@@ -622,6 +641,9 @@ def screen(
         risk_enabled=config.risk_enabled,
         portfolio_diversity_enabled=config.portfolio_diversity_enabled,
         portfolio_concentration_notes=portfolio_concentration_notes,
+        portfolio_topic_exposure=portfolio_topic_exposure,
+        overconcentrated_topics=overconcentrated_topics,
+        replacement_candidates=replacement_candidates,
     )
 
 
@@ -635,6 +657,10 @@ def _df_to_picks(df: pd.DataFrame) -> list[Pick]:
             for factor, col in factor_cols.items()
             if col in df.columns
         }
+        industry_val = _safe_text(row.get("industry", row.get("行业", row.get("所属行业", ""))))
+        concepts_val = _safe_text(row.get("concepts", row.get("概念", row.get("概念题材", ""))))
+        board_summary_val = _safe_text(row.get("board_heat_summary"))
+        align = explain_topic_alignment(industry_val, concepts_val, board_summary_val)
         picks.append(Pick(
             rank=i + 1,
             code=normalize_code(row.get("code", row.get("代码", "")), allow_ticker=True),
@@ -649,8 +675,8 @@ def _df_to_picks(df: pd.DataFrame) -> list[Pick]:
             volume_ratio=_safe_float(row.get("volume_ratio", row.get("量比"))),
             pe_ratio=_safe_float(row.get("pe_ratio", row.get("市盈率"))),
             pb_ratio=_safe_float(row.get("pb_ratio", row.get("市净率"))),
-            industry=_safe_text(row.get("industry", row.get("行业", row.get("所属行业", "")))),
-            concepts=_safe_text(row.get("concepts", row.get("概念", row.get("概念题材", "")))),
+            industry=industry_val,
+            concepts=concepts_val,
             industry_rank=_safe_int(row.get("industry_rank")),
             industry_change_pct=_safe_float(row.get("industry_change_pct")),
             industry_heat_score=_safe_float(row.get("industry_heat_score")),
@@ -662,7 +688,7 @@ def _df_to_picks(df: pd.DataFrame) -> list[Pick]:
             board_heat_cooling_score=_safe_float(row.get("board_heat_cooling_score")),
             board_heat_observations=_safe_int(row.get("board_heat_observations")),
             board_heat_state=_safe_text(row.get("board_heat_state")),
-            board_heat_summary=_safe_text(row.get("board_heat_summary")),
+            board_heat_summary=board_summary_val,
             change_60d=_safe_float(row.get("change_60d")),
             signal_score=_safe_float(row.get("signal_score")),
             ma_bullish=_safe_bool(row.get("ma_bullish")),
@@ -682,6 +708,11 @@ def _df_to_picks(df: pd.DataFrame) -> list[Pick]:
             daily_quality_flags=_safe_text(row.get("daily_quality_flags")),
             daily_source=_safe_text(row.get("daily_source")),
             factor_scores=factor_scores,
+            topic_alignment_status=str(align["status"]),
+            topic_alignment_role=str(align["role"]),
+            topic_alignment_reason=str(align["reason"]),
+            matched_topics=list(align["matched_topics"]),
+            unmatched_topics=list(align["unmatched_topics"]),
         ))
     return picks
 

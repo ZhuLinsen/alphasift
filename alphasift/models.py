@@ -198,6 +198,11 @@ class Pick:
     deep_analysis_operation_advice: str = ""
     deep_analysis_trend_prediction: str = ""
     deep_analysis_risk_flags: list[str] = field(default_factory=list)
+    topic_alignment_status: str = ""
+    topic_alignment_role: str = ""
+    topic_alignment_reason: str = ""
+    matched_topics: list[str] = field(default_factory=list)
+    unmatched_topics: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -227,6 +232,9 @@ class ScreenResult:
     risk_enabled: bool = True
     portfolio_diversity_enabled: bool = True
     portfolio_concentration_notes: list[str] = field(default_factory=list)
+    portfolio_topic_exposure: dict[str, dict[str, Any]] = field(default_factory=dict)
+    overconcentrated_topics: list[str] = field(default_factory=list)
+    replacement_candidates: list[dict[str, Any]] = field(default_factory=list)
     saved_path: str = ""
     created_at: str = field(default_factory=now_iso)
 

@@ -150,11 +150,16 @@ jobs:
           LITELLM_MODEL: ${{ secrets.LITELLM_MODEL || vars.LITELLM_MODEL }}
           LITELLM_FALLBACK_MODELS: ${{ secrets.LITELLM_FALLBACK_MODELS || vars.LITELLM_FALLBACK_MODELS }}
           LLM_CHANNELS: ${{ secrets.LLM_CHANNELS || vars.LLM_CHANNELS }}
-          LLM_PRIMARY_PROTOCOL: ${{ secrets.LLM_PRIMARY_PROTOCOL || vars.LLM_PRIMARY_PROTOCOL }}
+          LLM_PRIMARY_PROTOCOL: ${{ secrets.LLM_PRIMARY_PROTOCOL || vars.LLM_PRIMARY_PROTOCOL || 'openai' }}
           LLM_PRIMARY_BASE_URL: ${{ secrets.LLM_PRIMARY_BASE_URL || vars.LLM_PRIMARY_BASE_URL }}
           LLM_PRIMARY_API_KEY: ${{ secrets.LLM_PRIMARY_API_KEY }}
           LLM_PRIMARY_API_KEYS: ${{ secrets.LLM_PRIMARY_API_KEYS }}
           LLM_PRIMARY_MODELS: ${{ secrets.LLM_PRIMARY_MODELS || vars.LLM_PRIMARY_MODELS }}
+          LLM_BACKUP_PROTOCOL: ${{ secrets.LLM_BACKUP_PROTOCOL || vars.LLM_BACKUP_PROTOCOL || 'openai' }}
+          LLM_BACKUP_BASE_URL: ${{ secrets.LLM_BACKUP_BASE_URL || vars.LLM_BACKUP_BASE_URL }}
+          LLM_BACKUP_API_KEY: ${{ secrets.LLM_BACKUP_API_KEY }}
+          LLM_BACKUP_API_KEYS: ${{ secrets.LLM_BACKUP_API_KEYS }}
+          LLM_BACKUP_MODELS: ${{ secrets.LLM_BACKUP_MODELS || vars.LLM_BACKUP_MODELS }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
@@ -220,11 +225,16 @@ jobs:
           LITELLM_MODEL: ${{ secrets.LITELLM_MODEL || vars.LITELLM_MODEL }}
           LITELLM_FALLBACK_MODELS: ${{ secrets.LITELLM_FALLBACK_MODELS || vars.LITELLM_FALLBACK_MODELS }}
           LLM_CHANNELS: ${{ secrets.LLM_CHANNELS || vars.LLM_CHANNELS }}
-          LLM_PRIMARY_PROTOCOL: ${{ secrets.LLM_PRIMARY_PROTOCOL || vars.LLM_PRIMARY_PROTOCOL }}
+          LLM_PRIMARY_PROTOCOL: ${{ secrets.LLM_PRIMARY_PROTOCOL || vars.LLM_PRIMARY_PROTOCOL || 'openai' }}
           LLM_PRIMARY_BASE_URL: ${{ secrets.LLM_PRIMARY_BASE_URL || vars.LLM_PRIMARY_BASE_URL }}
           LLM_PRIMARY_API_KEY: ${{ secrets.LLM_PRIMARY_API_KEY }}
           LLM_PRIMARY_API_KEYS: ${{ secrets.LLM_PRIMARY_API_KEYS }}
           LLM_PRIMARY_MODELS: ${{ secrets.LLM_PRIMARY_MODELS || vars.LLM_PRIMARY_MODELS }}
+          LLM_BACKUP_PROTOCOL: ${{ secrets.LLM_BACKUP_PROTOCOL || vars.LLM_BACKUP_PROTOCOL || 'openai' }}
+          LLM_BACKUP_BASE_URL: ${{ secrets.LLM_BACKUP_BASE_URL || vars.LLM_BACKUP_BASE_URL }}
+          LLM_BACKUP_API_KEY: ${{ secrets.LLM_BACKUP_API_KEY }}
+          LLM_BACKUP_API_KEYS: ${{ secrets.LLM_BACKUP_API_KEYS }}
+          LLM_BACKUP_MODELS: ${{ secrets.LLM_BACKUP_MODELS || vars.LLM_BACKUP_MODELS }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
@@ -271,7 +281,7 @@ jobs:
           fi
 
       - name: Commit to track-record
-        if: ${{ github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true' || vars.ALPHASIFT_ENABLE_LEDGER == 'true' }}
+        if: ${{ github.ref == 'refs/heads/main' && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true' || vars.ALPHASIFT_ENABLE_LEDGER == 'true') }}
         working-directory: track
         env:
           SESSION: ${{ steps.session.outputs.session }}

@@ -32,7 +32,12 @@ _BASE_URL_ENV = {
     "aihubmix": "AIHUBMIX_BASE_URL",
 }
 _CHANNEL_PROTOCOLS = _GATEWAYS.keys() - {"anthropic"}
-_SECRET_LIKE = re.compile(r"(?i)\b(?:bearer\s+\S+|(?:sk|pk|rk|key)-[\w-]{8,}|AIza[\w-]{16,}|[\w-]{32,})")
+_SECRET_LIKE = re.compile(
+    r"(?i)(?:\b(?:bearer\s+\S+|(?:sk|pk|rk|key)-[\w-]{8,}|AIza[\w-]{16,}|[\w-]{32,})"
+    r"|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"
+    r"|[0-9a-f]{12,}\.[A-Za-z0-9_-]{10,}"
+    r"|\b(?:access_token|token|key|secret|password|api_key)\s*[=:]\s*[^\s&,'\"\}\]]+)"
+)
 
 
 class LLMClientError(RuntimeError):
@@ -172,12 +177,15 @@ def build_attempts(
 
 
 def _validated_endpoint(base_url: str) -> str:
-    parsed = urlsplit(str(base_url or "").strip())
+    cleaned = str(base_url or "").strip()
+    parsed = urlsplit(cleaned)
     if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
         raise LLMClientError("Invalid LLM endpoint URL")
     if parsed.username or parsed.password:
         raise LLMClientError("Invalid LLM endpoint URL: embedded credentials disallowed")
-    return base_url.rstrip("/")
+    if parsed.query or parsed.fragment:
+        raise LLMClientError("Invalid LLM endpoint URL: query and fragment disallowed")
+    return cleaned.rstrip("/")
 
 
 def complete(
@@ -207,10 +215,8 @@ def complete(
             allow_redirects=False,
         )
     except requests.RequestException as exc:
-        # Requests can wrap a body read timeout in ConnectionError.
-        if isinstance(exc, requests.Timeout) or (
-            isinstance(exc, requests.ConnectionError) and "timed out" in str(exc).lower()
-        ):
+        # Requests can wrap a body read timeout in ConnectionError or ChunkedEncodingError.
+        if isinstance(exc, requests.Timeout) or "timed out" in str(exc).lower():
             raise LLMClientError("LLM request timed out", timed_out=True) from None
         raise LLMClientError("LLM HTTP request failed") from None
 

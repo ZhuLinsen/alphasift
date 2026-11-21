@@ -6,6 +6,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import redirect_stdout
 from dataclasses import asdict
+from datetime import date, datetime
 import json
 import math
 import os
@@ -67,15 +68,27 @@ def _require_str(args: dict[str, Any], key: str) -> str:
 
 
 def _json_safe(obj: Any) -> Any:
-    """Normalize NaN/Inf floats and non-JSON stdlib types before strict JSON serialization."""
+    """Normalize NaN/Inf floats, NumPy scalars/arrays, and dates before strict JSON serialization."""
     if obj is None or isinstance(obj, (bool, int)):
         return obj
     if isinstance(obj, float):
         return obj if math.isfinite(obj) else None
     if isinstance(obj, str):
         return obj
+    if isinstance(obj, (date, datetime)):
+        return obj.isoformat()
     if isinstance(obj, Path):
         return str(obj)
+    if hasattr(obj, "item") and callable(getattr(obj, "item")):
+        try:
+            return _json_safe(obj.item())
+        except Exception:
+            pass
+    if hasattr(obj, "tolist") and callable(getattr(obj, "tolist")):
+        try:
+            return _json_safe(obj.tolist())
+        except Exception:
+            pass
     if isinstance(obj, dict):
         return {str(k): _json_safe(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple, set)):
@@ -239,6 +252,10 @@ class MCPServer:
     def __init__(self, config: Config | None = None) -> None:
         self.config = config or Config.from_env()
         self._tools: list[dict[str, Any]] = _tool_definitions()
+        self._tool_props: dict[str, set[str]] = {
+            t["name"]: set((t.get("inputSchema") or {}).get("properties", {}).keys())
+            for t in self._tools
+        }
         self._handlers: dict[str, Callable[[dict[str, Any]], Any]] = {
             "alphasift_list_strategies": self._handle_list_strategies,
             "alphasift_get_strategy": self._handle_get_strategy,
@@ -329,8 +346,8 @@ class MCPServer:
                 if cleaned not in seen:
                     seen.add(cleaned)
                     selected.append(cleaned)
-                if len(selected) >= _MAX_PATTERN_SELECTION:
-                    break
+            if len(selected) > _MAX_PATTERN_SELECTION:
+                raise ValueError(f"Too many patterns requested (max {_MAX_PATTERN_SELECTION})")
             patterns = selected or None
 
         trade_date = _optional_str(args, "trade_date") or None
@@ -395,6 +412,7 @@ class MCPServer:
         candidates = [
             _PROJECT_ROOT / "SKILL.md",
             Path(__file__).resolve().parent / "SKILL.md",
+            Path(sys.prefix) / "SKILL.md",
         ]
         for path in candidates:
             if path.is_file():
@@ -411,17 +429,15 @@ class MCPServer:
         raw_id = request.get("id")
         valid_id = raw_id is None or (isinstance(raw_id, (str, int)) and not isinstance(raw_id, bool))
         req_id = raw_id if valid_id else None
-        is_notification = "id" not in request
 
         if request.get("jsonrpc") != "2.0" or not isinstance(request.get("method"), str) or not valid_id:
-            if is_notification:
-                return None
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
                 "error": {"code": -32600, "message": "Invalid JSON-RPC 2.0 request"},
             }
 
+        is_notification = "id" not in request
         method = request["method"]
         params = request.get("params")
         if params is None:
@@ -488,6 +504,13 @@ class MCPServer:
                 arguments = {}
             elif not isinstance(arguments, dict):
                 raise _RPCParamError(-32602, "Invalid params: tool arguments must be an object")
+            allowed_props = self._tool_props.get(tool_name, set())
+            unknown_props = sorted(set(arguments.keys()) - allowed_props)
+            if unknown_props:
+                raise _RPCParamError(
+                    -32602,
+                    f"Unknown arguments for {tool_name}: {', '.join(unknown_props)}",
+                )
             try:
                 payload = handler(arguments)
                 safe_text = json.dumps(
@@ -551,13 +574,25 @@ def _read_bounded_line(stream: BinaryIO, limit: int = _MAX_CONTENT_LENGTH) -> by
     return line
 
 
+def _read_exact_bytes(stream: BinaryIO, length: int) -> bytes:
+    chunks: list[bytes] = []
+    remaining = length
+    while remaining > 0:
+        chunk = stream.read(remaining)
+        if not chunk:
+            raise ValueError("Truncated Content-Length body")
+        chunks.append(chunk)
+        remaining -= len(chunk)
+    return b"".join(chunks)
+
+
 def read_stdio_message(stream: BinaryIO) -> tuple[str, bytes] | None:
     """Read either a Content-Length framed body or a newline-delimited JSON line."""
     while True:
         first_line = _read_bounded_line(stream)
         if not first_line:
             return None
-        if first_line in (b"\r\n", b"\n"):
+        if not first_line.strip():
             continue
         break
 
@@ -594,9 +629,7 @@ def read_stdio_message(stream: BinaryIO) -> tuple[str, bytes] | None:
     length = int(raw_len)
     if length < 0 or length > _MAX_CONTENT_LENGTH:
         raise ValueError(f"Invalid Content-Length: {length}")
-    body = stream.read(length)
-    if len(body) < length:
-        return None
+    body = _read_exact_bytes(stream, length)
     return "headers", body
 
 
@@ -630,7 +663,7 @@ def serve_mcp(
         try:
             protocol_fd = os.dup(sys.stdout.fileno())
             os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
-            owned_writer = os.fdopen(protocol_fd, "wb", buffering=0)
+            owned_writer = os.fdopen(protocol_fd, "wb")
             writer = owned_writer
         except (OSError, ValueError, AttributeError):
             writer = sys.stdout.buffer

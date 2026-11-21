@@ -298,6 +298,77 @@ def _risk_level(points: float, max_penalty: float) -> str:
     return "low"
 
 
+def summarize_portfolio_exposure(
+    selected_picks: list[Pick],
+    *,
+    candidate_pool: list[Pick] | None = None,
+    max_same_bucket: int = 1,
+    buckets: object = None,
+    replacement_limit: int = 5,
+) -> tuple[dict[str, dict[str, object]], list[str], list[dict[str, object]]]:
+    """Compute portfolio bucket concentration and non-overcrowded replacement candidates."""
+    total = len(selected_picks)
+    if total == 0:
+        return {}, [], []
+
+    limit = max(1, int(max_same_bucket))
+    bucket_picks: dict[str, list[Pick]] = {}
+    selected_codes = {p.code for p in selected_picks}
+    for pick in selected_picks:
+        sector = _pick_sector(pick)
+        bucket = (
+            _portfolio_bucket(sector, pick.llm_theme or pick.concepts, buckets=buckets)
+            if (sector or pick.llm_theme or pick.concepts)
+            else "unclassified"
+        )
+        bucket_picks.setdefault(bucket, []).append(pick)
+
+    exposure: dict[str, dict[str, object]] = {}
+    overconcentrated: list[str] = []
+    for bucket, group in sorted(bucket_picks.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        cnt = len(group)
+        is_over = bucket != "unclassified" and cnt > limit
+        exposure[bucket] = {
+            "count": cnt,
+            "share_pct": round(cnt / total * 100.0, 2),
+            "codes": [p.code for p in group],
+            "overconcentrated": is_over,
+        }
+        if is_over:
+            overconcentrated.append(bucket)
+
+    replacements: list[dict[str, object]] = []
+    seen_codes = set(selected_codes)
+    active_buckets = set(bucket_picks.keys()) - {"unclassified"}
+    ordered_pool = sorted(
+        candidate_pool or [],
+        key=lambda p: (0 if _portfolio_bucket(_pick_sector(p), p.llm_theme or p.concepts, buckets=buckets) not in active_buckets else 1, -float(p.final_score), p.code),
+    )
+    for cand in ordered_pool:
+        if cand.code in seen_codes:
+            continue
+        seen_codes.add(cand.code)
+        c_sector = _pick_sector(cand)
+        c_bucket = (
+            _portfolio_bucket(c_sector, cand.llm_theme or cand.concepts, buckets=buckets)
+            if (c_sector or cand.llm_theme or cand.concepts)
+            else "unclassified"
+        )
+        if c_bucket in overconcentrated:
+            continue
+        replacements.append({
+            "code": cand.code,
+            "name": cand.name,
+            "bucket": c_bucket,
+            "sector": c_sector,
+            "final_score": round(float(cand.final_score), 4),
+        })
+        if len(replacements) >= max(0, int(replacement_limit)):
+            break
+
+    return exposure, overconcentrated, replacements
+
+
 def _canonical_sector(label: str) -> str:
     cleaned = str(label or "").strip()[:40]
     if not cleaned:

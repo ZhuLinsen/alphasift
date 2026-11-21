@@ -336,3 +336,27 @@ def test_factor_rank_blend_exact_arithmetic_partial_taper_and_ties(factor, blend
 
     pd.testing.assert_series_equal(blended["screen_score"], expected, check_names=False)
     pd.testing.assert_series_equal(blended[f"factor_{factor}_score"], raw[f"factor_{factor}_score"])
+
+
+def test_explain_topic_alignment_covers_direct_concept_unmatched_and_missing():
+    from alphasift.scorer import explain_topic_alignment
+
+    direct = explain_topic_alignment("半导体", "存储芯片|封装", "半导体:85|新能源:70")
+    assert direct["status"] == "aligned"
+    assert direct["role"] == "direct_industry"
+    assert direct["matched_topics"] == ["半导体"]
+    assert direct["unmatched_topics"] == ["新能源"]
+
+    concept = explain_topic_alignment("电子元件", "AI算力|液冷", "AI算力:90")
+    assert concept["status"] == "aligned"
+    assert concept["role"] == "concept_match"
+    assert concept["matched_topics"] == ["AI算力"]
+
+    unmatched = explain_topic_alignment("银行", "高股息", "算力:90")
+    assert unmatched["status"] == "unmatched"
+    assert unmatched["role"] == "none"
+    assert unmatched["matched_topics"] == []
+
+    missing = explain_topic_alignment(pd.NA, None, "")
+    assert missing["status"] == "unassessed"
+    assert missing["matched_topics"] == []

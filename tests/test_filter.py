@@ -327,3 +327,32 @@ def test_exclude_st_blocks_romanized_st_prefixes_while_preserving_english_names(
     ])
     filtered = apply_hard_filters(df, HardFilterConfig(exclude_st=True))
     assert filtered["name"].tolist() == ["ST Engineering", "COST", "STERIS", "FIRST SOLAR"]
+
+
+def test_hard_filter_waterfall_attaches_quantiles_and_tight_threshold_hints():
+    from alphasift.filter import hard_filter_waterfall
+
+    df = pd.DataFrame([
+        {"name": f"S{i}", "amount": 100_000_000 * (i + 1), "pe_ratio": 10.0 + i * 2.0, "ma_bullish": i % 2 == 0}
+        for i in range(10)
+    ])
+    steps = hard_filter_waterfall(
+        df,
+        HardFilterConfig(exclude_st=True, amount_min=950_000_000, pe_ttm_max=15.0, require_ma_bullish=True),
+        include_quantiles=True,
+    )
+    amt_step = next(s for s in steps if s["filter"] == "amount_min")
+    assert amt_step["threshold"] == 950_000_000
+    assert amt_step["removed"] == 9
+    assert amt_step["after"] == 1
+    assert amt_step["quantiles"]["valid_count"] == 10
+    assert amt_step["quantiles"]["p50"] == 550_000_000.0
+    assert "p50=" in amt_step["suggestion"]
+
+    pe_step = next(s for s in steps if s["filter"] == "pe_ttm_max")
+    assert pe_step["after"] == 0
+    assert pe_step["threshold"] == 15.0
+    assert "p50=" in pe_step["suggestion"]
+
+    bool_step = next(s for s in steps if s["filter"] == "require_ma_bullish")
+    assert "quantiles" not in bool_step

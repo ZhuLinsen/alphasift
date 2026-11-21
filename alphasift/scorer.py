@@ -510,6 +510,46 @@ def _compute_topic_alignment_score(df: pd.DataFrame, profile: dict[str, float]) 
     return pd.Series(scores, index=df.index).clip(0, 100)
 
 
+def explain_topic_alignment(
+    industry: object,
+    concepts: object,
+    board_heat_summary: object,
+) -> dict[str, object]:
+    """Return deterministic topic alignment metadata for one candidate."""
+    ind_tokens = _topic_tokens(industry)
+    con_tokens = _topic_tokens(concepts)
+    cand_tokens = ind_tokens | con_tokens
+    route_tokens = _topic_tokens(board_heat_summary)
+    if not cand_tokens or not route_tokens:
+        return {
+            "status": "unassessed",
+            "role": "none" if cand_tokens else "",
+            "reason": "缺少题材或热点路线标签，无法评估对齐",
+            "matched_topics": [],
+            "unmatched_topics": sorted(route_tokens),
+        }
+    matched = sorted(cand_tokens & route_tokens)
+    unmatched = sorted(route_tokens - cand_tokens)
+    if matched:
+        direct_ind = bool(ind_tokens & route_tokens)
+        role = "direct_industry" if direct_ind else "concept_match"
+        reason = f"{'直接行业' if direct_ind else '概念题材'}命中热点路线: {', '.join(matched[:4])}"
+        return {
+            "status": "aligned",
+            "role": role,
+            "reason": reason,
+            "matched_topics": matched,
+            "unmatched_topics": unmatched,
+        }
+    return {
+        "status": "unmatched",
+        "role": "none",
+        "reason": f"候选标签({', '.join(sorted(cand_tokens)[:3])})未命中当前热点({', '.join(unmatched[:3])})",
+        "matched_topics": [],
+        "unmatched_topics": unmatched,
+    }
+
+
 def _topic_tokens(value: object) -> set[str]:
     if value is None:
         return set()

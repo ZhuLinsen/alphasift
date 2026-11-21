@@ -309,7 +309,12 @@ class Config:
 
         if configuration_error(self.llm_channels, str(self.llm_config_path or "")):
             return False
-        return self.has_llm_config()
+        has_channels_with_models = any(bool(ch.get("models")) for ch in self.llm_channels)
+        return any([
+            bool(self.llm_api_key),
+            has_channels_with_models,
+            self.llm_model.startswith("ollama/"),
+        ])
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -567,7 +572,7 @@ def _parse_llm_channels_env() -> list[dict[str, object]]:
         )
         channels.append({
             "name": name.lower(),
-            "protocol": os.getenv(f"LLM_{key}_PROTOCOL", "openai").strip().lower(),
+            "protocol": (os.getenv(f"LLM_{key}_PROTOCOL") or "").strip().lower() or "openai",
             "base_url": os.getenv(f"LLM_{key}_BASE_URL", "").strip(),
             "api_keys": api_keys,
             "models": _parse_csv_env(f"LLM_{key}_MODELS", []),
@@ -597,14 +602,17 @@ def _resolve_llm_model(channels: list[dict[str, object]]) -> str:
     if os.getenv("DEEPSEEK_API_KEY"):
         return "deepseek/deepseek-chat"
     if os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEYS"):
-        return normalize_model(os.getenv("GEMINI_MODEL", DEFAULT_LLM_MODEL), "gemini")
+        gemini_model = (os.getenv("GEMINI_MODEL") or "").strip() or DEFAULT_LLM_MODEL
+        return normalize_model(gemini_model, "gemini")
     if os.getenv("OPENAI_API_KEY") or os.getenv("AIHUBMIX_KEY"):
-        return normalize_model(os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
+        openai_model = (os.getenv("OPENAI_MODEL") or "").strip() or "gpt-4o-mini"
+        return normalize_model(openai_model)
     return DEFAULT_LLM_MODEL
 
 
 def _resolve_llm_fallback_models(llm_model: str) -> list[str]:
-    if os.getenv("LITELLM_FALLBACK_MODELS") is not None:
+    raw_fb = os.getenv("LITELLM_FALLBACK_MODELS")
+    if raw_fb is not None and raw_fb.strip() != "":
         return _parse_csv_env("LITELLM_FALLBACK_MODELS", [])
     if llm_model == DEFAULT_LLM_MODEL:
         return list(DEFAULT_GEMINI_FALLBACK_MODELS)

@@ -615,3 +615,23 @@ def test_rank_candidates_round6_negated_risk_dsa_news_omitted_cap_and_zero_cov(m
     res_zero = rank_candidates_with_metadata([p_zero], "", "k", "fake/model", max_retries=0, min_coverage=0.0)
     assert res_zero.ranked is False
     assert res_zero.picks[0].llm_score is None
+
+
+def test_topic_alignment_fields_do_not_bloat_ranking_prompt():
+    base_pick = Pick(rank=1, code="600519", name="贵州茅台", final_score=80.0, screen_score=80.0, industry="白酒")
+    enriched_pick = Pick(
+        rank=1,
+        code="600519",
+        name="贵州茅台",
+        final_score=80.0,
+        screen_score=80.0,
+        industry="白酒",
+        topic_alignment_status="aligned",
+        topic_alignment_role="direct_industry",
+        topic_alignment_reason="直接行业命中热点路线: 白酒",
+        matched_topics=["白酒"],
+        unmatched_topics=["半导体"],
+    )
+    assert _build_ranking_prompt([enriched_pick], "hints", "ctx") == _build_ranking_prompt(
+        [base_pick], "hints", "ctx"
+    )
