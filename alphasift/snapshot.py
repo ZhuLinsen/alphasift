@@ -687,7 +687,7 @@ def _fetch_em_datacenter() -> pd.DataFrame:
             "sty": "SECUCODE,SECURITY_CODE,SECURITY_NAME_ABBR,NEW_PRICE,"
                    "OPEN_PRICE,HIGH_PRICE,LOW_PRICE,PRE_CLOSE_PRICE,VOLUME,"
                    "CHANGE_RATE,VOLUME_RATIO,DEAL_AMOUNT,TURNOVERRATE,"
-                   "PE9,PBNEWMRQ,TOTAL_MARKET_CAP,CIRCULATION_MARKET_CAP,INDUSTRY,"
+                   "PE9,PBNEWMRQ,TOTAL_MARKET_CAP,FREE_CAP,INDUSTRY,"
                    "MAX_TRADE_DATE",
             "filter": '(MARKET+in+("上交所主板","深交所主板","深交所创业板","上交所科创板","北交所","北京证券交易所"))',
             "source": "SELECT_SECURITIES",
@@ -961,7 +961,7 @@ def _normalize(df: pd.DataFrame, source: str) -> pd.DataFrame:
             "change_pct": ["CHANGE_RATE"],
             "amount": ["DEAL_AMOUNT"],
             "total_mv": ["TOTAL_MARKET_CAP"],
-            "circ_mv": ["CIRCULATION_MARKET_CAP"],
+            "circ_mv": ["FREE_CAP", "CIRCULATION_MARKET_CAP"],
             "pe_ratio": ["PE9"],
             "pb_ratio": ["PBNEWMRQ"],
             "volume_ratio": ["VOLUME_RATIO"],

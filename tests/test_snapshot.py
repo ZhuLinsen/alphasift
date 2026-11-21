@@ -598,7 +598,7 @@ def test_fetch_em_datacenter_requests_ohlcv_bse_and_quote_date(monkeypatch):
                             "PE9": 5.5,
                             "PBNEWMRQ": 0.6,
                             "TOTAL_MARKET_CAP": 2.1e11,
-                            "CIRCULATION_MARKET_CAP": 2.1e11,
+                            "FREE_CAP": 2.0e11,
                             "INDUSTRY": "银行",
                             "MAX_TRADE_DATE": "2026-11-20",
                         },
@@ -619,7 +619,7 @@ def test_fetch_em_datacenter_requests_ohlcv_bse_and_quote_date(monkeypatch):
                             "PE9": 18.0,
                             "PBNEWMRQ": 2.4,
                             "TOTAL_MARKET_CAP": 2.0e9,
-                            "CIRCULATION_MARKET_CAP": 1.2e9,
+                            "FREE_CAP": 1.2e9,
                             "INDUSTRY": "汽车零部件",
                             "MAX_TRADE_DATE": "2026-11-20",
                         },
@@ -636,11 +636,21 @@ def test_fetch_em_datacenter_requests_ohlcv_bse_and_quote_date(monkeypatch):
 
     assert len(captured) == 1
     sty = captured[0]["sty"]
-    for field in ("OPEN_PRICE", "HIGH_PRICE", "LOW_PRICE", "PRE_CLOSE_PRICE", "VOLUME", "MAX_TRADE_DATE"):
+    for field in (
+        "OPEN_PRICE",
+        "HIGH_PRICE",
+        "LOW_PRICE",
+        "PRE_CLOSE_PRICE",
+        "VOLUME",
+        "FREE_CAP",
+        "MAX_TRADE_DATE",
+    ):
         assert field in sty
     assert "北京证券交易所" in captured[0]["filter"]
     assert df.attrs["snapshot_source"] == "em_datacenter"
     assert df.attrs["quote_date"] == "2026-11-20"
     assert df["code"].tolist() == ["000001", "920000"]
     assert df.loc[0, "OPEN_PRICE"] == 11.0
+    assert df.loc[0, "circ_mv"] == pytest.approx(2.0e11)
     assert df.loc[1, "PRE_CLOSE_PRICE"] == 21.9
+    assert df.loc[1, "circ_mv"] == pytest.approx(1.2e9)

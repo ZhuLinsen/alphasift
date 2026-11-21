@@ -942,6 +942,17 @@ def _load_latest_report_summary(path: Path) -> dict[str, Any] | None:
         }
         for item in (ann.get("flagged_items") or [])
     ]
+    syn = data.get("cross_strategy_synthesis") if isinstance(data.get("cross_strategy_synthesis"), dict) else {}
+    compact_syn = (
+        {
+            "consensus_picks": list((syn.get("consensus_picks") or [])[:5]),
+            "sector_concentration": list((syn.get("sector_concentration") or [])[:5]),
+            "resonance_count": len(syn.get("strategy_pattern_resonance") or []),
+        }
+        if syn
+        else None
+    )
+    ai_brief = data.get("ai_brief") if isinstance(data.get("ai_brief"), dict) else None
     return {
         "trade_date": data.get("trade_date"),
         "pack_trade_date": data.get("pack_trade_date"),
@@ -949,6 +960,8 @@ def _load_latest_report_summary(path: Path) -> dict[str, Any] | None:
         "pack_is_stale": bool(data.get("pack_is_stale", False)),
         "stale_reason": data.get("stale_reason"),
         "ai_highlights": list(data.get("ai_highlights") or []),
+        "cross_strategy_synthesis": compact_syn,
+        "ai_brief": ai_brief,
         "announcement_risks": {
             "checked_count": int(ann.get("checked_count") or 0),
             "flagged_count": len(flagged),
@@ -1133,6 +1146,28 @@ def scorecard(runs: list[dict], evaluation: dict) -> list[dict[str, Any]]:
     return rows
 
 
+def _window_pick_details(
+    run_item: dict[str, Any],
+    evaluation: dict[str, Any],
+    window: int,
+) -> dict[str, dict[str, Any]]:
+    win = ((evaluation.get(run_item["run_id"]) or {}).get("windows") or {}).get(str(window)) or {}
+    picks = win.get("picks") or {}
+    names = {str(p.get("code")): str(p.get("name") or "") for p in run_item.get("picks", []) if p.get("code")}
+    details: dict[str, dict[str, Any]] = {}
+    for code, out in picks.items():
+        if out.get("status") == "ok" and out.get("excess_return_pct") is not None:
+            sc = str(code)
+            details[sc] = {
+                "date": str(run_item.get("date") or ""),
+                "code": sc,
+                "name": names.get(sc, ""),
+                "return_pct": _round(out.get("return_pct"), 2),
+                "excess_return_pct": _round(float(out["excess_return_pct"]), 2),
+            }
+    return details
+
+
 def _window_day_excess_stats(
     run_item: dict[str, Any],
     evaluation: dict[str, Any],
@@ -1199,12 +1234,16 @@ def track_comparison(
             ai_matched = 0
             ai_unique_vals: list[float] = []
             rules_dropped_vals: list[float] = []
+            ai_unique_items: list[dict[str, Any]] = []
+            rules_dropped_items: list[dict[str, Any]] = []
 
             for d in common_dates_all:
                 r_mean, r_map = _window_day_excess_stats(rules_by_date[d], evaluation, window)
                 a_mean, a_map = _window_day_excess_stats(ai_by_date[d], evaluation, window)
                 if r_mean is None or a_mean is None:
                     continue
+                r_details = _window_pick_details(rules_by_date[d], evaluation, window)
+                a_details = _window_pick_details(ai_by_date[d], evaluation, window)
                 rules_day_vals.append(r_mean)
                 ai_day_vals.append(a_mean)
                 delta = a_mean - r_mean
@@ -1218,13 +1257,33 @@ def track_comparison(
                 a_set = set(a_map)
                 for c in a_set - r_set:
                     ai_unique_vals.append(a_map[c])
+                    if c in a_details:
+                        ai_unique_items.append(a_details[c])
                 for c in r_set - a_set:
                     rules_dropped_vals.append(r_map[c])
+                    if c in r_details:
+                        rules_dropped_items.append(r_details[c])
 
             paired_days = len(deltas)
             sample_sufficient = paired_days >= int(min_paired_days)
             re = _round(statistics.fmean(rules_day_vals)) if rules_day_vals else None
             ae = _round(statistics.fmean(ai_day_vals)) if ai_day_vals else None
+            best_ai_adds = sorted(
+                (item for item in ai_unique_items if float(item["excess_return_pct"]) > 0),
+                key=lambda x: (-float(x["excess_return_pct"]), x["date"], x["code"]),
+            )[:3]
+            worst_ai_adds = sorted(
+                (item for item in ai_unique_items if float(item["excess_return_pct"]) < 0),
+                key=lambda x: (float(x["excess_return_pct"]), x["date"], x["code"]),
+            )[:2]
+            best_ai_avoids = sorted(
+                (item for item in rules_dropped_items if float(item["excess_return_pct"]) < 0),
+                key=lambda x: (float(x["excess_return_pct"]), x["date"], x["code"]),
+            )[:3]
+            missed_by_ai = sorted(
+                (item for item in rules_dropped_items if float(item["excess_return_pct"]) > 0),
+                key=lambda x: (-float(x["excess_return_pct"]), x["date"], x["code"]),
+            )[:2]
             win_deltas[str(window)] = {
                 "paired_days": paired_days,
                 "min_paired_days": int(min_paired_days),
@@ -1241,6 +1300,12 @@ def track_comparison(
                 "ai_unique_excess_pct": _round(statistics.fmean(ai_unique_vals)) if ai_unique_vals else None,
                 "rules_dropped_count": len(rules_dropped_vals),
                 "rules_dropped_excess_pct": _round(statistics.fmean(rules_dropped_vals)) if rules_dropped_vals else None,
+                "ai_case_studies": {
+                    "best_ai_adds": best_ai_adds,
+                    "worst_ai_adds": worst_ai_adds,
+                    "best_ai_avoids": best_ai_avoids,
+                    "missed_by_ai": missed_by_ai,
+                },
             }
 
         comparisons.append({

@@ -18,6 +18,7 @@ from alphasift.candidate_context import (
     collect_candidate_context,
 )
 from alphasift.config import Config
+from alphasift.daily_brief import build_cross_strategy_synthesis, generate_ai_daily_brief
 from alphasift.markets import get_market, latest_settled_close
 from alphasift.models import ScreenResult
 from alphasift.normalize import normalize_code
@@ -290,6 +291,10 @@ def build_daily_report(
     patterns_dir: Path | None = None,
     max_card_chars: int = 1150,
     max_signals_per_pattern: int = 10,
+    ai_brief_mode: str = "off",
+    config: Config | None = None,
+    track_comparison: Sequence[dict[str, Any]] | None = None,
+    llm_caller: Callable[..., str] | None = None,
 ) -> dict[str, Any]:
     """Build machine-readable CN ``DailyReport`` payload and <1200 char IM card."""
     scan = scan_patterns(
@@ -412,6 +417,15 @@ def build_daily_report(
         "degradation": degradation,
         "non_goals": list(DAILY_REPORT_SCHEMA["non_goals"]),
     }
+
+    report["cross_strategy_synthesis"] = build_cross_strategy_synthesis(report)
+    report["ai_brief"] = generate_ai_daily_brief(
+        report,
+        config=config,
+        track_comparison=track_comparison,
+        use_llm=ai_brief_mode,
+        llm_caller=llm_caller,
+    )
 
     card = render_daily_im_card(report, max_chars=min(int(max_card_chars), IM_CARD_MAX_CHARS))
     report["im_card_markdown"] = card
@@ -578,6 +592,18 @@ def render_daily_im_card(
         lines.append(f"**策略概览**：规则 {len(rules_runs)} 组({rules_picks}只，完整候选见看板)")
     else:
         lines.append("**策略概览**：今日暂无已保存 CN 策略运行")
+
+    syn = report.get("cross_strategy_synthesis") or {}
+    consensus = syn.get("consensus_picks") or []
+    if consensus:
+        top_c = "、".join(
+            f"{c['code']}{str(c.get('name') or '')[:6]}({c['strategy_count']}策略)"
+            for c in consensus[:2]
+        )
+        lines.append(f"**多策略共识({len(consensus)})**：{top_c}")
+    brief = report.get("ai_brief") or {}
+    if brief.get("mode") == "llm" and brief.get("headline"):
+        lines.append(f"**[AI] 简评**：{str(brief['headline'])[:64]}")
 
     # Compact pattern radar summary (counts only, experimental lists live in web dashboard).
     pat_sec = report.get("patterns") or {}
