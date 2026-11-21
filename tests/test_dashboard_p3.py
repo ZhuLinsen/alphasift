@@ -181,6 +181,10 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
     html = html_path.read_text(encoding="utf-8")
     for marker in (
         "量化形态观测与回测基准",
+        "https://github.com/ZhuLinsen/alphasift",
+        "computeClientConsensus",
+        "kpi-strip",
+        "pick-search",
         "renderCnHero",
         "renderReturnDistSvg",
         "renderMiniKline",
