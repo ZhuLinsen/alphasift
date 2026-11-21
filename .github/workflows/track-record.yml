@@ -4,9 +4,11 @@ name: Track record
 # --save-run, commit the saved runs to the track-record branch, evaluate T+N
 # against the market benchmark, and publish the dashboard to GitHub Pages.
 #
-# Fork protection (Plan A): public website rendering, track-record branch push,
-# and GitHub Pages deploy only run on the upstream repository unless a fork
-# explicitly sets repo variable ALPHASIFT_ENABLE_PAGES=true.
+# Fork protection (Plan A): public website rendering and GitHub Pages deploy
+# only run on the upstream repository unless a fork explicitly sets
+# ALPHASIFT_ENABLE_PAGES=true. A fork may independently opt into persisting
+# private track-record ledger commits via ALPHASIFT_ENABLE_LEDGER=true without
+# publishing a duplicate Pages site.
 
 on:
   schedule:
@@ -127,10 +129,12 @@ jobs:
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL }}
           LITELLM_MODEL: ${{ secrets.LITELLM_MODEL || vars.LITELLM_MODEL }}
           LITELLM_FALLBACK_MODELS: ${{ secrets.LITELLM_FALLBACK_MODELS || vars.LITELLM_FALLBACK_MODELS }}
+          LLM_CHANNELS: ${{ secrets.LLM_CHANNELS || vars.LLM_CHANNELS }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
@@ -183,10 +187,12 @@ jobs:
           ALPHASIFT_DASHBOARD_URL: ${{ vars.ALPHASIFT_DASHBOARD_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL }}
           LITELLM_MODEL: ${{ secrets.LITELLM_MODEL || vars.LITELLM_MODEL }}
           LITELLM_FALLBACK_MODELS: ${{ secrets.LITELLM_FALLBACK_MODELS || vars.LITELLM_FALLBACK_MODELS }}
+          LLM_CHANNELS: ${{ secrets.LLM_CHANNELS || vars.LLM_CHANNELS }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
@@ -233,7 +239,7 @@ jobs:
           fi
 
       - name: Commit to track-record
-        if: ${{ github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true' }}
+        if: ${{ github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true' || vars.ALPHASIFT_ENABLE_LEDGER == 'true' }}
         working-directory: track
         run: |
           if [ ! -d .git ]; then echo "track-record branch checkout absent; skip commit"; exit 0; fi

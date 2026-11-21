@@ -3,11 +3,11 @@
 
 import json
 import logging
-import os
 import re
 from copy import deepcopy
 from dataclasses import dataclass
 
+from alphasift.llm_client import LLMClientError, build_attempts, complete, configuration_error
 from alphasift.models import Pick
 from alphasift.normalize import (
     bounded_float as _bounded_float,
@@ -622,92 +622,50 @@ def _call_llm(
     timeout_sec: float = 60.0,
     max_tokens: int | None = 2048,
 ) -> str:
-    """Call LLM via litellm with fallback models and channel configs."""
-    import litellm
+    """Try configured OpenAI-compatible endpoints for one LLM prompt."""
+    if error := configuration_error(channels or [], config_path):
+        raise LLMClientError(error)
 
-    if silent:
-        _silence_litellm_logs(litellm)
+    attempts = build_attempts(
+        model,
+        api_key=api_key,
+        base_url=base_url,
+        channels=channels or [],
+        fallback_models=fallback_models or [],
+    )
+    if not attempts:
+        raise RuntimeError("No LLM model configured")
 
     messages = [{"role": "user", "content": prompt}]
-    model_chain = _dedupe([model, *(fallback_models or [])])
-    last_error: Exception | None = None
+    response_format = {"type": "json_object"} if json_mode else None
+    formats = (response_format, None) if json_mode else (None,)
+    last_error: LLMClientError | None = None
 
-    if config_path:
-        router_result = _call_litellm_router(
-            litellm,
-            config_path=config_path,
-            model_chain=model_chain,
-            messages=messages,
-            temperature=temperature,
-            json_mode=json_mode,
-            timeout_sec=timeout_sec,
-            max_tokens=max_tokens,
-        )
-        if router_result is not None:
-            return router_result
-
-    for candidate_model in model_chain:
-        for kwargs in _build_litellm_attempts(
-            candidate_model,
-            api_key=api_key,
-            base_url=base_url,
-            channels=channels or [],
-        ):
-            kwargs["messages"] = messages
-            kwargs["temperature"] = temperature
-            kwargs["timeout"] = timeout_sec
-            kwargs["num_retries"] = 0
-            if max_tokens is not None and int(max_tokens) > 0:
-                kwargs["max_tokens"] = int(max_tokens)
-            if json_mode:
-                kwargs["response_format"] = {"type": "json_object"}
+    for attempt in attempts:
+        for requested_format in formats:
             try:
-                response = litellm.completion(**kwargs)
-                return response.choices[0].message.content or ""
-            except Exception as exc:
+                return complete(
+                    attempt,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    response_format=requested_format,
+                    timeout=timeout_sec,
+                    silent=silent,
+                )
+            except LLMClientError as exc:
                 last_error = exc
-                if _is_timeout_error(exc):
-                    raise
-                if json_mode and "response_format" in kwargs and _is_json_mode_unsupported(exc):
-                    # Some providers do not support JSON mode. Retry the same
-                    # request without it before moving to fallback models. Do
-                    # not do this for timeout/connection failures: a local
-                    # OpenAI-compatible server may keep generating after the
-                    # client timeout, so a blind retry can duplicate expensive
-                    # work while the first request is still running.
-                    retry_kwargs = dict(kwargs)
-                    retry_kwargs.pop("response_format", None)
-                    try:
-                        response = litellm.completion(**retry_kwargs)
-                        return response.choices[0].message.content or ""
-                    except Exception as retry_exc:
-                        last_error = retry_exc
-                        continue
-                continue
+                if exc.timed_out:
+                    # Do not blindly retry the SAME endpoint without response_format
+                    # after a timeout, but fall through to remaining fallback models/channels.
+                    break
+                if requested_format is not None and exc.json_mode_rejected:
+                    continue
+                break
 
     if last_error is not None:
         raise last_error
     raise RuntimeError("No LLM model configured")
-
-
-def _is_json_mode_unsupported(exc: Exception) -> bool:
-    """Return True only for provider errors that clearly reject JSON mode."""
-    if _is_timeout_error(exc):
-        return False
-    text = str(exc).lower()
-    return (
-        "response_format" in text
-        or "json mode" in text
-        or "json_object" in text
-        or ("not support" in text and "json" in text)
-        or ("unsupported" in text and "json" in text)
-    )
-
-
-def _is_timeout_error(exc: Exception) -> bool:
-    text = str(exc).lower()
-    timeout_markers = ("timeout", "timed out", "readtimeout", "apitimeout")
-    return any(marker in text for marker in timeout_markers)
 
 
 def _parse_ranking_response(response: str, candidates: list[Pick]) -> list[Pick]:
@@ -937,131 +895,6 @@ def _extract_partial_ranking_array(response: str, errors: list[str]):
         return None
     errors.append("json_repaired:partial_array")
     return {"ranked": items}
-
-
-def _call_litellm_router(
-    litellm,
-    *,
-    config_path: str,
-    model_chain: list[str],
-    messages: list[dict[str, str]],
-    temperature: float,
-    json_mode: bool,
-    timeout_sec: float,
-    max_tokens: int | None = 2048,
-) -> str | None:
-    try:
-        import yaml
-
-        with open(config_path, "r", encoding="utf-8") as handle:
-            data = yaml.safe_load(handle) or {}
-        model_list = data.get("model_list")
-        if not isinstance(model_list, list) or not model_list:
-            return None
-        router = litellm.Router(model_list=model_list)
-        for model in model_chain:
-            kwargs = {
-                "model": model,
-                "messages": messages,
-                "temperature": temperature,
-                "timeout": timeout_sec,
-                "num_retries": 0,
-            }
-            if max_tokens is not None and int(max_tokens) > 0:
-                kwargs["max_tokens"] = int(max_tokens)
-            if json_mode:
-                kwargs["response_format"] = {"type": "json_object"}
-            try:
-                response = router.completion(**kwargs)
-                return response.choices[0].message.content or ""
-            except Exception as exc:
-                if "response_format" in kwargs and _is_json_mode_unsupported(exc):
-                    kwargs.pop("response_format", None)
-                    response = router.completion(**kwargs)
-                    return response.choices[0].message.content or ""
-                raise
-    except Exception as exc:
-        if _is_timeout_error(exc):
-            raise
-        logger.warning("LiteLLM router config failed, falling back to direct calls: %s", exc)
-    return None
-
-
-def _silence_litellm_logs(litellm) -> None:
-    os.environ.setdefault("LITELLM_LOG", "ERROR")
-    try:
-        litellm.set_verbose = False
-        litellm.suppress_debug_info = True
-    except Exception:
-        pass
-    for logger_name in ("LiteLLM", "litellm"):
-        logging.getLogger(logger_name).setLevel(logging.WARNING)
-
-
-def _build_litellm_attempts(
-    model: str,
-    *,
-    api_key: str,
-    base_url: str,
-    channels: list[dict[str, object]],
-) -> list[dict[str, object]]:
-    attempts = []
-    for channel in channels:
-        if not _channel_matches_model(channel, model):
-            continue
-        api_keys = channel.get("api_keys", [])
-        if not isinstance(api_keys, list) or not api_keys:
-            api_keys = [api_key] if api_key else [""]
-        for channel_key in api_keys:
-            attempts.append(_completion_kwargs(
-                model,
-                api_key=str(channel_key or ""),
-                base_url=str(channel.get("base_url", "") or base_url or ""),
-            ))
-
-    attempts.append(_completion_kwargs(model, api_key=api_key, base_url=base_url))
-    return _unique_attempts(attempts)
-
-
-def _completion_kwargs(model: str, *, api_key: str, base_url: str) -> dict[str, object]:
-    kwargs: dict[str, object] = {"model": model}
-    if api_key:
-        kwargs["api_key"] = api_key
-    if base_url:
-        kwargs["api_base"] = base_url
-    return kwargs
-
-
-def _channel_matches_model(channel: dict[str, object], model: str) -> bool:
-    models = channel.get("models", [])
-    if not isinstance(models, list) or not models:
-        return False
-    normalized = {_normalize_model_name(str(item), str(channel.get("protocol", "openai"))) for item in models}
-    return model in normalized or model.split("/", 1)[-1] in {item.split("/", 1)[-1] for item in normalized}
-
-
-def _normalize_model_name(model: str, protocol: str) -> str:
-    model = model.strip()
-    if "/" in model:
-        return model
-    if protocol == "ollama":
-        return f"ollama/{model}"
-    if protocol == "gemini":
-        return f"gemini/{model}"
-    if protocol == "deepseek":
-        return f"deepseek/{model}"
-    return f"openai/{model}"
-
-
-def _unique_attempts(items: list[dict[str, object]]) -> list[dict[str, object]]:
-    seen = set()
-    result = []
-    for item in items:
-        key = (item.get("model"), item.get("api_key"), item.get("api_base"))
-        if key not in seen:
-            seen.add(key)
-            result.append(item)
-    return result
 
 
 def _dedupe(items: list[str]) -> list[str]:

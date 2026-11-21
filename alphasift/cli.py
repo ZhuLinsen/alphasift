@@ -290,6 +290,9 @@ def main():
     svp.add_argument("--host", default="127.0.0.1", help="监听地址，默认 127.0.0.1")
     svp.add_argument("--port", type=int, default=8765, help="监听端口，默认 8765")
 
+    # mcp
+    sub.add_parser("mcp", help="启动零依赖 STDIO MCP 服务器（供 Claude Code / Cursor / Codex / OpenClaw 调用）")
+
     # report
     rep = sub.add_parser("report", help="把已保存运行生成为 Markdown/JSON 报告")
     rep.add_argument("run", help="run_id 或保存的 run JSON 文件路径")
@@ -764,6 +767,11 @@ def main():
     elif args.command == "serve":
         config = Config.from_env()
         serve_api(config, host=args.host, port=args.port)
+
+    elif args.command == "mcp":
+        from alphasift.mcp import serve_mcp
+
+        serve_mcp(Config.from_env())
 
     elif args.command == "report":
         config = Config.from_env()

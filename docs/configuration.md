@@ -1,6 +1,6 @@
 # 配置参考
 
-这份文档集中说明 `.env`、LiteLLM、数据源和 L3 后置分析器配置。最小运行不需要 LLM key，只要在命令里加 `--no-llm`。
+这份文档集中说明 `.env`、OpenAI 兼容 LLM 排序、数据源和 L3 后置分析器配置。最小运行不需要 LLM key，只要在命令里加 `--no-llm`。
 
 ## 最小配置
 
@@ -34,8 +34,7 @@ TUSHARE_TOKEN=...
 | `LITELLM_MODEL` | 推荐 | 主模型，兼容 daily_stock_analysis，格式 `provider/model` | `gemini/gemini-3.8-flash` |
 | `LITELLM_FALLBACK_MODELS` | 否 | 备选模型，逗号分隔 | 默认主模型时为 `gemini/gemini-4-hydrogen` |
 | `LLM_CHANNELS` | 否 | 多渠道配置，配合 `LLM_{NAME}_*` 使用 | - |
-| `LITELLM_CONFIG` | 否 | 高级 LiteLLM Router YAML 配置文件路径 | - |
-| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM 排序时至少一种 | 供应商 API Key，兼容 daily_stock_analysis 配置 | - |
+| `GEMINI_API_KEY` / `GEMINI_API_KEYS` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM 排序时至少一种 | 供应商 API Key，兼容 daily_stock_analysis 配置 | - |
 | `OPENAI_BASE_URL` / `OLLAMA_API_BASE` | 否 | OpenAI 兼容接口或 Ollama 地址 | - |
 | `LLM_API_KEY` | 否 | 旧版兼容 API Key，会优先覆盖供应商 key | - |
 | `LLM_MODEL` | 否 | 旧版兼容模型名；`LITELLM_MODEL` 优先 | `gemini/gemini-3.8-flash` |
@@ -43,7 +42,7 @@ TUSHARE_TOKEN=...
 | `LLM_CONTEXT` | 否 | 传给 LLM 的市场、新闻或主题上下文 | - |
 | `LLM_TEMPERATURE` | 否 | LLM 排序温度，默认偏确定性 | `0.2` |
 | `LLM_JSON_MODE` | 否 | 是否请求 JSON response_format，不支持时自动降级 | `true` |
-| `LLM_SILENT` | 否 | 是否抑制 LiteLLM 调用日志，避免污染 CLI JSON 或摘要输出 | `true` |
+| `LLM_SILENT` | 否 | 是否抑制 LLM HTTP 调试日志 | `true` |
 | `LLM_RANK_WEIGHT` | 否 | LLM 排序对最终分数的权重 | `0.40` |
 | `LLM_CANDIDATE_MULTIPLIER` | 否 | 送入 LLM 的候选倍数，相对 max_output | `6` |
 | `LLM_MAX_CANDIDATES` | 否 | 单次最多送入 LLM 的候选数 | `30` |
@@ -96,28 +95,36 @@ TUSHARE_TOKEN=...
 | `ALPHASIFT_DATA_DIR` | 否 | 运行记录和评估结果目录 | `./data` |
 | `STRATEGIES_DIR` | 否 | 策略目录路径 | 自动查找 |
 
-## LiteLLM 配置兼容
+## OpenAI 兼容网关与渠道配置
 
-AlphaSift 兼容 `daily_stock_analysis` 的 LiteLLM 配置习惯：
+AlphaSift 无需安装 `litellm`，直接通过轻量 `requests` 客户端调用 OpenAI 兼容 `/chat/completions`，并兼容 `daily_stock_analysis` 的环境变量命名习惯（主模型按 `LITELLM_MODEL > LLM_MODEL > AGENT_LITELLM_MODEL > 首个渠道模型 > 供应商默认模型` 解析；`LLM_API_KEY` 与 `LLM_BASE_URL` 优先于主模型默认网关）：
+
+| 前缀 | 默认 Base URL | 密钥变量 |
+|---|---|---|
+| `openai` | `https://api.openai.com/v1` | `OPENAI_API_KEY` |
+| `deepseek` | `https://api.deepseek.com` | `DEEPSEEK_API_KEY` |
+| `gemini` | `https://generativelanguage.googleapis.com/v1beta/openai` | `GEMINI_API_KEYS` / `GEMINI_API_KEY` |
+| `anthropic` | `https://api.anthropic.com/v1` | `ANTHROPIC_API_KEY` |
+| `ollama` | `http://localhost:11434/v1` | 可不填 |
+| `openrouter` | `https://openrouter.ai/api/v1` | `OPENROUTER_API_KEY` |
+| `dashscope` / `qwen` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `DASHSCOPE_API_KEY` / `QWEN_API_KEY` |
+| `zhipu` | `https://open.bigmodel.cn/api/paas/v4` | `ZHIPU_API_KEY` / `ZAI_API_KEY` |
+| `moonshot` | `https://api.moonshot.cn/v1` | `MOONSHOT_API_KEY` |
+| `aihubmix` | `https://aihubmix.com/v1` | `AIHUBMIX_KEY` / `AIHUBMIX_API_KEY` |
+
+如果旧配置曾使用 `LITELLM_CONFIG` 或原生非 OpenAI 渠道协议，请删除 `LITELLM_CONFIG` 并迁移为 `LLM_CHANNELS`：
 
 ```env
-LLM_CHANNELS=primary
+LLM_CHANNELS=primary,backup
 LLM_PRIMARY_PROTOCOL=openai
 LLM_PRIMARY_BASE_URL=https://api.deepseek.com/v1
-LLM_PRIMARY_API_KEYS=sk-xxx,sk-yyy
+LLM_PRIMARY_API_KEYS=key1,key2
 LLM_PRIMARY_MODELS=deepseek-chat,deepseek-reasoner
-LITELLM_MODEL=openai/deepseek-chat
-LITELLM_FALLBACK_MODELS=openai/gpt-4o-mini,anthropic/claude-3-5-sonnet
+LLM_BACKUP_PROTOCOL=openai
+LLM_BACKUP_BASE_URL=https://api.openai.com/v1
+LLM_BACKUP_API_KEY=your_openai_key
+LLM_BACKUP_MODELS=gpt-4o-mini
 ```
-
-也支持更简单的单供应商配置：
-
-```env
-GEMINI_API_KEY=...
-LITELLM_MODEL=gemini/gemini-3.8-flash
-```
-
-如果已有 `daily_stock_analysis` 的 `.env`，通常可以复用其中的 `LITELLM_MODEL`、`LITELLM_FALLBACK_MODELS`、`LLM_CHANNELS`、`LLM_{NAME}_*`、`OPENAI_*`、`GEMINI_*`、`DEEPSEEK_*`、`OLLAMA_API_BASE` 等字段。
 
 CLI 也支持显式加载外部 `.env`，可重复传入：
 
