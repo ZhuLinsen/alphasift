@@ -10,7 +10,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from alphasift.config import Config
-from alphasift.daily_report import build_daily_report
+from alphasift.daily_report import build_daily_report, load_daily_report_runs
 from alphasift.doctor import doctor_data_sources, doctor_radar_readiness
 from alphasift.market_regime import compute_market_regime, compute_market_regime_series
 from alphasift.overview import build_overview
@@ -264,10 +264,28 @@ def build_api_response(
                 ).to_dict()
             # /daily-report
             include_ann = _bool_param(params, "announcements", False)
+            include_runs = _bool_param(params, "include_runs", True)
+            run_ids = _multi(params, "run_id") or None
+            expected_date = _single(params, "expected_trade_date") or None
+            allow_stale = _bool_param(params, "allow_stale_pack", True)
+            detail_url = _single(params, "detail_url") or config.dashboard_url
             ann_max = max(0, min(30, _int_param(params, "announcement_max_codes", 8)))
+            strategy_runs = (
+                load_daily_report_runs(
+                    config,
+                    run_refs=run_ids,
+                    trade_date=trade_date or daily_pack.trade_date,
+                )
+                if include_runs
+                else []
+            )
             return 200, build_daily_report(
                 daily_pack,
                 trade_date=trade_date,
+                expected_trade_date=expected_date,
+                allow_stale_pack=allow_stale,
+                detail_url=detail_url,
+                strategy_runs=strategy_runs,
                 include_announcements=include_ann,
                 announcement_max_codes=ann_max,
                 announcement_cache_dir=config.data_dir / "candidate_context_cache",

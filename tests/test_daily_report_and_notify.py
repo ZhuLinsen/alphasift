@@ -9,17 +9,23 @@ import hmac
 import json
 from pathlib import Path
 import sys
+import threading
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from alphasift.cli import main as cli_main
 from alphasift.config import Config
 from alphasift.daily_report import (
+    DEFAULT_DASHBOARD_URL,
     IM_CARD_MAX_CHARS,
     build_daily_report,
+    ensure_im_card_length,
+    load_daily_report_runs,
     render_daily_im_card,
 )
+from alphasift.store import save_screen_result
 from alphasift.doctor import doctor_radar_readiness
 from alphasift.models import Pick, ScreenResult
 from alphasift.notify import push_daily_report
@@ -305,3 +311,198 @@ def test_doctor_radar_and_cli_smoke(tmp_path: Path, monkeypatch, capsys) -> None
     assert out_json.is_file() and out_card.is_file()
     assert cli_rep["im_card_chars"] < 1200
     assert cli_rep["push"]["status"] == "skipped_no_channels"
+
+
+def test_daily_report_alert_first_order_and_reserved_budget() -> None:
+    pack = _make_pack()
+    runs = [
+        _dummy_run("dual_low", track="rules", code="000001", name="测试股01"),
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="dual_low_ai",
+            track="ai",
+            llm_ranked=True,
+            llm_market_view="成长占优但高标分歧加大，控仓为主",
+            picks=[
+                Pick(
+                    rank=1,
+                    code="000002",
+                    name="测试股02",
+                    industry="半导体",
+                    final_score=91.0,
+                    screen_score=86.0,
+                    change_pct=4.1,
+                    ranking_reason="景气与趋势共振",
+                )
+            ],
+        ),
+    ]
+
+    def fake_ann(df: pd.DataFrame, *, max_rows: int, cache_dir=None):
+        return [
+            {
+                "code": "000001",
+                "name": "测试股01",
+                "announcement": "2026-11-20 股东拟减持不超过2%",
+                "negative_event_flags": ["减持"],
+                "announcement_categories": ["减持"],
+            }
+        ], []
+
+    report = build_daily_report(
+        pack,
+        strategy_runs=runs,
+        announcement_collector=fake_ann,
+        detail_url="https://example.com/radar/",
+    )
+    card = report["im_card_markdown"]
+    assert report["detail_url"] == "https://example.com/radar/"
+    assert isinstance(report["ai_highlights"], list) and len(report["ai_highlights"]) == 1
+    assert report["ai_highlights"][0]["added_by_ai"][0]["code"] == "000002"
+    assert report["ai_highlights"][0]["dropped_by_ai"][0]["code"] == "000001"
+    # Alert section appears BEFORE strategy overview and pattern radar summary.
+    assert card.index("公告排雷") < card.index("策略与 [AI]")
+    assert card.index("策略与 [AI]") < card.index("形态雷达")
+    assert "https://example.com/radar/" in card
+    assert DEFAULT_DASHBOARD_URL != report["detail_url"]
+
+    # Reserved budget preserves alert bullets, detail link, and footer even when squeezed.
+    noisy = "\n".join([
+        "**AlphaSift A股量化观测日报 (2026-10-30)**",
+        "> 盘面 **启动(startup)**[仅切片]｜上涨 60.0%",
+        "**⚠️ 公告排雷预警(5检/1中)**",
+        "- 000001 测试股01[减持]: 股东拟减持2%",
+        *([f"**策略补充行 {i}**：" + ("冗长候选明细 " * 8) for i in range(12)]),
+        "**形态雷达**：正式(active) 0 组(0只) / 观察期(experimental) 6 组(12只，详见看板)",
+        "🔗 完整候选、AI归因与K线详情：https://example.com/dash",
+        "注：量化形态观测与回测基准，非投资建议。",
+    ])
+    trimmed = ensure_im_card_length(noisy, max_chars=420)
+    assert len(trimmed) <= 420
+    assert "减持" in trimmed
+    assert "https://example.com/dash" in trimmed
+    assert "量化形态观测与回测基准" in trimmed
+
+
+def test_load_daily_report_runs_timezone_and_stale_pack_guards(tmp_path: Path) -> None:
+    pack = _make_pack()  # last date is 2026-10-30
+    cfg = Config(
+        data_dir=tmp_path / "data",
+        wecom_webhook_url="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=SECRET_WECOM",
+        notify_state_path=tmp_path / "notify_state.json",
+    )
+    # 2026-10-30 18:10 UTC == 2026-10-31 02:10+08:00 (after Friday close, before next Monday open)
+    # CST session date resolves to Friday 2026-10-30.
+    utc_late_run = ScreenResult(
+        strategy="momentum",
+        market="cn",
+        run_id="mom_rules_late_utc",
+        track="rules",
+        llm_ranked=False,
+        created_at="2026-10-30T18:10:00Z",
+        picks=[Pick(rank=1, code="000001", name="测试股01", industry="半导体", final_score=82.0, screen_score=80.0)],
+    )
+    save_screen_result(utc_late_run, data_dir=cfg.data_dir)
+
+    loaded = load_daily_report_runs(cfg, trade_date=pack.trade_date)
+    assert [r.run_id for r in loaded] == ["mom_rules_late_utc"]
+
+    with pytest.raises(ValueError, match="stale"):
+        build_daily_report(
+            pack,
+            expected_trade_date="2026-11-20",
+            allow_stale_pack=False,
+            include_announcements=False,
+        )
+
+    stale_rep = build_daily_report(
+        pack,
+        expected_trade_date="2026-11-20",
+        allow_stale_pack=True,
+        include_announcements=False,
+    )
+    assert stale_rep["pack_is_stale"] is True
+    assert "2026-11-20" in stale_rep["stale_reason"]
+    assert "旧包降级" in stale_rep["im_card_markdown"]
+    assert any("Stale pack" in item for item in stale_rep["degradation"])
+
+    push_res = push_daily_report(
+        stale_rep,
+        config=cfg,
+        post_fn=lambda *a, **kw: (_ for _ in ()).throw(AssertionError("stale pack must not push")),
+    )
+    assert push_res["status"] == "skipped_stale_pack"
+    assert push_res["sent"] == []
+
+
+def test_notify_concurrent_dedup_and_failure_recovery(tmp_path: Path) -> None:
+    pack = _make_pack()
+    report = build_daily_report(pack, include_announcements=False)
+    state_path = tmp_path / "notify_state.json"
+    cfg = Config(
+        wecom_webhook_url="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=SECRET_WECOM",
+        notify_state_path=state_path,
+    )
+
+    entered = threading.Event()
+    release = threading.Event()
+    call_count = 0
+    count_lock = threading.Lock()
+
+    def slow_post(url: str, *, json: dict, timeout: float):
+        nonlocal call_count
+        with count_lock:
+            call_count += 1
+        entered.set()
+        assert release.wait(timeout=5.0)
+        return _DummyResponse(200, {"errcode": 0, "errmsg": "ok"})
+
+    results: list[dict] = []
+
+    def worker() -> None:
+        results.append(push_daily_report(report, config=cfg, post_fn=slow_post))
+
+    t1 = threading.Thread(target=worker)
+    t2 = threading.Thread(target=worker)
+    t1.start()
+    assert entered.wait(timeout=5.0)
+    t2.start()
+    t2.join(timeout=5.0)
+    release.set()
+    t1.join(timeout=5.0)
+
+    assert call_count == 1
+    statuses = sorted(r["status"] for r in results)
+    assert statuses == ["ok", "skipped_duplicate"]
+
+    # Test automatic failure recovery without force=True on a fresh trade_date.
+    report_retry = dict(report, trade_date="2026-11-19")
+    fail_cfg = Config(
+        wecom_webhook_url="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=SECRET_WECOM",
+        notify_state_path=tmp_path / "notify_retry_state.json",
+    )
+
+    def broken_post(url: str, *, json: dict, timeout: float):
+        raise RuntimeError("transient timeout")
+
+    res_fail = push_daily_report(report_retry, config=fail_cfg, post_fn=broken_post)
+    assert res_fail["status"] == "error"
+    ledger = json.loads((tmp_path / "notify_retry_state.json").read_text(encoding="utf-8"))
+    assert ledger["2026-11-19:wecom"]["status"] == "failed"
+
+    recovered = push_daily_report(
+        report_retry,
+        config=fail_cfg,
+        post_fn=lambda url, *, json, timeout: _DummyResponse(200, {"errcode": 0, "errmsg": "ok"}),
+    )
+    assert recovered["status"] == "ok"
+    ledger_after = json.loads((tmp_path / "notify_retry_state.json").read_text(encoding="utf-8"))
+    assert ledger_after["2026-11-19:wecom"]["status"] == "sent"
+
+    res_dup = push_daily_report(
+        report_retry,
+        config=fail_cfg,
+        post_fn=lambda *a, **kw: (_ for _ in ()).throw(AssertionError("already sent must skip")),
+    )
+    assert res_dup["status"] == "skipped_duplicate"

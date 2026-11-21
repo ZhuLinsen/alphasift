@@ -441,6 +441,13 @@ def main():
     drpt.add_argument("--run-id", action="append", default=None, help="附加已保存策略运行 ID/路径，可重复")
     drpt.add_argument("--runs-dir", default=None, help="从目录自动附带该日保存的 CN 策略运行")
     drpt.add_argument("--no-announcements", action="store_true", help="跳过候选股近期公告负面关键词排雷")
+    drpt.add_argument("--expected-trade-date", default=None, help="目标 A 股交易日 YYYY-MM-DD；旧包将标记降级且默认不推送")
+    drpt.add_argument(
+        "--allow-stale-pack",
+        action="store_true",
+        help="允许使用落后于 expected-trade-date 的日线包生成带旧包标记的降级日报",
+    )
+    drpt.add_argument("--detail-url", default=None, help="覆盖 IM 卡片里的看板详情链接")
     drpt.add_argument("--announcement-max-codes", type=int, default=12, help="公告排雷最多抽检前 N 只候选，默认 12")
     drpt.add_argument("--output-json", default=None, help="写出 DailyReport report.json 路径")
     drpt.add_argument("--output-card", default=None, help="额外写出 <1200 字 IM Markdown 卡片路径")
@@ -1074,22 +1081,31 @@ def main():
 
     elif args.command == "daily-report":
         from alphasift import pack
-        from alphasift.daily_report import build_daily_report, write_daily_card, write_daily_report
+        from alphasift.daily_report import (
+            build_daily_report,
+            load_daily_report_runs,
+            write_daily_card,
+            write_daily_report,
+        )
         from alphasift.notify import push_daily_report
 
         config = Config.from_env()
         directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
         try:
             daily_pack = pack.load_pack(directory)
-            runs = _load_daily_report_runs(
+            runs = load_daily_report_runs(
                 config,
                 run_refs=args.run_id,
                 runs_dir=Path(args.runs_dir).expanduser() if args.runs_dir else None,
                 trade_date=args.trade_date or daily_pack.trade_date,
             )
+            allow_stale = True if not args.expected_trade_date else bool(args.allow_stale_pack)
             report = build_daily_report(
                 daily_pack,
                 trade_date=args.trade_date,
+                expected_trade_date=args.expected_trade_date,
+                allow_stale_pack=allow_stale,
+                detail_url=args.detail_url or config.dashboard_url,
                 strategy_runs=runs,
                 include_announcements=not args.no_announcements,
                 announcement_max_codes=args.announcement_max_codes,
@@ -2521,24 +2537,14 @@ def _load_daily_report_runs(
     runs_dir: Path | None,
     trade_date: str,
 ) -> list:
-    loaded = []
-    seen_ids: set[str] = set()
-    for ref in run_refs or []:
-        sr = load_screen_result(ref, data_dir=config.data_dir)
-        if sr.run_id not in seen_ids:
-            seen_ids.add(sr.run_id)
-            loaded.append(sr)
-    if runs_dir is not None and runs_dir.is_dir():
-        for path in sorted(runs_dir.glob("*.json")):
-            try:
-                sr = load_screen_result(path, data_dir=config.data_dir)
-            except Exception:  # noqa: BLE001
-                continue
-            if sr.market == "cn" and (not sr.created_at or sr.created_at.startswith(trade_date)):
-                if sr.run_id not in seen_ids:
-                    seen_ids.add(sr.run_id)
-                    loaded.append(sr)
-    return loaded
+    from alphasift.daily_report import load_daily_report_runs
+
+    return load_daily_report_runs(
+        config,
+        run_refs=run_refs,
+        runs_dir=runs_dir,
+        trade_date=trade_date,
+    )
 
 
 def _format_radar_doctor_explain(payload: dict) -> str:

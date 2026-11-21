@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -16,15 +17,20 @@ from alphasift.candidate_context import (
     classify_negative_events,
     collect_candidate_context,
 )
+from alphasift.config import Config
+from alphasift.markets import get_market, latest_settled_close
 from alphasift.models import ScreenResult
 from alphasift.normalize import normalize_code
 from alphasift.pack import DailyPack
 from alphasift.patterns import PatternSpec, list_patterns, scan_patterns
 from alphasift.result_schema import DAILY_REPORT_SCHEMA, DAILY_REPORT_SCHEMA_VERSION
 from alphasift.source_guard import call_with_timeout
+from alphasift.store import load_screen_result
+from alphasift.timeutil import parse_timestamp
 
 IM_CARD_MAX_CHARS = 1199
 _ANNOUNCEMENT_TIMEOUT_SEC = 15.0
+DEFAULT_DASHBOARD_URL = "https://zhulinsen.github.io/alphasift/"
 
 
 def _collect_announcements_default(
@@ -120,6 +126,65 @@ def screen_announcement_risks(
     }
 
 
+def _cn_run_session_date(created_at: str) -> str:
+    """Resolve the CN exchange session date (YYYY-MM-DD) for a run timestamp."""
+    parsed = parse_timestamp(created_at)
+    if parsed is None:
+        return str(created_at or "")[:10]
+    settled = latest_settled_close("cn", parsed)
+    if settled is not None:
+        return settled[0].isoformat()
+    return parsed.astimezone(ZoneInfo(get_market("cn").timezone)).date().isoformat()
+
+
+def load_daily_report_runs(
+    config: Config,
+    *,
+    run_refs: Sequence[str] | None = None,
+    runs_dir: Path | None = None,
+    trade_date: str | None = None,
+) -> list[ScreenResult]:
+    """Unified run loader for CLI ``daily-report`` and HTTP ``/daily-report``."""
+    target_runs_dir = Path(runs_dir).expanduser() if runs_dir is not None else (config.data_dir / "runs")
+    loaded: list[ScreenResult] = []
+    seen_ids: set[str] = set()
+
+    for ref in run_refs or []:
+        cand = Path(ref)
+        if not cand.is_file() and (target_runs_dir / f"{ref}.json").is_file():
+            cand = target_runs_dir / f"{ref}.json"
+        sr = load_screen_result(cand, data_dir=config.data_dir)
+        key_id = sr.run_id or str(cand)
+        if key_id not in seen_ids:
+            seen_ids.add(key_id)
+            loaded.append(sr)
+
+    if (runs_dir is not None or not run_refs) and target_runs_dir.is_dir():
+        for path in sorted(target_runs_dir.glob("*.json")):
+            try:
+                sr = load_screen_result(path, data_dir=config.data_dir)
+            except Exception:  # noqa: BLE001
+                continue
+            if (sr.market or "cn").lower() != "cn":
+                continue
+            if trade_date and sr.created_at and _cn_run_session_date(sr.created_at) != trade_date:
+                continue
+            key_id = sr.run_id or str(path)
+            if key_id not in seen_ids:
+                seen_ids.add(key_id)
+                loaded.append(sr)
+
+    loaded.sort(
+        key=lambda r: (
+            str(r.strategy),
+            0 if (r.track or ("ai" if r.llm_ranked else "rules")) == "rules" else 1,
+            str(r.created_at or ""),
+            str(r.run_id or ""),
+        )
+    )
+    return loaded
+
+
 def _format_strategy_entry(run: ScreenResult) -> dict[str, Any]:
     track = run.track or ("ai" if run.llm_ranked else "rules")
     picks = []
@@ -134,6 +199,7 @@ def _format_strategy_entry(run: ScreenResult) -> dict[str, Any]:
             "change_pct": round(float(p.change_pct), 2) if p.change_pct is not None else None,
             "risk_level": str(p.risk_level),
             "risk_flags": list(p.risk_flags),
+            "ranking_reason": str(getattr(p, "ranking_reason", "") or "")[:120],
             "announcement_risk_flags": [],
         })
     return {
@@ -142,6 +208,7 @@ def _format_strategy_entry(run: ScreenResult) -> dict[str, Any]:
         "market": run.market,
         "track": track,
         "llm_ranked": bool(run.llm_ranked),
+        "llm_market_view": str(getattr(run, "llm_market_view", "") or "")[:160],
         "created_at": run.created_at,
         "pick_count": len(run.picks),
         "degradation": list(run.degradation),
@@ -149,10 +216,71 @@ def _format_strategy_entry(run: ScreenResult) -> dict[str, Any]:
     }
 
 
+def _build_ai_highlights(strategy_runs: Sequence[ScreenResult]) -> list[dict[str, Any]]:
+    """Summarize same-strategy rules-vs-AI deltas and LLM rationale for DailyReport."""
+    by_strat: dict[str, dict[str, ScreenResult]] = {}
+    for run in strategy_runs:
+        tr = run.track or ("ai" if run.llm_ranked else "rules")
+        if tr not in {"rules", "ai"}:
+            continue
+        by_strat.setdefault(str(run.strategy), {})[tr] = run
+
+    highlights: list[dict[str, Any]] = []
+    for strategy in sorted(by_strat):
+        pair = by_strat[strategy]
+        ai_run = pair.get("ai")
+        if ai_run is None:
+            continue
+        rules_run = pair.get("rules")
+        ai_codes = {str(p.code) for p in ai_run.picks}
+        rules_codes = {str(p.code) for p in rules_run.picks} if rules_run is not None else set()
+        union_cnt = len(ai_codes | rules_codes)
+        overlap_pct = (
+            round((len(ai_codes & rules_codes) / union_cnt) * 100.0, 1)
+            if rules_run is not None and union_cnt > 0
+            else None
+        )
+        added = [
+            {
+                "code": str(p.code),
+                "name": str(p.name),
+                "final_score": round(float(p.final_score), 2),
+                "ranking_reason": str(getattr(p, "ranking_reason", "") or "")[:120],
+            }
+            for p in ai_run.picks
+            if rules_run is None or str(p.code) not in rules_codes
+        ]
+        dropped = (
+            [
+                {"code": str(p.code), "name": str(p.name)}
+                for p in rules_run.picks
+                if str(p.code) not in ai_codes
+            ]
+            if rules_run is not None
+            else []
+        )
+        highlights.append({
+            "strategy": strategy,
+            "run_id": ai_run.run_id,
+            "rules_pick_count": len(rules_run.picks) if rules_run is not None else 0,
+            "ai_pick_count": len(ai_run.picks),
+            "overlap_pct": overlap_pct,
+            "added_by_ai": added,
+            "dropped_by_ai": dropped,
+            "llm_market_view": str(getattr(ai_run, "llm_market_view", "") or "")[:200],
+            "llm_selection_logic": str(getattr(ai_run, "llm_selection_logic", "") or "")[:200],
+            "llm_portfolio_risk": str(getattr(ai_run, "llm_portfolio_risk", "") or "")[:200],
+        })
+    return highlights
+
+
 def build_daily_report(
     daily_pack: DailyPack,
     *,
     trade_date: str | None = None,
+    expected_trade_date: str | None = None,
+    allow_stale_pack: bool = True,
+    detail_url: str | None = None,
     strategy_runs: Sequence[ScreenResult] | None = None,
     include_experimental_patterns: bool = True,
     include_announcements: bool = True,
@@ -170,6 +298,17 @@ def build_daily_report(
         include_experimental=include_experimental_patterns,
         patterns_dir=patterns_dir,
     )
+    expected = (expected_trade_date or "").strip() or None
+    pack_is_stale = bool(expected and str(scan.pack_trade_date) < expected)
+    stale_reason = (
+        f"pack_trade_date={scan.pack_trade_date} < expected_trade_date={expected}"
+        if pack_is_stale
+        else None
+    )
+    if pack_is_stale and not allow_stale_pack:
+        raise ValueError(
+            f"CN DailyPack is stale ({stale_reason}); pass allow_stale_pack=True for degraded display"
+        )
     specs_by_name: dict[str, PatternSpec] = {
         spec.name: spec
         for spec in list_patterns(include_experimental=True, patterns_dir=patterns_dir)
@@ -243,16 +382,28 @@ def build_daily_report(
                     (risk_map.get(sig["code"]) or {}).get("negative_event_flags") or []
                 )
 
+    ai_highlights = _build_ai_highlights(strategy_runs or [])
+    if pack_is_stale and stale_reason:
+        degradation.append(f"Stale pack: {stale_reason}")
+    resolved_detail_url = (
+        DEFAULT_DASHBOARD_URL if detail_url is None else str(detail_url).strip()
+    )
+
     report: dict[str, Any] = {
         "schema_version": DAILY_REPORT_SCHEMA_VERSION,
         "object": "DailyReport",
         "trade_date": scan.trade_date,
         "pack_trade_date": scan.pack_trade_date,
+        "expected_trade_date": expected,
+        "pack_is_stale": pack_is_stale,
+        "stale_reason": stale_reason,
+        "detail_url": resolved_detail_url,
         "market": "cn",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "usage_policy": "cn_only_regime_slice_only",
         "market_regime": scan.market_regime.to_dict(),
         "strategies": strategy_entries,
+        "ai_highlights": ai_highlights,
         "patterns": {
             "active": active_patterns,
             "experimental": experimental_patterns,
@@ -269,29 +420,70 @@ def build_daily_report(
 
 
 def ensure_im_card_length(text: str, *, max_chars: int = IM_CARD_MAX_CHARS) -> str:
-    """Guarantee IM card fits strictly within ``max_chars`` (<= 1199)."""
+    """Guarantee IM card fits strictly within ``max_chars`` (<= 1199), preserving alerts & links."""
     limit = min(max(80, int(max_chars)), IM_CARD_MAX_CHARS)
     cleaned = text.strip()
     if len(cleaned) <= limit:
         return cleaned
     footer = "注：量化形态观测与回测基准，非投资建议。"
-    lines = cleaned.splitlines()
-    kept: list[str] = []
-    reserve = len(footer) + 6
-    budget = limit - reserve
+    lines = [line for line in cleaned.splitlines() if line.strip() != footer]
+
+    head: list[str] = []
+    alerts: list[str] = []
+    links: list[str] = []
+    middle: list[str] = []
+
+    in_alerts = False
+    for idx, line in enumerate(lines):
+        if line.startswith("🔗") or ("http://" in line or "https://" in line):
+            in_alerts = False
+            links.append(line)
+        elif "公告预警" in line or "公告排雷" in line:
+            in_alerts = True
+            alerts.append(line)
+        elif in_alerts and line.startswith("- "):
+            alerts.append(line)
+        else:
+            in_alerts = False
+            if idx == 0 or (len(head) < 3 and ("旧包降级" in line or line.startswith("> "))):
+                head.append(line)
+            else:
+                middle.append(line)
+
+    essential: list[str] = [*head, *alerts]
+    tail_links: list[str] = [*links, footer]
+
+    reserved_tail = "\n".join(tail_links)
+    max_body = max(20, limit - len(reserved_tail) - 1)
+
+    kept_essential: list[str] = []
     used = 0
-    for line in lines:
-        if line == footer:
-            continue
-        add_len = len(line) + (1 if kept else 0)
-        if used + add_len <= budget:
-            kept.append(line)
+    for line in essential:
+        add_len = len(line) + (1 if kept_essential else 0)
+        if used + add_len <= max_body:
+            kept_essential.append(line)
+            used += add_len
+        elif not kept_essential:
+            kept_essential.append(line[: max(10, max_body - 3)] + "...")
+            used = len(kept_essential[0])
+            break
+
+    kept_middle: list[str] = []
+    for line in middle:
+        add_len = len(line) + (1 if (kept_essential or kept_middle) else 0)
+        if used + add_len <= max_body - 4:
+            kept_middle.append(line)
             used += add_len
         else:
             break
-    if not kept:
-        return cleaned[: limit - 3] + "..."
-    result = "\n".join(kept) + "\n...\n" + footer
+
+    assembled = [*kept_essential, *kept_middle]
+    if len(kept_middle) < len(middle):
+        ellipsis_len = 4 if assembled else 3
+        if used + ellipsis_len <= max_body:
+            assembled.append("...")
+
+    result = "\n".join([*assembled, *tail_links])
     if len(result) > limit:
         result = result[: limit - 3] + "..."
     return result
@@ -302,7 +494,7 @@ def render_daily_im_card(
     *,
     max_chars: int = 1150,
 ) -> str:
-    """Render concise <1200-char Markdown card summarizing regime, picks, patterns, and risks."""
+    """Render alert-first concise <1200-char Markdown card directing details to the dashboard."""
     reg = report.get("market_regime") or {}
     seal = reg.get("seal_rate_pct")
     seal_str = "-" if seal is None else f"{float(seal):.1f}%"
@@ -310,71 +502,101 @@ def render_daily_im_card(
     prev_str = "-" if prev_ret is None else f"{float(prev_ret):+.2f}%"
     amt = reg.get("total_amount_yi")
     amt_str = "-" if amt is None else f"{float(amt):.0f}亿"
-    ladder = reg.get("consecutive_board_ladder") or {}
-    ladder_str = " ".join(f"{k}板:{v}" for k, v in sorted(ladder.items(), key=lambda kv: int(kv[0]))) or "无"
+    med = reg.get("median_return_pct")
+    med_part = "" if med is None else f"(中位 {float(med):+.2f}%)"
 
-    lines = [
-        f"**AlphaSift A股量化观测日报 ({report.get('trade_date', '-')})**",
-        (
-            f"> 阶段: **{reg.get('regime_stage_label', '-')}({reg.get('regime_stage', '-')})** [仅切片] | "
-            f"上涨: {float(reg.get('advance_ratio_pct', 0.0)):.1f}% | 成交: {amt_str}"
-        ),
-        (
-            f"> 涨停/跌停(非ST): {reg.get('non_st_limit_up_count', 0)}/{reg.get('non_st_limit_down_count', 0)} | "
-            f"封板率: {seal_str} | 连板最高: {reg.get('max_consecutive_limit_up', 0)} ({ladder_str}) | 昨涨停: {prev_str}"
-        ),
-    ]
+    lines = [f"**AlphaSift A股量化观测日报 ({report.get('trade_date', '-')})**"]
+    if report.get("pack_is_stale"):
+        lines.append(
+            f"> ⚠️ **旧包降级**：数据包日期 {report.get('pack_trade_date', '-')} 落后于目标交易日 "
+            f"{report.get('expected_trade_date', '-')}，仅供参考"
+        )
+    lines.append(
+        f"> 盘面 **{reg.get('regime_stage_label', '-')}({reg.get('regime_stage', '-')})**[仅切片]｜"
+        f"上涨 {float(reg.get('advance_ratio_pct', 0.0)):.1f}%{med_part}｜"
+        f"涨跌停 {reg.get('non_st_limit_up_count', 0)}/{reg.get('non_st_limit_down_count', 0)}(封板 {seal_str})｜"
+        f"连板最高 {reg.get('max_consecutive_limit_up', 0)}板｜昨涨停 {prev_str}｜成交 {amt_str}"
+    )
 
-    strategies = report.get("strategies") or []
-    if strategies:
-        lines.append("**策略精选**")
-        for st in strategies[:4]:
-            tag = "AI" if st.get("track") == "ai" or st.get("llm_ranked") else "规则"
-            picks = st.get("picks") or []
-            if picks:
-                pick_bits = []
-                for p in picks[:3]:
-                    rflags = p.get("announcement_risk_flags") or []
-                    warn = f"(!{'/'.join(rflags[:2])})" if rflags else ""
-                    pick_bits.append(f"{p['code']} {p['name']}{warn}")
-                lines.append(f"- [{tag}] {st['strategy']}: " + "，".join(pick_bits))
-            else:
-                lines.append(f"- [{tag}] {st['strategy']}: 无候选")
-
-    pat_sec = report.get("patterns") or {}
-    active = pat_sec.get("active") or []
-    experimental = pat_sec.get("experimental") or []
-    lines.append("**形态雷达**")
-    if active:
-        for pat in active[:4]:
-            sigs = pat.get("signals") or []
-            top_txt = "、".join(f"{s['code']} {s['name']}" for s in sigs[:3]) or "无"
-            lines.append(f"- [active] {pat['display_name']}({pat['hit_count']}): {top_txt}")
-    else:
-        lines.append("- 正式形态(active): 暂无达标信号（均未过 T+5 门槛）")
-
-    if experimental:
-        exp_parts = []
-        for pat in experimental:
-            cnt = int(pat.get("hit_count") or 0)
-            sigs = pat.get("signals") or []
-            head = f" {sigs[0]['code']}{sigs[0]['name']}" if sigs else ""
-            exp_parts.append(f"{pat['display_name']}:{cnt}{head}")
-        lines.append("- [experimental] " + " | ".join(exp_parts[:6]))
-
+    # Alert-first block: announcement risks BEFORE strategies and patterns, with reserved budget.
     ann = report.get("announcement_risks") or {}
     flagged = ann.get("flagged_items") or []
     checked = int(ann.get("checked_count") or 0)
     if flagged:
-        risk_txt = "；".join(
-            f"{item['code']} {item.get('name', '')}[{'/'.join(item['negative_event_flags'][:2])}]"
-            for item in flagged[:4]
-        )
-        lines.append(f"**公告排雷({checked}只抽检/{len(flagged)}预警)**: {risk_txt}")
+        lines.append(f"**⚠️ 公告排雷预警({checked}检/{len(flagged)}中)**")
+        bullet_budget = 340
+        used_ann = 0
+        shown = 0
+        for item in flagged[:5]:
+            flags = "/".join(str(x) for x in (item.get("negative_event_flags") or [])[:2])
+            bullet = f"- {item.get('code', '')} {str(item.get('name', ''))[:8]}[{flags}]"
+            snip = str(item.get("announcement_summary") or "").replace("\n", " ").strip()[:24]
+            if snip and len(bullet) + len(snip) + 2 <= 68:
+                bullet += f": {snip}"
+            if shown > 0 and used_ann + len(bullet) + 1 > bullet_budget:
+                break
+            lines.append(bullet)
+            used_ann += len(bullet) + 1
+            shown += 1
+        if len(flagged) > shown:
+            lines.append(f"- …其余 {len(flagged) - shown} 条高风险见网页详情")
     elif checked > 0 and ann.get("errors"):
-        lines.append(f"**公告排雷**: 抽检 {checked} 只（部分降级：{ann['errors'][0][:45]}）")
+        lines.append(f"**⚠️ 公告排雷**：抽检 {checked} 只（降级：{str(ann['errors'][0])[:40]}）")
     elif checked > 0:
-        lines.append(f"**公告排雷**: 已核验 {checked} 只，暂未发现减持/监管等负面关键词")
+        lines.append(f"**✅ 公告排雷**：抽检 {checked} 只暂未见减持/立案/监管等负面关键词")
+    else:
+        lines.append("**ℹ️ 公告排雷**：未抽检或无候选")
+
+    # Compact strategy & AI overview (NO candidate stock lists on IM card).
+    strategies = report.get("strategies") or []
+    rules_runs = [s for s in strategies if not (s.get("track") == "ai" or s.get("llm_ranked"))]
+    ai_runs = [s for s in strategies if (s.get("track") == "ai" or s.get("llm_ranked"))]
+    rules_picks = sum(
+        int(s["pick_count"]) if s.get("pick_count") is not None else len(s.get("picks") or [])
+        for s in rules_runs
+    )
+    ai_picks = sum(
+        int(s["pick_count"]) if s.get("pick_count") is not None else len(s.get("picks") or [])
+        for s in ai_runs
+    )
+    ai_hl = report.get("ai_highlights") or []
+    if ai_runs:
+        added_n = sum(len(h.get("added_by_ai") or []) for h in ai_hl if isinstance(h, dict))
+        dropped_n = sum(len(h.get("dropped_by_ai") or []) for h in ai_hl if isinstance(h, dict))
+        delta_part = f"，AI调仓 +{added_n}/-{dropped_n}" if ai_hl else ""
+        views = [
+            str(h.get("llm_market_view") or "").replace("\n", " ").strip()
+            for h in ai_hl
+            if isinstance(h, dict) and h.get("llm_market_view")
+        ]
+        view_part = f"（{views[0][:42]}）" if views else ""
+        lines.append(
+            f"**策略与 [AI]**：规则 {len(rules_runs)} 组({rules_picks}只) / "
+            f"[AI] {len(ai_runs)} 组({ai_picks}只){delta_part}{view_part}"
+        )
+    elif rules_runs:
+        lines.append(f"**策略概览**：规则 {len(rules_runs)} 组({rules_picks}只，完整候选见看板)")
+    else:
+        lines.append("**策略概览**：今日暂无已保存 CN 策略运行")
+
+    # Compact pattern radar summary (counts only, experimental lists live in web dashboard).
+    pat_sec = report.get("patterns") or {}
+    active = pat_sec.get("active") or []
+    experimental = pat_sec.get("experimental") or []
+    active_hits = sum(int(p.get("hit_count") or 0) for p in active)
+    exp_hits = sum(int(p.get("hit_count") or 0) for p in experimental)
+    lines.append(
+        f"**形态雷达**：正式(active) {len(active)} 组({active_hits}只) / "
+        f"观察期(experimental) {len(experimental)} 组({exp_hits}只，详见看板)"
+    )
+
+    detail_url = (
+        DEFAULT_DASHBOARD_URL
+        if report.get("detail_url") is None
+        else str(report.get("detail_url") or "").strip()
+    )
+    if detail_url:
+        lines.append(f"🔗 完整候选、AI归因与K线详情：{detail_url}")
 
     lines.append("注：量化形态观测与回测基准，非投资建议。")
     return ensure_im_card_length("\n".join(lines), max_chars=max_chars)

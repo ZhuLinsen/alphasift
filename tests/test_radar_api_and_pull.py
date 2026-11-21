@@ -143,5 +143,51 @@ def test_server_radar_endpoints_and_top_level_exports(tmp_path: Path) -> None:
     s_dr, p_dr = build_api_response(ok_cfg, "/daily-report")
     assert s_dr == 200 and p_dr["im_card_chars"] < 1200
 
+    # Save rules + AI runs matching pack trade_date -> /daily-report loads them cleanly like CLI.
+    from alphasift.models import Pick, ScreenResult
+    from alphasift.store import save_screen_result
+
+    cst_ts = f"{pack.trade_date}T16:00:00+08:00"
+    save_screen_result(
+        ScreenResult(
+            strategy="momentum",
+            market="cn",
+            run_id="api_mom_rules",
+            track="rules",
+            llm_ranked=False,
+            created_at=cst_ts,
+            picks=[Pick(rank=1, code="000001", name="样本1", industry="银行", final_score=80.0, screen_score=80.0)],
+        ),
+        data_dir=ok_cfg.data_dir,
+    )
+    save_screen_result(
+        ScreenResult(
+            strategy="momentum",
+            market="cn",
+            run_id="api_mom_ai",
+            track="ai",
+            llm_ranked=True,
+            llm_market_view="科技成长偏强",
+            created_at=cst_ts,
+            picks=[Pick(rank=1, code="000002", name="样本2", industry="电子", final_score=88.0, screen_score=82.0)],
+        ),
+        data_dir=ok_cfg.data_dir,
+    )
+    s_dr2, p_dr2 = build_api_response(ok_cfg, "/daily-report", query="detail_url=https://example.com/u")
+    assert s_dr2 == 200
+    assert len(p_dr2["strategies"]) == 2
+    assert len(p_dr2["ai_highlights"]) == 1
+    assert "[AI]" in p_dr2["im_card_markdown"]
+    assert "https://example.com/u" in p_dr2["im_card_markdown"]
+
+    s_stale_ok, p_stale_ok = build_api_response(
+        ok_cfg, "/daily-report", query="expected_trade_date=2099-01-01&allow_stale_pack=true"
+    )
+    assert s_stale_ok == 200 and p_stale_ok["pack_is_stale"] is True
+    s_stale_err, p_stale_err = build_api_response(
+        ok_cfg, "/daily-report", query="expected_trade_date=2099-01-01&allow_stale_pack=false"
+    )
+    assert s_stale_err == 400 and p_stale_err["error"] == "invalid_request"
+
     s_bad, p_bad = build_api_response(ok_cfg, "/market-stats", query="trade_date=1999-01-01")
     assert s_bad == 400 and p_bad["error"] == "invalid_request"
