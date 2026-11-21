@@ -130,6 +130,8 @@ DAILY_REPORT_SCHEMA: dict[str, object] = {
         "market_regime",
         "strategies",
         "ai_highlights",
+        "cross_strategy_synthesis",
+        "ai_brief",
         "patterns",
         "announcement_risks",
         "degradation",

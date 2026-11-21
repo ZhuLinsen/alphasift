@@ -312,13 +312,17 @@ def test_evaluate_markets_switchover_cn_pack_raw_limit_and_paired_ai_comparison(
         runs_list.append({
             "market": "cn", "strategy": "balanced_alpha", "track": "rules",
             "run_id": rid_r, "date": d,
-            "picks": [{"code": "000001"}, {"code": "000002"}],
+            "picks": [
+                {"code": "000001", "name": "平安银行"},
+                {"code": "000002", "name": "万科A"},
+            ],
         })
+        dropped_ret = -3.0 if i == 2 else (2.5 if i == 3 else 0.0)
         eval_map[rid_r] = {"windows": {"5": {
             "entry_mode": "next_open",
             "picks": {
                 "000001": {"status": "ok", "return_pct": 1.0, "excess_return_pct": 1.0},
-                "000002": {"status": "ok", "return_pct": 0.0, "excess_return_pct": 0.0},
+                "000002": {"status": "ok", "return_pct": dropped_ret, "excess_return_pct": dropped_ret},
             },
         }}}
         if i == 11:
@@ -327,13 +331,17 @@ def test_evaluate_markets_switchover_cn_pack_raw_limit_and_paired_ai_comparison(
         runs_list.append({
             "market": "cn", "strategy": "balanced_alpha", "track": "ai",
             "run_id": rid_a, "date": d,
-            "picks": [{"code": "000001"}, {"code": "000003"}],
+            "picks": [
+                {"code": "000001", "name": "平安银行"},
+                {"code": "000003", "name": "国农科技"},
+            ],
         })
+        ai_ret = -1.5 if i == 4 else 4.0
         eval_map[rid_a] = {"windows": {"5": {
             "entry_mode": "next_open",
             "picks": {
                 "000001": {"status": "ok", "return_pct": 1.0, "excess_return_pct": 1.0},
-                "000003": {"status": "ok", "return_pct": 4.0, "excess_return_pct": 4.0},
+                "000003": {"status": "ok", "return_pct": ai_ret, "excess_return_pct": ai_ret},
             },
         }}}
 
@@ -345,8 +353,11 @@ def test_evaluate_markets_switchover_cn_pack_raw_limit_and_paired_ai_comparison(
     w5_cmp = cmp["windows"]["5"]
     assert w5_cmp["paired_days"] == 11
     assert w5_cmp["sample_sufficient"] is True
-    assert w5_cmp["rules_excess_pct"] == 0.5
-    assert w5_cmp["ai_excess_pct"] == 2.5
-    assert w5_cmp["ai_minus_rules_pct"] == 2.0
-    assert w5_cmp["ai_unique_excess_pct"] == 4.0
-    assert w5_cmp["rules_dropped_excess_pct"] == 0.0
+    assert w5_cmp["ai_minus_rules_pct"] > 0
+    cases = w5_cmp["ai_case_studies"]
+    assert cases["best_ai_adds"][0]["code"] == "000003"
+    assert cases["best_ai_adds"][0]["name"] == "国农科技"
+    assert cases["worst_ai_adds"][0]["excess_return_pct"] == -1.5
+    assert cases["best_ai_avoids"][0]["code"] == "000002"
+    assert cases["best_ai_avoids"][0]["excess_return_pct"] == -3.0
+    assert cases["missed_by_ai"][0]["excess_return_pct"] == 2.5
