@@ -1,5 +1,6 @@
 {
- "evaluated_at": "2026-11-20T22:34:55+00:00",
+ "evaluated_at": "2026-11-21T10:01:53+00:00",
+ "entry_mode_switch_date": "2026-11-21",
  "windows": [
   5,
   10,
@@ -7,10 +8,11 @@
  ],
  "runs": {
   "28be39e77643": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -0.6249,
      "pending": 0,
@@ -43,6 +45,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -2.8666,
      "pending": 0,
@@ -75,6 +78,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -109,10 +113,11 @@
    }
   },
   "c63a1b4153ec": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -0.6249,
      "pending": 0,
@@ -145,6 +150,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -2.8666,
      "pending": 0,
@@ -177,6 +183,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -211,10 +218,11 @@
    }
   },
   "3d741fc4cf90": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -0.6249,
      "pending": 0,
@@ -247,6 +255,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -2.8666,
      "pending": 0,
@@ -279,6 +288,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -313,10 +323,11 @@
    }
   },
   "04b49195e690": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -0.6249,
      "pending": 0,
@@ -349,6 +360,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -2.8666,
      "pending": 0,
@@ -381,6 +393,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -415,10 +428,11 @@
    }
   },
   "cd868266db57": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -0.6249,
      "pending": 0,
@@ -451,6 +465,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -2.8666,
      "pending": 0,
@@ -483,6 +498,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -517,10 +533,11 @@
    }
   },
   "b1e65d099af5": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -0.6249,
      "pending": 0,
@@ -553,6 +570,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -2.8666,
      "pending": 0,
@@ -585,6 +603,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -619,10 +638,11 @@
    }
   },
   "0573822768fe": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -0.6249,
      "pending": 0,
@@ -655,6 +675,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -2.8666,
      "pending": 0,
@@ -687,6 +708,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -721,10 +743,11 @@
    }
   },
   "bbb47cbbdda1": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -0.6249,
      "pending": 0,
@@ -757,6 +780,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -2.8666,
      "pending": 0,
@@ -789,6 +813,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -823,10 +848,11 @@
    }
   },
   "130036dc6adb": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -0.6249,
      "pending": 0,
@@ -859,6 +885,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -2.8666,
      "pending": 0,
@@ -891,6 +918,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -925,10 +953,11 @@
    }
   },
   "3f625e8988ac": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -0.6249,
      "pending": 0,
@@ -941,6 +970,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -2.8666,
      "pending": 0,
@@ -953,6 +983,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 1,
@@ -967,10 +998,11 @@
    }
   },
   "09c66dcc0293": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": 1.6573,
      "pending": 0,
@@ -1003,6 +1035,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": -2.6119,
      "pending": 0,
@@ -1035,6 +1068,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1069,10 +1103,11 @@
    }
   },
   "ab6f795eb02c": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": -1.5116,
      "pending": 0,
@@ -1105,6 +1140,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": -5.0883,
      "pending": 0,
@@ -1137,6 +1173,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1171,10 +1208,11 @@
    }
   },
   "6f853e39a776": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": -5.4267,
      "pending": 0,
@@ -1207,6 +1245,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": -10.8442,
      "pending": 0,
@@ -1239,6 +1278,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1273,10 +1313,11 @@
    }
   },
   "31891fcb2a51": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": 3.046,
      "pending": 0,
@@ -1309,6 +1350,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": -6.4123,
      "pending": 0,
@@ -1341,6 +1383,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1375,10 +1418,11 @@
    }
   },
   "b80426ffb848": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": 5.5873,
      "pending": 0,
@@ -1411,6 +1455,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": 6.4844,
      "pending": 0,
@@ -1443,6 +1488,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1477,10 +1523,11 @@
    }
   },
   "7284e8e0148c": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": -3.897,
      "pending": 0,
@@ -1513,6 +1560,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1545,6 +1593,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1579,10 +1628,11 @@
    }
   },
   "3a753b288834": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": -3.897,
      "pending": 0,
@@ -1615,6 +1665,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1647,6 +1698,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1681,10 +1733,11 @@
    }
   },
   "8ecf7868e140": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.4612,
      "pending": 0,
@@ -1717,6 +1770,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1749,6 +1803,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1783,10 +1838,11 @@
    }
   },
   "6588f474e775": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.4612,
      "pending": 0,
@@ -1819,6 +1875,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1851,6 +1908,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1885,10 +1943,11 @@
    }
   },
   "6a1ce78f9ccc": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.4612,
      "pending": 0,
@@ -1921,6 +1980,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1953,6 +2013,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -1987,10 +2048,11 @@
    }
   },
   "dc3ba817041a": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.4612,
      "pending": 0,
@@ -2023,6 +2085,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2055,6 +2118,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2089,10 +2153,11 @@
    }
   },
   "94c67da05580": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.4612,
      "pending": 0,
@@ -2125,6 +2190,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2157,6 +2223,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2191,10 +2258,11 @@
    }
   },
   "ce1c1f9fcceb": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.4612,
      "pending": 0,
@@ -2227,6 +2295,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2259,6 +2328,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2293,10 +2363,11 @@
    }
   },
   "7b6eeb4c4615": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.4612,
      "pending": 0,
@@ -2329,6 +2400,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2361,6 +2433,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2395,10 +2468,11 @@
    }
   },
   "4c020626b42c": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.4612,
      "pending": 0,
@@ -2431,6 +2505,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2463,6 +2538,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2497,10 +2573,11 @@
    }
   },
   "e542dc2b3e64": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.4612,
      "pending": 0,
@@ -2528,6 +2605,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 4,
@@ -2555,6 +2633,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 4,
@@ -2584,10 +2663,11 @@
    }
   },
   "15e1991f7c13": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.4612,
      "pending": 0,
@@ -2615,6 +2695,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 4,
@@ -2642,6 +2723,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 4,
@@ -2671,10 +2753,11 @@
    }
   },
   "fb85cfe13d06": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": -4.8605,
      "pending": 0,
@@ -2707,6 +2790,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2739,6 +2823,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2773,10 +2858,11 @@
    }
   },
   "aefef30419b1": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": -2.261,
      "pending": 0,
@@ -2809,6 +2895,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2841,6 +2928,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2875,10 +2963,11 @@
    }
   },
   "2b37fa27278c": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": -3.834,
      "pending": 0,
@@ -2911,6 +3000,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2943,6 +3033,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -2977,10 +3068,11 @@
    }
   },
   "31530f1b14ba": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": -10.8257,
      "pending": 0,
@@ -3013,6 +3105,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3045,6 +3138,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3079,10 +3173,11 @@
    }
   },
   "1c647076df21": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": 0.8496,
      "pending": 0,
@@ -3115,6 +3210,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3147,6 +3243,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3181,10 +3278,11 @@
    }
   },
   "7da1a5d66a44": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": -5.4483,
      "pending": 0,
@@ -3217,6 +3315,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3249,6 +3348,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3283,10 +3383,11 @@
    }
   },
   "5dccc124ea86": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": -5.4483,
      "pending": 0,
@@ -3319,6 +3420,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3351,6 +3453,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3385,10 +3488,11 @@
    }
   },
   "816bcd05aa4f": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.5367,
      "pending": 0,
@@ -3421,6 +3525,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3453,6 +3558,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3487,10 +3593,11 @@
    }
   },
   "747a7b7c8473": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.5367,
      "pending": 0,
@@ -3523,6 +3630,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3555,6 +3663,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3589,10 +3698,11 @@
    }
   },
   "f779d428dd13": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.5367,
      "pending": 0,
@@ -3625,6 +3735,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3657,6 +3768,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3691,10 +3803,11 @@
    }
   },
   "d64d1a49c711": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.5367,
      "pending": 0,
@@ -3727,6 +3840,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3759,6 +3873,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3793,10 +3908,11 @@
    }
   },
   "0f4b9945faf3": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.5367,
      "pending": 0,
@@ -3829,6 +3945,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3861,6 +3978,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3895,10 +4013,11 @@
    }
   },
   "1c46a4373312": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.5367,
      "pending": 0,
@@ -3931,6 +4050,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3963,6 +4083,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -3997,10 +4118,11 @@
    }
   },
   "0e9d1bece9f9": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.5367,
      "pending": 0,
@@ -4033,6 +4155,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4065,6 +4188,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4099,10 +4223,11 @@
    }
   },
   "0d0e8a94ccb3": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.5367,
      "pending": 0,
@@ -4135,6 +4260,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4167,6 +4293,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4201,10 +4328,11 @@
    }
   },
   "989cbd17f9a6": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.5367,
      "pending": 0,
@@ -4237,6 +4365,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4269,6 +4398,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4303,10 +4433,11 @@
    }
   },
   "4ad4740fa2d1": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": -1.5367,
      "pending": 0,
@@ -4329,6 +4460,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 3,
@@ -4351,6 +4483,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 3,
@@ -4375,10 +4508,11 @@
    }
   },
   "be40b2a91b44": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": -5.19,
      "pending": 0,
@@ -4411,6 +4545,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4443,6 +4578,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4477,10 +4613,11 @@
    }
   },
   "6578aebb99f0": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": -7.6963,
      "pending": 0,
@@ -4513,6 +4650,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4545,6 +4683,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4579,10 +4718,11 @@
    }
   },
   "b33578996407": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": -7.9495,
      "pending": 0,
@@ -4615,6 +4755,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4647,6 +4788,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4681,10 +4823,11 @@
    }
   },
   "53b1b0d946bf": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": -17.497,
      "pending": 0,
@@ -4717,6 +4860,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4749,6 +4893,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4783,10 +4928,11 @@
    }
   },
   "9921aba10081": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": 2.6101,
      "pending": 0,
@@ -4819,6 +4965,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4851,6 +4998,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4885,10 +5033,11 @@
    }
   },
   "cae43eb6e6a1": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": -8.5581,
      "pending": 0,
@@ -4921,6 +5070,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4953,6 +5103,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -4987,10 +5138,11 @@
    }
   },
   "a6da12b31a6a": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": -8.5581,
      "pending": 0,
@@ -5023,6 +5175,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5055,6 +5208,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5089,10 +5243,11 @@
    }
   },
   "40cbcae026c9": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5125,6 +5280,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5157,6 +5313,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5191,10 +5348,11 @@
    }
   },
   "84570506a887": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5227,6 +5385,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5259,6 +5418,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5293,10 +5453,11 @@
    }
   },
   "0dc71660d5c5": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5329,6 +5490,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5361,6 +5523,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5395,10 +5558,11 @@
    }
   },
   "1c5232db4154": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5431,6 +5595,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5463,6 +5628,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5497,10 +5663,11 @@
    }
   },
   "febf5fb8fdb5": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5533,6 +5700,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5565,6 +5733,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5599,10 +5768,11 @@
    }
   },
   "416dc307ab65": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5635,6 +5805,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5667,6 +5838,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5701,10 +5873,11 @@
    }
   },
   "31c9bce9cade": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5737,6 +5910,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5769,6 +5943,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5803,10 +5978,11 @@
    }
   },
   "235d499a8dad": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5839,6 +6015,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5871,6 +6048,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5905,10 +6083,11 @@
    }
   },
   "c09ca1e09eef": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5941,6 +6120,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -5973,6 +6153,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6007,10 +6188,11 @@
    }
   },
   "c3a8746d9f1a": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6043,6 +6225,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6075,6 +6258,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6109,10 +6293,11 @@
    }
   },
   "7b4229065144": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6145,6 +6330,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6177,6 +6363,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6211,10 +6398,11 @@
    }
   },
   "852c099b8b30": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6247,6 +6435,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6279,6 +6468,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6313,10 +6503,11 @@
    }
   },
   "729692c11a10": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6349,6 +6540,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6381,6 +6573,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6415,10 +6608,11 @@
    }
   },
   "ae6f35d280d7": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6451,6 +6645,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6483,6 +6678,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6517,10 +6713,11 @@
    }
   },
   "abfd266d249e": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6553,6 +6750,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6585,6 +6783,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6619,10 +6818,11 @@
    }
   },
   "77d92e7d72d2": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6655,6 +6855,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6687,6 +6888,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6721,10 +6923,11 @@
    }
   },
   "100906b58dd7": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6757,6 +6960,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6789,6 +6993,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6823,10 +7028,11 @@
    }
   },
   "03bcaf2b3a19": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6859,6 +7065,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6891,6 +7098,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6925,10 +7133,11 @@
    }
   },
   "84a23329a79b": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6961,6 +7170,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -6993,6 +7203,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7027,10 +7238,11 @@
    }
   },
   "40d821fa11c7": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7063,6 +7275,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7095,6 +7308,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7129,10 +7343,11 @@
    }
   },
   "02e6907c754f": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7165,6 +7380,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7197,6 +7413,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7231,10 +7448,11 @@
    }
   },
   "28c868a2410f": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7267,6 +7485,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7299,6 +7518,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7333,10 +7553,11 @@
    }
   },
   "995b2ba72331": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7369,6 +7590,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7401,6 +7623,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7435,10 +7658,11 @@
    }
   },
   "e39dd43c6abb": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7471,6 +7695,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7503,6 +7728,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7537,10 +7763,11 @@
    }
   },
   "5720b6cc16be": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7573,6 +7800,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7605,6 +7833,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7639,10 +7868,11 @@
    }
   },
   "3ed225d4d190": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7675,6 +7905,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7707,6 +7938,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7741,10 +7973,11 @@
    }
   },
   "920d4ed584e7": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7777,6 +8010,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7809,6 +8043,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7843,10 +8078,11 @@
    }
   },
   "9da52e088202": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7879,6 +8115,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7911,6 +8148,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7945,10 +8183,11 @@
    }
   },
   "83832ae6d420": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -7981,6 +8220,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8013,6 +8253,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8047,10 +8288,11 @@
    }
   },
   "84a4c72b0882": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8083,6 +8325,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8115,6 +8358,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8149,10 +8393,11 @@
    }
   },
   "543ded1a65b6": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8185,6 +8430,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8217,6 +8463,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8251,10 +8498,11 @@
    }
   },
   "6c1a6d92ffc9": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8287,6 +8535,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8319,6 +8568,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8353,10 +8603,11 @@
    }
   },
   "c3a8bec3b6c1": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8389,6 +8640,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8421,6 +8673,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8455,10 +8708,11 @@
    }
   },
   "d9a3978492b8": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8491,6 +8745,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8523,6 +8778,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8557,10 +8813,11 @@
    }
   },
   "a181afdf0746": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8593,6 +8850,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8625,6 +8883,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8659,10 +8918,11 @@
    }
   },
   "aaf95f0b8f06": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8695,6 +8955,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8727,6 +8988,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8761,10 +9023,11 @@
    }
   },
   "10240da9fca5": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8797,6 +9060,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8829,6 +9093,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8863,10 +9128,11 @@
    }
   },
   "edd2ed824a01": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8899,6 +9165,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8931,6 +9198,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -8965,10 +9233,11 @@
    }
   },
   "586345ab6ea8": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9001,6 +9270,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9033,6 +9303,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9067,10 +9338,11 @@
    }
   },
   "4fedf1ca647d": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9103,6 +9375,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9135,6 +9408,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9169,10 +9443,11 @@
    }
   },
   "b8f2c6e47070": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9205,6 +9480,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9237,6 +9513,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9271,10 +9548,11 @@
    }
   },
   "1753a3937a4c": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9307,6 +9585,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9339,6 +9618,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9373,10 +9653,11 @@
    }
   },
   "02ea01c70c5b": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9409,6 +9690,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9441,6 +9723,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9475,10 +9758,11 @@
    }
   },
   "111a31f77a93": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 3,
@@ -9501,6 +9785,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 3,
@@ -9523,6 +9808,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 3,
@@ -9547,10 +9833,11 @@
    }
   },
   "bb77611e2849": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9583,6 +9870,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9615,6 +9903,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9649,10 +9938,11 @@
    }
   },
   "b9072c1bc829": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9685,6 +9975,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9717,6 +10008,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9751,10 +10043,11 @@
    }
   },
   "a6ac35eca0b1": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9787,6 +10080,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9819,6 +10113,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9853,10 +10148,11 @@
    }
   },
   "8a994391eb07": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9889,6 +10185,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9921,6 +10218,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9955,10 +10253,11 @@
    }
   },
   "81ea991c0ce4": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -9991,6 +10290,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10023,6 +10323,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10057,10 +10358,11 @@
    }
   },
   "96281996813e": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10093,6 +10395,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10125,6 +10428,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10159,10 +10463,11 @@
    }
   },
   "8cd58ac4aead": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10195,6 +10500,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10227,6 +10533,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10261,10 +10568,11 @@
    }
   },
   "4e309602d1b6": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10297,6 +10605,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10329,6 +10638,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10363,10 +10673,11 @@
    }
   },
   "effe118f4bc5": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10399,6 +10710,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10431,6 +10743,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10465,10 +10778,11 @@
    }
   },
   "bfd390c989d8": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10501,6 +10815,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10533,6 +10848,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10567,10 +10883,11 @@
    }
   },
   "28123553a358": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10603,6 +10920,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10635,6 +10953,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10669,10 +10988,11 @@
    }
   },
   "9f444bae7426": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10705,6 +11025,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10737,6 +11058,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10771,10 +11093,11 @@
    }
   },
   "06877eea7018": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10807,6 +11130,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10839,6 +11163,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10873,10 +11198,11 @@
    }
   },
   "d819a3788d3d": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10909,6 +11235,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10941,6 +11268,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -10975,10 +11303,11 @@
    }
   },
   "36035f3f862d": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11011,6 +11340,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11043,6 +11373,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11077,10 +11408,11 @@
    }
   },
   "6f94360067bd": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11113,6 +11445,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11145,6 +11478,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11179,10 +11513,11 @@
    }
   },
   "6cf0641cad4d": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 4,
@@ -11210,6 +11545,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 4,
@@ -11237,6 +11573,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 4,
@@ -11266,10 +11603,11 @@
    }
   },
   "398505fe1826": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11302,6 +11640,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11334,6 +11673,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11368,10 +11708,11 @@
    }
   },
   "beb6e1708b12": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11404,6 +11745,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11436,6 +11778,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11470,10 +11813,11 @@
    }
   },
   "6ad3a299bbe4": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11506,6 +11850,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11538,6 +11883,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11572,10 +11918,11 @@
    }
   },
   "5d1aeb4eaae8": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11608,6 +11955,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11640,6 +11988,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11674,10 +12023,11 @@
    }
   },
   "0bd0fd374327": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11710,6 +12060,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11742,6 +12093,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11776,10 +12128,11 @@
    }
   },
   "40621daaf4ec": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11812,6 +12165,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11844,6 +12198,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11878,10 +12233,11 @@
    }
   },
   "0d1365962ccc": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11914,6 +12270,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11946,6 +12303,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -11980,10 +12338,11 @@
    }
   },
   "903f276257ea": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12016,6 +12375,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12048,6 +12408,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12082,10 +12443,11 @@
    }
   },
   "94878e573030": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12118,6 +12480,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12150,6 +12513,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12184,10 +12548,11 @@
    }
   },
   "abe4d5b9ce5a": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12220,6 +12585,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12252,6 +12618,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12286,10 +12653,11 @@
    }
   },
   "2c6037453680": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12322,6 +12690,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12354,6 +12723,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12388,10 +12758,11 @@
    }
   },
   "1dc905bbd73b": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12424,6 +12795,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12456,6 +12828,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12490,10 +12863,11 @@
    }
   },
   "a86b9166d90c": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12526,6 +12900,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12558,6 +12933,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12592,10 +12968,11 @@
    }
   },
   "6a11bbd1a8a4": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12628,6 +13005,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12660,6 +13038,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12694,10 +13073,11 @@
    }
   },
   "71432366dbdd": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12730,6 +13110,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12762,6 +13143,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12796,10 +13178,11 @@
    }
   },
   "25f961fa86dc": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12832,6 +13215,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12864,6 +13248,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12898,10 +13283,11 @@
    }
   },
   "34d37cfe27c6": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 1,
@@ -12914,6 +13300,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 1,
@@ -12926,6 +13313,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "CSI 300",
      "benchmark_return_pct": null,
      "pending": 1,
@@ -12940,10 +13328,11 @@
    }
   },
   "e347268087b6": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -12976,6 +13365,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13008,6 +13398,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13042,10 +13433,11 @@
    }
   },
   "4cfbc2370262": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13078,6 +13470,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13110,6 +13503,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13144,10 +13538,11 @@
    }
   },
   "5d5a100be65f": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13180,6 +13575,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13212,6 +13608,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13246,10 +13643,11 @@
    }
   },
   "f98603d79f74": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13282,6 +13680,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13314,6 +13713,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13348,10 +13748,11 @@
    }
   },
   "ddc8088385f0": {
-   "evaluated_at": "2026-11-20T10:35:50+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13384,6 +13785,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13416,6 +13818,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13450,10 +13853,11 @@
    }
   },
   "fd0f0b1106ce": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13486,6 +13890,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13518,6 +13923,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13552,10 +13958,11 @@
    }
   },
   "d9edc25a4bc7": {
-   "evaluated_at": "2026-11-20T22:34:55+00:00",
+   "evaluated_at": "2026-11-21T10:01:53+00:00",
    "final": false,
    "windows": {
     "5": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13588,6 +13995,7 @@
      }
     },
     "10": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,
@@ -13620,6 +14028,7 @@
      }
     },
     "20": {
+     "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": null,
      "pending": 5,

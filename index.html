@@ -4,178 +4,909 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AlphaSift · 量化形态观测与回测基准</title>
-<meta name="description" content="AlphaSift 量化形态观测与回测基准：每日策略规则榜与可选 AI 榜记录、A 股盘面宽度与形态雷达切片、T+5 / T+10 / T+20 相对基准及不可成交占比验证。">
+<meta name="description" content="AlphaSift 开源全市场选股与验证引擎：A 股盘面宽度与情绪分布、多策略共识、公告排雷、规则 vs AI 同日配对归因、形态 250 日聚日验证与 T+5 / T+10 / T+20 不可成交口径评估。">
 <style>
 :root {
-  --bg: #f7f7f5; --panel: #ffffff; --ink: #1c1d1f; --muted: #6b6f76; --line: #e4e4e0;
-  --accent: #2f5bd3; --up: #c8352b; --down: #1f8a4c; --warn: #b7791f; --chip: #efefeb;
-  --s1: #2f5bd3; --s2: #c8352b; --s3: #1f8a4c; --s4: #b7791f; --s5: #7b4fc9; --s6: #0f8a8a;
-  --s7: #c2549b; --s8: #5b6470; --s9: #8a6d1f; --s10: #3f8fd6; --s11: #d9773a; --s12: #4a9e6b;
+  --bg: #09090b;
+  --bg-elevated: #0e0e12;
+  --surface: #111115;
+  --surface-2: #17171d;
+  --surface-hover: #1c1c24;
+  --ink: #f4f4f5;
+  --ink-2: #d4d4d8;
+  --muted: #8e8e9a;
+  --subtle: #5c5c68;
+  --border: rgba(255, 255, 255, 0.085);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --glass: rgba(9, 9, 11, 0.78);
+  --accent: #3b82f6;
+  --accent-hi: #60a5fa;
+  --accent-soft: rgba(59, 130, 246, 0.14);
+  --up: #f87171;
+  --up-strong: #ef4444;
+  --up-soft: rgba(248, 113, 113, 0.13);
+  --down: #34d399;
+  --down-strong: #10b981;
+  --down-soft: rgba(52, 211, 153, 0.12);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.14);
+  --chip: rgba(255, 255, 255, 0.06);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px -15px rgba(0, 0, 0, 0.65);
+  --grid-dot: rgba(255, 255, 255, 0.035);
+  --glow: rgba(59, 130, 246, 0.09);
+  --s1: #60a5fa; --s2: #f87171; --s3: #34d399; --s4: #fbbf24;
+  --s5: #38bdf8; --s6: #fb923c; --s7: #e879f9; --s8: #94a3b8;
+  --s9: #a3e635; --s10: #2dd4bf; --s11: #fda4af; --s12: #c4b5fd;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #141517; --panel: #1c1d20; --ink: #e8e8e6; --muted: #9a9ea6; --line: #2d2f33;
-    --accent: #7b9cf0; --up: #f0766b; --down: #4cc483; --warn: #e0b354; --chip: #26282c;
-  }
+
+:root[data-theme="light"] {
+  --bg: #fafafa;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --surface-hover: #eceef2;
+  --ink: #09090b;
+  --ink-2: #27272a;
+  --muted: #52525b;
+  --subtle: #71717a;
+  --border: rgba(9, 9, 11, 0.09);
+  --border-strong: rgba(9, 9, 11, 0.18);
+  --glass: rgba(250, 250, 250, 0.84);
+  --accent: #1d4ed8;
+  --accent-hi: #2563eb;
+  --accent-soft: rgba(37, 99, 235, 0.1);
+  --up: #dc2626;
+  --up-strong: #b91c1c;
+  --up-soft: rgba(220, 38, 38, 0.09);
+  --down: #059669;
+  --down-strong: #047857;
+  --down-soft: rgba(5, 150, 105, 0.1);
+  --warn: #b45309;
+  --warn-soft: rgba(180, 83, 9, 0.1);
+  --chip: rgba(9, 9, 11, 0.055);
+  --shadow: 0 1px 2px rgba(9, 9, 11, 0.04), 0 8px 24px -16px rgba(9, 9, 11, 0.08);
+  --grid-dot: rgba(9, 9, 11, 0.045);
+  --glow: rgba(37, 99, 235, 0.055);
+  --s1: #2563eb; --s2: #dc2626; --s3: #059669; --s4: #d97706;
+  --s5: #0284c7; --s6: #ea580c; --s7: #9333ea; --s8: #475569;
+  --s9: #65a30d; --s10: #0d9488; --s11: #e11d48; --s12: #4f46e5;
 }
-:root[data-theme="dark"] {
-  --bg: #141517; --panel: #1c1d20; --ink: #e8e8e6; --muted: #9a9ea6; --line: #2d2f33;
-  --accent: #7b9cf0; --up: #f0766b; --down: #4cc483; --warn: #e0b354; --chip: #26282c;
-}
+
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
-  margin: 0; background: var(--bg); color: var(--ink);
-  font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
-    "Microsoft YaHei", sans-serif;
+  margin: 0;
+  color: var(--ink);
+  font: 13.5px/1.55 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 420px at 50% -80px, var(--glow), transparent 72%),
+    radial-gradient(var(--grid-dot) 1px, transparent 1px);
+  background-size: 100% 100%, 24px 24px;
+  min-height: 100vh;
 }
-main { max-width: 1120px; margin: 0 auto; padding: 28px 16px 64px; }
-header h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
-header p { margin: 0; color: var(--muted); }
-a { color: var(--accent); }
-.meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.chip { background: var(--chip); border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); }
-.chip.bad { color: var(--up); }
-.chip.accent { color: var(--accent); font-weight: 600; }
-.notice { margin-top: 14px; padding: 10px 12px; border-left: 3px solid var(--warn); background: var(--panel);
-  color: var(--muted); font-size: 13px; border-radius: 4px; }
-section { margin-top: 32px; }
-section > h2 { font-size: 17px; margin: 0 0 4px; }
-section > .hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
-h3.subhead { font-size: 14px; margin: 18px 0 8px; color: var(--ink); }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+
+a { color: var(--accent-hi); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: var(--font-mono); font-size: 0.9em;
+  background: var(--chip); padding: 1px 5px; border-radius: 5px; border: 1px solid var(--border);
+}
+
+/* Sticky Navigation Bar */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--glass);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.topbar-inner {
+  max-width: 1280px; margin: 0 auto; padding: 10px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.brand-group { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-link {
+  display: inline-flex; align-items: center; gap: 9px; color: var(--ink);
+  font-weight: 700; font-size: 15px; letter-spacing: -0.02em; text-decoration: none;
+}
+.brand-link:hover { text-decoration: none; opacity: 0.92; }
+.brand-mark {
+  width: 26px; height: 26px; border-radius: 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--accent-hi);
+}
+.live-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  font-family: var(--font-mono); letter-spacing: 0.02em;
+  background: var(--down-soft); color: var(--down); border: 1px solid rgba(52, 211, 153, 0.24);
+  white-space: nowrap;
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--down);
+  box-shadow: 0 0 8px var(--down);
+}
+
+.nav-center {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px;
+}
+.nav-center a {
+  padding: 4px 11px; border-radius: 999px; font-size: 12px; font-weight: 500;
+  color: var(--muted); transition: color 0.15s, background 0.15s; white-space: nowrap;
+}
+.nav-center a:hover { color: var(--ink); background: var(--chip); text-decoration: none; }
+
+.top-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.action-btn, .github-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--surface); color: var(--ink-2);
+  cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; white-space: nowrap;
+  font-family: inherit;
+}
+.action-btn:hover, .github-btn:hover {
+  border-color: var(--border-strong); background: var(--surface-2); color: var(--ink); text-decoration: none;
+}
+.github-btn {
+  background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600;
+}
+.github-btn:hover { opacity: 0.9; background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* Container */
+main { max-width: 1280px; margin: 0 auto; padding: 24px 20px 72px; }
+
+/* Editorial Masthead */
+.masthead {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+  gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--border);
+}
+.masthead-left { max-width: 780px; }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--accent-hi); margin-bottom: 8px; font-family: var(--font-mono);
+}
+.masthead h1 {
+  margin: 0; font-size: clamp(22px, 2.8vw, 30px); line-height: 1.18;
+  font-weight: 700; letter-spacing: -0.03em; color: var(--ink);
+}
+.masthead-sub {
+  margin: 8px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.55;
+}
+.masthead-right {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; align-items: center; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 6px; font-size: 11.5px; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border); font-family: var(--font-mono);
+}
+.chip.ok { background: var(--down-soft); color: var(--down); border-color: rgba(52, 211, 153, 0.25); font-weight: 600; }
+.chip.bad { background: var(--up-soft); color: var(--up); border-color: rgba(248, 113, 113, 0.28); font-weight: 600; }
+.chip.accent { background: var(--accent-soft); color: var(--accent-hi); border-color: rgba(59, 130, 246, 0.25); font-weight: 600; }
+.chip.warn { background: var(--warn-soft); color: var(--warn); border-color: rgba(251, 191, 36, 0.28); font-weight: 600; }
+
+.stale-banner {
+  display: none; margin-top: 14px; padding: 11px 14px; border-radius: 10px;
+  background: var(--warn-soft); border: 1px solid rgba(251, 191, 36, 0.38);
+  color: var(--ink); font-size: 12.5px;
+}
+.stale-banner.show { display: block; }
+
+/* Unified 4-Col Hairline KPI Strip */
+.kpi-strip {
+  margin-top: 18px;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.kpi-cell {
+  background: var(--surface); padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 4px; min-width: 0;
+}
+.kpi-label {
+  font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.03em;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+}
+.kpi-val {
+  font-size: clamp(20px, 2vw, 24px); font-weight: 700; letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums; font-family: var(--font-mono); line-height: 1.2; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kpi-foot {
+  font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Section Headers */
+section { margin-top: 28px; scroll-margin-top: 66px; }
+.sec-head {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px;
+  margin-bottom: 12px;
+}
+.sec-head h2 {
+  margin: 0; font-size: 16.5px; font-weight: 700; letter-spacing: -0.015em;
+  display: flex; align-items: center; gap: 8px;
+}
+.sec-num {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  color: var(--accent-hi); background: var(--accent-soft); padding: 1px 6px; border-radius: 5px;
+}
+.sec-hint { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+
+/* Panels & Asymmetric Bento Grid */
+.panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.bento-command {
+  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 14px; align-items: stretch;
+}
+.bento-pane {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0;
+}
+.pane-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+}
+.pane-title {
+  font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 7px;
+}
+
+/* Brief Callout & Alert Bar */
+.brief-callout {
+  padding: 10px 12px; border-radius: 9px;
+  background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--accent-hi);
+  font-size: 13px; line-height: 1.5; color: var(--ink-2);
+}
+.brief-callout b { color: var(--ink); }
+.alert-strip {
+  padding: 9px 12px; border-radius: 9px;
+  background: var(--up-soft); border: 1px solid rgba(248, 113, 113, 0.28);
+  font-size: 12.5px; display: flex; flex-direction: column; gap: 4px;
+}
+.alert-ok {
+  padding: 7px 11px; border-radius: 8px;
+  background: var(--down-soft); border: 1px solid rgba(52, 211, 153, 0.22);
+  color: var(--down); font-size: 12px; font-weight: 500;
+}
+
+/* Sector Concentration Strip */
+.sector-pills {
+  display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--border);
+}
+.sector-row {
+  display: grid; grid-template-columns: 92px 1fr 76px; align-items: center; gap: 8px; font-size: 12px;
+}
+.bar-track {
+  height: 7px; border-radius: 999px; background: var(--chip); overflow: hidden; position: relative;
+}
+.bar-fill {
+  height: 100%; border-radius: 999px; background: var(--accent-hi);
+}
+.bar-fill.up-bg { background: var(--up); }
+
+/* Right Bento: CN Regime & Multi-Market Snapshot */
+.cn-stat-2x2 {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+}
+.mini-stat {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px;
+}
+.mini-stat .lbl { font-size: 11px; color: var(--muted); }
+.mini-stat .val { font-size: 15px; font-weight: 700; font-family: var(--font-mono); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.mini-stat .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.breadth-bar {
+  height: 8px; border-radius: 999px; overflow: hidden; display: flex; background: var(--chip);
+}
+.breadth-bar span { height: 100%; display: block; }
+.breadth-meta { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); }
+.dist-svg { width: 100%; height: 116px; display: block; }
+
+.ladder-list { display: flex; flex-direction: column; gap: 6px; }
+.ladder-row {
+  display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; gap: 8px; font-size: 12px; font-family: var(--font-mono);
+}
+.hist-ribbon { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.hist-pill {
+  font-size: 11px; padding: 2px 7px; border-radius: 5px; background: var(--surface-2);
+  border: 1px solid var(--border); color: var(--muted); font-family: var(--font-mono);
+}
+
+.mkt-snap-list { display: flex; flex-direction: column; gap: 8px; }
+.mkt-snap-row {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) 74px; align-items: center; gap: 10px;
+  padding: 7px 9px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border);
+}
+.mkt-snap-mid { min-width: 0; }
+.mkt-snap-strat { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mkt-snap-meta { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+.mkt-snap-val { text-align: right; font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+
+/* Controls / Toolbars */
 .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel); }
-.seg button { border: 0; background: none; color: var(--muted); padding: 5px 12px; font: inherit; cursor: pointer; }
-.seg button + button { border-left: 1px solid var(--line); }
-.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
-select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
-  border-radius: 6px; padding: 5px 8px; }
+.seg {
+  display: inline-flex; border: 1px solid var(--border); border-radius: 8px;
+  overflow: hidden; background: var(--surface); padding: 2px; gap: 2px;
+}
+.seg button {
+  border: 0; background: transparent; color: var(--muted); padding: 4px 10px;
+  border-radius: 6px; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
+  transition: background 0.15s, color 0.15s; white-space: nowrap;
+}
+.seg button:hover { color: var(--ink); background: var(--chip); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #ffffff; font-weight: 600; }
+
+.pill-tabs { display: flex; flex-wrap: wrap; gap: 5px; }
+.pill-tab {
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+  border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.pill-tab:hover { color: var(--ink); border-color: var(--border-strong); }
+.pill-tab[aria-pressed="true"] {
+  background: var(--accent-soft); color: var(--accent-hi); border-color: rgba(59, 130, 246, 0.35); font-weight: 600;
+}
+
+select, .search-input {
+  font: inherit; font-size: 12.5px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; outline: none;
+}
+select:focus, .search-input:focus { border-color: var(--accent-hi); }
+.search-input { min-width: 210px; }
+
+/* Precision Financial Tables */
 .scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th, td { padding: 8px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
-th { font-weight: 600; color: var(--muted); font-size: 12px; }
+th, td {
+  padding: 9px 11px; text-align: right; white-space: nowrap;
+  border-bottom: 1px solid var(--border); font-size: 12.5px;
+}
+th {
+  font-weight: 600; color: var(--muted); font-size: 11px; letter-spacing: 0.03em;
+  background: var(--surface-2); text-transform: uppercase;
+}
 th:first-child, td:first-child, th.l, td.l { text-align: left; }
+tbody tr { transition: background 0.12s; }
+tbody tr:hover { background: var(--surface-hover); }
 tr:last-child td { border-bottom: 0; }
-tr.low-sample td, td.muted-cell { color: var(--muted); opacity: 0.72; }
+tr.low-sample td, td.muted-cell { color: var(--muted); opacity: 0.78; }
+.ico { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; flex-shrink: 0; }
+
+.rank-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 20px; border-radius: 5px; padding: 0 5px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  background: var(--chip); color: var(--muted);
+}
+.rank-num.top { background: var(--accent-soft); color: var(--accent-hi); }
+
+.div-bar-wrap { display: inline-flex; align-items: center; gap: 7px; justify-content: flex-end; }
+.div-track { width: 58px; height: 5px; border-radius: 999px; background: var(--chip); overflow: hidden; }
+.div-fill { height: 100%; border-radius: 999px; }
+
 .up { color: var(--up); } .down { color: var(--down); } .dim { color: var(--muted); }
-.small { font-size: 12px; }
-.tag { font-size: 11px; color: var(--warn); margin-left: 4px; }
-.badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; vertical-align: middle; margin-left: 4px; background: var(--chip); color: var(--muted); }
-.badge.ai { color: var(--accent); border: 1px solid var(--accent); background: transparent; }
-.badge.active { color: var(--down); border: 1px solid var(--down); background: transparent; }
+.warn { color: var(--warn); font-weight: 600; }
+.small { font-size: 11.5px; }
+.mono { font-family: var(--font-mono); }
+.tag { font-size: 11px; color: var(--warn); margin-left: 4px; font-family: var(--font-mono); }
+.badge {
+  display: inline-block; padding: 1px 6px; border-radius: 5px; font-size: 11px;
+  font-weight: 600; vertical-align: middle; margin-left: 4px;
+  background: var(--chip); color: var(--muted); border: 1px solid var(--border);
+}
+.badge.ai { color: var(--accent-hi); border-color: rgba(59, 130, 246, 0.35); background: var(--accent-soft); }
+.badge.active { color: var(--down); border-color: rgba(52, 211, 153, 0.3); background: var(--down-soft); }
+.badge.bad { color: var(--up); border-color: rgba(248, 113, 113, 0.3); background: var(--up-soft); }
 .badge.exp { color: var(--muted); }
-.chart { padding: 12px; }
-.chart svg { width: 100%; height: auto; display: block; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 0 12px 12px; font-size: 12px; color: var(--muted); }
-.legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
-.card h3 { font-size: 14px; margin: 0; padding: 10px 12px 2px; }
-.card .sub { padding: 0 12px 6px; color: var(--muted); font-size: 12px; }
-.card td, .card th { padding: 6px 10px; }
+.badge.mode { font-weight: 500; font-size: 10.5px; font-family: var(--font-mono); }
+
+/* Chart Panel & Tooltip */
+.chart-wrap { position: relative; padding: 14px 16px 8px; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-tip {
+  position: absolute; pointer-events: none; z-index: 10; display: none;
+  padding: 8px 10px; border-radius: 8px; font-size: 12px;
+  background: var(--glass); border: 1px solid var(--border-strong); color: var(--ink);
+  backdrop-filter: blur(10px); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-mono); white-space: nowrap;
+}
+.legend {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px 14px;
+  border-top: 1px solid var(--border);
+}
+.legend-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px; border-radius: 999px; font: inherit; font-size: 11.5px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--muted);
+  cursor: pointer; transition: all 0.15s;
+}
+.legend-btn:hover { border-color: var(--border-strong); color: var(--ink); }
+.legend-btn.focused { border-color: var(--accent-hi); color: var(--ink); background: var(--accent-soft); }
+.legend-btn i { display: inline-block; width: 12px; height: 2.5px; border-radius: 2px; }
+.legend-btn i.dashed { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+
+/* Cards & Mini K-line */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.card-top { padding: 12px 14px 8px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.card h3 { font-size: 13.5px; margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card .sub { margin-top: 3px; color: var(--muted); font-size: 11.5px; font-family: var(--font-mono); }
+.card td, .card th { padding: 6px 10px; font-size: 12px; }
 .kline { width: 96px; height: 28px; display: inline-block; vertical-align: middle; }
-.regime-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; }
-.empty { padding: 24px; text-align: center; color: var(--muted); }
-footer { margin-top: 40px; color: var(--muted); font-size: 12px; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Collapsible Details */
+details.sec-details {
+  margin-top: 18px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: var(--shadow); padding: 14px 18px;
+}
+details.sec-details > summary.sec-summary {
+  cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  font-size: 15px; font-weight: 700; letter-spacing: -0.01em;
+}
+details.sec-details > summary.sec-summary::-webkit-details-marker { display: none; }
+details.sec-details > summary.sec-summary::after {
+  content: "展开 ▾"; font-size: 12px; font-weight: 500; color: var(--muted);
+  padding: 2px 9px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2);
+}
+details.sec-details[open] > summary.sec-summary::after { content: "收起 ▴"; }
+details.sec-details > .sec-body { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+.baseline-strip {
+  display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 12px; margin-bottom: 12px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px; font-family: var(--font-mono);
+}
+.subhead { font-size: 13.5px; font-weight: 700; margin: 16px 0 8px; color: var(--ink); }
+.empty { padding: 20px; text-align: center; color: var(--muted); font-size: 12.5px; }
+
+footer {
+  margin-top: 48px; padding: 20px 0 0; border-top: 1px solid var(--border);
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px;
+  color: var(--muted); font-size: 12px;
+}
+.footer-links { display: flex; flex-wrap: wrap; gap: 14px; }
+
+@media (max-width: 1020px) {
+  .bento-command { grid-template-columns: 1fr; }
+  .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nav-center { display: none; }
+}
+@media (max-width: 640px) {
+  .topbar-inner { padding: 9px 14px; }
+  main { padding: 16px 14px 52px; }
+  .kpi-strip { grid-template-columns: 1fr; }
+  .cards { grid-template-columns: 1fr; }
+  .live-pill { display: none; }
+  .action-btn .btn-lbl { display: none; }
+}
 </style>
 </head>
 <body>
-<main>
-  <header>
-    <h1>AlphaSift · 量化形态观测与回测基准</h1>
-    <p>每日收盘后自动运行 <a href="https://github.com/ZhuLinsen/alphasift">AlphaSift</a> 规则榜、可选 AI 赛道及 A 股盘面形态雷达，对比 T+5 / T+10 / T+20 相对市场基准超额表现与不可成交占比。</p>
-    <div class="meta" id="meta"></div>
-    <div class="notice">定位声明：本看板为量化形态观测与回测基准，非投资建议。统计口径不含分红；低于样本门槛（成绩单 &lt; 20、切片 &lt; 100、形态毕业 &lt; 200）的结果统一置灰提示，避免小样本误读为稳定胜率。</div>
+<nav class="topbar">
+  <div class="topbar-inner">
+    <div class="brand-group">
+      <a class="brand-link" href="#top">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z"/>
+          </svg>
+        </span>
+        <span>AlphaSift</span>
+      </a>
+      <span class="live-pill" id="live-pill"><span class="live-dot"></span>7 Markets</span>
+    </div>
+
+    <div class="nav-center" aria-label="主导航">
+      <a href="#overview">焦点总览</a>
+      <a href="#leaderboard">策略排行</a>
+      <a href="#trend-section">超额走势</a>
+      <a href="#explorer">选股浏览</a>
+      <a href="#radar-section">AI 与形态</a>
+    </div>
+
+    <div class="top-actions">
+      <a class="action-btn" id="report-top-link" href="site/daily_report.html" title="可打印盘后投研日报">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+        <span class="btn-lbl">今日研报</span>
+      </a>
+      <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener" title="查看不可篡改原始运行日志">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="btn-lbl">原始账本</span>
+      </a>
+      <a class="github-btn" href="https://github.com/ZhuLinsen/alphasift" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.11.78-.25.78-.55 0-.27-.01-1.18-.02-2.14-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.06 11.06 0 0 1 5.78 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.15 0 1.55-.01 2.8-.01 3.18 0 .31.21.67.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/>
+        </svg>
+        <span>GitHub</span>
+      </a>
+      <button type="button" class="action-btn" id="theme-toggle" aria-label="切换明暗主题">亮色</button>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+  <header class="masthead">
+    <div class="masthead-left">
+      <div class="eyebrow">OPEN-SOURCE QUANTITATIVE DISCOVERY &amp; T+N BENCHMARK</div>
+      <h1>AlphaSift · 量化形态观测与回测基准</h1>
+      <p class="masthead-sub">每交易日收盘自动运行全市场 YAML 策略、公告排雷与可选 AI 重排，按 <code>T+5 / T+10 / T+20</code> 真实行情与一字涨停不可成交口径公开验证超额收益。</p>
+      <div class="meta" id="meta"></div>
+    </div>
+    <div class="masthead-right">
+      <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift#readme" target="_blank" rel="noopener">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>使用文档</span>
+      </a>
+      <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift/tree/main/strategies" target="_blank" rel="noopener">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        <span>内置策略</span>
+      </a>
+    </div>
   </header>
 
-  <section>
-    <h2>策略成绩单</h2>
-    <p class="hint">按单只选股统计已到期窗口（超额 = 选股收益 − 同期基准收益），单列展示 T+1 不可成交占比（一字涨停剔除率）。</p>
-    <div class="controls"><div class="seg" id="win-score"></div></div>
+  <div class="stale-banner" id="stale-banner"></div>
+
+  <div class="kpi-strip" id="kpi-strip">
+    <div class="kpi-cell"><div class="kpi-label">加载中</div><div class="kpi-val">–</div><div class="kpi-foot">读取公开战绩与盘面统计…</div></div>
+  </div>
+
+  <!-- 01 · Focus Command Center -->
+  <section id="overview">
+    <div class="sec-head">
+      <div>
+        <h2><span class="sec-num">01</span>今日高共识精选与盘面快照</h2>
+        <p class="sec-hint">优先提取多策略共同命中标的、公告排雷结论，以及 A 股宽度/全球 7 市场领跑基准，首屏直给核心信号。</p>
+      </div>
+    </div>
+    <div class="bento-command">
+      <div class="bento-pane" id="consensus-pane">
+        <div class="empty">正在分析今日跨策略共识候选…</div>
+      </div>
+      <div class="bento-pane" id="cn-hero-grid">
+        <div class="empty">加载盘面与跨市场快照…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 · Strategy Leaderboard -->
+  <section id="leaderboard">
+    <div class="sec-head">
+      <div>
+        <h2><span class="sec-num">02</span>策略 T+N 超额排行榜</h2>
+        <p class="sec-hint">按单只选股统计已到期窗口（超额 = 选股收益 − 同期市场基准收益）；切换日前 <code>close</code> 口径标为「未评估」，切换日起 <code>next_open</code> 统计一字涨停不可成交率。</p>
+      </div>
+      <div class="controls" style="margin-bottom:0;">
+        <div class="seg" id="win-score"></div>
+        <select id="sort-score" aria-label="排序维度">
+          <option value="excess">按超额收益</option>
+          <option value="beat">按跑赢基准率</option>
+          <option value="return">按绝对收益</option>
+          <option value="evaluated">按样本数</option>
+        </select>
+      </div>
+    </div>
+    <div class="controls" style="margin-bottom:10px;">
+      <div class="pill-tabs" id="market-score-pills"></div>
+    </div>
     <div class="panel scroll"><table id="scorecard"></table></div>
   </section>
 
-  <section id="track-comparison-section">
-    <h2>规则榜 vs AI 榜对比</h2>
-    <p class="hint">同一市场和策略在纯规则赛道与 LLM 重排赛道下的同口径超额对比（积累满 ≥ 60 个交易日后再评估多模型委员会）。</p>
-    <div class="controls"><div class="seg" id="win-compare"></div></div>
-    <div class="panel scroll" id="track-compare"></div>
-  </section>
-
-  <section id="pattern-radar-section">
-    <h2>A 股盘面统计与形态雷达</h2>
-    <p class="hint">客观盘面宽度与情绪阶段仅用于报告和切片观察（不调整策略权重）；未通过 250 日 `next_open` 毕业门槛（样本 ≥ 200 且 T+5 超额 &gt; 0%）的形态一律置灰标 `experimental`。</p>
-    <div class="panel" id="regime-panel"><div class="empty">加载盘面与形态雷达数据…</div></div>
-    <div id="replay-summary-wrap"></div>
-    <div id="regime-slice-wrap"></div>
-    <div id="pattern-hits-wrap"></div>
-  </section>
-
-  <section>
-    <h2>超额收益走势</h2>
-    <p class="hint">截至每个入场日，各策略已到期选股的平均超额收益（累计平均）。</p>
-    <div class="controls">
-      <div class="seg" id="win-trend"></div>
-      <select id="market-trend" aria-label="市场"></select>
+  <!-- 03 · Cumulative Excess Trend -->
+  <section id="trend-section">
+    <div class="sec-head">
+      <div>
+        <h2><span class="sec-num">03</span>分赛道累计超额收益走势</h2>
+        <p class="sec-hint">纯规则赛道（实线）与 AI 重排赛道（虚线）分离展示；点击底部图例可单独聚焦某条策略曲线，悬停查看单日明细。</p>
+      </div>
+      <div class="controls" style="margin-bottom:0;">
+        <div class="seg" id="win-trend"></div>
+        <div class="seg" id="track-trend">
+          <button type="button" data-t="both" aria-pressed="true">双赛道</button>
+          <button type="button" data-t="rules" aria-pressed="false">仅规则</button>
+          <button type="button" data-t="ai" aria-pressed="false">仅 AI</button>
+        </div>
+        <select id="market-trend" aria-label="走势市场"></select>
+      </div>
     </div>
-    <div class="panel"><div class="chart" id="chart"></div><div class="legend" id="legend"></div></div>
+    <div class="panel">
+      <div class="chart-wrap">
+        <div class="chart" id="chart"></div>
+        <div class="chart-tip" id="chart-tip"></div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
   </section>
 
-  <section>
-    <h2>最新选股</h2>
-    <p class="hint">每个策略最近一次运行的选股。</p>
-    <div class="controls"><select id="market-latest" aria-label="市场"></select></div>
-    <div class="cards" id="latest"></div>
+  <!-- 04 · Searchable Picks Explorer -->
+  <section id="explorer">
+    <div class="sec-head">
+      <div>
+        <h2><span class="sec-num">04</span>策略选股与历史复盘浏览器</h2>
+        <p class="sec-hint">支持按股票代码、名称、行业或策略名实时过滤；切换「按日回看」可追踪每一天每只候选的 T+5 / T+10 / T+20 到期验证结果。</p>
+      </div>
+      <div class="controls" style="margin-bottom:0;">
+        <div class="seg" id="explorer-mode">
+          <button type="button" data-mode="latest" aria-pressed="true">最新选股</button>
+          <button type="button" data-mode="history" aria-pressed="false">按日回看</button>
+        </div>
+        <select id="market-latest" aria-label="市场筛选"></select>
+        <select id="day" aria-label="历史交易日" style="display:none;"></select>
+        <input type="search" class="search-input" id="pick-search" placeholder="搜索代码 / 名称 / 行业 / 策略…" aria-label="过滤选股">
+      </div>
+    </div>
+    <div class="tab-panel active" id="tab-latest">
+      <div class="cards" id="latest"></div>
+    </div>
+    <div class="tab-panel" id="tab-history">
+      <div class="cards" id="history"></div>
+    </div>
   </section>
 
-  <section>
-    <h2>历史记录</h2>
-    <p class="hint">按交易日查看当天的选股，以及之后各窗口的收益、超额收益和不可成交状态。</p>
-    <div class="controls"><select id="day" aria-label="日期"></select></div>
-    <div class="cards" id="history"></div>
+  <!-- 05 · AI Attribution & Pattern Radar -->
+  <section id="track-comparison-section">
+    <div class="sec-head">
+      <div>
+        <h2><span class="sec-num">05</span>规则榜 vs AI 榜同日配对归因</h2>
+        <p class="sec-hint">仅针对同一策略在同一交易日的双轨运行严格配对对比（同日配对 &lt; 10 日时隐藏差值，单列 AI 缺失率与重合度）。</p>
+      </div>
+      <div class="controls" style="margin-bottom:0;"><div class="seg" id="win-compare"></div></div>
+    </div>
+    <div id="track-compare-shell">
+      <div class="panel scroll" id="track-compare"></div>
+      <div id="ai-attribution-cards" style="margin-top: 12px;"></div>
+    </div>
   </section>
 
-  <footer>AlphaSift 量化形态观测与回测基准 · 原始数据：<a href="https://github.com/ZhuLinsen/alphasift/tree/track-record">track-record 分支</a>，事后不可篡改。</footer>
+  <section id="radar-section">
+    <details class="sec-details" id="details-patterns">
+      <summary class="sec-summary"><span>A 股无状态形态雷达命中（20 日迷你 K 线）</span></summary>
+      <div class="sec-body">
+        <p class="sec-hint" style="margin:0 0 12px;">未通过 250 日 <code>next_open</code> 毕业门槛（基准匹配样本 ≥ 200 且 T+5 超额 &gt; 0%）的形态一律置灰标 <code>experimental</code>，仅作研究观察。</p>
+        <div id="pattern-hits-wrap"><div class="empty">加载形态命中…</div></div>
+      </div>
+    </details>
+
+    <details class="sec-details" id="details-replay">
+      <summary class="sec-summary"><span>250 日 next_open 形态回放、聚日稳定性与切片验证</span></summary>
+      <div class="sec-body">
+        <div id="universe-baseline-wrap"></div>
+        <div id="replay-summary-wrap"><div class="empty">暂无 250 日形态回放结果</div></div>
+        <div id="regime-slice-wrap"></div>
+        <div id="overhead-slice-wrap"></div>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    <div>
+      <strong>AlphaSift</strong> · 开源量化形态观测与回测基准（Apache-2.0 License）· 非投资建议，历史统计不含分红；低于样本门槛（成绩单 &lt; 20、AI 配对 &lt; 10 日、切片 &lt; 100、形态毕业 &lt; 200）统一置灰或隐藏差值。
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/ZhuLinsen/alphasift" target="_blank" rel="noopener">GitHub 源码仓库</a>
+      <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener">track-record 原始账本</a>
+      <a href="site/daily_report.html">每日投研日报</a>
+      <a href="https://github.com/ZhuLinsen/alphasift/blob/main/README.md" target="_blank" rel="noopener">README 文档</a>
+    </div>
+  </footer>
 </main>
+
 <script>
 const MARKET_NAMES = { cn: "A 股", us: "美股", hk: "港股", jp: "日本", kr: "韩国", tw: "台湾", in: "印度" };
 const SESSION_NAMES = { asia: "亚洲场", us: "美股场" };
 const REGIME_ORDER = ["freezing", "startup", "main_up", "divergence", "ebb", "neutral"];
 const REGIME_LABELS = { freezing: "冰点", startup: "启动", main_up: "主升", divergence: "分歧", ebb: "退潮", neutral: "震荡" };
+const DIST_BUCKETS = [
+  { key: "le_neg7", label: "≤-7%", tone: "down" },
+  { key: "neg7_neg3", label: "-7~-3%", tone: "down" },
+  { key: "neg3_0", label: "-3~0%", tone: "down" },
+  { key: "flat", label: "平盘", tone: "flat" },
+  { key: "pos0_3", label: "0~3%", tone: "up" },
+  { key: "pos3_7", label: "3~7%", tone: "up" },
+  { key: "ge_pos7", label: "≥7%", tone: "up" },
+];
+const OVERHEAD_BUCKETS = [
+  { key: "low_lt15", label: "上方筹码 <15%" },
+  { key: "mid_15_35", label: "15%~35%" },
+  { key: "high_ge35", label: "≥35%" },
+];
 const MIN_SAMPLE = 20;
 const MIN_SLICE_SAMPLE = 100;
 const MIN_PATTERN_GRAD_SAMPLE = 200;
-const state = { summary: null, patterns: null, scoreWin: "5", compareWin: "5", trendWin: "5", trendMarket: null, latestMarket: null };
+
+const state = {
+  summary: null,
+  patterns: null,
+  report: null,
+  scoreWin: "5",
+  scoreMarket: "all",
+  scoreSort: "excess",
+  compareWin: "5",
+  trendWin: "5",
+  trendTrack: "both",
+  trendMarket: null,
+  trendFocus: null,
+  latestMarket: null,
+  explorerMode: "latest",
+  searchQuery: "",
+  dayCache: {},
+  currentDay: null,
+};
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const sname = (name) => esc((state.summary.strategy_names || {})[name] || name);
+const sname = (name) => esc(((state.summary && state.summary.strategy_names) || {})[name] || name);
 const mname = (id) => MARKET_NAMES[id] || id;
 function pct(v, digits = 2) {
-  if (v === null || v === undefined) return '<span class="dim">–</span>';
-  const cls = v > 0 ? "up" : v < 0 ? "down" : "";
-  return `<span class="${cls}">${v > 0 ? "+" : ""}${Number(v).toFixed(digits)}%</span>`;
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return '<span class="dim">–</span>';
+  const n = Number(v);
+  const cls = n > 0 ? "up" : n < 0 ? "down" : "";
+  return `<span class="${cls}">${n > 0 ? "+" : ""}${n.toFixed(digits)}%</span>`;
 }
-const rate = (v) => (v === null || v === undefined ? '<span class="dim">–</span>' : `${Math.round(v * 100)}%`);
-const sharePct = (v) => (v === null || v === undefined ? '<span class="dim">–</span>' : `${Number(v).toFixed(1)}%`);
-const num = (v, d = 2) => (v === null || v === undefined ? '<span class="dim">–</span>' : Number(v).toFixed(d));
-const localTime = (iso) => (iso ? new Date(iso).toLocaleString("zh-CN", { hour12: false }) : "–");
+const rate = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? '<span class="dim">–</span>' : `${Math.round(Number(v) * 100)}%`);
+const sharePct = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? '<span class="dim">–</span>' : `${Number(v).toFixed(1)}%`);
+const num = (v, d = 2) => (v === null || v === undefined || Number.isNaN(Number(v)) ? '<span class="dim">–</span>' : Number(v).toFixed(d));
+const localTime = (iso) => (iso ? new Date(iso).toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "–");
+
+const ICO_SUN = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41"/></svg>';
+const ICO_MOON = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+const ICO_TARGET = '<svg class="ico" style="color:var(--accent-hi)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
+const ICO_PULSE = '<svg class="ico" style="color:var(--accent-hi)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>';
+const ICO_GLOBE = '<svg class="ico" style="color:var(--accent-hi)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+
+function syncThemeBtn(theme) {
+  const btn = $("theme-toggle");
+  if (!btn) return;
+  btn.innerHTML = theme === "light" ? `${ICO_MOON}<span>暗色</span>` : `${ICO_SUN}<span>亮色</span>`;
+}
+
+function initTheme() {
+  let theme = "dark";
+  try {
+    const q = new URLSearchParams(window.location.search).get("theme");
+    const saved = localStorage.getItem("alphasift-theme");
+    if (q === "light" || q === "dark") theme = q;
+    else if (saved === "light" || saved === "dark") theme = saved;
+  } catch (_) {}
+  document.documentElement.setAttribute("data-theme", theme);
+  syncThemeBtn(theme);
+  const btn = $("theme-toggle");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+    const next = cur === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    syncThemeBtn(next);
+    try { localStorage.setItem("alphasift-theme", next); } catch (_) {}
+  });
+}
 
 function segmented(el, key, onChange) {
   el.innerHTML = state.summary.windows.map((w) => `<button type="button" data-w="${w}">T+${w}</button>`).join("");
   const sync = () => el.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.w === state[key])));
   el.addEventListener("click", (e) => {
-    const w = e.target.dataset && e.target.dataset.w;
+    const btn = e.target.closest("button");
+    const w = btn && btn.dataset && btn.dataset.w;
     if (!w) return;
-    state[key] = w; sync(); onChange();
+    state[key] = w;
+    sync();
+    onChange();
   });
   sync();
 }
 
-function fillMarkets(el, key, onChange) {
-  const markets = state.summary.markets.map((m) => m.id);
-  state[key] = markets[0] || null;
-  el.innerHTML = markets.map((m) => `<option value="${m}">${mname(m)}</option>`).join("");
-  el.addEventListener("change", () => { state[key] = el.value; onChange(); });
+function initTrackToggle() {
+  const el = $("track-trend");
+  if (!el) return;
+  const sync = () => el.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.t === state.trendTrack)));
+  el.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    const t = btn && btn.dataset && btn.dataset.t;
+    if (!t) return;
+    state.trendTrack = t;
+    state.trendFocus = null;
+    sync();
+    renderChart();
+  });
+  sync();
+}
+
+function fillMarkets(el, key, onChange, withAll = false) {
+  const markets = (state.summary.markets || []).map((m) => m.id);
+  state[key] = withAll ? "all" : (markets[0] || null);
+  el.innerHTML = (withAll ? ['<option value="all">全部市场</option>'] : [])
+    .concat(markets.map((m) => `<option value="${m}">${mname(m)}</option>`))
+    .join("");
+  el.addEventListener("change", () => {
+    state[key] = el.value;
+    if (key === "trendMarket") state.trendFocus = null;
+    onChange();
+  });
+}
+
+function computeClientConsensus() {
+  const cnRuns = ((state.summary && state.summary.latest) || {}).cn || [];
+  const byCode = new Map();
+  const sectorStats = new Map();
+  let totalPickSlots = 0;
+
+  for (const run of cnRuns) {
+    const strat = run.strategy;
+    for (const pk of run.picks || []) {
+      const code = String(pk.code || "").trim();
+      if (!code) continue;
+      totalPickSlots += 1;
+      const ind = pk.industry || "其他";
+      if (!sectorStats.has(ind)) sectorStats.set(ind, { industry: ind, pick_count: 0, codes: new Set() });
+      const sec = sectorStats.get(ind);
+      sec.pick_count += 1;
+      sec.codes.add(code);
+
+      if (!byCode.has(code)) {
+        byCode.set(code, {
+          code,
+          name: pk.name || code,
+          industry: ind,
+          strategies: new Set(),
+          tracks: new Set(),
+          scores: [],
+          price: pk.price,
+          pe_ratio: pk.pe_ratio,
+          pb_ratio: pk.pb_ratio,
+          change_pct: pk.change_pct ?? null,
+          announcement_risk_flags: pk.announcement_risk_flags || [],
+        });
+      }
+      const entry = byCode.get(code);
+      if (strat) entry.strategies.add(strat);
+      entry.tracks.add(run.track || "rules");
+      if (pk.final_score !== null && pk.final_score !== undefined) entry.scores.push(Number(pk.final_score));
+    }
+  }
+
+  const consensus = [...byCode.values()]
+    .filter((x) => x.strategies.size >= 2)
+    .map((x) => ({
+      code: x.code,
+      name: x.name,
+      industry: x.industry,
+      strategy_count: x.strategies.size,
+      strategies: [...x.strategies].sort(),
+      tracks: [...x.tracks].sort(),
+      avg_final_score: x.scores.length ? x.scores.reduce((a, b) => a + b, 0) / x.scores.length : null,
+      price: x.price,
+      pe_ratio: x.pe_ratio,
+      pb_ratio: x.pb_ratio,
+      change_pct: x.change_pct,
+      announcement_risk_flags: x.announcement_risk_flags,
+    }))
+    .sort((a, b) => (b.strategy_count - a.strategy_count) || ((b.avg_final_score ?? -1) - (a.avg_final_score ?? -1)));
+
+  const sectors = [...sectorStats.values()]
+    .map((s) => ({
+      industry: s.industry,
+      pick_count: s.pick_count,
+      unique_codes: s.codes.size,
+      share_pct: totalPickSlots ? (s.pick_count / totalPickSlots) * 100 : 0,
+    }))
+    .sort((a, b) => b.pick_count - a.pick_count);
+
+  const latestDate = cnRuns.length ? cnRuns[0].date : null;
+  return { consensus, sectors, latestDate, cnRunCount: cnRuns.length };
 }
 
 function renderMiniKline(bars) {
@@ -191,7 +922,7 @@ function renderMiniKline(bars) {
   const W = 96, H = 28, pad = 2;
   const n = bars.length;
   const step = (W - pad * 2) / n;
-  const bw = Math.max(1.5, step * 0.65);
+  const bw = Math.max(1.8, step * 0.65);
   const y = (p) => pad + (1 - (p - lo) / span) * (H - pad * 2);
   const shapes = [];
   bars.forEach((b, i) => {
@@ -199,286 +930,884 @@ function renderMiniKline(bars) {
     const cx = (pad + (i + 0.5) * step).toFixed(1);
     const col = c >= o ? "var(--up)" : "var(--down)";
     const yTop = y(Math.max(o, c)), yBot = y(Math.min(o, c));
-    const bh = Math.max(1.2, yBot - yTop).toFixed(1);
+    const bh = Math.max(1.4, yBot - yTop).toFixed(1);
     shapes.push(`<line x1="${cx}" x2="${cx}" y1="${y(h).toFixed(1)}" y2="${y(l).toFixed(1)}" stroke="${col}" stroke-width="1"/>`);
-    shapes.push(`<rect x="${(Number(cx) - bw / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh}" fill="${col}"/>`);
+    shapes.push(`<rect x="${(Number(cx) - bw / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh}" rx="0.5" fill="${col}"/>`);
   });
   return `<svg class="kline" viewBox="0 0 ${W} ${H}" aria-label="近${n}日K线">${shapes.join("")}</svg>`;
 }
 
-function renderMeta() {
+function renderReturnDistSvg(dist) {
+  if (!dist || typeof dist !== "object") return '<div class="empty">暂无涨跌分布统计</div>';
+  const counts = DIST_BUCKETS.map((b) => Number(dist[b.key] || 0));
+  const maxVal = Math.max(1, ...counts);
+  const W = 360, H = 116, top = 18, bot = 22, barH = H - top - bot;
+  const step = W / DIST_BUCKETS.length;
+  const bw = step * 0.58;
+  const parts = [];
+  DIST_BUCKETS.forEach((b, idx) => {
+    const val = counts[idx];
+    const h = Math.max(val > 0 ? 4 : 0, (val / maxVal) * barH);
+    const x = idx * step + (step - bw) / 2;
+    const y = top + (barH - h);
+    const fill = b.tone === "up" ? "var(--up)" : b.tone === "down" ? "var(--down)" : "var(--muted)";
+    parts.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${fill}" opacity="0.88"/>`);
+    parts.push(`<text x="${(x + bw / 2).toFixed(1)}" y="${Math.max(12, y - 4).toFixed(1)}" text-anchor="middle" font-size="10" font-family="var(--font-mono)" fill="var(--ink-2)">${val}</text>`);
+    parts.push(`<text x="${(x + bw / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="10" font-family="var(--font-mono)" fill="var(--muted)">${esc(b.label)}</text>`);
+  });
+  return `<svg class="dist-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="A股7档涨跌幅分布">${parts.join("")}</svg>`;
+}
+
+function renderMetaAndKpis() {
   const s = state.summary;
-  const chips = [`更新于 ${localTime(s.generated_at)}`, `${s.run_count} 次运行`, `${s.days.length} 个交易日`];
+  const chips = [
+    `更新于 ${localTime(s.generated_at)}`,
+    `${s.run_count} 次累计运行`,
+    `${(s.days || []).length} 个交易日`,
+    `next_open 切换日 ${s.entry_mode_switch_date || "2026-11-21"}`,
+  ];
   const html = chips.map((c) => `<span class="chip">${esc(c)}</span>`);
+  let totalOk = 0, totalRuns = 0, totalFailures = 0;
   for (const [session, info] of Object.entries(s.sessions || {})) {
     const failures = info.failures || [];
     const bad = failures.length > 0;
     const skipped = info.skipped || 0;
+    totalOk += Number(info.ok || 0);
+    totalRuns += Number(info.total || 0);
+    totalFailures += failures.length;
     const title = failures.map((f) => `${f.market} ${f.strategy}: ${f.status} ${f.error || ""}`).join("\n");
     const statusText = skipped && info.total === 0
       ? `跳过 ${skipped}`
-      : `${info.ok}/${info.total} 成功${skipped ? ` · 跳过 ${skipped}` : ""}`;
-    html.push(`<span class="chip${bad ? " bad" : ""}" title="${esc(title)}">${SESSION_NAMES[session] || session} ${statusText} · ${localTime(info.finished_at)}</span>`);
+      : `${info.ok}/${info.total}${skipped ? ` · 跳过 ${skipped}` : ""}`;
+    html.push(`<span class="chip${bad ? " bad" : " ok"}" title="${esc(title)}">${SESSION_NAMES[session] || session} ${statusText}</span>`);
   }
   $("meta").innerHTML = html.join("");
+
+  const livePill = $("live-pill");
+  if (livePill) {
+    const latestDay = (s.days && s.days[0] && s.days[0].date) || "";
+    livePill.innerHTML = `<span class="live-dot"></span>${latestDay ? `LATEST · ${esc(latestDay)}` : "LIVE · 7 Markets"}`;
+  }
+
+  const rep = state.report || s.latest_report || {};
+  const patLatest = (state.patterns && state.patterns.latest) || {};
+  const isStale = Boolean(rep.pack_is_stale || patLatest.pack_is_stale);
+  const banner = $("stale-banner");
+  if (isStale) {
+    const packDate = rep.pack_trade_date || patLatest.pack_trade_date || "–";
+    const expDate = rep.expected_trade_date || patLatest.expected_trade_date || "–";
+    const reason = rep.stale_reason || patLatest.stale_reason || "";
+    banner.innerHTML = `<strong>⚠️ 旧包降级提示：</strong>当前数据包日期 <code>${esc(packDate)}</code> 落后于目标交易日 <code>${esc(expDate)}</code>${reason ? `（${esc(reason)}）` : ""}。网页继续展示可用降级口径，未强制的群聊 IM 推送已自动跳过。`;
+    banner.classList.add("show");
+  } else {
+    banner.classList.remove("show");
+    banner.innerHTML = "";
+  }
+
+  // Compute Top-4 KPI Strip
+  const sc = s.scorecard || [];
+  const t5Rows = sc.filter((r) => ((r.windows || {})["5"] || {}).average_excess_return_pct !== null && ((r.windows || {})["5"] || {}).average_excess_return_pct !== undefined);
+  const sortedT5 = [...t5Rows].sort((a, b) => b.windows["5"].average_excess_return_pct - a.windows["5"].average_excess_return_pct);
+  const bestT5 = sortedT5[0] || null;
+
+  let evalTot = 0, exSum = 0;
+  for (const r of t5Rows) {
+    const w5 = r.windows["5"];
+    const n = Number(w5.evaluated || 0);
+    if (n > 0) {
+      evalTot += n;
+      exSum += Number(w5.average_excess_return_pct) * n;
+    }
+  }
+  const avgEx = evalTot > 0 ? exSum / evalTot : null;
+
+  const kpi1 = bestT5
+    ? `<div class="kpi-cell">
+         <div class="kpi-label"><span>T+5 领跑超额</span><span class="badge active">${mname(bestT5.market)}</span></div>
+         <div class="kpi-val">${pct(bestT5.windows["5"].average_excess_return_pct)}</div>
+         <div class="kpi-foot">${sname(bestT5.strategy)} · 跑赢基准 ${rate(bestT5.windows["5"].beat_rate)} (${bestT5.windows["5"].evaluated}只)</div>
+       </div>`
+    : `<div class="kpi-cell"><div class="kpi-label">T+5 领跑超额</div><div class="kpi-val dim">待到期</div><div class="kpi-foot">首日运行满 5 个交易日后披露</div></div>`;
+
+  const kpi2 = `<div class="kpi-cell">
+    <div class="kpi-label"><span>全策略 T+5 样本加权均值</span><span class="badge">${t5Rows.length} 组有效</span></div>
+    <div class="kpi-val">${pct(avgEx)}</div>
+    <div class="kpi-foot">已到期 ${evalTot} 股次 · 累计 ${s.run_count} 次选股</div>
+  </div>`;
+
+  const reg = patLatest.market_regime || rep.market_regime || ((s.pattern_board || {}).latest || {}).market_regime || null;
+  const clientSyn = computeClientConsensus();
+  const topConsensus = ((rep.cross_strategy_synthesis || {}).consensus_picks || clientSyn.consensus)[0] || null;
+
+  const kpi3 = reg
+    ? `<div class="kpi-cell">
+         <div class="kpi-label"><span>A 股盘面温度 (${esc((reg.trade_date || "").slice(5))})</span><span class="badge accent">${esc(reg.regime_stage_label || reg.regime_stage || "-")}</span></div>
+         <div class="kpi-val">${Number(reg.advance_ratio_pct || 0).toFixed(1)}% <span class="small dim" style="font-weight:500;">上涨</span></div>
+         <div class="kpi-foot">中位数 ${pct(reg.median_return_pct)} · 涨停 ${reg.non_st_limit_up_count ?? 0} / 跌停 ${reg.non_st_limit_down_count ?? 0}</div>
+       </div>`
+    : topConsensus
+      ? `<div class="kpi-cell">
+           <div class="kpi-label"><span>今日 A 股最高共识</span><span class="badge accent">${topConsensus.strategy_count} 策略</span></div>
+           <div class="kpi-val">${esc(topConsensus.name)} <span class="small dim">${esc(topConsensus.code)}</span></div>
+           <div class="kpi-foot">${esc(topConsensus.industry)} · 均分 ${num(topConsensus.avg_final_score, 1)} · 现价 ${num(topConsensus.price)}</div>
+         </div>`
+      : `<div class="kpi-cell"><div class="kpi-label">A 股最高共识</div><div class="kpi-val dim">–</div><div class="kpi-foot">暂无当日 A 股运行</div></div>`;
+
+  const ann = rep.announcement_risks || {};
+  const flaggedCount = (ann.flagged_items || []).length;
+  const checkedCount = Number(ann.checked_count || 0);
+  const kpi4 = checkedCount > 0
+    ? `<div class="kpi-cell">
+         <div class="kpi-label"><span>公告排雷预警</span><span class="badge ${flaggedCount ? "bad" : "active"}">${flaggedCount ? `${flaggedCount} 高风险` : "全部通过"}</span></div>
+         <div class="kpi-val">${flaggedCount > 0 ? `<span class="up">${flaggedCount} 只</span>` : `<span class="down">0 风险</span>`}</div>
+         <div class="kpi-foot">抽检 ${checkedCount} 只核心候选 · ${flaggedCount ? esc((ann.flagged_items[0] || {}).name || "") : "无减持/立案/退市关键词"}</div>
+       </div>`
+    : `<div class="kpi-cell">
+         <div class="kpi-label"><span>多市场自动化运行状态</span><span class="badge ${totalFailures ? "bad" : "active"}">${totalFailures ? `${totalFailures} 异常` : "健康"}</span></div>
+         <div class="kpi-val"><span class="${totalFailures ? "up" : "down"}">${totalOk} / ${totalRuns}</span></div>
+         <div class="kpi-foot">覆盖 ${(s.markets || []).length} 个市场 · 共 ${(s.days || []).length} 个历史交易日</div>
+       </div>`;
+
+  $("kpi-strip").innerHTML = kpi1 + kpi2 + kpi3 + kpi4;
+}
+
+function renderConsensusPane() {
+  const wrap = $("consensus-pane");
+  const rep = state.report || (state.summary && state.summary.latest_report) || {};
+  const brief = rep.ai_brief || {};
+  const ann = rep.announcement_risks || {};
+  const syn = rep.cross_strategy_synthesis || {};
+  const clientSyn = computeClientConsensus();
+
+  const consensus = (syn.consensus_picks && syn.consensus_picks.length) ? syn.consensus_picks : clientSyn.consensus;
+  const sectors = (syn.sector_concentration && syn.sector_concentration.length) ? syn.sector_concentration : clientSyn.sectors;
+  const tradeDate = rep.trade_date || clientSyn.latestDate || "最新";
+  const flagged = ann.flagged_items || [];
+  const checked = Number(ann.checked_count || 0);
+
+  let headlineHtml = "";
+  if (brief.headline) {
+    const modeBadge = brief.mode === "llm" ? `<span class="badge ai">AI 综述</span>` : `<span class="badge">规则摘要</span>`;
+    headlineHtml = `<div class="brief-callout"><b>${modeBadge} 盘后要点：</b>${esc(brief.headline)}${brief.consensus_and_ai_edge ? `<div class="small dim" style="margin-top:4px;">${esc(brief.consensus_and_ai_edge)}</div>` : ""}</div>`;
+  }
+
+  let annHtml = "";
+  if (flagged.length) {
+    annHtml = `<div class="alert-strip">
+      <div><b>⚠️ 公告排雷高风险（抽检 ${checked} · 命中 ${flagged.length} 只）：</b></div>
+      ${flagged.slice(0, 4).map((x) => {
+        const fl = (x.negative_event_flags || []).map(esc).join("/");
+        return `<div class="small"><strong>${esc(x.name || x.code)}</strong> <span class="mono dim">${esc(x.code)}</span> <span class="badge bad">${fl}</span> · <span class="dim">${esc((x.announcement_summary || "").slice(0, 52))}</span></div>`;
+      }).join("")}
+    </div>`;
+  } else if (checked > 0) {
+    annHtml = `<div class="alert-ok">✓ 已对 ${checked} 只重点候选做近期公告排雷，未检出减持 / 立案 / 退市等高风险信号</div>`;
+  }
+
+  let tableHtml = "";
+  if (consensus.length) {
+    const rows = consensus.slice(0, 8).map((c, idx) => {
+      const stratTags = (c.strategies || []).slice(0, 3).map((st) => `<span class="badge">${sname(st)}</span>`).join("");
+      const more = (c.strategies || []).length > 3 ? ` <span class="dim small">+${c.strategies.length - 3}</span>` : "";
+      const riskFlags = c.announcement_risk_flags || [];
+      const riskCell = riskFlags.length ? `<span class="badge bad">${esc(riskFlags.join("/"))}</span>` : '<span class="dim">–</span>';
+      const rightCol = (c.change_pct !== null && c.change_pct !== undefined)
+        ? pct(c.change_pct, 2)
+        : (c.price !== null && c.price !== undefined ? `¥${num(c.price, 2)}` : '<span class="dim">–</span>');
+      return `<tr>
+        <td><span class="rank-num ${idx < 3 ? "top" : ""}">${idx + 1}</span></td>
+        <td class="l"><strong>${esc(c.name)}</strong> <span class="mono small dim">${esc(c.code)}</span></td>
+        <td class="l dim">${esc(c.industry || "–")}</td>
+        <td><span class="badge accent">${c.strategy_count} 策略</span></td>
+        <td class="l">${stratTags}${more}</td>
+        <td class="mono">${num(c.avg_final_score, 1)}</td>
+        <td class="mono">${rightCol}</td>
+        <td>${riskCell}</td>
+      </tr>`;
+    }).join("");
+    const priceHdr = consensus.some((c) => c.change_pct !== null && c.change_pct !== undefined) ? "涨跌" : "最新价";
+    tableHtml = `<div class="scroll"><table>
+      <tr><th>#</th><th class="l">标的</th><th class="l">行业</th><th>命中</th><th class="l">覆盖策略</th><th>均分</th><th>${priceHdr}</th><th>公告</th></tr>
+      ${rows}
+    </table></div>`;
+  } else {
+    tableHtml = '<div class="empty">今日暂无 ≥2 个策略同时命中的 A 股共振标的。</div>';
+  }
+
+  const sectorHtml = sectors.length
+    ? `<div class="sector-pills">
+        <div class="small dim" style="display:flex;justify-content:space-between;"><span>行业分布集中度（Top ${Math.min(5, sectors.length)}）</span><span class="mono">占比 / 候选席位</span></div>
+        ${sectors.slice(0, 5).map((s) => `
+          <div class="sector-row">
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.industry)}</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, Number(s.share_pct || 0)).toFixed(1)}%"></div></div>
+            <span class="mono small" style="text-align:right;">${Number(s.share_pct || 0).toFixed(1)}% (${s.pick_count})</span>
+          </div>`).join("")}
+      </div>`
+    : "";
+
+  const reportBtn = rep.trade_date
+    ? `<a class="action-btn" href="site/daily_report.html" style="padding:3px 9px;font-size:11.5px;">完整研报 →</a>`
+    : `<span class="chip">${esc(tradeDate)} · 实时聚合</span>`;
+
+  wrap.innerHTML = `
+    <div class="pane-head">
+      <div class="pane-title">${ICO_TARGET} 多策略共振标的 <span class="badge accent">${consensus.length} 只共振</span></div>
+      ${reportBtn}
+    </div>
+    ${headlineHtml}
+    ${annHtml}
+    ${tableHtml}
+    ${sectorHtml}
+  `;
+}
+
+function renderCnHero() {
+  const wrap = $("cn-hero-grid");
+  const pb = state.patterns || {};
+  const latestPat = pb.latest || {};
+  const rep = state.report || (state.summary && state.summary.latest_report) || {};
+  const reg = latestPat.market_regime || rep.market_regime || ((state.summary.pattern_board || {}).latest || {}).market_regime || null;
+
+  if (!reg) {
+    // Rich 7-Market T+5 Benchmark Snapshot fallback so the right Bento is genuinely valuable!
+    const markets = state.summary.markets || [];
+    const sc = state.summary.scorecard || [];
+    const rowsHtml = markets.map((m) => {
+      const mRows = sc.filter((r) => r.market === m.id && ((r.windows || {})["5"] || {}).average_excess_return_pct !== null && ((r.windows || {})["5"] || {}).average_excess_return_pct !== undefined);
+      mRows.sort((a, b) => b.windows["5"].average_excess_return_pct - a.windows["5"].average_excess_return_pct);
+      const top = mRows[0] || null;
+      if (!top) {
+        return `<div class="mkt-snap-row"><span class="badge">${mname(m.id)}</span><div class="mkt-snap-mid"><div class="mkt-snap-meta">${esc(m.benchmark)}</div></div><div class="mkt-snap-val dim">待评估</div></div>`;
+      }
+      const w5 = top.windows["5"];
+      const ex = Number(w5.average_excess_return_pct);
+      const barW = Math.min(100, Math.max(8, Math.abs(ex) * 14));
+      return `<div class="mkt-snap-row">
+        <div><strong style="font-size:12.5px;">${mname(m.id)}</strong><div class="small dim">${esc(m.id.toUpperCase())}</div></div>
+        <div class="mkt-snap-mid">
+          <div class="mkt-snap-strat">${sname(top.strategy)}</div>
+          <div class="mkt-snap-meta">${esc(m.benchmark)} · 跑赢 ${rate(w5.beat_rate)} · ${w5.evaluated}只</div>
+          <div class="bar-track" style="margin-top:4px;height:4px;"><div class="bar-fill ${ex >= 0 ? "up-bg" : ""}" style="width:${barW.toFixed(1)}%;${ex < 0 ? "background:var(--down);" : ""}"></div></div>
+        </div>
+        <div class="mkt-snap-val">${pct(ex, 2)}</div>
+      </div>`;
+    }).join("");
+
+    wrap.innerHTML = `
+      <div class="pane-head">
+        <div class="pane-title">${ICO_GLOBE} 全球 7 市场 T+5 领跑快照</div>
+        <span class="chip">Rules Benchmark</span>
+      </div>
+      <div class="mkt-snap-list">${rowsHtml}</div>
+      <div class="small dim" style="margin-top:auto;padding-top:8px;border-top:1px dashed var(--border);">
+        注：A 股 7 档涨跌分布与连板梯队将在 GitHub Actions 私有日线缓存完成首个交易日构建后自动显示。
+      </div>
+    `;
+    return;
+  }
+
+  const totalTraded = Math.max(1, Number(reg.traded_count || 0));
+  const adv = Number(reg.advancing_count || 0);
+  const dec = Number(reg.declining_count || 0);
+  const flat = Number(reg.flat_count || 0);
+  const advW = (adv / totalTraded) * 100;
+  const flatW = (flat / totalTraded) * 100;
+  const decW = Math.max(0, 100 - advW - flatW);
+  const amt = reg.total_amount_yi !== null && reg.total_amount_yi !== undefined ? `${Math.round(Number(reg.total_amount_yi))} 亿` : "–";
+  const seal = reg.seal_rate_pct !== null && reg.seal_rate_pct !== undefined ? `${Number(reg.seal_rate_pct).toFixed(1)}%` : "–";
+
+  const ladder = reg.consecutive_board_ladder || {};
+  const ladderEntries = Object.entries(ladder).sort((a, b) => Number(b[0]) - Number(a[0]));
+  const maxCnt = Math.max(1, ...ladderEntries.map(([, v]) => Number(v || 0)));
+  const ladderHtml = ladderEntries.length
+    ? `<div class="ladder-list">${ladderEntries.map(([b, cnt]) => {
+        const w = Math.max(8, (Number(cnt) / maxCnt) * 100);
+        return `<div class="ladder-row"><span>${esc(b)}板</span><div class="bar-track"><div class="bar-fill up-bg" style="width:${w.toFixed(1)}%"></div></div><span style="text-align:right;font-weight:600">${cnt} 只</span></div>`;
+      }).join("")}</div>`
+    : '<div class="small dim">今日无非 ST 连板分布</div>';
+
+  const hist = (pb.history || []).slice(-6);
+  const histHtml = hist.length
+    ? `<div class="hist-ribbon">${hist.map((h) => `<span class="hist-pill" title="上涨 ${num(h.advance_ratio_pct, 1)}%">${esc((h.trade_date || "").slice(5))} · ${esc(h.regime_stage_label || h.regime_stage || "-")} ${h.non_st_limit_up_count ?? 0}/${h.non_st_limit_down_count ?? 0}</span>`).join("")}</div>`
+    : "";
+
+  wrap.innerHTML = `
+    <div class="pane-head">
+      <div class="pane-title">${ICO_PULSE} A 股微观盘面与情绪分布</div>
+      <span class="chip accent">${esc(reg.trade_date || latestPat.trade_date || "–")} · ${esc(reg.regime_stage_label || reg.regime_stage || "–")}</span>
+    </div>
+    <div class="breadth-bar" title="涨 ${adv} / 平 ${flat} / 跌 ${dec}">
+      <span style="width:${advW.toFixed(1)}%;background:var(--up)"></span>
+      <span style="width:${flatW.toFixed(1)}%;background:var(--muted);opacity:0.45"></span>
+      <span style="width:${decW.toFixed(1)}%;background:var(--down)"></span>
+    </div>
+    <div class="breadth-meta"><span>涨 ${adv} (${Number(reg.advance_ratio_pct || 0).toFixed(1)}%)</span><span>平 ${flat}</span><span>跌 ${dec}</span></div>
+    ${renderReturnDistSvg(reg.return_distribution)}
+    <div class="cn-stat-2x2">
+      <div class="mini-stat">
+        <div class="lbl">非 ST 涨停 / 跌停</div>
+        <div class="val"><span class="up">${reg.non_st_limit_up_count ?? 0}</span> / <span class="down">${reg.non_st_limit_down_count ?? 0}</span></div>
+        <div class="sub">一字 ${reg.one_price_limit_up_count ?? 0}涨 / ${reg.one_price_limit_down_count ?? 0}跌</div>
+      </div>
+      <div class="mini-stat">
+        <div class="lbl">封板率 / 两市成交额</div>
+        <div class="val">${seal} · <span class="small">${amt}</span></div>
+        <div class="sub">炸板 ${reg.non_st_broken_board_count ?? 0} 只 · 最高 ${reg.max_consecutive_limit_up ?? 0} 板</div>
+      </div>
+      <div class="mini-stat">
+        <div class="lbl">昨涨停今日均表现</div>
+        <div class="val">${pct(reg.prev_limit_up_avg_return_pct)}</div>
+        <div class="sub">样本 ${reg.prev_limit_up_count ?? 0} 只 · 红盘 ${sharePct(reg.prev_limit_up_win_rate_pct)}</div>
+      </div>
+      <div class="mini-stat">
+        <div class="lbl">昨涨停早盘 / 晋级率</div>
+        <div class="val">${pct(reg.prev_limit_up_open_premium_pct)}</div>
+        <div class="sub">连板晋级 ${reg.prev_limit_up_promoted_count ?? 0} 只 (${sharePct(reg.prev_limit_up_promotion_rate_pct)})</div>
+      </div>
+    </div>
+    <div>
+      <div class="small dim" style="margin-bottom:6px;">连板梯队分布（仅观察，不调权重）</div>
+      ${ladderHtml}
+    </div>
+    ${histHtml}
+  `;
+}
+
+function initScoreMarketPills() {
+  const wrap = $("market-score-pills");
+  const markets = state.summary.markets || [];
+  const pills = [{ id: "all", label: "全部市场" }].concat(markets.map((m) => ({ id: m.id, label: mname(m.id) })));
+  wrap.innerHTML = pills.map((p) => `<button type="button" class="pill-tab" data-m="${p.id}" aria-pressed="${p.id === state.scoreMarket}">${esc(p.label)}</button>`).join("");
+  wrap.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    const m = btn && btn.dataset && btn.dataset.m;
+    if (!m) return;
+    state.scoreMarket = m;
+    wrap.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.m === m)));
+    renderScorecard();
+  });
+  const sortEl = $("sort-score");
+  if (sortEl) sortEl.addEventListener("change", () => { state.scoreSort = sortEl.value; renderScorecard(); });
 }
 
 function renderScorecard() {
   const w = state.scoreWin;
-  const rows = state.summary.scorecard;
-  if (!rows.length) { $("scorecard").innerHTML = '<tr><td class="empty">还没有运行记录</td></tr>'; return; }
-  const head = `<tr><th>市场</th><th class="l">策略</th><th>运行</th><th>已评估</th><th>待定</th><th>不可成交</th><th>平均收益</th><th>胜率</th><th>同期基准</th><th>超额收益</th><th>跑赢基准</th></tr>`;
-  const sorted = [...rows].sort((a, b) => (b.windows[w].average_excess_return_pct ?? -1e9) - (a.windows[w].average_excess_return_pct ?? -1e9));
-  const body = sorted.map((r) => {
-    const x = r.windows[w];
+  let rows = state.summary.scorecard || [];
+  if (state.scoreMarket !== "all") rows = rows.filter((r) => r.market === state.scoreMarket);
+  if (!rows.length) {
+    $("scorecard").innerHTML = '<tr><td class="empty">当前筛选暂无运行记录</td></tr>';
+    return;
+  }
+
+  const metricVal = (r) => {
+    const x = (r.windows || {})[w] || {};
+    if (state.scoreSort === "beat") return x.beat_rate ?? -1e9;
+    if (state.scoreSort === "return") return x.average_return_pct ?? -1e9;
+    if (state.scoreSort === "evaluated") return x.evaluated ?? -1e9;
+    return x.average_excess_return_pct ?? -1e9;
+  };
+  const sorted = [...rows].sort((a, b) => metricVal(b) - metricVal(a));
+  const maxAbsEx = Math.max(2, ...sorted.map((r) => Math.abs(Number(((r.windows || {})[w] || {}).average_excess_return_pct || 0))));
+
+  const head = `<thead><tr><th>#</th><th>市场</th><th class="l">策略</th><th class="l">入场口径</th><th>运行</th><th>已评估</th><th>待定</th><th>不可成交</th><th>平均收益</th><th>胜率</th><th>同期基准</th><th>超额收益 (T+${w})</th><th>跑赢基准</th></tr></thead>`;
+  const body = sorted.map((r, idx) => {
+    const x = (r.windows || {})[w] || {};
     const bench = x.matched_return_pct !== null && x.average_excess_return_pct !== null ? x.matched_return_pct - x.average_excess_return_pct : null;
-    const lowSample = x.evaluated < MIN_SAMPLE;
-    const few = x.evaluated > 0 && lowSample ? `<span class="tag" title="少于 ${MIN_SAMPLE} 只，结论不可靠">样本少</span>` : "";
+    const lowSample = (x.evaluated ?? 0) < MIN_SAMPLE;
+    const few = (x.evaluated ?? 0) > 0 && lowSample ? `<span class="tag" title="少于 ${MIN_SAMPLE} 只，样本偏小">&lt;${MIN_SAMPLE}</span>` : "";
     const trBadge = r.track === "ai" ? '<span class="badge ai">AI</span>' : "";
-    const unShare = x.untradable_share_pct && x.untradable_share_pct > 0 ? sharePct(x.untradable_share_pct) : '<span class="dim">0.0%</span>';
-    return `<tr class="${lowSample ? "low-sample" : ""}"><td>${mname(r.market)}</td><td class="l">${sname(r.strategy)}${trBadge}</td><td>${r.runs}</td>
-      <td>${x.evaluated}${few}</td><td class="dim">${x.pending}</td><td>${unShare}</td><td>${pct(x.average_return_pct)}</td><td>${rate(x.win_rate)}</td>
-      <td>${pct(bench)}</td><td><b>${pct(x.average_excess_return_pct)}</b></td><td>${rate(x.beat_rate)}</td></tr>`;
+    const modes = (r.entry_modes || ["close"]).join(" / ");
+    const hasNextOpen = Array.isArray(r.entry_modes) && r.entry_modes.includes("next_open");
+    const unShare = (x.untradable_assessed === false || (!hasNextOpen && x.untradable_assessed !== true) || x.untradable_share_pct === null || x.untradable_share_pct === undefined)
+      ? '<span class="dim" title="切换前收盘口径，未评估开盘一字涨停">未评估</span>'
+      : (x.untradable_share_pct > 0 ? `<span class="warn">${sharePct(x.untradable_share_pct)}</span>` : "0.0%");
+
+    const ex = x.average_excess_return_pct;
+    const barW = ex !== null && ex !== undefined ? Math.max(4, (Math.abs(Number(ex)) / maxAbsEx) * 100) : 0;
+    const exColor = ex > 0 ? "var(--up)" : ex < 0 ? "var(--down)" : "var(--muted)";
+    const exCell = (ex !== null && ex !== undefined)
+      ? `<div class="div-bar-wrap"><span class="div-track"><span class="div-fill" style="width:${barW.toFixed(1)}%;background:${exColor};display:block;"></span></span><b>${pct(ex)}</b></div>`
+      : '<span class="dim">–</span>';
+
+    return `<tr class="${lowSample ? "low-sample" : ""}">
+      <td><span class="rank-num ${idx < 3 && !lowSample ? "top" : ""}">${idx + 1}</span></td>
+      <td>${mname(r.market)}</td>
+      <td class="l"><strong>${sname(r.strategy)}</strong>${trBadge}</td>
+      <td class="l"><span class="badge mode">${esc(modes)}</span></td>
+      <td class="mono">${r.runs}</td>
+      <td class="mono">${x.evaluated ?? 0}${few}</td>
+      <td class="dim mono">${x.pending ?? 0}</td>
+      <td class="mono">${unShare}</td>
+      <td class="mono">${pct(x.average_return_pct)}</td>
+      <td class="mono">${rate(x.win_rate)}</td>
+      <td class="mono">${pct(bench)}</td>
+      <td class="mono">${exCell}</td>
+      <td class="mono">${rate(x.beat_rate)}</td>
+    </tr>`;
   }).join("");
-  $("scorecard").innerHTML = head + body;
+  $("scorecard").innerHTML = `${head}<tbody>${body}</tbody>`;
 }
 
 function renderTrackComparison() {
   const rows = state.summary.track_comparison || [];
+  const rep = state.report || (state.summary && state.summary.latest_report) || {};
+  const hl = rep.ai_highlights || [];
   const w = state.compareWin;
-  if (!rows.length) {
-    $("track-compare").innerHTML = '<div class="empty">暂无成对的「规则 vs AI」战绩数据（配置 LLM Key 后自动累积 A 股 AI 赛道）。</div>';
+
+  if (!rows.length && !hl.length) {
+    $("track-compare").innerHTML = `<div class="empty" style="padding:14px 16px;">暂无成对「规则 vs AI」战绩记录 — 在 GitHub Secrets 配置 <code>DEEPSEEK_API_KEY</code> / <code>GEMINI_API_KEY</code> / <code>OPENAI_API_KEY</code> 后，系统将在每交易日自动并行运行双赛道并积累同日归因。</div>`;
+    $("ai-attribution-cards").innerHTML = "";
     return;
   }
-  const head = `<tr><th>市场</th><th class="l">策略</th><th>规则运行</th><th>规则样本/超额</th><th>AI 运行</th><th>AI 样本/超额</th><th>AI − 规则 (T+${w})</th></tr>`;
-  const body = rows.map((r) => {
-    const x = (r.windows || {})[w] || {};
-    const delta = x.ai_minus_rules_pct;
-    return `<tr><td>${mname(r.market)}</td><td class="l">${sname(r.strategy)}</td>
-      <td>${r.rules_runs}</td><td>${x.rules_matched ?? 0} / ${pct(x.rules_excess_pct)}</td>
-      <td>${r.ai_runs}</td><td>${x.ai_matched ?? 0} / ${pct(x.ai_excess_pct)}</td>
-      <td><b>${pct(delta)}</b></td></tr>`;
-  }).join("");
-  $("track-compare").innerHTML = `<table>${head}${body}</table>`;
+
+  if (!rows.length) {
+    $("track-compare").innerHTML = '<div class="empty">暂无到期的规则 vs AI 同日配对样本。</div>';
+  } else {
+    const head = `<thead><tr><th>市场</th><th class="l">策略</th><th>配对日/总共</th><th>AI 缺失率</th><th>选股重合度</th><th>规则同日超额</th><th>AI 同日超额</th><th>AI − 规则 (T+${w})</th><th>AI 独选超额</th><th>AI 剔除超额</th></tr></thead>`;
+    const body = rows.map((r) => {
+      const x = (r.windows || {})[w] || {};
+      const paired = x.paired_days ?? 0;
+      const minPaired = x.min_paired_days ?? 10;
+      const sufficient = Boolean(x.sample_sufficient) && x.ai_minus_rules_pct !== null && x.ai_minus_rules_pct !== undefined;
+      const deltaCell = sufficient
+        ? `<b>${pct(x.ai_minus_rules_pct)}</b><div class="small dim">胜出 ${x.ai_win_days ?? 0}/${paired}日</div>`
+        : `<span class="badge exp" title="${esc(x.delta_hidden_reason || `需至少 ${minPaired} 个同日配对`)}">样本不足 (${paired}/${minPaired})</span>`;
+      const missRate = r.ai_missing_rate_pct !== null && r.ai_missing_rate_pct !== undefined ? `${Number(r.ai_missing_rate_pct).toFixed(1)}%` : "–";
+      const overlap = r.avg_pick_overlap_pct !== null && r.avg_pick_overlap_pct !== undefined ? `${Number(r.avg_pick_overlap_pct).toFixed(1)}%` : "–";
+      const uniqTxt = x.ai_unique_count ? `${pct(x.ai_unique_excess_pct)} <span class="dim small">(${x.ai_unique_count})</span>` : '<span class="dim">–</span>';
+      const dropTxt = x.rules_dropped_count ? `${pct(x.rules_dropped_excess_pct)} <span class="dim small">(${x.rules_dropped_count})</span>` : '<span class="dim">–</span>';
+      return `<tr class="${sufficient ? "" : "low-sample"}">
+        <td>${mname(r.market)}</td>
+        <td class="l"><strong>${sname(r.strategy)}</strong></td>
+        <td class="mono">${paired} / ${r.common_days ?? paired}</td>
+        <td class="mono">${missRate}</td>
+        <td class="mono">${overlap}</td>
+        <td class="mono">${pct(x.rules_excess_pct)} <span class="dim small">(${x.rules_matched ?? 0}只)</span></td>
+        <td class="mono">${pct(x.ai_excess_pct)} <span class="dim small">(${x.ai_matched ?? 0}只)</span></td>
+        <td class="mono">${deltaCell}</td>
+        <td class="mono">${uniqTxt}</td>
+        <td class="mono">${dropTxt}</td>
+      </tr>`;
+    }).join("");
+    $("track-compare").innerHTML = `<table>${head}<tbody>${body}</tbody></table>`;
+  }
+
+  const hlWrap = $("ai-attribution-cards");
+  const hlCards = hl.map((item) => {
+    const added = (item.added_by_ai || []).map((a) => `${esc(a.name)}(${esc(a.code)})${a.ranking_reason ? `: ${esc(a.ranking_reason.slice(0, 42))}` : ""}`).join("；") || "无";
+    const dropped = (item.dropped_by_ai || []).map((d) => `${esc(d.name)}(${esc(d.code)})`).join("；") || "无";
+    return `<div class="card">
+      <div class="card-top">
+        <h3><span>${sname(item.strategy)}</span><span class="badge ai">AI 当日归因</span></h3>
+        <div class="sub">重合度 ${item.overlap_pct === null || item.overlap_pct === undefined ? "–" : `${item.overlap_pct}%`} · 规则 ${item.rules_pick_count ?? 0} 只 / AI ${item.ai_pick_count ?? 0} 只</div>
+      </div>
+      <div style="padding:10px 14px;font-size:12.5px;display:flex;flex-direction:column;gap:5px;">
+        ${item.llm_market_view ? `<div><span class="dim">市场观点：</span>${esc(item.llm_market_view)}</div>` : ""}
+        <div><span class="up">AI 新增：</span>${added}</div>
+        <div><span class="dim">AI 剔除：</span>${dropped}</div>
+      </div>
+    </div>`;
+  });
+
+  const caseCards = rows.map((r) => {
+    const winObj = (r.windows || {})[w] || {};
+    const cs = winObj.ai_case_studies || {};
+    const adds = cs.best_ai_adds || [];
+    const avoids = cs.best_ai_avoids || [];
+    const misses = cs.missed_by_ai || [];
+    if (!adds.length && !avoids.length && !misses.length) return "";
+    const fmtCase = (x) => `${esc((x.date || "").slice(5))} ${esc(x.name || x.code)}(${esc(x.code)}) ${pct(x.excess_return_pct)}`;
+    return `<div class="card">
+      <div class="card-top">
+        <h3><span>${sname(r.strategy)}</span><span class="badge ai">T+${w} 个股案例</span></h3>
+      </div>
+      <div style="padding:10px 14px;font-size:12.5px;display:flex;flex-direction:column;gap:5px;">
+        ${adds.length ? `<div><span class="up">AI 独选高光：</span>${adds.map(fmtCase).join("；")}</div>` : ""}
+        ${avoids.length ? `<div><span class="down">AI 避坑剔除：</span>${avoids.map(fmtCase).join("；")}</div>` : ""}
+        ${misses.length ? `<div><span class="dim">AI 错杀遗憾：</span>${misses.map(fmtCase).join("；")}</div>` : ""}
+      </div>
+    </div>`;
+  }).filter(Boolean);
+
+  const allCards = [...hlCards, ...caseCards];
+  hlWrap.innerHTML = allCards.length ? `<div class="cards">${allCards.join("")}</div>` : "";
 }
 
 function renderPatternRadar() {
   const pb = state.patterns;
   if (!pb || !pb.latest) {
-    $("regime-panel").innerHTML = '<div class="empty">尚未生成 A 股盘面统计与形态雷达快照（需搭配 A 股离线数据包构建）。</div>';
-    $("replay-summary-wrap").innerHTML = "";
+    $("pattern-hits-wrap").innerHTML = '<div class="empty">尚未生成 A 股形态雷达快照（当 GitHub Actions 私有日线缓存构建完毕后自动扫描并附带 20 日 K 线）。</div>';
+    $("universe-baseline-wrap").innerHTML = "";
+    $("replay-summary-wrap").innerHTML = '<div class="empty">尚未生成 250 日形态回放结果。</div>';
     $("regime-slice-wrap").innerHTML = "";
-    $("pattern-hits-wrap").innerHTML = "";
+    $("overhead-slice-wrap").innerHTML = "";
     return;
   }
   const latest = pb.latest;
-  const reg = latest.market_regime || {};
-  const ladder = reg.consecutive_board_ladder || {};
-  const ladderStr = Object.entries(ladder).map(([k, v]) => `${k}板:${v}`).join(" ") || "无";
-  const seal = reg.seal_rate_pct !== null && reg.seal_rate_pct !== undefined ? `${Number(reg.seal_rate_pct).toFixed(1)}%` : "–";
-  const prevLu = reg.prev_limit_up_avg_return_pct !== null && reg.prev_limit_up_avg_return_pct !== undefined
-    ? `${reg.prev_limit_up_avg_return_pct > 0 ? "+" : ""}${Number(reg.prev_limit_up_avg_return_pct).toFixed(2)}%` : "–";
-  const amt = reg.total_amount_yi !== null && reg.total_amount_yi !== undefined ? `${Math.round(reg.total_amount_yi)} 亿` : "–";
-
-  $("regime-panel").innerHTML = `<div class="regime-bar">
-    <span class="chip accent">${esc(latest.trade_date)} · ${esc(reg.regime_stage_label || reg.regime_stage)} (${esc(reg.regime_stage)}) [仅切片]</span>
-    <span class="chip">上涨占比 ${Number(reg.advance_ratio_pct || 0).toFixed(1)}%</span>
-    <span class="chip">非ST 涨停/跌停 ${reg.non_st_limit_up_count ?? 0}/${reg.non_st_limit_down_count ?? 0}</span>
-    <span class="chip">封板率 ${seal}</span>
-    <span class="chip">连板最高 ${reg.max_consecutive_limit_up ?? 0} (${esc(ladderStr)})</span>
-    <span class="chip">昨涨停溢价 ${prevLu}</span>
-    <span class="chip">成交额 ${amt}</span>
-  </div>`;
-
   const replay = pb.replay;
-  if (replay && Array.isArray(replay.patterns) && replay.patterns.length) {
-    const ps = replay.pack_summary || {};
-    const repHead = `<tr><th class="l">形态</th><th class="l">谱系</th><th>模式</th><th>信号数</th><th>不可成交</th><th>T+5 样本</th><th>T+5 超额</th><th>T+5 胜率</th><th>T+10 超额</th><th>门槛状态</th></tr>`;
-    const repRows = replay.patterns.map((p) => {
-      const h5 = (p.horizons || {}).t5 || {};
-      const h10 = (p.horizons || {}).t10 || {};
-      const grad = p.graduation || {};
-      const status = grad.recommended_status || "experimental";
-      const t5n = h5.scored ?? 0;
-      const muted = status !== "active" || t5n < MIN_PATTERN_GRAD_SAMPLE;
-      const badge = status === "active"
-        ? '<span class="badge active">active</span>'
-        : '<span class="badge exp">experimental</span>';
-      return `<tr class="${muted ? "low-sample" : ""}">
-        <td class="l">${esc(p.display_name || p.pattern)} <span class="dim small">${esc(p.pattern)}</span></td>
-        <td class="l dim">${esc(p.family)}</td><td>${esc(p.mode)}</td>
-        <td>${t5n + (p.untradable_count || 0)}</td><td>${sharePct(p.untradable_share_pct)}</td>
-        <td>${t5n}${t5n < MIN_PATTERN_GRAD_SAMPLE ? '<span class="tag">&lt;200</span>' : ""}</td>
-        <td>${pct(h5.excess_mean_pct)}</td><td>${sharePct(h5.win_rate_pct)}</td>
-        <td>${pct(h10.excess_mean_pct)}</td><td>${badge}</td></tr>`;
-    }).join("");
-    $("replay-summary-wrap").innerHTML = `<h3 class="subhead">250 日 next_open 回放门槛评估 (${esc(ps.eval_start_date)} .. ${esc(ps.eval_end_date)}, ${ps.eval_sessions ?? "-"} 日)</h3>
-      <div class="panel scroll"><table>${repHead}${repRows}</table></div>`;
-
-    const slHead = `<tr><th class="l">形态 × 阶段 (T+5 样本 / 平均超额)</th>${REGIME_ORDER.map((s) => `<th>${REGIME_LABELS[s]}</th>`).join("")}</tr>`;
-    const slRows = replay.patterns.map((p) => {
-      const cells = REGIME_ORDER.map((s) => {
-        const cell = (p.by_regime || {})[s] || {};
-        const n = cell.t5_scored ?? 0;
-        const small = n < MIN_SLICE_SAMPLE;
-        return `<td class="${small ? "muted-cell" : ""}">${n}${small ? "*" : ""} / ${pct(cell.t5_excess_mean_pct)}</td>`;
-      }).join("");
-      return `<tr><td class="l">${esc(p.display_name || p.pattern)}</td>${cells}</tr>`;
-    }).join("");
-    $("regime-slice-wrap").innerHTML = `<h3 class="subhead">形态 × 市场阶段切片（带 * 且置灰表示样本 &lt; ${MIN_SLICE_SAMPLE}，暂不参与情绪权重评估）</h3>
-      <div class="panel scroll"><table>${slHead}${slRows}</table></div>`;
-  } else {
-    $("replay-summary-wrap").innerHTML = "";
-    $("regime-slice-wrap").innerHTML = "";
-  }
-
   const sigMap = latest.signals_by_pattern || {};
   const counts = latest.counts_by_pattern || {};
   const patNames = Object.keys(counts);
-  if (!patNames.length) {
-    $("pattern-hits-wrap").innerHTML = "";
-    return;
-  }
   const replayStatus = {};
   if (replay && Array.isArray(replay.patterns)) {
     for (const p of replay.patterns) replayStatus[p.pattern] = (p.graduation || {}).recommended_status || "experimental";
   }
-  const cards = patNames.map((name) => {
-    const items = sigMap[name] || [];
-    const total = counts[name] || items.length;
-    const st = items[0] ? items[0].status : (replayStatus[name] || "experimental");
-    const badge = st === "active" ? '<span class="badge active">active</span>' : '<span class="badge exp">experimental</span>';
-    const dname = items[0] && items[0].display_name ? items[0].display_name : name;
-    if (!items.length) {
-      return `<div class="panel card"><h3>${esc(dname)} ${badge}</h3><div class="sub">${esc(latest.trade_date)} · 命中 0 只</div><div class="empty">今日无触发信号</div></div>`;
-    }
-    const rows = items.slice(0, 6).map((s) => {
-      const obs = s.observe_lag_days ? ` <span class="dim small">-${s.observe_lag_days}d</span>` : "";
-      const ov = s.overhead_supply_10pct !== null && s.overhead_supply_10pct !== undefined ? `${Number(s.overhead_supply_10pct).toFixed(0)}%` : "–";
-      return `<tr><td class="l">${esc(s.name || s.code)} <span class="dim small">${esc(s.code)}</span>${obs}</td>
-        <td>${pct(s.change_pct)}</td><td class="dim">${ov}</td><td>${renderMiniKline(s.kline)}</td></tr>`;
+
+  if (!patNames.length) {
+    $("pattern-hits-wrap").innerHTML = '<div class="empty">最新快照暂无形态统计条目。</div>';
+  } else {
+    const cards = patNames.map((name) => {
+      const items = sigMap[name] || [];
+      const total = counts[name] || items.length;
+      const st = items[0] ? items[0].status : (replayStatus[name] || "experimental");
+      const badge = st === "active" ? '<span class="badge active">active</span>' : '<span class="badge exp">experimental</span>';
+      const dname = items[0] && items[0].display_name ? items[0].display_name : name;
+      if (!items.length) {
+        return `<div class="card"><div class="card-top"><h3><span>${esc(dname)}</span>${badge}</h3><div class="sub">${esc(latest.trade_date)} · 命中 0 只</div></div><div class="empty">今日无触发信号</div></div>`;
+      }
+      const rows = items.slice(0, 6).map((s) => {
+        const obs = s.observe_lag_days ? ` <span class="dim small">-${s.observe_lag_days}d</span>` : "";
+        const ov = s.overhead_supply_10pct !== null && s.overhead_supply_10pct !== undefined ? `${Number(s.overhead_supply_10pct).toFixed(0)}%` : "–";
+        return `<tr><td class="l"><strong>${esc(s.name || s.code)}</strong> <span class="mono dim small">${esc(s.code)}</span>${obs}</td>
+          <td class="mono">${pct(s.change_pct)}</td><td class="dim mono">${ov}</td><td>${renderMiniKline(s.kline)}</td></tr>`;
+      }).join("");
+      return `<div class="card">
+        <div class="card-top">
+          <h3><span>${esc(dname)}</span>${badge}</h3>
+          <div class="sub">${esc(latest.trade_date)} · 命中 ${total} 只（展示前 ${Math.min(6, items.length)} 只）</div>
+        </div>
+        <div class="scroll"><table><thead><tr><th class="l">股票</th><th>涨跌</th><th>上方筹码</th><th>20日K线</th></tr></thead><tbody>${rows}</tbody></table></div>
+      </div>`;
     }).join("");
-    return `<div class="panel card"><h3>${esc(dname)} ${badge}</h3>
-      <div class="sub">${esc(latest.trade_date)} · 命中 ${total} 只（展示前 ${Math.min(6, items.length)} 只）</div>
-      <div class="scroll"><table><tr><th class="l">股票</th><th>涨跌</th><th>上方筹码</th><th>20日K线</th></tr>${rows}</table></div></div>`;
-  }).join("");
-  $("pattern-hits-wrap").innerHTML = `<h3 class="subhead">最新形态雷达命中（${esc(latest.trade_date)}）</h3><div class="cards">${cards}</div>`;
+    $("pattern-hits-wrap").innerHTML = `<div class="cards">${cards}</div>`;
+  }
+
+  if (replay && Array.isArray(replay.patterns) && replay.patterns.length) {
+    const ps = replay.pack_summary || {};
+    const ub = replay.universe_baseline || {};
+    const ub5 = ub.t5 || {};
+    const ub10 = ub.t10 || {};
+    if (ub5.sessions) {
+      $("universe-baseline-wrap").innerHTML = `<div class="baseline-strip">
+        <b>同期全市场基准 (${ub5.sessions} 日)：</b>
+        <span>全市场等权 T+5 超额 ${pct(ub5.equal_weight_excess_mean_pct)}（裸收益 ${pct(ub5.equal_weight_raw_mean_pct)}）</span>
+        <span>· 流动性 ≥8000万 ${pct(ub5.liquid_excess_mean_pct)}</span>
+        <span>· 沪深300 ${pct(ub5.benchmark_mean_pct)}</span>
+        ${ub10.sessions ? `<span>· T+10 等权超额 ${pct(ub10.equal_weight_excess_mean_pct)}</span>` : ""}
+      </div>`;
+    } else {
+      $("universe-baseline-wrap").innerHTML = "";
+    }
+
+    const repHead = `<thead><tr><th class="l">形态</th><th class="l">谱系/模式</th><th>总信号</th><th>不可成交</th><th>T+5 基准匹配</th><th>T+5 超额</th><th>T+5 胜率</th><th>聚日 t 值</th><th>前半 H1 / 后半 H2</th><th>T+10 超额</th><th>门槛状态</th></tr></thead>`;
+    const repRows = replay.patterns.map((p) => {
+      const h5 = (p.horizons || {}).t5 || {};
+      const h10 = (p.horizons || {}).t10 || {};
+      const grad = p.graduation || {};
+      const stab = p.stability || {};
+      const status = grad.recommended_status || "experimental";
+      const t5ExcessN = h5.excess_scored ?? h5.scored ?? 0;
+      const muted = status !== "active" || t5ExcessN < MIN_PATTERN_GRAD_SAMPLE;
+      const badge = status === "active"
+        ? '<span class="badge active">active</span>'
+        : '<span class="badge exp">experimental</span>';
+      const tStat = stab.t_stat !== null && stab.t_stat !== undefined ? `${Number(stab.t_stat).toFixed(2)}` : "–";
+      const h1h2 = (stab.h1_days || stab.h2_days)
+        ? `${pct(stab.h1_daily_excess_mean_pct ?? stab.h1_excess_mean_pct)} (${stab.h1_days ?? 0}d) / ${pct(stab.h2_daily_excess_mean_pct ?? stab.h2_excess_mean_pct)} (${stab.h2_days ?? 0}d)`
+        : '<span class="dim">–</span>';
+      return `<tr class="${muted ? "low-sample" : ""}">
+        <td class="l"><strong>${esc(p.display_name || p.pattern)}</strong> <span class="mono dim small">${esc(p.pattern)}</span></td>
+        <td class="l dim">${esc(p.family)} · ${esc(p.mode)}</td>
+        <td class="mono">${(h5.scored ?? 0) + (p.untradable_count || 0)}</td>
+        <td class="mono">${sharePct(p.untradable_share_pct)}</td>
+        <td class="mono">${t5ExcessN}${t5ExcessN < MIN_PATTERN_GRAD_SAMPLE ? '<span class="tag">&lt;200</span>' : ""}</td>
+        <td class="mono">${pct(h5.excess_mean_pct)}</td>
+        <td class="mono">${sharePct(h5.excess_win_rate_pct ?? h5.win_rate_pct)}</td>
+        <td class="mono">${tStat}</td>
+        <td class="mono">${h1h2}</td>
+        <td class="mono">${pct(h10.excess_mean_pct)}</td>
+        <td>${badge}</td>
+      </tr>`;
+    }).join("");
+    $("replay-summary-wrap").innerHTML = `<h3 class="subhead" style="margin-top:4px;">250 日 next_open 回放门槛评估（${esc(ps.eval_start_date)} .. ${esc(ps.eval_end_date)}，${ps.eval_sessions ?? "-"} 个信号日）</h3>
+      <div class="panel scroll">${`<table>${repHead}<tbody>${repRows}</tbody></table>`}</div>`;
+
+    const slHead = `<thead><tr><th class="l">形态 × 市场阶段（T+5 匹配样本 / 超额）</th>${REGIME_ORDER.map((s) => `<th>${REGIME_LABELS[s]}</th>`).join("")}</tr></thead>`;
+    const slRows = replay.patterns.map((p) => {
+      const cells = REGIME_ORDER.map((s) => {
+        const cell = (p.by_regime || {})[s] || {};
+        const n = cell.t5_excess_scored ?? cell.t5_scored ?? 0;
+        const small = n < MIN_SLICE_SAMPLE;
+        return `<td class="mono ${small ? "muted-cell" : ""}">${n}${small ? "*" : ""} / ${pct(cell.t5_excess_mean_pct)}</td>`;
+      }).join("");
+      return `<tr><td class="l">${esc(p.display_name || p.pattern)}</td>${cells}</tr>`;
+    }).join("");
+    $("regime-slice-wrap").innerHTML = `<h3 class="subhead">形态 × 市场阶段切片（带 * 且置灰表示样本 &lt; ${MIN_SLICE_SAMPLE}）</h3>
+      <div class="panel scroll"><table>${slHead}<tbody>${slRows}</tbody></table></div>`;
+
+    const hasOv = replay.patterns.some((p) => p.by_overhead_supply && Object.keys(p.by_overhead_supply).length);
+    if (hasOv) {
+      const ovHead = `<thead><tr><th class="l">形态 × 上方套牢盘切片（T+5 匹配样本 / 超额 / 胜率）</th>${OVERHEAD_BUCKETS.map((b) => `<th>${esc(b.label)}</th>`).join("")}</tr></thead>`;
+      const ovRows = replay.patterns.map((p) => {
+        const cells = OVERHEAD_BUCKETS.map((b) => {
+          const cell = (p.by_overhead_supply || {})[b.key] || {};
+          const n = cell.t5_excess_scored ?? cell.t5_scored ?? 0;
+          const small = n < MIN_SLICE_SAMPLE;
+          return `<td class="mono ${small ? "muted-cell" : ""}">${n}${small ? "*" : ""} / ${pct(cell.t5_excess_mean_pct)} <span class="dim small">${sharePct(cell.t5_win_rate_pct)}</span></td>`;
+        }).join("");
+        return `<tr><td class="l">${esc(p.display_name || p.pattern)}</td>${cells}</tr>`;
+      }).join("");
+      $("overhead-slice-wrap").innerHTML = `<h3 class="subhead">形态 × 上方 10% 套牢筹码切片（带 * 且置灰表示样本 &lt; ${MIN_SLICE_SAMPLE}）</h3>
+        <div class="panel scroll"><table>${ovHead}<tbody>${ovRows}</tbody></table></div>`;
+    } else {
+      $("overhead-slice-wrap").innerHTML = "";
+    }
+  } else {
+    $("universe-baseline-wrap").innerHTML = "";
+    $("replay-summary-wrap").innerHTML = '<div class="empty">尚未运行 250 日形态回放。</div>';
+    $("regime-slice-wrap").innerHTML = "";
+    $("overhead-slice-wrap").innerHTML = "";
+  }
 }
 
 function renderChart() {
-  const series = ((state.summary.trend || {})[state.trendMarket] || {})[state.trendWin] || {};
-  const names = Object.keys(series).sort();
-  if (!names.length) {
-    $("chart").innerHTML = `<div class="empty">该市场 T+${state.trendWin} 还没有到期的选股</div>`;
+  const rulesSeries = ((state.summary.trend || {})[state.trendMarket] || {})[state.trendWin] || {};
+  const aiSeries = ((state.summary.trend_ai || {})[state.trendMarket] || {})[state.trendWin] || {};
+  const lines = [];
+  if (state.trendTrack === "rules" || state.trendTrack === "both") {
+    for (const n of Object.keys(rulesSeries).sort()) {
+      lines.push({ id: `${n}:rules`, label: sname(n), track: "rules", pts: rulesSeries[n] });
+    }
+  }
+  if (state.trendTrack === "ai" || state.trendTrack === "both") {
+    for (const n of Object.keys(aiSeries).sort()) {
+      lines.push({ id: `${n}:ai`, label: `${sname(n)} [AI]`, track: "ai", pts: aiSeries[n] });
+    }
+  }
+  const tip = $("chart-tip");
+  if (tip) tip.style.display = "none";
+  if (!lines.length) {
+    $("chart").innerHTML = `<div class="empty">该市场 T+${state.trendWin} 所选赛道还没有到期的选股</div>`;
     $("legend").innerHTML = "";
     return;
   }
-  const dates = [...new Set(names.flatMap((n) => series[n].map((p) => p[0])))].sort();
-  const values = names.flatMap((n) => series[n].map((p) => p[1]));
+
+  const dates = [...new Set(lines.flatMap((l) => l.pts.map((p) => p[0])))].sort();
+  const values = lines.flatMap((l) => l.pts.map((p) => p[1]));
   let lo = Math.min(0, ...values), hi = Math.max(0, ...values);
-  const pad = (hi - lo) * 0.1 || 1; lo -= pad; hi += pad;
-  const W = 900, H = 300, L = 48, R = 12, T = 12, B = 28;
+  const pad = (hi - lo) * 0.14 || 1;
+  lo -= pad; hi += pad;
+  const W = 1040, H = 310, L = 54, R = 24, T = 16, B = 30;
   const x = (d) => L + (dates.length === 1 ? (W - L - R) / 2 : (dates.indexOf(d) / (dates.length - 1)) * (W - L - R));
   const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
-  const ticks = 5, parts = [];
+  const ticks = 4, parts = [];
+
   for (let i = 0; i <= ticks; i++) {
     const v = lo + ((hi - lo) * i) / ticks;
-    parts.push(`<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/>`,
-      `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v.toFixed(1)}%</text>`);
+    parts.push(`<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--border)" stroke-dasharray="3 4"/>`);
+    parts.push(`<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">${v.toFixed(1)}%</text>`);
   }
-  parts.push(`<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-dasharray="3 3"/>`);
-  const step = Math.max(1, Math.ceil(dates.length / 6));
+  parts.push(`<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-opacity="0.55" stroke-dasharray="4 4"/>`);
+
+  const step = Math.max(1, Math.ceil(dates.length / 7));
   dates.forEach((d, i) => {
     if (i % step === 0 || i === dates.length - 1)
-      parts.push(`<text x="${x(d)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${d.slice(5)}</text>`);
+      parts.push(`<text x="${x(d)}" y="${H - 8}" text-anchor="middle" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">${d.slice(5)}</text>`);
   });
-  names.forEach((n, i) => {
+
+  lines.forEach((l, i) => {
     const color = `var(--s${(i % 12) + 1})`;
-    const pts = series[n];
-    parts.push(`<polyline fill="none" stroke="${color}" stroke-width="2" points="${pts.map((p) => `${x(p[0])},${y(p[1])}`).join(" ")}"/>`);
-    for (const p of pts)
-      parts.push(`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="3" fill="${color}"><title>${sname(n)} ${p[0]}：${p[1] > 0 ? "+" : ""}${p[1].toFixed(2)}%（${p[2]} 只）</title></circle>`);
+    const isDim = state.trendFocus && state.trendFocus !== l.id;
+    const sw = state.trendFocus === l.id ? "2.8" : "2";
+    const op = isDim ? "0.18" : "0.95";
+    const dashAttr = l.track === "ai" ? ' stroke-dasharray="5 3"' : "";
+    parts.push(`<polyline fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" stroke-linecap="round" stroke-linejoin="round"${dashAttr} points="${l.pts.map((p) => `${x(p[0])},${y(p[1])}`).join(" ")}"/>`);
+    for (const p of l.pts) {
+      parts.push(`<circle class="pt" data-label="${l.label}" data-date="${p[0]}" data-val="${p[1]}" data-n="${p[2]}" data-col="${color}" cx="${x(p[0])}" cy="${y(p[1])}" r="${state.trendFocus === l.id ? 4 : 3}" fill="${color}" fill-opacity="${op}"/>`);
+    }
   });
-  $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="累计平均超额收益">${parts.join("")}</svg>`;
-  $("legend").innerHTML = names.map((n, i) => `<span><i style="background:var(--s${(i % 12) + 1})"></i>${sname(n)}</span>`).join("");
+
+  $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="分赛道累计平均超额收益">${parts.join("")}</svg>`;
+
+  const svg = $("chart").querySelector("svg");
+  if (svg && tip) {
+    svg.querySelectorAll("circle.pt").forEach((c) => {
+      c.addEventListener("mouseenter", () => {
+        const val = Number(c.dataset.val);
+        tip.innerHTML = `<b>${c.dataset.label}</b><br>${c.dataset.date} · 超额 <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${c.dataset.n} 只`;
+        tip.style.display = "block";
+        const box = svg.getBoundingClientRect();
+        const wrapBox = $("chart").parentElement.getBoundingClientRect();
+        const cBox = c.getBoundingClientRect();
+        tip.style.left = `${Math.min(wrapBox.width - 210, Math.max(8, cBox.left - wrapBox.left + 10))}px`;
+        tip.style.top = `${Math.max(8, cBox.top - wrapBox.top - 48)}px`;
+        void box;
+      });
+      c.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+    });
+  }
+
+  $("legend").innerHTML = lines.map((l, i) => {
+    const col = `var(--s${(i % 12) + 1})`;
+    const focused = state.trendFocus === l.id;
+    return `<button type="button" class="legend-btn${focused ? " focused" : ""}" data-id="${esc(l.id)}"><i class="${l.track === "ai" ? "dashed" : ""}" style="background:${col};color:${col}"></i><span>${l.label}</span></button>`;
+  }).join("");
+
+  $("legend").querySelectorAll("button.legend-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      state.trendFocus = state.trendFocus === id ? null : id;
+      renderChart();
+    });
+  });
 }
 
 function picksTable(picks, withEval) {
   const wins = state.summary.windows;
   const head = withEval
-    ? `<tr><th>#</th><th class="l">股票</th>${wins.map((w) => `<th>T+${w}</th>`).join("")}</tr>`
-    : `<tr><th>#</th><th class="l">股票</th><th class="l">行业</th><th>价格</th><th>PE</th><th>PB</th></tr>`;
+    ? `<thead><tr><th>#</th><th class="l">股票</th>${wins.map((w) => `<th>T+${w}</th>`).join("")}</tr></thead>`
+    : `<thead><tr><th>#</th><th class="l">股票</th><th class="l">行业</th><th>价格</th><th>PE</th><th>PB</th></tr></thead>`;
   const body = picks.map((p) => {
-    const name = `${esc(p.name)} <span class="dim small">${esc(p.code)}</span>`;
+    const name = `<strong>${esc(p.name)}</strong> <span class="mono dim small">${esc(p.code)}</span>`;
     if (!withEval)
-      return `<tr><td>${p.rank}</td><td class="l">${name}</td><td class="l dim">${esc(p.industry)}</td><td>${num(p.price)}</td><td>${num(p.pe_ratio, 1)}</td><td>${num(p.pb_ratio, 2)}</td></tr>`;
+      return `<tr><td><span class="rank-num ${p.rank <= 3 ? "top" : ""}">${p.rank}</span></td><td class="l">${name}</td><td class="l dim">${esc(p.industry)}</td><td class="mono">${num(p.price)}</td><td class="mono">${num(p.pe_ratio, 1)}</td><td class="mono">${num(p.pb_ratio, 2)}</td></tr>`;
     const cells = wins.map((w) => {
       const e = (p.evaluation || {})[w];
-      if (!e) return '<td class="dim">–</td>';
+      if (!e) return '<td class="dim mono">–</td>';
       if (e.status === "pending") return '<td class="dim">待定</td>';
       if (e.status === "untradable_limit_up") return '<td class="dim" title="次日一字涨停无法成交">不可成交</td>';
       if (e.status !== "ok") return `<td class="dim" title="${esc(e.status)}">无数据</td>`;
-      return `<td title="超额 ${e.excess_return_pct ?? "–"}%">${pct(e.return_pct, 1)}<br><span class="small">${e.excess_return_pct === null ? "" : "超额 " + pct(e.excess_return_pct, 1)}</span></td>`;
+      return `<td class="mono" title="超额 ${e.excess_return_pct ?? "–"}%">${pct(e.return_pct, 1)}<br><span class="small">${e.excess_return_pct === null ? "" : "超 " + pct(e.excess_return_pct, 1)}</span></td>`;
     }).join("");
-    return `<tr><td>${p.rank}</td><td class="l">${name}</td>${cells}</tr>`;
+    return `<tr><td><span class="rank-num ${p.rank <= 3 ? "top" : ""}">${p.rank}</span></td><td class="l">${name}</td>${cells}</tr>`;
   }).join("");
-  return `<div class="scroll"><table>${head}${body}</table></div>`;
+  return `<div class="scroll"><table>${head}<tbody>${body}</tbody></table></div>`;
+}
+
+function matchesSearch(run, q) {
+  if (!q) return true;
+  const sLabel = (((state.summary && state.summary.strategy_names) || {})[run.strategy] || run.strategy || "").toLowerCase();
+  if (sLabel.includes(q) || String(run.strategy || "").toLowerCase().includes(q)) return true;
+  return (run.picks || []).some((p) =>
+    String(p.code || "").toLowerCase().includes(q) ||
+    String(p.name || "").toLowerCase().includes(q) ||
+    String(p.industry || "").toLowerCase().includes(q)
+  );
 }
 
 function renderLatest() {
-  const runs = (state.summary.latest || {})[state.latestMarket] || [];
+  const q = (state.searchQuery || "").trim().toLowerCase();
+  const runs = ((state.summary.latest || {})[state.latestMarket] || []).filter((r) => matchesSearch(r, q));
   $("latest").innerHTML = runs.length ? runs.map((r) => {
     const badge = r.track === "ai" ? '<span class="badge ai">AI</span>' : "";
-    return `<div class="panel card">
-      <h3>${sname(r.strategy)}${badge}</h3>
-      <div class="sub">${r.date} · 全市场 ${r.snapshot_count ?? "–"} 只，硬筛后 ${r.after_filter_count ?? "–"} 只${r.degradation ? ` · <span class="up">数据有降级</span>` : ""}</div>
+    return `<div class="card">
+      <div class="card-top">
+        <h3><span>${sname(r.strategy)}${badge}</span><span class="badge">${r.picks.length} 只</span></h3>
+        <div class="sub">${r.date} · 全市场 ${r.snapshot_count ?? "–"} 只 → 硬筛 ${r.after_filter_count ?? "–"} 只${r.degradation ? ` · <span class="up">数据降级</span>` : ""}</div>
+      </div>
       ${r.picks.length ? picksTable(r.picks, false) : '<div class="empty">当天没有符合条件的股票</div>'}
     </div>`;
-  }).join("") : '<div class="empty">暂无</div>';
+  }).join("") : '<div class="empty">当前过滤条件无匹配策略或标的</div>';
 }
 
 async function renderDay(day) {
-  $("history").innerHTML = '<div class="empty">加载中…</div>';
-  try {
-    const res = await fetch(`site/days/${day}.json`, { cache: "no-cache" });
-    const data = await res.json();
-    $("history").innerHTML = data.runs.map((r) => {
-      const ev = state.summary.windows.map((w) => {
-        const s = (r.evaluation || {})[w];
-        return s && s.evaluated ? `T+${w} 超额 ${pct(s.average_excess_return_pct, 1)}` : `T+${w} 待定`;
-      }).join(" · ");
-      const badge = r.track === "ai" ? '<span class="badge ai">AI</span>' : "";
-      return `<div class="panel card"><h3>${mname(r.market)} · ${sname(r.strategy)}${badge}</h3>
+  state.currentDay = day;
+  if (!day) { $("history").innerHTML = '<div class="empty">暂无历史交易日记录</div>'; return; }
+  let data = state.dayCache[day];
+  if (!data) {
+    $("history").innerHTML = '<div class="empty">加载交易日归档…</div>';
+    try {
+      const res = await fetch(`site/days/${day}.json`, { cache: "no-cache" });
+      data = await res.json();
+      state.dayCache[day] = data;
+    } catch (err) {
+      $("history").innerHTML = `<div class="empty">加载失败：${esc(err.message)}</div>`;
+      return;
+    }
+  }
+  const q = (state.searchQuery || "").trim().toLowerCase();
+  const runs = (data.runs || []).filter((r) => matchesSearch(r, q));
+  $("history").innerHTML = runs.length ? runs.map((r) => {
+    const ev = state.summary.windows.map((w) => {
+      const s = (r.evaluation || {})[w];
+      return s && s.evaluated ? `T+${w} ${pct(s.average_excess_return_pct, 1)}` : `T+${w} 待定`;
+    }).join(" · ");
+    const badge = r.track === "ai" ? '<span class="badge ai">AI</span>' : "";
+    return `<div class="card">
+      <div class="card-top">
+        <h3><span>${mname(r.market)} · ${sname(r.strategy)}${badge}</span></h3>
         <div class="sub">${ev}</div>
-        ${r.picks.length ? picksTable(r.picks, true) : '<div class="empty">当天没有符合条件的股票</div>'}</div>`;
-    }).join("");
-  } catch (err) {
-    $("history").innerHTML = `<div class="empty">加载失败：${esc(err.message)}</div>`;
+      </div>
+      ${r.picks.length ? picksTable(r.picks, true) : '<div class="empty">当天没有符合条件的股票</div>'}
+    </div>`;
+  }).join("") : '<div class="empty">当前过滤条件在当日无匹配记录</div>';
+}
+
+function initExplorerControls() {
+  const modeWrap = $("explorer-mode");
+  const mktSel = $("market-latest");
+  const daySel = $("day");
+  const searchEl = $("pick-search");
+  if (modeWrap) {
+    modeWrap.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      const mode = btn && btn.dataset && btn.dataset.mode;
+      if (!mode) return;
+      state.explorerMode = mode;
+      modeWrap.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+      $("tab-latest").classList.toggle("active", mode === "latest");
+      $("tab-history").classList.toggle("active", mode === "history");
+      if (mktSel) mktSel.style.display = mode === "latest" ? "" : "none";
+      if (daySel) daySel.style.display = mode === "history" ? "" : "none";
+    });
+  }
+  if (searchEl) {
+    searchEl.addEventListener("input", () => {
+      state.searchQuery = searchEl.value || "";
+      renderLatest();
+      if (state.currentDay) renderDay(state.currentDay);
+    });
   }
 }
 
 async function init() {
+  initTheme();
+  initExplorerControls();
   try {
     const res = await fetch("site/summary.json", { cache: "no-cache" });
     state.summary = await res.json();
   } catch (err) {
-    document.querySelector("main").insertAdjacentHTML("beforeend", `<div class="empty">数据加载失败：${esc(err.message)}</div>`);
+    document.querySelector("main").insertAdjacentHTML("beforeend", `<div class="panel empty">数据加载失败：${esc(err.message)}</div>`);
     return;
   }
-  try {
-    const patRes = await fetch("site/patterns.json", { cache: "no-cache" });
-    if (patRes.ok) state.patterns = await patRes.json();
-  } catch (_) {
-    state.patterns = null;
+  const [patOutcome, repOutcome] = await Promise.allSettled([
+    fetch("site/patterns.json", { cache: "no-cache" }),
+    fetch("site/report.json", { cache: "no-cache" }),
+  ]);
+  if (patOutcome.status === "fulfilled" && patOutcome.value.ok) {
+    try { state.patterns = await patOutcome.value.json(); } catch (_) { state.patterns = null; }
   }
-  renderMeta();
+  if (repOutcome.status === "fulfilled" && repOutcome.value.ok) {
+    try { state.report = await repOutcome.value.json(); } catch (_) { state.report = null; }
+  }
+
+  renderMetaAndKpis();
+  renderConsensusPane();
+  renderCnHero();
+  initScoreMarketPills();
   segmented($("win-score"), "scoreWin", renderScorecard);
   segmented($("win-compare"), "compareWin", renderTrackComparison);
   segmented($("win-trend"), "trendWin", renderChart);
+  initTrackToggle();
   fillMarkets($("market-trend"), "trendMarket", renderChart);
   fillMarkets($("market-latest"), "latestMarket", renderLatest);
-  renderScorecard(); renderTrackComparison(); renderPatternRadar(); renderChart(); renderLatest();
-  const days = state.summary.days.map((d) => d.date);
+  renderScorecard();
+  renderTrackComparison();
+  renderPatternRadar();
+  renderChart();
+  renderLatest();
+  const days = (state.summary.days || []).map((d) => d.date);
   $("day").innerHTML = days.map((d) => `<option value="${d}">${d}（${state.summary.days.find((x) => x.date === d).runs} 次运行）</option>`).join("");
   $("day").addEventListener("change", (e) => renderDay(e.target.value));
   if (days.length) renderDay(days[0]);
