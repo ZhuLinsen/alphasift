@@ -222,7 +222,7 @@ jobs:
 
   deploy:
     needs: record
-    if: github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && needs.record.result == 'success' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       pages: write

@@ -253,6 +253,8 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
     assert "pack" in tr_data["jobs"]
     assert tr_data["jobs"]["pack"]["uses"] == "./.github/workflows/data-pack.yml"
     assert tr_data["jobs"]["record"]["needs"] == ["pack"]
+    deploy_if = str(tr_data["jobs"]["deploy"].get("if") or "")
+    assert "needs.record.result == 'success'" in deploy_if and "!cancelled()" in deploy_if
     assert "gh release create" not in tr_text and "gh release upload" not in tr_text
     assert "actions/cache/restore" in tr_text
     assert "alphasift pack pull" not in tr_text

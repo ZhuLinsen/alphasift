@@ -520,7 +520,7 @@ footer {
     </div>
 
     <div class="top-actions">
-      <a class="action-btn" id="report-top-link" href="site/daily_report.html" title="可打印盘后投研日报">
+      <a class="action-btn" id="report-top-link" href="site/daily_report.html" title="可打印盘后投研日报" style="display:none;">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
         <span class="btn-lbl">今日研报</span>
       </a>
@@ -699,7 +699,7 @@ footer {
     <div class="footer-links">
       <a href="https://github.com/ZhuLinsen/alphasift" target="_blank" rel="noopener">GitHub 源码仓库</a>
       <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener">track-record 原始账本</a>
-      <a href="site/daily_report.html">每日投研日报</a>
+      <a id="footer-report-link" href="site/daily_report.html" style="display:none;">每日投研日报</a>
       <a href="https://github.com/ZhuLinsen/alphasift/blob/main/README.md" target="_blank" rel="noopener">README 文档</a>
     </div>
   </footer>
@@ -1781,9 +1781,10 @@ async function init() {
     document.querySelector("main").insertAdjacentHTML("beforeend", `<div class="panel empty">数据加载失败：${esc(err.message)}</div>`);
     return;
   }
-  const [patOutcome, repOutcome] = await Promise.allSettled([
+  const [patOutcome, repOutcome, repHtmlOutcome] = await Promise.allSettled([
     fetch("site/patterns.json", { cache: "no-cache" }),
     fetch("site/report.json", { cache: "no-cache" }),
+    fetch("site/daily_report.html", { method: "HEAD", cache: "no-cache" }),
   ]);
   if (patOutcome.status === "fulfilled" && patOutcome.value.ok) {
     try { state.patterns = await patOutcome.value.json(); } catch (_) { state.patterns = null; }
@@ -1791,6 +1792,11 @@ async function init() {
   if (repOutcome.status === "fulfilled" && repOutcome.value.ok) {
     try { state.report = await repOutcome.value.json(); } catch (_) { state.report = null; }
   }
+  const reportReady = repHtmlOutcome.status === "fulfilled" && repHtmlOutcome.value.ok;
+  ["report-top-link", "footer-report-link"].forEach((id) => {
+    const el = $(id);
+    if (el) el.style.display = reportReady ? "" : "none";
+  });
 
   renderMetaAndKpis();
   renderConsensusPane();
