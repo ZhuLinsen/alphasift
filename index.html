@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AlphaSift · 量化形态观测与回测基准</title>
 <meta name="description" content="AlphaSift 开源全市场选股与验证引擎：A 股盘面宽度与情绪分布、多策略共识、公告排雷、规则 vs AI 同日配对归因、形态 250 日聚日验证与 T+5 / T+10 / T+20 不可成交口径评估。">
+<link rel="alternate" type="application/atom+xml" title="AlphaSift Daily Feed" href="site/feed.xml">
 <style>
 :root {
   --bg: #09090b;
@@ -37,7 +38,7 @@
   --s1: #60a5fa; --s2: #f87171; --s3: #34d399; --s4: #fbbf24;
   --s5: #38bdf8; --s6: #fb923c; --s7: #e879f9; --s8: #94a3b8;
   --s9: #a3e635; --s10: #2dd4bf; --s11: #fda4af; --s12: #c4b5fd;
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -107,7 +108,7 @@ code {
 }
 .topbar-inner {
   max-width: 1280px; margin: 0 auto; padding: 10px 20px;
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
 .brand-group { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .brand-link {
@@ -142,10 +143,10 @@ code {
 }
 .nav-center a:hover { color: var(--ink); background: var(--chip); text-decoration: none; }
 
-.top-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.top-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .action-btn, .github-btn {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 11px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 500;
   border: 1px solid var(--border); background: var(--surface); color: var(--ink-2);
   cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; white-space: nowrap;
   font-family: inherit;
@@ -157,6 +158,21 @@ code {
   background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600;
 }
 .github-btn:hover { opacity: 0.9; background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.lang-switch {
+  display: inline-flex; align-items: center;
+  border: 1px solid var(--border); background: var(--surface); border-radius: 8px;
+  padding: 2px; gap: 2px;
+}
+.lang-switch button {
+  border: 0; background: transparent; color: var(--muted);
+  padding: 3px 7px; border-radius: 6px; font: inherit; font-size: 11.5px; font-weight: 600;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.lang-switch button:hover { color: var(--ink); background: var(--chip); }
+.lang-switch button[aria-pressed="true"] {
+  background: var(--accent-soft); color: var(--accent-hi);
+}
 
 /* Container */
 main { max-width: 1280px; margin: 0 auto; padding: 24px 20px 72px; }
@@ -313,7 +329,7 @@ section { margin-top: 28px; scroll-margin-top: 66px; }
 
 .ladder-list { display: flex; flex-direction: column; gap: 6px; }
 .ladder-row {
-  display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; gap: 8px; font-size: 12px; font-family: var(--font-mono);
+  display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; gap: 8px; font-size: 12px; font-family: var(--font-mono);
 }
 .hist-ribbon { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 8px; border-top: 1px dashed var(--border); }
 .hist-pill {
@@ -323,7 +339,7 @@ section { margin-top: 28px; scroll-margin-top: 66px; }
 
 .mkt-snap-list { display: flex; flex-direction: column; gap: 8px; }
 .mkt-snap-row {
-  display: grid; grid-template-columns: 64px minmax(0, 1fr) 74px; align-items: center; gap: 10px;
+  display: grid; grid-template-columns: 72px minmax(0, 1fr) 74px; align-items: center; gap: 10px;
   padding: 7px 9px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border);
 }
 .mkt-snap-mid { min-width: 0; }
@@ -464,6 +480,10 @@ details.sec-details > summary.sec-summary::after {
   padding: 2px 9px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2);
 }
 details.sec-details[open] > summary.sec-summary::after { content: "收起 ▴"; }
+:root[data-lang="en"] details.sec-details > summary.sec-summary::after { content: "Expand ▾"; }
+:root[data-lang="en"] details.sec-details[open] > summary.sec-summary::after { content: "Collapse ▴"; }
+:root[data-lang="ja"] details.sec-details > summary.sec-summary::after { content: "展開 ▾"; }
+:root[data-lang="ja"] details.sec-details[open] > summary.sec-summary::after { content: "閉じる ▴"; }
 details.sec-details > .sec-body { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
 
 .baseline-strip {
@@ -481,13 +501,13 @@ footer {
 }
 .footer-links { display: flex; flex-wrap: wrap; gap: 14px; }
 
-@media (max-width: 1020px) {
+@media (max-width: 1100px) {
   .bento-command { grid-template-columns: 1fr; }
   .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .nav-center { display: none; }
 }
 @media (max-width: 640px) {
-  .topbar-inner { padding: 9px 14px; }
+  .topbar-inner { padding: 9px 12px; }
   main { padding: 16px 14px 52px; }
   .kpi-strip { grid-template-columns: 1fr; }
   .cards { grid-template-columns: 1fr; }
@@ -511,22 +531,26 @@ footer {
       <span class="live-pill" id="live-pill"><span class="live-dot"></span>7 Markets</span>
     </div>
 
-    <div class="nav-center" aria-label="主导航">
-      <a href="#overview">焦点总览</a>
-      <a href="#leaderboard">策略排行</a>
-      <a href="#trend-section">超额走势</a>
-      <a href="#explorer">选股浏览</a>
-      <a href="#radar-section">AI 与形态</a>
+    <div class="nav-center" data-i18n-aria="nav_aria" aria-label="主导航">
+      <a href="#overview" data-i18n="nav_overview">焦点总览</a>
+      <a href="#leaderboard" data-i18n="nav_leaderboard">策略排行</a>
+      <a href="#trend-section" data-i18n="nav_trend">超额走势</a>
+      <a href="#explorer" data-i18n="nav_explorer">选股浏览</a>
+      <a href="#radar-section" data-i18n="nav_radar">AI 与形态</a>
     </div>
 
     <div class="top-actions">
-      <a class="action-btn" id="report-top-link" href="site/daily_report.html" title="可打印盘后投研日报" style="display:none;">
+      <a class="action-btn" id="report-top-link" href="site/daily_report.html" data-i18n-title="nav_report_title" title="可打印盘后投研日报" style="display:none;">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
-        <span class="btn-lbl">今日研报</span>
+        <span class="btn-lbl" data-i18n="nav_report">今日研报</span>
       </a>
-      <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener" title="查看不可篡改原始运行日志">
+      <a class="action-btn" id="rss-top-link" href="site/feed.xml" target="_blank" rel="noopener" data-i18n-title="nav_rss_title" title="订阅 Atom 1.0 RSS 每日更新">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+        <span class="btn-lbl" data-i18n="nav_rss">RSS</span>
+      </a>
+      <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener" data-i18n-title="nav_ledger_title" title="查看不可篡改原始运行日志">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span class="btn-lbl">原始账本</span>
+        <span class="btn-lbl" data-i18n="nav_ledger">原始账本</span>
       </a>
       <a class="github-btn" href="https://github.com/ZhuLinsen/alphasift" target="_blank" rel="noopener">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -534,7 +558,12 @@ footer {
         </svg>
         <span>GitHub</span>
       </a>
-      <button type="button" class="action-btn" id="theme-toggle" aria-label="切换明暗主题">亮色</button>
+      <div class="lang-switch" id="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="zh" aria-pressed="true">中</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="ja" aria-pressed="false">日</button>
+      </div>
+      <button type="button" class="action-btn" id="theme-toggle" data-i18n-aria="theme_aria" aria-label="切换明暗主题">亮色</button>
     </div>
   </div>
 </nav>
@@ -543,18 +572,18 @@ footer {
   <header class="masthead">
     <div class="masthead-left">
       <div class="eyebrow">OPEN-SOURCE QUANTITATIVE DISCOVERY &amp; T+N BENCHMARK</div>
-      <h1>AlphaSift · 量化形态观测与回测基准</h1>
-      <p class="masthead-sub">每交易日收盘自动运行全市场 YAML 策略、公告排雷与可选 AI 重排，按 <code>T+5 / T+10 / T+20</code> 真实行情与一字涨停不可成交口径公开验证超额收益。</p>
+      <h1 data-i18n="hero_title">AlphaSift · 量化形态观测与回测基准</h1>
+      <p class="masthead-sub" data-i18n-html="hero_sub">每交易日收盘自动运行全市场 YAML 策略、公告排雷与可选 AI 重排，按 <code>T+5 / T+10 / T+20</code> 真实行情与一字涨停不可成交口径公开验证超额收益。</p>
       <div class="meta" id="meta"></div>
     </div>
     <div class="masthead-right">
       <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift#readme" target="_blank" rel="noopener">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-        <span>使用文档</span>
+        <span data-i18n="btn_docs">使用文档</span>
       </a>
       <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift/tree/main/strategies" target="_blank" rel="noopener">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-        <span>内置策略</span>
+        <span data-i18n="btn_strategies">内置策略</span>
       </a>
     </div>
   </header>
@@ -562,23 +591,23 @@ footer {
   <div class="stale-banner" id="stale-banner"></div>
 
   <div class="kpi-strip" id="kpi-strip">
-    <div class="kpi-cell"><div class="kpi-label">加载中</div><div class="kpi-val">–</div><div class="kpi-foot">读取公开战绩与盘面统计…</div></div>
+    <div class="kpi-cell"><div class="kpi-label" data-i18n="loading">加载中</div><div class="kpi-val">–</div><div class="kpi-foot" data-i18n="loading_sub">读取公开战绩与盘面统计…</div></div>
   </div>
 
   <!-- 01 · Focus Command Center -->
   <section id="overview">
     <div class="sec-head">
       <div>
-        <h2><span class="sec-num">01</span>今日高共识精选与盘面快照</h2>
-        <p class="sec-hint">优先提取多策略共同命中标的、公告排雷结论，以及 A 股宽度/全球 7 市场领跑基准，首屏直给核心信号。</p>
+        <h2><span class="sec-num">01</span><span data-i18n="sec1_title">今日高共识精选与盘面快照</span></h2>
+        <p class="sec-hint" data-i18n="sec1_hint">优先提取多策略共同命中标的、公告排雷结论，以及 A 股宽度/全球 7 市场领跑基准，首屏直给核心信号。</p>
       </div>
     </div>
     <div class="bento-command">
       <div class="bento-pane" id="consensus-pane">
-        <div class="empty">正在分析今日跨策略共识候选…</div>
+        <div class="empty" data-i18n="loading_consensus">正在分析今日跨策略共识候选…</div>
       </div>
       <div class="bento-pane" id="cn-hero-grid">
-        <div class="empty">加载盘面与跨市场快照…</div>
+        <div class="empty" data-i18n="loading_hero">加载盘面与跨市场快照…</div>
       </div>
     </div>
   </section>
@@ -587,16 +616,16 @@ footer {
   <section id="leaderboard">
     <div class="sec-head">
       <div>
-        <h2><span class="sec-num">02</span>策略 T+N 超额排行榜</h2>
-        <p class="sec-hint">按单只选股统计已到期窗口（超额 = 选股收益 − 同期市场基准收益）；切换日前 <code>close</code> 口径标为「未评估」，切换日起 <code>next_open</code> 统计一字涨停不可成交率。</p>
+        <h2><span class="sec-num">02</span><span data-i18n="sec2_title">策略 T+N 超额排行榜</span></h2>
+        <p class="sec-hint" data-i18n-html="sec2_hint">按单只选股统计已到期窗口（超额 = 选股收益 − 同期市场基准收益）；切换日前 <code>close</code> 口径标为「未评估」，切换日起 <code>next_open</code> 统计一字涨停不可成交率。</p>
       </div>
       <div class="controls" style="margin-bottom:0;">
         <div class="seg" id="win-score"></div>
-        <select id="sort-score" aria-label="排序维度">
-          <option value="excess">按超额收益</option>
-          <option value="beat">按跑赢基准率</option>
-          <option value="return">按绝对收益</option>
-          <option value="evaluated">按样本数</option>
+        <select id="sort-score" data-i18n-aria="sort_aria" aria-label="排序维度">
+          <option value="excess" data-i18n="sort_excess">按超额收益</option>
+          <option value="beat" data-i18n="sort_beat">按跑赢基准率</option>
+          <option value="return" data-i18n="sort_return">按绝对收益</option>
+          <option value="evaluated" data-i18n="sort_evaluated">按样本数</option>
         </select>
       </div>
     </div>
@@ -610,17 +639,17 @@ footer {
   <section id="trend-section">
     <div class="sec-head">
       <div>
-        <h2><span class="sec-num">03</span>分赛道累计超额收益走势</h2>
-        <p class="sec-hint">纯规则赛道（实线）与 AI 重排赛道（虚线）分离展示；点击底部图例可单独聚焦某条策略曲线，悬停查看单日明细。</p>
+        <h2><span class="sec-num">03</span><span data-i18n="sec3_title">分赛道累计超额收益走势</span></h2>
+        <p class="sec-hint" data-i18n="sec3_hint">纯规则赛道（实线）与 AI 重排赛道（虚线）分离展示；点击底部图例可单独聚焦某条策略曲线，悬停查看单日明细。</p>
       </div>
       <div class="controls" style="margin-bottom:0;">
         <div class="seg" id="win-trend"></div>
         <div class="seg" id="track-trend">
-          <button type="button" data-t="both" aria-pressed="true">双赛道</button>
-          <button type="button" data-t="rules" aria-pressed="false">仅规则</button>
-          <button type="button" data-t="ai" aria-pressed="false">仅 AI</button>
+          <button type="button" data-t="both" aria-pressed="true" data-i18n="track_both">双赛道</button>
+          <button type="button" data-t="rules" aria-pressed="false" data-i18n="track_rules">仅规则</button>
+          <button type="button" data-t="ai" aria-pressed="false" data-i18n="track_ai">仅 AI</button>
         </div>
-        <select id="market-trend" aria-label="走势市场"></select>
+        <select id="market-trend" data-i18n-aria="trend_mkt_aria" aria-label="走势市场"></select>
       </div>
     </div>
     <div class="panel">
@@ -636,17 +665,17 @@ footer {
   <section id="explorer">
     <div class="sec-head">
       <div>
-        <h2><span class="sec-num">04</span>策略选股与历史复盘浏览器</h2>
-        <p class="sec-hint">支持按股票代码、名称、行业或策略名实时过滤；切换「按日回看」可追踪每一天每只候选的 T+5 / T+10 / T+20 到期验证结果。</p>
+        <h2><span class="sec-num">04</span><span data-i18n="sec4_title">策略选股与历史复盘浏览器</span></h2>
+        <p class="sec-hint" data-i18n="sec4_hint">支持按股票代码、名称、行业或策略名实时过滤；切换「按日回看」可追踪每一天每只候选的 T+5 / T+10 / T+20 到期验证结果。</p>
       </div>
       <div class="controls" style="margin-bottom:0;">
         <div class="seg" id="explorer-mode">
-          <button type="button" data-mode="latest" aria-pressed="true">最新选股</button>
-          <button type="button" data-mode="history" aria-pressed="false">按日回看</button>
+          <button type="button" data-mode="latest" aria-pressed="true" data-i18n="mode_latest">最新选股</button>
+          <button type="button" data-mode="history" aria-pressed="false" data-i18n="mode_history">按日回看</button>
         </div>
-        <select id="market-latest" aria-label="市场筛选"></select>
-        <select id="day" aria-label="历史交易日" style="display:none;"></select>
-        <input type="search" class="search-input" id="pick-search" placeholder="搜索代码 / 名称 / 行业 / 策略…" aria-label="过滤选股">
+        <select id="market-latest" data-i18n-aria="mkt_filter_aria" aria-label="市场筛选"></select>
+        <select id="day" data-i18n-aria="day_filter_aria" aria-label="历史交易日" style="display:none;"></select>
+        <input type="search" class="search-input" id="pick-search" data-i18n-placeholder="search_ph" data-i18n-aria="search_aria" placeholder="搜索代码 / 名称 / 行业 / 策略…" aria-label="过滤选股">
       </div>
     </div>
     <div class="tab-panel active" id="tab-latest">
@@ -661,8 +690,8 @@ footer {
   <section id="track-comparison-section">
     <div class="sec-head">
       <div>
-        <h2><span class="sec-num">05</span>规则榜 vs AI 榜同日配对归因</h2>
-        <p class="sec-hint">仅针对同一策略在同一交易日的双轨运行严格配对对比（同日配对 &lt; 10 日时隐藏差值，单列 AI 缺失率与重合度）。</p>
+        <h2><span class="sec-num">05</span><span data-i18n="sec5_title">规则榜 vs AI 榜同日配对归因</span></h2>
+        <p class="sec-hint" data-i18n="sec5_hint">仅针对同一策略在同一交易日的双轨运行严格配对对比（同日配对 &lt; 10 日时隐藏差值，单列 AI 缺失率与重合度）。</p>
       </div>
       <div class="controls" style="margin-bottom:0;"><div class="seg" id="win-compare"></div></div>
     </div>
@@ -674,18 +703,18 @@ footer {
 
   <section id="radar-section">
     <details class="sec-details" id="details-patterns">
-      <summary class="sec-summary"><span>A 股无状态形态雷达命中（20 日迷你 K 线）</span></summary>
+      <summary class="sec-summary"><span data-i18n="details_pat_title">A 股无状态形态雷达命中（20 日迷你 K 线）</span></summary>
       <div class="sec-body">
-        <p class="sec-hint" style="margin:0 0 12px;">未通过 250 日 <code>next_open</code> 毕业门槛（基准匹配样本 ≥ 200 且 T+5 超额 &gt; 0%）的形态一律置灰标 <code>experimental</code>，仅作研究观察。</p>
-        <div id="pattern-hits-wrap"><div class="empty">加载形态命中…</div></div>
+        <p class="sec-hint" style="margin:0 0 12px;" data-i18n-html="details_pat_hint">未通过 250 日 <code>next_open</code> 毕业门槛（基准匹配样本 ≥ 200 且 T+5 超额 &gt; 0%）的形态一律置灰标 <code>experimental</code>，仅作研究观察。</p>
+        <div id="pattern-hits-wrap"><div class="empty" data-i18n="loading_pat">加载形态命中…</div></div>
       </div>
     </details>
 
     <details class="sec-details" id="details-replay">
-      <summary class="sec-summary"><span>250 日 next_open 形态回放、聚日稳定性与切片验证</span></summary>
+      <summary class="sec-summary"><span data-i18n="details_replay_title">250 日 next_open 形态回放、聚日稳定性与切片验证</span></summary>
       <div class="sec-body">
         <div id="universe-baseline-wrap"></div>
-        <div id="replay-summary-wrap"><div class="empty">暂无 250 日形态回放结果</div></div>
+        <div id="replay-summary-wrap"><div class="empty" data-i18n="no_replay_yet">暂无 250 日形态回放结果</div></div>
         <div id="regime-slice-wrap"></div>
         <div id="overhead-slice-wrap"></div>
       </div>
@@ -693,45 +722,743 @@ footer {
   </section>
 
   <footer>
-    <div>
+    <div data-i18n-html="footer_note">
       <strong>AlphaSift</strong> · 开源量化形态观测与回测基准（Apache-2.0 License）· 非投资建议，历史统计不含分红；低于样本门槛（成绩单 &lt; 20、AI 配对 &lt; 10 日、切片 &lt; 100、形态毕业 &lt; 200）统一置灰或隐藏差值。
     </div>
     <div class="footer-links">
-      <a href="https://github.com/ZhuLinsen/alphasift" target="_blank" rel="noopener">GitHub 源码仓库</a>
-      <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener">track-record 原始账本</a>
-      <a id="footer-report-link" href="site/daily_report.html" style="display:none;">每日投研日报</a>
-      <a href="https://github.com/ZhuLinsen/alphasift/blob/main/README.md" target="_blank" rel="noopener">README 文档</a>
+      <a href="https://github.com/ZhuLinsen/alphasift" target="_blank" rel="noopener" data-i18n="footer_repo">GitHub 源码仓库</a>
+      <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener" data-i18n="footer_ledger">track-record 原始账本</a>
+      <a id="footer-report-link" href="site/daily_report.html" style="display:none;" data-i18n="footer_report">每日投研日报</a>
+      <a href="site/feed.xml" target="_blank" rel="noopener" data-i18n="footer_rss">Atom RSS 订阅</a>
+      <a href="https://github.com/ZhuLinsen/alphasift/blob/main/README.md" target="_blank" rel="noopener" data-i18n="footer_readme">README 文档</a>
     </div>
   </footer>
 </main>
 
 <script>
-const MARKET_NAMES = { cn: "A 股", us: "美股", hk: "港股", jp: "日本", kr: "韩国", tw: "台湾", in: "印度" };
-const SESSION_NAMES = { asia: "亚洲场", us: "美股场" };
+const SUPPORTED_LANGS = ["zh", "en", "ja"];
+
+const I18N = {
+  zh: {
+    page_title: "AlphaSift · 量化形态观测与回测基准",
+    nav_aria: "主导航",
+    nav_overview: "焦点总览",
+    nav_leaderboard: "策略排行",
+    nav_trend: "超额走势",
+    nav_explorer: "选股浏览",
+    nav_radar: "AI 与形态",
+    nav_report: "今日研报",
+    nav_report_title: "可打印盘后投研日报",
+    nav_rss: "RSS",
+    nav_rss_title: "订阅 Atom 1.0 RSS 每日更新",
+    nav_ledger: "原始账本",
+    nav_ledger_title: "查看不可篡改原始运行日志",
+    theme_aria: "切换明暗主题",
+    theme_light: "亮色",
+    theme_dark: "暗色",
+    hero_title: "AlphaSift · 量化形态观测与回测基准",
+    hero_sub: "每交易日收盘自动运行全市场 YAML 策略、公告排雷与可选 AI 重排，按 <code>T+5 / T+10 / T+20</code> 真实行情与一字涨停不可成交口径公开验证超额收益。",
+    btn_docs: "使用文档",
+    btn_strategies: "内置策略",
+    loading: "加载中",
+    loading_sub: "读取公开战绩与盘面统计…",
+    loading_consensus: "正在分析今日跨策略共识候选…",
+    loading_hero: "加载盘面与跨市场快照…",
+    loading_pat: "加载形态命中…",
+    no_replay_yet: "暂无 250 日形态回放结果",
+    sec1_title: "今日高共识精选与盘面快照",
+    sec1_hint: "优先提取多策略共同命中标的、公告排雷结论，以及 A 股宽度/全球 7 市场领跑基准，首屏直给核心信号。",
+    sec2_title: "策略 T+N 超额排行榜",
+    sec2_hint: "按单只选股统计已到期窗口（超额 = 选股收益 − 同期市场基准收益）；切换日前 <code>close</code> 口径标为「未评估」，切换日起 <code>next_open</code> 统计一字涨停不可成交率。",
+    sort_aria: "排序维度",
+    sort_excess: "按超额收益",
+    sort_beat: "按跑赢基准率",
+    sort_return: "按绝对收益",
+    sort_evaluated: "按样本数",
+    sec3_title: "分赛道累计超额收益走势",
+    sec3_hint: "纯规则赛道（实线）与 AI 重排赛道（虚线）分离展示；点击底部图例可单独聚焦某条策略曲线，悬停查看单日明细。",
+    track_both: "双赛道",
+    track_rules: "仅规则",
+    track_ai: "仅 AI",
+    trend_mkt_aria: "走势市场",
+    sec4_title: "策略选股与历史复盘浏览器",
+    sec4_hint: "支持按股票代码、名称、行业或策略名实时过滤；切换「按日回看」可追踪每一天每只候选的 T+5 / T+10 / T+20 到期验证结果。",
+    mode_latest: "最新选股",
+    mode_history: "按日回看",
+    mkt_filter_aria: "市场筛选",
+    day_filter_aria: "历史交易日",
+    search_ph: "搜索代码 / 名称 / 行业 / 策略…",
+    search_aria: "过滤选股",
+    sec5_title: "规则榜 vs AI 榜同日配对归因",
+    sec5_hint: "仅针对同一策略在同一交易日的双轨运行严格配对对比（同日配对 < 10 日时隐藏差值，单列 AI 缺失率与重合度）。",
+    details_pat_title: "A 股无状态形态雷达命中（20 日迷你 K 线）",
+    details_pat_hint: "未通过 250 日 <code>next_open</code> 毕业门槛（基准匹配样本 ≥ 200 且 T+5 超额 > 0%）的形态一律置灰标 <code>experimental</code>，仅作研究观察。",
+    details_replay_title: "250 日 next_open 形态回放、聚日稳定性与切片验证",
+    footer_note: "<strong>AlphaSift</strong> · 开源量化形态观测与回测基准（Apache-2.0 License）· 非投资建议，历史统计不含分红；低于样本门槛（成绩单 &lt; 20、AI 配对 &lt; 10 日、切片 &lt; 100、形态毕业 &lt; 200）统一置灰或隐藏差值。",
+    footer_repo: "GitHub 源码仓库",
+    footer_ledger: "track-record 原始账本",
+    footer_report: "每日投研日报",
+    footer_rss: "Atom RSS 订阅",
+    footer_readme: "README 文档",
+    all_markets: "全部市场",
+    meta_updated: "更新于",
+    meta_runs_fmt: "{n} 次累计运行",
+    meta_days_fmt: "{n} 个交易日",
+    meta_switch_fmt: "next_open 切换日 {d}",
+    meta_skipped_fmt: "跳过 {n}",
+    stale_banner_html: "<strong>⚠️ 旧包降级提示：</strong>当前数据包日期 <code>{pack}</code> 落后于目标交易日 <code>{exp}</code>{reason}。网页继续展示可用降级口径，未强制的群聊 IM 推送已自动跳过。",
+    kpi1_lbl: "T+5 领跑超额",
+    kpi1_foot: "{strat} · 跑赢基准 {beat} ({n}只)",
+    kpi1_empty_val: "待到期",
+    kpi1_empty_foot: "首日运行满 5 个交易日后披露",
+    kpi2_lbl: "全策略 T+5 样本加权均值",
+    kpi2_badge: "{n} 组有效",
+    kpi2_foot: "已到期 {eval} 股次 · 累计 {runs} 次选股",
+    kpi3_temp_lbl: "A 股盘面温度",
+    kpi3_up_suffix: "上涨",
+    kpi3_temp_foot: "中位数 {med} · 涨停 {lu} / 跌停 {ld}",
+    kpi3_cons_lbl: "今日 A 股最高共识",
+    kpi3_cons_badge: "{n} 策略",
+    kpi3_cons_foot: "{ind} · 均分 {score} · 现价 {price}",
+    kpi3_empty_lbl: "A 股最高共识",
+    kpi3_empty_foot: "暂无当日 A 股运行",
+    kpi4_ann_lbl: "公告排雷预警",
+    kpi4_ann_bad: "{n} 高风险",
+    kpi4_ann_ok: "全部通过",
+    kpi4_ann_bad_val: "{n} 只",
+    kpi4_ann_ok_val: "0 风险",
+    kpi4_ann_foot: "抽检 {n} 只核心候选 · {tail}",
+    kpi4_ann_clean: "无减持/立案/退市关键词",
+    kpi4_ops_lbl: "多市场自动化运行状态",
+    kpi4_ops_bad: "{n} 异常",
+    kpi4_ops_ok: "健康",
+    kpi4_ops_foot: "覆盖 {m} 个市场 · 共 {d} 个历史交易日",
+    pane_consensus_title: "多策略共振标的",
+    pane_consensus_badge: "{n} 只共振",
+    full_report_btn: "完整研报 →",
+    live_agg_chip: "{d} · 实时聚合",
+    ai_brief_badge: "AI 综述",
+    rule_brief_badge: "规则摘要",
+    brief_headline_lbl: "盘后要点：",
+    ann_alert_head: "⚠️ 公告排雷高风险（抽检 {checked} · 命中 {flagged} 只）：",
+    ann_ok_msg: "✓ 已对 {n} 只重点候选做近期公告排雷，未检出减持 / 立案 / 退市等高风险信号",
+    col_stock: "标的",
+    col_industry: "行业",
+    col_hits: "命中",
+    col_strategies: "覆盖策略",
+    col_avg_score: "均分",
+    col_chg: "涨跌",
+    col_price: "最新价",
+    col_ann: "公告",
+    n_strat_badge: "{n} 策略",
+    no_consensus: "今日暂无 ≥2 个策略同时命中的 A 股共振标的。",
+    sector_dist_title: "行业分布集中度（Top {n}）",
+    sector_dist_col: "占比 / 候选席位",
+    other_ind: "其他",
+    snap_7mkt_title: "全球 7 市场 T+5 领跑快照",
+    snap_pending: "待评估",
+    snap_beat_eval: "{bench} · 跑赢 {beat} · {n}只",
+    snap_note: "注：A 股 7 档涨跌分布与连板梯队将在 GitHub Actions 私有日线缓存完成首个交易日构建后自动显示。",
+    no_dist: "暂无涨跌分布统计",
+    cn_hero_title: "A 股微观盘面与情绪分布",
+    breadth_up: "涨",
+    breadth_flat: "平",
+    breadth_down: "跌",
+    stat_luld: "非 ST 涨停 / 跌停",
+    stat_luld_sub: "一字 {up}涨 / {dn}跌",
+    stat_seal: "封板率 / 两市成交额",
+    stat_seal_sub: "炸板 {broken} 只 · 最高 {streak} 板",
+    stat_prevlu: "昨涨停今日均表现",
+    stat_prevlu_sub: "样本 {n} 只 · 红盘 {win}",
+    stat_prom: "昨涨停早盘 / 晋级率",
+    stat_prom_sub: "连板晋级 {n} 只 ({rate})",
+    ladder_title: "连板梯队分布（仅观察，不调权重）",
+    ladder_empty: "今日无非 ST 连板分布",
+    ladder_board: "{b}板",
+    ladder_cnt: "{n} 只",
+    hist_title: "上涨 {v}%",
+    amt_unit: "亿",
+    sc_empty: "当前筛选暂无运行记录",
+    sc_cols: ["#", "市场", "策略", "入场口径", "运行", "已评估", "待定", "不可成交", "平均收益", "胜率", "同期基准", "超额收益 (T+{w})", "跑赢基准"],
+    sc_low_sample_title: "少于 {n} 只，样本偏小",
+    sc_unassessed: "未评估",
+    sc_unassessed_title: "切换前收盘口径，未评估开盘一字涨停",
+    tc_empty_all: "暂无成对「规则 vs AI」战绩记录 — 在 GitHub Secrets 配置 <code>DEEPSEEK_API_KEY</code> / <code>GEMINI_API_KEY</code> / <code>OPENAI_API_KEY</code> 后，系统将在每交易日自动并行运行双赛道并积累同日归因。",
+    tc_empty_pending: "暂无到期的规则 vs AI 同日配对样本。",
+    tc_cols: ["市场", "策略", "配对日/总共", "AI 缺失率", "选股重合度", "规则同日超额", "AI 同日超额", "AI − 规则 (T+{w})", "AI 独选超额", "AI 剔除超额"],
+    tc_win_days: "胜出 {w}/{n}日",
+    tc_insuff: "样本不足 ({p}/{m})",
+    tc_insuff_title: "需至少 {m} 个同日配对",
+    n_picks_sm: "{n}只",
+    ai_attr_badge: "AI 当日归因",
+    ai_attr_sub: "重合度 {ov} · 规则 {r} 只 / AI {a} 只",
+    ai_mkt_view: "市场观点：",
+    ai_added: "AI 新增：",
+    ai_dropped: "AI 剔除：",
+    none_txt: "无",
+    case_badge: "T+{w} 个股案例",
+    case_adds: "AI 独选高光：",
+    case_avoids: "AI 避坑剔除：",
+    case_misses: "AI 错杀遗憾：",
+    pat_not_built: "尚未生成 A 股形态雷达快照（当 GitHub Actions 私有日线缓存构建完毕后自动扫描并附带 20 日 K 线）。",
+    pat_no_replay: "尚未生成 250 日形态回放结果。",
+    pat_no_entries: "最新快照暂无形态统计条目。",
+    pat_hit_zero: "{d} · 命中 0 只",
+    pat_no_sig: "今日无触发信号",
+    pat_hit_n: "{d} · 命中 {tot} 只（展示前 {shown} 只）",
+    pat_cols: ["股票", "涨跌", "上方筹码", "20日K线"],
+    ub_title: "同期全市场基准 ({s} 日)：",
+    ub_ew: "全市场等权 T+5 超额 {ex}（裸收益 {raw}）",
+    ub_liq: "· 流动性 ≥8000万 {ex}",
+    ub_bench: "· 沪深300 {ret}",
+    ub_t10: "· T+10 等权超额 {ex}",
+    rep_subhead: "250 日 next_open 回放门槛评估（{start} .. {end}，{sess} 个信号日）",
+    rep_cols: ["形态", "谱系/模式", "总信号", "不可成交", "T+5 基准匹配", "T+5 超额", "T+5 胜率", "聚日 t 值", "前半 H1 / 后半 H2", "T+10 超额", "门槛状态"],
+    sl_head_lbl: "形态 × 市场阶段（T+5 匹配样本 / 超额）",
+    sl_subhead: "形态 × 市场阶段切片（带 * 且置灰表示样本 &lt; {n}）",
+    ov_head_lbl: "形态 × 上方套牢盘切片（T+5 匹配样本 / 超额 / 胜率）",
+    ov_subhead: "形态 × 上方 10% 套牢筹码切片（带 * 且置灰表示样本 &lt; {n}）",
+    chart_empty: "该市场 T+{w} 所选赛道还没有到期的选股",
+    chart_tip_excess: "超额",
+    chart_tip_picks: "{n} 只",
+    tbl_stock: "股票",
+    tbl_industry: "行业",
+    tbl_price: "价格",
+    st_pending: "待定",
+    st_untradable: "不可成交",
+    st_untradable_title: "次日一字涨停无法成交",
+    st_nodata: "无数据",
+    st_excess_lbl: "超 ",
+    latest_n_picks: "{n} 只",
+    latest_sub: "{d} · 全市场 {snap} 只 → 硬筛 {flt} 只",
+    degraded_lbl: "数据降级",
+    no_picks_day: "当天没有符合条件的股票",
+    no_match_latest: "当前过滤条件无匹配策略或标的",
+    no_days: "暂无历史交易日记录",
+    loading_day: "加载交易日归档…",
+    load_fail: "加载失败：{msg}",
+    load_fatal: "数据加载失败：{msg}",
+    no_match_day: "当前过滤条件在当日无匹配记录",
+    day_opt: "{d}（{n} 次运行）",
+    t_win_pending: "T+{w} 待定",
+  },
+  en: {
+    page_title: "AlphaSift · Quantitative Discovery & T+N Benchmark",
+    nav_aria: "Primary Navigation",
+    nav_overview: "Overview",
+    nav_leaderboard: "Leaderboard",
+    nav_trend: "Trend",
+    nav_explorer: "Explorer",
+    nav_radar: "AI & Patterns",
+    nav_report: "Daily Report",
+    nav_report_title: "Printable post-close quantitative brief",
+    nav_rss: "RSS",
+    nav_rss_title: "Subscribe to Atom 1.0 daily feed",
+    nav_ledger: "Raw Ledger",
+    nav_ledger_title: "View immutable run logs on track-record branch",
+    theme_aria: "Toggle light/dark theme",
+    theme_light: "Light",
+    theme_dark: "Dark",
+    hero_title: "AlphaSift · Quantitative Discovery & T+N Benchmark",
+    hero_sub: "Automated post-close screening across 7 markets with auditable YAML strategies, announcement risk screening, optional LLM re-ranking, and public <code>T+5 / T+10 / T+20</code> verification including untradable limit-up accounting.",
+    btn_docs: "Docs",
+    btn_strategies: "Strategies",
+    loading: "Loading",
+    loading_sub: "Fetching audited track record & market breadth…",
+    loading_consensus: "Aggregating cross-strategy consensus picks…",
+    loading_hero: "Loading market regime & 7-market benchmark…",
+    loading_pat: "Loading pattern radar hits…",
+    no_replay_yet: "No 250-day pattern replay available yet",
+    sec1_title: "Today's Consensus Signals & Market Pulse",
+    sec1_hint: "Highlights stocks selected by ≥2 independent strategies, announcement risk alerts, and CN microstructure breadth / 7-market leaders.",
+    sec2_title: "Strategy T+N Excess Return Leaderboard",
+    sec2_hint: "Evaluated per pick over matured trading windows (excess = stock return − matched benchmark). Pre-switchover <code>close</code> runs mark untradable as unassessed; <code>next_open</code> tracks open limit-up blocks.",
+    sort_aria: "Sort metric",
+    sort_excess: "Sort by Excess Return",
+    sort_beat: "Sort by Beat Rate",
+    sort_return: "Sort by Raw Return",
+    sort_evaluated: "Sort by Sample Size",
+    sec3_title: "Cumulative Excess Return by Track",
+    sec3_hint: "Solid lines represent deterministic rules; dashed lines show AI re-ranked track. Click legend items to isolate a strategy and hover points for daily details.",
+    track_both: "Both Tracks",
+    track_rules: "Rules Only",
+    track_ai: "AI Only",
+    trend_mkt_aria: "Trend market",
+    sec4_title: "Strategy Picks & Historical Explorer",
+    sec4_hint: "Filter live across symbol, name, sector, or strategy; switch to By Date to audit individual picks at T+5 / T+10 / T+20.",
+    mode_latest: "Latest Picks",
+    mode_history: "By Date",
+    mkt_filter_aria: "Filter market",
+    day_filter_aria: "Trading session",
+    search_ph: "Filter symbol / name / sector / strategy…",
+    search_aria: "Filter picks",
+    sec5_title: "Rules vs AI Same-Day Paired Attribution",
+    sec5_hint: "Strict same-date, same-strategy paired comparison between rules and AI tracks (delta hidden when paired sessions < 10).",
+    details_pat_title: "CN Stateless Pattern Radar Hits (20-Day Mini K-Line)",
+    details_pat_hint: "Patterns below the 250-day <code>next_open</code> graduation gate (matched N ≥ 200 and T+5 excess > 0%) stay muted as <code>experimental</code>.",
+    details_replay_title: "250-Day next_open Replay, Clustered Stability & Regime Slices",
+    footer_note: "<strong>AlphaSift</strong> · Open-Source Quantitative Discovery & Benchmark (Apache-2.0 License) · Research only, not investment advice; excludes dividends. Under-threshold cells (scorecard &lt; 20, AI pairs &lt; 10d, slices &lt; 100, pattern gate &lt; 200) are muted or hidden.",
+    footer_repo: "GitHub Repository",
+    footer_ledger: "track-record Branch",
+    footer_report: "Daily Research Brief",
+    footer_rss: "Atom RSS Feed",
+    footer_readme: "README",
+    all_markets: "All Markets",
+    meta_updated: "Updated",
+    meta_runs_fmt: "{n} runs logged",
+    meta_days_fmt: "{n} trading days",
+    meta_switch_fmt: "next_open switch {d}",
+    meta_skipped_fmt: "{n} skipped",
+    stale_banner_html: "<strong>⚠️ Stale Pack Fallback:</strong> Pack date <code>{pack}</code> trails target date <code>{exp}</code>{reason}. Degraded metrics remain visible; unforced IM pushes were skipped.",
+    kpi1_lbl: "T+5 Top Excess",
+    kpi1_foot: "{strat} · Beat {beat} ({n} picks)",
+    kpi1_empty_val: "Pending",
+    kpi1_empty_foot: "Disclosed after 5 matured sessions",
+    kpi2_lbl: "Sample-Weighted T+5 Excess",
+    kpi2_badge: "{n} active",
+    kpi2_foot: "{eval} matured picks · {runs} total runs",
+    kpi3_temp_lbl: "CN Market Pulse",
+    kpi3_up_suffix: "Advancing",
+    kpi3_temp_foot: "Median {med} · Limit-Up {lu} / Down {ld}",
+    kpi3_cons_lbl: "Top CN Consensus",
+    kpi3_cons_badge: "{n} strategies",
+    kpi3_cons_foot: "{ind} · Avg {score} · Px {price}",
+    kpi3_empty_lbl: "Top CN Consensus",
+    kpi3_empty_foot: "No CN session logged yet",
+    kpi4_ann_lbl: "Announcement Risk Check",
+    kpi4_ann_bad: "{n} Flagged",
+    kpi4_ann_ok: "All Clear",
+    kpi4_ann_bad_val: "{n} flagged",
+    kpi4_ann_ok_val: "0 risks",
+    kpi4_ann_foot: "{n} shortlisted checked · {tail}",
+    kpi4_ann_clean: "No reduction / probe / delisting flags",
+    kpi4_ops_lbl: "Automation Health",
+    kpi4_ops_bad: "{n} errors",
+    kpi4_ops_ok: "Healthy",
+    kpi4_ops_foot: "{m} markets · {d} sessions tracked",
+    pane_consensus_title: "Cross-Strategy Consensus",
+    pane_consensus_badge: "{n} resonant",
+    full_report_btn: "Full Report →",
+    live_agg_chip: "{d} · Live Aggregated",
+    ai_brief_badge: "AI Brief",
+    rule_brief_badge: "Rule Summary",
+    brief_headline_lbl: "Post-Close Brief:",
+    ann_alert_head: "⚠️ Announcement Risk Alerts ({checked} checked · {flagged} flagged):",
+    ann_ok_msg: "✓ Screened {n} shortlisted candidates — no adverse filing keywords detected",
+    col_stock: "Security",
+    col_industry: "Sector",
+    col_hits: "Hits",
+    col_strategies: "Strategies",
+    col_avg_score: "Score",
+    col_chg: "Chg%",
+    col_price: "Price",
+    col_ann: "Filings",
+    n_strat_badge: "{n} strats",
+    no_consensus: "No CN stock selected by ≥2 strategies today.",
+    sector_dist_title: "Sector Concentration (Top {n})",
+    sector_dist_col: "Share / Slots",
+    other_ind: "Other",
+    snap_7mkt_title: "7-Market T+5 Leaders",
+    snap_pending: "Pending",
+    snap_beat_eval: "{bench} · Beat {beat} · n={n}",
+    snap_note: "CN 7-bucket return distribution and limit-up ladder appear once the private GitHub Actions daily pack cache completes a session.",
+    no_dist: "No return distribution data",
+    cn_hero_title: "CN Microstructure & Breadth",
+    breadth_up: "Adv",
+    breadth_flat: "Flat",
+    breadth_down: "Dec",
+    stat_luld: "Non-ST Limit-Up / Down",
+    stat_luld_sub: "Locked {up} up / {dn} dn",
+    stat_seal: "Seal Rate / Turnover",
+    stat_seal_sub: "Broken {broken} · Top {streak}d",
+    stat_prevlu: "Prev Limit-Up Today Avg",
+    stat_prevlu_sub: "n={n} · Green {win}",
+    stat_prom: "Prev LU Open / Promo Rate",
+    stat_prom_sub: "Promoted {n} ({rate})",
+    ladder_title: "Consecutive Limit-Up Ladder (observation only)",
+    ladder_empty: "No non-ST multi-day limit-ups today",
+    ladder_board: "{b}d",
+    ladder_cnt: "{n}",
+    hist_title: "Advancing {v}%",
+    amt_unit: "B",
+    sc_empty: "No matching track-record rows",
+    sc_cols: ["#", "Market", "Strategy", "Entry", "Runs", "Matured", "Pending", "Untradable", "Raw Ret", "Win Rate", "Benchmark", "Excess (T+{w})", "Beat Rate"],
+    sc_low_sample_title: "Below {n} samples (noisy)",
+    sc_unassessed: "Unassessed",
+    sc_unassessed_title: "Legacy close entry before next_open switchover",
+    tc_empty_all: "No paired Rules vs AI sessions yet — configure <code>DEEPSEEK_API_KEY</code>, <code>GEMINI_API_KEY</code>, or <code>OPENAI_API_KEY</code> in GitHub Secrets to enable dual-track tracking.",
+    tc_empty_pending: "No matured Rules vs AI paired samples yet.",
+    tc_cols: ["Market", "Strategy", "Paired/Common", "AI Missing", "Overlap", "Rules Excess", "AI Excess", "AI − Rules (T+{w})", "AI Added Excess", "AI Dropped Excess"],
+    tc_win_days: "Won {w}/{n}d",
+    tc_insuff: "Low N ({p}/{m})",
+    tc_insuff_title: "Needs ≥{m} paired days",
+    n_picks_sm: "{n}",
+    ai_attr_badge: "AI Today Delta",
+    ai_attr_sub: "Overlap {ov} · Rules {r} / AI {a}",
+    ai_mkt_view: "Market View: ",
+    ai_added: "AI Added: ",
+    ai_dropped: "AI Dropped: ",
+    none_txt: "None",
+    case_badge: "T+{w} Case Studies",
+    case_adds: "Top AI Adds: ",
+    case_avoids: "AI Avoided Losses: ",
+    case_misses: "Missed by AI: ",
+    pat_not_built: "No CN pattern snapshot generated yet (auto-scans with 20-day mini K-lines once private pack cache is populated).",
+    pat_no_replay: "No 250-day replay report yet.",
+    pat_no_entries: "No pattern stats in latest snapshot.",
+    pat_hit_zero: "{d} · 0 hits",
+    pat_no_sig: "No signals triggered today",
+    pat_hit_n: "{d} · {tot} hits (top {shown})",
+    pat_cols: ["Security", "Chg%", "Overhead", "20D K-Line"],
+    ub_title: "Universe Baseline ({s} days):",
+    ub_ew: "All-A EW T+5 Excess {ex} (Raw {raw})",
+    ub_liq: "· Liquid ≥80M {ex}",
+    ub_bench: "· CSI 300 {ret}",
+    ub_t10: "· T+10 EW Excess {ex}",
+    rep_subhead: "250-Day next_open Graduation Gate ({start} .. {end}, {sess} signal days)",
+    rep_cols: ["Pattern", "Family / Mode", "Signals", "Untradable", "T+5 Matched", "T+5 Excess", "T+5 Win", "Clustered t", "H1 / H2 Excess", "T+10 Excess", "Status"],
+    sl_head_lbl: "Pattern × Market Regime (T+5 Matched / Excess)",
+    sl_subhead: "Regime Slices (* & muted = matched N < {n})",
+    ov_head_lbl: "Pattern × Top-10% Overhead Supply (T+5 Matched / Excess / Win Rate)",
+    ov_subhead: "Overhead Supply Slices (* & muted = matched N < {n})",
+    chart_empty: "No matured T+{w} picks for the selected market/track",
+    chart_tip_excess: "Excess",
+    chart_tip_picks: "{n} picks",
+    tbl_stock: "Security",
+    tbl_industry: "Sector",
+    tbl_price: "Price",
+    st_pending: "Pending",
+    st_untradable: "Blocked",
+    st_untradable_title: "Next-open one-price limit-up untradable",
+    st_nodata: "N/A",
+    st_excess_lbl: "Ex ",
+    latest_n_picks: "{n} picks",
+    latest_sub: "{d} · {snap} universe → {flt} filtered",
+    degraded_lbl: "Degraded",
+    no_picks_day: "No qualifying picks recorded",
+    no_match_latest: "No strategies or picks match current filter",
+    no_days: "No trading sessions recorded",
+    loading_day: "Loading session archive…",
+    load_fail: "Load failed: {msg}",
+    load_fatal: "Failed to load data: {msg}",
+    no_match_day: "No picks match current filter on this date",
+    day_opt: "{d} ({n} runs)",
+    t_win_pending: "T+{w} pending",
+  },
+  ja: {
+    page_title: "AlphaSift · クオンツ観測・T+N検証ベンチマーク",
+    nav_aria: "メインナビ",
+    nav_overview: "サマリー",
+    nav_leaderboard: "戦略ランキング",
+    nav_trend: "超過推移",
+    nav_explorer: "銘柄ブラウザ",
+    nav_radar: "AI・チャート",
+    nav_report: "日次レポート",
+    nav_report_title: "印刷対応の引け後リサーチレポート",
+    nav_rss: "RSS",
+    nav_rss_title: "Atom 1.0 RSS フィードを購読",
+    nav_ledger: "生ログ",
+    nav_ledger_title: "track-record ブランチの改ざん不能ログを表示",
+    theme_aria: "ライト／ダーク切替",
+    theme_light: "ライト",
+    theme_dark: "ダーク",
+    hero_title: "AlphaSift · クオンツ観測・T+N検証ベンチマーク",
+    hero_sub: "毎営業日の引け後に全市場 YAML 戦略・開示リスクチェック・任意の AI 再ランクを自動実行し、<code>T+5 / T+10 / T+20</code> の実測値とストップ高成行不可判定で超過リターンを公開検証します。",
+    btn_docs: "ドキュメント",
+    btn_strategies: "内蔵戦略",
+    loading: "読込中",
+    loading_sub: "公開トラックレコードと市場データを読込中…",
+    loading_consensus: "戦略間のコンセンサス候補を集計中…",
+    loading_hero: "市場地合い・7市場スナップショットを読込中…",
+    loading_pat: "パターン検出結果を読込中…",
+    no_replay_yet: "250日リプレイ結果はまだありません",
+    sec1_title: "本日のコンセンサス銘柄・市場サマリー",
+    sec1_hint: "複数戦略で重複選定された銘柄、適時開示アラート、および中国 A 株地合い／世界 7 市場の首位戦略を即座に把握できます。",
+    sec2_title: "戦略別 T+N 超過リターンランキング",
+    sec2_hint: "満期到来済みの銘柄単位で集計（超過 = 銘柄リターン − 同期ベンチマーク）。切替前の <code>close</code> 基準は「未評価」、<code>next_open</code> 以降は寄付ストップ高による取引不可率を集計します。",
+    sort_aria: "並び順",
+    sort_excess: "超過リターン順",
+    sort_beat: "ベンチマーク勝率順",
+    sort_return: "絶対リターン順",
+    sort_evaluated: "評価銘柄数順",
+    sec3_title: "トラック別 累積超過リターン推移",
+    sec3_hint: "実線がルールのみ、破線が AI 再ランクを示します。凡例クリックで戦略をフォーカス、点にホバーで詳細を表示します。",
+    track_both: "両トラック",
+    track_rules: "ルールのみ",
+    track_ai: "AI のみ",
+    trend_mkt_aria: "推移の市場",
+    sec4_title: "選定銘柄・過去アーカイブブラウザ",
+    sec4_hint: "銘柄コード・銘柄名・業種・戦略名でリアルタイム絞り込み。「日別アーカイブ」で各日の T+5 / T+10 / T+20 実測結果を確認できます。",
+    mode_latest: "最新選定",
+    mode_history: "日別アーカイブ",
+    mkt_filter_aria: "市場フィルタ",
+    day_filter_aria: "営業日選択",
+    search_ph: "コード / 銘柄名 / 業種 / 戦略を検索…",
+    search_aria: "銘柄フィルタ",
+    sec5_title: "ルール vs AI 同日ペア帰属分析",
+    sec5_hint: "同一戦略・同一営業日の両トラック実行のみを厳密にペア比較します（ペア日数 < 10 日の場合、差分は非表示）。",
+    details_pat_title: "中国 A 株 ステートレスパターン検出（20日ミニローソク足）",
+    details_pat_hint: "250日 <code>next_open</code> 卒業基準（一致サンプル ≥ 200 かつ T+5 超過 > 0%）未達のパターンは <code>experimental</code> としてグレー表示されます。",
+    details_replay_title: "250日 next_open リプレイ・日別安定性・局面別スライス検証",
+    footer_note: "<strong>AlphaSift</strong> · オープンソース銘柄発掘＆検証ベンチマーク（Apache-2.0 License）· 投資助言ではありません（配当除く）。閾値未満（成績表 &lt; 20、AI ペア &lt; 10日、スライス &lt; 100、パターン &lt; 200）はグレーまたは非表示。",
+    footer_repo: "GitHub リポジトリ",
+    footer_ledger: "track-record 生ログ",
+    footer_report: "日次リサーチレポート",
+    footer_rss: "Atom RSS 購読",
+    footer_readme: "README",
+    all_markets: "全市場",
+    meta_updated: "更新日時",
+    meta_runs_fmt: "累計 {n} 回実行",
+    meta_days_fmt: "{n} 営業日",
+    meta_switch_fmt: "next_open 切替日 {d}",
+    meta_skipped_fmt: "スキップ {n}",
+    stale_banner_html: "<strong>⚠️ 旧データパック縮退表示：</strong>パック日付 <code>{pack}</code> が目標日 <code>{exp}</code> より古い状態です{reason}。画面は縮退モードで表示し、強制指定のない IM 通知はスキップしました。",
+    kpi1_lbl: "T+5 トップ超過リターン",
+    kpi1_foot: "{strat} · 対指数勝率 {beat} ({n}件)",
+    kpi1_empty_val: "集計待ち",
+    kpi1_empty_foot: "初回実行から 5 営業日後に公開",
+    kpi2_lbl: "全戦略 T+5 加重平均超過",
+    kpi2_badge: "{n} 戦略有効",
+    kpi2_foot: "評価済 {eval} 銘柄 · 累計 {runs} 回実行",
+    kpi3_temp_lbl: "A 株市場地合い",
+    kpi3_up_suffix: "上昇",
+    kpi3_temp_foot: "中央値 {med} · S高 {lu} / S安 {ld}",
+    kpi3_cons_lbl: "本日 A 株最多コンセンサス",
+    kpi3_cons_badge: "{n} 戦略",
+    kpi3_cons_foot: "{ind} · 平均 {score} · 株価 {price}",
+    kpi3_empty_lbl: "A 株最多コンセンサス",
+    kpi3_empty_foot: "当日の A 株実行なし",
+    kpi4_ann_lbl: "適時開示リスク検査",
+    kpi4_ann_bad: "{n} 件警戒",
+    kpi4_ann_ok: "異常なし",
+    kpi4_ann_bad_val: "{n} 銘柄",
+    kpi4_ann_ok_val: "0 件",
+    kpi4_ann_foot: "上位 {n} 銘柄検査 · {tail}",
+    kpi4_ann_clean: "持株売却・調査・上場廃止等の警戒語なし",
+    kpi4_ops_lbl: "マルチ市場自動稼働",
+    kpi4_ops_bad: "{n} 件異常",
+    kpi4_ops_ok: "正常",
+    kpi4_ops_foot: "{m} 市場対応 · {d} 営業日記録済",
+    pane_consensus_title: "複数戦略コンセンサス銘柄",
+    pane_consensus_badge: "{n} 銘柄重複",
+    full_report_btn: "詳細レポート →",
+    live_agg_chip: "{d} · リアルタイム集計",
+    ai_brief_badge: "AI 要約",
+    rule_brief_badge: "統計サマリー",
+    brief_headline_lbl: "引け後サマリー：",
+    ann_alert_head: "⚠️ 開示リスク検知（検査 {checked} 件 · 該当 {flagged} 銘柄）：",
+    ann_ok_msg: "✓ 主要候補 {n} 銘柄の適時開示を検査済み（持株売却・行政調査等の警戒シグナルなし）",
+    col_stock: "銘柄",
+    col_industry: "業種",
+    col_hits: "戦略数",
+    col_strategies: "該当戦略",
+    col_avg_score: "平均スコア",
+    col_chg: "騰落率",
+    col_price: "株価",
+    col_ann: "開示",
+    n_strat_badge: "{n} 戦略",
+    no_consensus: "本日 ≥2 戦略で重複選定された A 株銘柄はありません。",
+    sector_dist_title: "業種集中度（上位 {n}）",
+    sector_dist_col: "構成比 / 枠数",
+    other_ind: "その他",
+    snap_7mkt_title: "世界 7 市場 T+5 首位スナップショット",
+    snap_pending: "評価待ち",
+    snap_beat_eval: "{bench} · 勝率 {beat} · {n}件",
+    snap_note: "注：A 株の 7 区分騰落分布と連騰ストップ高ラダーは GitHub Actions 非公開日足キャッシュの初回構築後に自動表示されます。",
+    no_dist: "騰落分布データなし",
+    cn_hero_title: "A 株ミクロ地合い・騰落分布",
+    breadth_up: "上昇",
+    breadth_flat: "横ばい",
+    breadth_down: "下落",
+    stat_luld: "非 ST ストップ高 / 安",
+    stat_luld_sub: "一本値 {up}高 / {dn}安",
+    stat_seal: "ストップ高維持率 / 売買代金",
+    stat_seal_sub: "剥がれ {broken} · 最高 {streak}連",
+    stat_prevlu: "前日 S高 本日平均騰落",
+    stat_prevlu_sub: "標本 {n} · 陽線 {win}",
+    stat_prom: "前日 S高 寄付き / 連騰率",
+    stat_prom_sub: "連騰 {n} 銘柄 ({rate})",
+    ladder_title: "連騰ストップ高ラダー（観測専用・重み調整なし）",
+    ladder_empty: "本日非 ST の連騰ストップ高なし",
+    ladder_board: "{b}連続",
+    ladder_cnt: "{n}社",
+    hist_title: "上昇比率 {v}%",
+    amt_unit: "億元",
+    sc_empty: "該当するトラックレコードはありません",
+    sc_cols: ["#", "市場", "戦略", "基準", "実行", "評価済", "保留", "不可", "平均騰落", "勝率", "ベンチマーク", "超過 (T+{w})", "対指数勝率"],
+    sc_low_sample_title: "{n} 件未満のため参考値",
+    sc_unassessed: "未評価",
+    sc_unassessed_title: "next_open 切替前の終値基準",
+    tc_empty_all: "ルール vs AI のペア記録はまだありません — GitHub Secrets に <code>DEEPSEEK_API_KEY</code> / <code>GEMINI_API_KEY</code> / <code>OPENAI_API_KEY</code> を設定すると両トラックを並行実行します。",
+    tc_empty_pending: "満期到来のルール vs AI ペア標本はまだありません。",
+    tc_cols: ["市場", "戦略", "ペア/共通日", "AI 欠損率", "重複率", "ルール超過", "AI 超過", "AI − ルール (T+{w})", "AI 独自超過", "AI 除外超過"],
+    tc_win_days: "勝 {w}/{n}日",
+    tc_insuff: "標本不足 ({p}/{m})",
+    tc_insuff_title: "{m}日以上のペア比較が必要",
+    n_picks_sm: "{n}件",
+    ai_attr_badge: "AI 当日帰属",
+    ai_attr_sub: "重複 {ov} · ルール {r} / AI {a}",
+    ai_mkt_view: "市場見通し：",
+    ai_added: "AI 追加：",
+    ai_dropped: "AI 除外：",
+    none_txt: "なし",
+    case_badge: "T+{w} 個別事例",
+    case_adds: "AI 独自選定ハイライト：",
+    case_avoids: "AI 回避成功：",
+    case_misses: "AI 見逃し：",
+    pat_not_built: "A 株パターンスナップショットはまだありません（日足キャッシュ構築後に 20 日ミニ K 線付きで表示されます）。",
+    pat_no_replay: "250日リプレイ結果はまだありません。",
+    pat_no_entries: "最新スナップショットにパターン統計がありません。",
+    pat_hit_zero: "{d} · 0 件",
+    pat_no_sig: "本日の検出シグナルなし",
+    pat_hit_n: "{d} · {tot} 件検出（上位 {shown} 件）",
+    pat_cols: ["銘柄", "騰落率", "上値しこり", "20日足"],
+    ub_title: "同期全市場ベースライン ({s} 日)：",
+    ub_ew: "全市場等重 T+5 超過 {ex}（素 {raw}）",
+    ub_liq: "· 流動性 ≥8000万 {ex}",
+    ub_bench: "· CSI 300 {ret}",
+    ub_t10: "· T+10 等重超過 {ex}",
+    rep_subhead: "250日 next_open 卒業基準検証（{start} .. {end}、{sess} 営業日）",
+    rep_cols: ["パターン", "系統 / 方式", "総数", "取引不可", "T+5 一致", "T+5 超過", "T+5 勝率", "日次 t値", "前半 H1 / 後半 H2", "T+10 超過", "判定"],
+    sl_head_lbl: "パターン × 市場局面（T+5 一致数 / 超過）",
+    sl_subhead: "市場局面スライス（* と薄字は標本 &lt; {n}）",
+    ov_head_lbl: "パターン × 上値10%しこり玉（T+5 一致 / 超過 / 勝率）",
+    ov_subhead: "上値しこり玉スライス（* と薄字は標本 &lt; {n}）",
+    chart_empty: "選択した市場・トラックで満期到来の T+{w} 銘柄がありません",
+    chart_tip_excess: "超過",
+    chart_tip_picks: "{n} 銘柄",
+    tbl_stock: "銘柄",
+    tbl_industry: "業種",
+    tbl_price: "株価",
+    st_pending: "保留",
+    st_untradable: "取引不可",
+    st_untradable_title: "翌寄付ストップ高のため約定不可",
+    st_nodata: "データなし",
+    st_excess_lbl: "超 ",
+    latest_n_picks: "{n} 銘柄",
+    latest_sub: "{d} · 市場 {snap} 銘柄 → 絞り込み {flt} 銘柄",
+    degraded_lbl: "データ縮退",
+    no_picks_day: "該当銘柄なし",
+    no_match_latest: "条件に一致する戦略・銘柄がありません",
+    no_days: "営業日データなし",
+    loading_day: "アーカイブ読込中…",
+    load_fail: "読込失敗：{msg}",
+    load_fatal: "データ読込失敗：{msg}",
+    no_match_day: "この日付で条件に一致する銘柄はありません",
+    day_opt: "{d}（{n} 回実行）",
+    t_win_pending: "T+{w} 保留",
+  },
+};
+
+const MARKET_I18N = {
+  zh: { cn: "A 股", us: "美股", hk: "港股", jp: "日本", kr: "韩国", tw: "台湾", in: "印度" },
+  en: { cn: "CN A-Shares", us: "US", hk: "HK", jp: "Japan", kr: "Korea", tw: "Taiwan", in: "India" },
+  ja: { cn: "中国A株", us: "米国", hk: "香港", jp: "日本", kr: "韓国", tw: "台湾", in: "インド" },
+};
+
+const SESSION_I18N = {
+  zh: { asia: "亚洲场", us: "美股场" },
+  en: { asia: "Asia", us: "US" },
+  ja: { asia: "アジア市場", us: "米国市場" },
+};
+
 const REGIME_ORDER = ["freezing", "startup", "main_up", "divergence", "ebb", "neutral"];
-const REGIME_LABELS = { freezing: "冰点", startup: "启动", main_up: "主升", divergence: "分歧", ebb: "退潮", neutral: "震荡" };
+const REGIME_I18N = {
+  zh: { freezing: "冰点", startup: "启动", main_up: "主升", divergence: "分歧", ebb: "退潮", neutral: "震荡" },
+  en: { freezing: "Freezing", startup: "Startup", main_up: "Main Up", divergence: "Divergence", ebb: "Ebb", neutral: "Choppy" },
+  ja: { freezing: "極寒", startup: "初動", main_up: "主昇波", divergence: "分岐", ebb: "後退", neutral: "レンジ" },
+};
+
+const STRATEGY_I18N = {
+  en: {
+    balanced_alpha: "Balanced Alpha",
+    blue_chip_income: "Blue-Chip Income",
+    capital_heat: "Capital Heat",
+    dual_low: "Dual Low Value",
+    global_value: "Global Value",
+    low_volatility_quality: "Low-Vol Quality",
+    momentum_quality: "Momentum Quality",
+    oversold_reversal: "Oversold Reversal",
+    quality_value: "Quality Value",
+    shrink_pullback: "Shrink Pullback",
+    us_momentum_quality: "US Momentum Quality",
+    volume_breakout: "Volume Breakout",
+  },
+  ja: {
+    balanced_alpha: "バランス・アルファ",
+    blue_chip_income: "優良高配当株",
+    capital_heat: "資金モメンタム",
+    dual_low: "低PER・低PBR",
+    global_value: "グローバル・バリュー",
+    low_volatility_quality: "低ボラ・クオリティ",
+    momentum_quality: "モメンタム・クオリティ",
+    oversold_reversal: "売られ過ぎ反発",
+    quality_value: "クオリティ・バリュー",
+    shrink_pullback: "出来高縮小押し目",
+    us_momentum_quality: "米国モメンタム",
+    volume_breakout: "出来高ブレイク",
+  },
+};
+
+const PATTERN_I18N = {
+  en: {
+    bottom_volume_yang: "Bottom Volume Surge",
+    box_breakout: "Box Breakout",
+    double_bottom_breakout: "Double Bottom Breakout",
+    ma20_shrink_pullback: "MA20 Low-Vol Pullback",
+    shooting_star_confirm: "Upper-Wick Confirm",
+    single_yang_hold: "Single Bullish Hold",
+    steady_trend_breakout: "Steady Trend Breakout",
+  },
+  ja: {
+    bottom_volume_yang: "底値倍増陽線",
+    box_breakout: "ボックス圏ブレイク",
+    double_bottom_breakout: "ダブルボトム突破",
+    ma20_shrink_pullback: "20日線低ボラ押し目",
+    shooting_star_confirm: "上ヒゲ確認",
+    single_yang_hold: "大陽線ホールド",
+    steady_trend_breakout: "低ボラ堅調突破",
+  },
+};
+
 const DIST_BUCKETS = [
   { key: "le_neg7", label: "≤-7%", tone: "down" },
   { key: "neg7_neg3", label: "-7~-3%", tone: "down" },
   { key: "neg3_0", label: "-3~0%", tone: "down" },
-  { key: "flat", label: "平盘", tone: "flat" },
+  { key: "flat", label_key: "breadth_flat", tone: "flat" },
   { key: "pos0_3", label: "0~3%", tone: "up" },
   { key: "pos3_7", label: "3~7%", tone: "up" },
   { key: "ge_pos7", label: "≥7%", tone: "up" },
 ];
-const OVERHEAD_BUCKETS = [
-  { key: "low_lt15", label: "上方筹码 <15%" },
-  { key: "mid_15_35", label: "15%~35%" },
-  { key: "high_ge35", label: "≥35%" },
-];
+const OVERHEAD_I18N = {
+  zh: [
+    { key: "low_lt15", label: "上方筹码 <15%" },
+    { key: "mid_15_35", label: "15%~35%" },
+    { key: "high_ge35", label: "≥35%" },
+  ],
+  en: [
+    { key: "low_lt15", label: "Overhead <15%" },
+    { key: "mid_15_35", label: "15%–35%" },
+    { key: "high_ge35", label: "≥35%" },
+  ],
+  ja: [
+    { key: "low_lt15", label: "しこり <15%" },
+    { key: "mid_15_35", label: "15%–35%" },
+    { key: "high_ge35", label: "≥35%" },
+  ],
+};
+
 const MIN_SAMPLE = 20;
 const MIN_SLICE_SAMPLE = 100;
 const MIN_PATTERN_GRAD_SAMPLE = 200;
 
 const state = {
+  lang: "zh",
+  theme: "dark",
   summary: null,
   patterns: null,
   report: null,
+  reportReady: false,
   scoreWin: "5",
   scoreMarket: "all",
   scoreSort: "excess",
@@ -749,18 +1476,56 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const sname = (name) => esc(((state.summary && state.summary.strategy_names) || {})[name] || name);
-const mname = (id) => MARKET_NAMES[id] || id;
+
+function normalizeLang(raw) {
+  const s = String(raw || "").trim().toLowerCase();
+  if (s.startsWith("en")) return "en";
+  if (s.startsWith("ja")) return "ja";
+  if (s.startsWith("zh")) return "zh";
+  return "";
+}
+
+function t(key, vars) {
+  const dict = I18N[state.lang] || I18N.zh;
+  let str = dict[key] !== undefined ? dict[key] : (I18N.zh[key] !== undefined ? I18N.zh[key] : key);
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) {
+      str = str.replaceAll(`{${k}}`, v === null || v === undefined ? "" : String(v));
+    }
+  }
+  return str;
+}
+
+const mname = (id) => (MARKET_I18N[state.lang] || MARKET_I18N.zh)[id] || id;
+const sesname = (id) => (SESSION_I18N[state.lang] || SESSION_I18N.zh)[id] || id;
+const rname = (id, serverFallback) => (REGIME_I18N[state.lang] || REGIME_I18N.zh)[id] || serverFallback || id || "-";
+
+function sname(name) {
+  const map = STRATEGY_I18N[state.lang];
+  if (map && map[name]) return esc(map[name]);
+  return esc(((state.summary && state.summary.strategy_names) || {})[name] || name);
+}
+
+function pname(slug, serverDisplay) {
+  const map = PATTERN_I18N[state.lang];
+  if (map && map[slug]) return map[slug];
+  return serverDisplay || slug;
+}
+
 function pct(v, digits = 2) {
   if (v === null || v === undefined || Number.isNaN(Number(v))) return '<span class="dim">–</span>';
   const n = Number(v);
   const cls = n > 0 ? "up" : n < 0 ? "down" : "";
   return `<span class="${cls}">${n > 0 ? "+" : ""}${n.toFixed(digits)}%</span>`;
 }
-const rate = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? '<span class="dim">–</span>' : `${Math.round(Number(v) * 100)}%`);
-const sharePct = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? '<span class="dim">–</span>' : `${Number(v).toFixed(1)}%`);
-const num = (v, d = 2) => (v === null || v === undefined || Number.isNaN(Number(v)) ? '<span class="dim">–</span>' : Number(v).toFixed(d));
-const localTime = (iso) => (iso ? new Date(iso).toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "–");
+const rate = (v) => (v === null || v === undefined || Number.isNaN(Number(v))) ? '<span class="dim">–</span>' : `${Math.round(Number(v) * 100)}%`;
+const sharePct = (v) => (v === null || v === undefined || Number.isNaN(Number(v))) ? '<span class="dim">–</span>' : `${Number(v).toFixed(1)}%`;
+const num = (v, d = 2) => (v === null || v === undefined || Number.isNaN(Number(v))) ? '<span class="dim">–</span>' : Number(v).toFixed(d);
+const localTime = (iso) => {
+  if (!iso) return "–";
+  const loc = state.lang === "en" ? "en-US" : state.lang === "ja" ? "ja-JP" : "zh-CN";
+  return new Date(iso).toLocaleString(loc, { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+};
 
 const ICO_SUN = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41"/></svg>';
 const ICO_MOON = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
@@ -771,7 +1536,79 @@ const ICO_GLOBE = '<svg class="ico" style="color:var(--accent-hi)" viewBox="0 0 
 function syncThemeBtn(theme) {
   const btn = $("theme-toggle");
   if (!btn) return;
-  btn.innerHTML = theme === "light" ? `${ICO_MOON}<span>暗色</span>` : `${ICO_SUN}<span>亮色</span>`;
+  btn.innerHTML = theme === "light" ? `${ICO_MOON}<span>${esc(t("theme_dark"))}</span>` : `${ICO_SUN}<span>${esc(t("theme_light"))}</span>`;
+}
+
+function reportHref() {
+  const params = new URLSearchParams();
+  if (state.lang && state.lang !== "zh") params.set("lang", state.lang);
+  if (state.theme && state.theme !== "dark") params.set("theme", state.theme);
+  const qs = params.toString();
+  return qs ? `site/daily_report.html?${qs}` : "site/daily_report.html";
+}
+
+function syncReportLinks() {
+  const href = reportHref();
+  ["report-top-link", "footer-report-link"].forEach((id) => {
+    const el = $(id);
+    if (el) el.setAttribute("href", href);
+  });
+}
+
+function applyStaticI18n() {
+  document.documentElement.lang = state.lang === "en" ? "en" : state.lang === "ja" ? "ja" : "zh-CN";
+  document.documentElement.setAttribute("data-lang", state.lang);
+  document.title = t("page_title");
+  document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-html]").forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.setAttribute("placeholder", t(el.dataset.i18nPlaceholder)); });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.setAttribute("title", t(el.dataset.i18nTitle)); });
+  document.querySelectorAll("[data-i18n-aria]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nAria)); });
+  const sw = $("lang-switch");
+  if (sw) sw.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === state.lang)));
+  syncThemeBtn(state.theme);
+  syncReportLinks();
+}
+
+function refreshAllViews() {
+  if (!state.summary) return;
+  renderMarketSelectorsLanguage();
+  renderMetaAndKpis();
+  renderConsensusPane();
+  renderCnHero();
+  renderScorecard();
+  renderTrackComparison();
+  renderPatternRadar();
+  renderChart();
+  renderLatest();
+  if (state.currentDay) renderDay(state.currentDay);
+}
+
+function setLang(lang) {
+  const norm = normalizeLang(lang) || "zh";
+  if (!SUPPORTED_LANGS.includes(norm)) return;
+  state.lang = norm;
+  try { localStorage.setItem("alphasift-lang", norm); } catch (_) {}
+  applyStaticI18n();
+  refreshAllViews();
+}
+
+function initLang() {
+  let lang = "";
+  try {
+    lang = normalizeLang(new URLSearchParams(window.location.search).get("lang"));
+    if (!lang) lang = normalizeLang(localStorage.getItem("alphasift-lang"));
+  } catch (_) {}
+  if (!lang) lang = normalizeLang(navigator.language || "");
+  state.lang = SUPPORTED_LANGS.includes(lang) ? lang : "zh";
+  applyStaticI18n();
+  const sw = $("lang-switch");
+  if (sw) {
+    sw.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (btn && btn.dataset && btn.dataset.lang) setLang(btn.dataset.lang);
+    });
+  }
 }
 
 function initTheme() {
@@ -782,15 +1619,17 @@ function initTheme() {
     if (q === "light" || q === "dark") theme = q;
     else if (saved === "light" || saved === "dark") theme = saved;
   } catch (_) {}
+  state.theme = theme;
   document.documentElement.setAttribute("data-theme", theme);
   syncThemeBtn(theme);
   const btn = $("theme-toggle");
   if (!btn) return;
   btn.addEventListener("click", () => {
-    const cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-    const next = cur === "light" ? "dark" : "light";
+    const next = state.theme === "light" ? "dark" : "light";
+    state.theme = next;
     document.documentElement.setAttribute("data-theme", next);
     syncThemeBtn(next);
+    syncReportLinks();
     try { localStorage.setItem("alphasift-theme", next); } catch (_) {}
   });
 }
@@ -815,9 +1654,9 @@ function initTrackToggle() {
   const sync = () => el.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.t === state.trendTrack)));
   el.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
-    const t = btn && btn.dataset && btn.dataset.t;
-    if (!t) return;
-    state.trendTrack = t;
+    const tr = btn && btn.dataset && btn.dataset.t;
+    if (!tr) return;
+    state.trendTrack = tr;
     state.trendFocus = null;
     sync();
     renderChart();
@@ -828,14 +1667,38 @@ function initTrackToggle() {
 function fillMarkets(el, key, onChange, withAll = false) {
   const markets = (state.summary.markets || []).map((m) => m.id);
   state[key] = withAll ? "all" : (markets[0] || null);
-  el.innerHTML = (withAll ? ['<option value="all">全部市场</option>'] : [])
-    .concat(markets.map((m) => `<option value="${m}">${mname(m)}</option>`))
+  el.innerHTML = (withAll ? [`<option value="all">${esc(t("all_markets"))}</option>`] : [])
+    .concat(markets.map((m) => `<option value="${m}">${esc(mname(m))}</option>`))
     .join("");
   el.addEventListener("change", () => {
     state[key] = el.value;
     if (key === "trendMarket") state.trendFocus = null;
     onChange();
   });
+}
+
+function renderMarketSelectorsLanguage() {
+  const markets = (state.summary.markets || []).map((m) => m.id);
+  [["market-trend", false, "trendMarket"], ["market-latest", false, "latestMarket"]].forEach(([id, withAll, key]) => {
+    const el = $(id);
+    if (!el) return;
+    const cur = state[key] || (withAll ? "all" : markets[0]);
+    el.innerHTML = (withAll ? [`<option value="all">${esc(t("all_markets"))}</option>`] : [])
+      .concat(markets.map((m) => `<option value="${m}">${esc(mname(m))}</option>`))
+      .join("");
+    if (cur) el.value = cur;
+  });
+  const pills = $("market-score-pills");
+  if (pills) {
+    const all = [{ id: "all", label: t("all_markets") }].concat(markets.map((m) => ({ id: m, label: mname(m) })));
+    pills.innerHTML = all.map((p) => `<button type="button" class="pill-tab" data-m="${p.id}" aria-pressed="${p.id === state.scoreMarket}">${esc(p.label)}</button>`).join("");
+  }
+  const daySel = $("day");
+  if (daySel && state.summary.days) {
+    const curDay = state.currentDay || ((state.summary.days[0] || {}).date || "");
+    daySel.innerHTML = (state.summary.days || []).map((d) => `<option value="${d.date}">${esc(t("day_opt", { d: d.date, n: d.runs }))}</option>`).join("");
+    if (curDay) daySel.value = curDay;
+  }
 }
 
 function computeClientConsensus() {
@@ -850,7 +1713,7 @@ function computeClientConsensus() {
       const code = String(pk.code || "").trim();
       if (!code) continue;
       totalPickSlots += 1;
-      const ind = pk.industry || "其他";
+      const ind = pk.industry || t("other_ind");
       if (!sectorStats.has(ind)) sectorStats.set(ind, { industry: ind, pick_count: 0, codes: new Set() });
       const sec = sectorStats.get(ind);
       sec.pick_count += 1;
@@ -934,11 +1797,11 @@ function renderMiniKline(bars) {
     shapes.push(`<line x1="${cx}" x2="${cx}" y1="${y(h).toFixed(1)}" y2="${y(l).toFixed(1)}" stroke="${col}" stroke-width="1"/>`);
     shapes.push(`<rect x="${(Number(cx) - bw / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh}" rx="0.5" fill="${col}"/>`);
   });
-  return `<svg class="kline" viewBox="0 0 ${W} ${H}" aria-label="近${n}日K线">${shapes.join("")}</svg>`;
+  return `<svg class="kline" viewBox="0 0 ${W} ${H}" aria-label="${n}D">${shapes.join("")}</svg>`;
 }
 
 function renderReturnDistSvg(dist) {
-  if (!dist || typeof dist !== "object") return '<div class="empty">暂无涨跌分布统计</div>';
+  if (!dist || typeof dist !== "object") return `<div class="empty">${esc(t("no_dist"))}</div>`;
   const counts = DIST_BUCKETS.map((b) => Number(dist[b.key] || 0));
   const maxVal = Math.max(1, ...counts);
   const W = 360, H = 116, top = 18, bot = 22, barH = H - top - bot;
@@ -951,20 +1814,21 @@ function renderReturnDistSvg(dist) {
     const x = idx * step + (step - bw) / 2;
     const y = top + (barH - h);
     const fill = b.tone === "up" ? "var(--up)" : b.tone === "down" ? "var(--down)" : "var(--muted)";
+    const lbl = b.label_key ? t(b.label_key) : b.label;
     parts.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${fill}" opacity="0.88"/>`);
     parts.push(`<text x="${(x + bw / 2).toFixed(1)}" y="${Math.max(12, y - 4).toFixed(1)}" text-anchor="middle" font-size="10" font-family="var(--font-mono)" fill="var(--ink-2)">${val}</text>`);
-    parts.push(`<text x="${(x + bw / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="10" font-family="var(--font-mono)" fill="var(--muted)">${esc(b.label)}</text>`);
+    parts.push(`<text x="${(x + bw / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="10" font-family="var(--font-mono)" fill="var(--muted)">${esc(lbl)}</text>`);
   });
-  return `<svg class="dist-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="A股7档涨跌幅分布">${parts.join("")}</svg>`;
+  return `<svg class="dist-svg" viewBox="0 0 ${W} ${H}" role="img">${parts.join("")}</svg>`;
 }
 
 function renderMetaAndKpis() {
   const s = state.summary;
   const chips = [
-    `更新于 ${localTime(s.generated_at)}`,
-    `${s.run_count} 次累计运行`,
-    `${(s.days || []).length} 个交易日`,
-    `next_open 切换日 ${s.entry_mode_switch_date || "2026-11-21"}`,
+    `${t("meta_updated")} ${localTime(s.generated_at)}`,
+    t("meta_runs_fmt", { n: s.run_count }),
+    t("meta_days_fmt", { n: (s.days || []).length }),
+    t("meta_switch_fmt", { d: s.entry_mode_switch_date || "2026-11-21" }),
   ];
   const html = chips.map((c) => `<span class="chip">${esc(c)}</span>`);
   let totalOk = 0, totalRuns = 0, totalFailures = 0;
@@ -977,9 +1841,9 @@ function renderMetaAndKpis() {
     totalFailures += failures.length;
     const title = failures.map((f) => `${f.market} ${f.strategy}: ${f.status} ${f.error || ""}`).join("\n");
     const statusText = skipped && info.total === 0
-      ? `跳过 ${skipped}`
-      : `${info.ok}/${info.total}${skipped ? ` · 跳过 ${skipped}` : ""}`;
-    html.push(`<span class="chip${bad ? " bad" : " ok"}" title="${esc(title)}">${SESSION_NAMES[session] || session} ${statusText}</span>`);
+      ? t("meta_skipped_fmt", { n: skipped })
+      : `${info.ok}/${info.total}${skipped ? ` · ${t("meta_skipped_fmt", { n: skipped })}` : ""}`;
+    html.push(`<span class="chip${bad ? " bad" : " ok"}" title="${esc(title)}">${esc(sesname(session))} ${esc(statusText)}</span>`);
   }
   $("meta").innerHTML = html.join("");
 
@@ -997,14 +1861,13 @@ function renderMetaAndKpis() {
     const packDate = rep.pack_trade_date || patLatest.pack_trade_date || "–";
     const expDate = rep.expected_trade_date || patLatest.expected_trade_date || "–";
     const reason = rep.stale_reason || patLatest.stale_reason || "";
-    banner.innerHTML = `<strong>⚠️ 旧包降级提示：</strong>当前数据包日期 <code>${esc(packDate)}</code> 落后于目标交易日 <code>${esc(expDate)}</code>${reason ? `（${esc(reason)}）` : ""}。网页继续展示可用降级口径，未强制的群聊 IM 推送已自动跳过。`;
+    banner.innerHTML = t("stale_banner_html", { pack: esc(packDate), exp: esc(expDate), reason: reason ? ` (${esc(reason)})` : "" });
     banner.classList.add("show");
   } else {
     banner.classList.remove("show");
     banner.innerHTML = "";
   }
 
-  // Compute Top-4 KPI Strip
   const sc = s.scorecard || [];
   const t5Rows = sc.filter((r) => ((r.windows || {})["5"] || {}).average_excess_return_pct !== null && ((r.windows || {})["5"] || {}).average_excess_return_pct !== undefined);
   const sortedT5 = [...t5Rows].sort((a, b) => b.windows["5"].average_excess_return_pct - a.windows["5"].average_excess_return_pct);
@@ -1023,16 +1886,16 @@ function renderMetaAndKpis() {
 
   const kpi1 = bestT5
     ? `<div class="kpi-cell">
-         <div class="kpi-label"><span>T+5 领跑超额</span><span class="badge active">${mname(bestT5.market)}</span></div>
+         <div class="kpi-label"><span>${esc(t("kpi1_lbl"))}</span><span class="badge active">${esc(mname(bestT5.market))}</span></div>
          <div class="kpi-val">${pct(bestT5.windows["5"].average_excess_return_pct)}</div>
-         <div class="kpi-foot">${sname(bestT5.strategy)} · 跑赢基准 ${rate(bestT5.windows["5"].beat_rate)} (${bestT5.windows["5"].evaluated}只)</div>
+         <div class="kpi-foot">${t("kpi1_foot", { strat: sname(bestT5.strategy), beat: rate(bestT5.windows["5"].beat_rate), n: bestT5.windows["5"].evaluated })}</div>
        </div>`
-    : `<div class="kpi-cell"><div class="kpi-label">T+5 领跑超额</div><div class="kpi-val dim">待到期</div><div class="kpi-foot">首日运行满 5 个交易日后披露</div></div>`;
+    : `<div class="kpi-cell"><div class="kpi-label">${esc(t("kpi1_lbl"))}</div><div class="kpi-val dim">${esc(t("kpi1_empty_val"))}</div><div class="kpi-foot">${esc(t("kpi1_empty_foot"))}</div></div>`;
 
   const kpi2 = `<div class="kpi-cell">
-    <div class="kpi-label"><span>全策略 T+5 样本加权均值</span><span class="badge">${t5Rows.length} 组有效</span></div>
+    <div class="kpi-label"><span>${esc(t("kpi2_lbl"))}</span><span class="badge">${esc(t("kpi2_badge", { n: t5Rows.length }))}</span></div>
     <div class="kpi-val">${pct(avgEx)}</div>
-    <div class="kpi-foot">已到期 ${evalTot} 股次 · 累计 ${s.run_count} 次选股</div>
+    <div class="kpi-foot">${esc(t("kpi2_foot", { eval: evalTot, runs: s.run_count }))}</div>
   </div>`;
 
   const reg = patLatest.market_regime || rep.market_regime || ((s.pattern_board || {}).latest || {}).market_regime || null;
@@ -1041,31 +1904,31 @@ function renderMetaAndKpis() {
 
   const kpi3 = reg
     ? `<div class="kpi-cell">
-         <div class="kpi-label"><span>A 股盘面温度 (${esc((reg.trade_date || "").slice(5))})</span><span class="badge accent">${esc(reg.regime_stage_label || reg.regime_stage || "-")}</span></div>
-         <div class="kpi-val">${Number(reg.advance_ratio_pct || 0).toFixed(1)}% <span class="small dim" style="font-weight:500;">上涨</span></div>
-         <div class="kpi-foot">中位数 ${pct(reg.median_return_pct)} · 涨停 ${reg.non_st_limit_up_count ?? 0} / 跌停 ${reg.non_st_limit_down_count ?? 0}</div>
+         <div class="kpi-label"><span>${esc(t("kpi3_temp_lbl"))} (${esc((reg.trade_date || "").slice(5))})</span><span class="badge accent">${esc(rname(reg.regime_stage, reg.regime_stage_label))}</span></div>
+         <div class="kpi-val">${Number(reg.advance_ratio_pct || 0).toFixed(1)}% <span class="small dim" style="font-weight:500;">${esc(t("kpi3_up_suffix"))}</span></div>
+         <div class="kpi-foot">${t("kpi3_temp_foot", { med: pct(reg.median_return_pct), lu: reg.non_st_limit_up_count ?? 0, ld: reg.non_st_limit_down_count ?? 0 })}</div>
        </div>`
     : topConsensus
       ? `<div class="kpi-cell">
-           <div class="kpi-label"><span>今日 A 股最高共识</span><span class="badge accent">${topConsensus.strategy_count} 策略</span></div>
+           <div class="kpi-label"><span>${esc(t("kpi3_cons_lbl"))}</span><span class="badge accent">${esc(t("kpi3_cons_badge", { n: topConsensus.strategy_count }))}</span></div>
            <div class="kpi-val">${esc(topConsensus.name)} <span class="small dim">${esc(topConsensus.code)}</span></div>
-           <div class="kpi-foot">${esc(topConsensus.industry)} · 均分 ${num(topConsensus.avg_final_score, 1)} · 现价 ${num(topConsensus.price)}</div>
+           <div class="kpi-foot">${esc(t("kpi3_cons_foot", { ind: topConsensus.industry, score: (topConsensus.avg_final_score ?? "–"), price: (topConsensus.price ?? "–") }))}</div>
          </div>`
-      : `<div class="kpi-cell"><div class="kpi-label">A 股最高共识</div><div class="kpi-val dim">–</div><div class="kpi-foot">暂无当日 A 股运行</div></div>`;
+      : `<div class="kpi-cell"><div class="kpi-label">${esc(t("kpi3_empty_lbl"))}</div><div class="kpi-val dim">–</div><div class="kpi-foot">${esc(t("kpi3_empty_foot"))}</div></div>`;
 
   const ann = rep.announcement_risks || {};
   const flaggedCount = (ann.flagged_items || []).length;
   const checkedCount = Number(ann.checked_count || 0);
   const kpi4 = checkedCount > 0
     ? `<div class="kpi-cell">
-         <div class="kpi-label"><span>公告排雷预警</span><span class="badge ${flaggedCount ? "bad" : "active"}">${flaggedCount ? `${flaggedCount} 高风险` : "全部通过"}</span></div>
-         <div class="kpi-val">${flaggedCount > 0 ? `<span class="up">${flaggedCount} 只</span>` : `<span class="down">0 风险</span>`}</div>
-         <div class="kpi-foot">抽检 ${checkedCount} 只核心候选 · ${flaggedCount ? esc((ann.flagged_items[0] || {}).name || "") : "无减持/立案/退市关键词"}</div>
+         <div class="kpi-label"><span>${esc(t("kpi4_ann_lbl"))}</span><span class="badge ${flaggedCount ? "bad" : "active"}">${esc(flaggedCount ? t("kpi4_ann_bad", { n: flaggedCount }) : t("kpi4_ann_ok"))}</span></div>
+         <div class="kpi-val">${flaggedCount > 0 ? `<span class="up">${esc(t("kpi4_ann_bad_val", { n: flaggedCount }))}</span>` : `<span class="down">${esc(t("kpi4_ann_ok_val"))}</span>`}</div>
+         <div class="kpi-foot">${esc(t("kpi4_ann_foot", { n: checkedCount, tail: flaggedCount ? ((ann.flagged_items[0] || {}).name || "") : t("kpi4_ann_clean") }))}</div>
        </div>`
     : `<div class="kpi-cell">
-         <div class="kpi-label"><span>多市场自动化运行状态</span><span class="badge ${totalFailures ? "bad" : "active"}">${totalFailures ? `${totalFailures} 异常` : "健康"}</span></div>
+         <div class="kpi-label"><span>${esc(t("kpi4_ops_lbl"))}</span><span class="badge ${totalFailures ? "bad" : "active"}">${esc(totalFailures ? t("kpi4_ops_bad", { n: totalFailures }) : t("kpi4_ops_ok"))}</span></div>
          <div class="kpi-val"><span class="${totalFailures ? "up" : "down"}">${totalOk} / ${totalRuns}</span></div>
-         <div class="kpi-foot">覆盖 ${(s.markets || []).length} 个市场 · 共 ${(s.days || []).length} 个历史交易日</div>
+         <div class="kpi-foot">${esc(t("kpi4_ops_foot", { m: (s.markets || []).length, d: (s.days || []).length }))}</div>
        </div>`;
 
   $("kpi-strip").innerHTML = kpi1 + kpi2 + kpi3 + kpi4;
@@ -1081,27 +1944,27 @@ function renderConsensusPane() {
 
   const consensus = (syn.consensus_picks && syn.consensus_picks.length) ? syn.consensus_picks : clientSyn.consensus;
   const sectors = (syn.sector_concentration && syn.sector_concentration.length) ? syn.sector_concentration : clientSyn.sectors;
-  const tradeDate = rep.trade_date || clientSyn.latestDate || "最新";
+  const tradeDate = rep.trade_date || clientSyn.latestDate || "Latest";
   const flagged = ann.flagged_items || [];
   const checked = Number(ann.checked_count || 0);
 
   let headlineHtml = "";
   if (brief.headline) {
-    const modeBadge = brief.mode === "llm" ? `<span class="badge ai">AI 综述</span>` : `<span class="badge">规则摘要</span>`;
-    headlineHtml = `<div class="brief-callout"><b>${modeBadge} 盘后要点：</b>${esc(brief.headline)}${brief.consensus_and_ai_edge ? `<div class="small dim" style="margin-top:4px;">${esc(brief.consensus_and_ai_edge)}</div>` : ""}</div>`;
+    const modeBadge = brief.mode === "llm" ? `<span class="badge ai">${esc(t("ai_brief_badge"))}</span>` : `<span class="badge">${esc(t("rule_brief_badge"))}</span>`;
+    headlineHtml = `<div class="brief-callout"><b>${modeBadge} ${esc(t("brief_headline_lbl"))}</b>${esc(brief.headline)}${brief.consensus_and_ai_edge ? `<div class="small dim" style="margin-top:4px;">${esc(brief.consensus_and_ai_edge)}</div>` : ""}</div>`;
   }
 
   let annHtml = "";
   if (flagged.length) {
     annHtml = `<div class="alert-strip">
-      <div><b>⚠️ 公告排雷高风险（抽检 ${checked} · 命中 ${flagged.length} 只）：</b></div>
+      <div><b>${esc(t("ann_alert_head", { checked, flagged: flagged.length }))}</b></div>
       ${flagged.slice(0, 4).map((x) => {
         const fl = (x.negative_event_flags || []).map(esc).join("/");
         return `<div class="small"><strong>${esc(x.name || x.code)}</strong> <span class="mono dim">${esc(x.code)}</span> <span class="badge bad">${fl}</span> · <span class="dim">${esc((x.announcement_summary || "").slice(0, 52))}</span></div>`;
       }).join("")}
     </div>`;
   } else if (checked > 0) {
-    annHtml = `<div class="alert-ok">✓ 已对 ${checked} 只重点候选做近期公告排雷，未检出减持 / 立案 / 退市等高风险信号</div>`;
+    annHtml = `<div class="alert-ok">${esc(t("ann_ok_msg", { n: checked }))}</div>`;
   }
 
   let tableHtml = "";
@@ -1118,25 +1981,25 @@ function renderConsensusPane() {
         <td><span class="rank-num ${idx < 3 ? "top" : ""}">${idx + 1}</span></td>
         <td class="l"><strong>${esc(c.name)}</strong> <span class="mono small dim">${esc(c.code)}</span></td>
         <td class="l dim">${esc(c.industry || "–")}</td>
-        <td><span class="badge accent">${c.strategy_count} 策略</span></td>
+        <td><span class="badge accent">${esc(t("n_strat_badge", { n: c.strategy_count }))}</span></td>
         <td class="l">${stratTags}${more}</td>
         <td class="mono">${num(c.avg_final_score, 1)}</td>
         <td class="mono">${rightCol}</td>
         <td>${riskCell}</td>
       </tr>`;
     }).join("");
-    const priceHdr = consensus.some((c) => c.change_pct !== null && c.change_pct !== undefined) ? "涨跌" : "最新价";
+    const priceHdr = consensus.some((c) => c.change_pct !== null && c.change_pct !== undefined) ? t("col_chg") : t("col_price");
     tableHtml = `<div class="scroll"><table>
-      <tr><th>#</th><th class="l">标的</th><th class="l">行业</th><th>命中</th><th class="l">覆盖策略</th><th>均分</th><th>${priceHdr}</th><th>公告</th></tr>
+      <tr><th>#</th><th class="l">${esc(t("col_stock"))}</th><th class="l">${esc(t("col_industry"))}</th><th>${esc(t("col_hits"))}</th><th class="l">${esc(t("col_strategies"))}</th><th>${esc(t("col_avg_score"))}</th><th>${esc(priceHdr)}</th><th>${esc(t("col_ann"))}</th></tr>
       ${rows}
     </table></div>`;
   } else {
-    tableHtml = '<div class="empty">今日暂无 ≥2 个策略同时命中的 A 股共振标的。</div>';
+    tableHtml = `<div class="empty">${esc(t("no_consensus"))}</div>`;
   }
 
   const sectorHtml = sectors.length
     ? `<div class="sector-pills">
-        <div class="small dim" style="display:flex;justify-content:space-between;"><span>行业分布集中度（Top ${Math.min(5, sectors.length)}）</span><span class="mono">占比 / 候选席位</span></div>
+        <div class="small dim" style="display:flex;justify-content:space-between;"><span>${esc(t("sector_dist_title", { n: Math.min(5, sectors.length) }))}</span><span class="mono">${esc(t("sector_dist_col"))}</span></div>
         ${sectors.slice(0, 5).map((s) => `
           <div class="sector-row">
             <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.industry)}</span>
@@ -1147,12 +2010,12 @@ function renderConsensusPane() {
     : "";
 
   const reportBtn = rep.trade_date
-    ? `<a class="action-btn" href="site/daily_report.html" style="padding:3px 9px;font-size:11.5px;">完整研报 →</a>`
-    : `<span class="chip">${esc(tradeDate)} · 实时聚合</span>`;
+    ? `<a class="action-btn" href="${esc(reportHref())}" style="padding:3px 9px;font-size:11.5px;">${esc(t("full_report_btn"))}</a>`
+    : `<span class="chip">${esc(t("live_agg_chip", { d: tradeDate }))}</span>`;
 
   wrap.innerHTML = `
     <div class="pane-head">
-      <div class="pane-title">${ICO_TARGET} 多策略共振标的 <span class="badge accent">${consensus.length} 只共振</span></div>
+      <div class="pane-title">${ICO_TARGET} ${esc(t("pane_consensus_title"))} <span class="badge accent">${esc(t("pane_consensus_badge", { n: consensus.length }))}</span></div>
       ${reportBtn}
     </div>
     ${headlineHtml}
@@ -1170,7 +2033,6 @@ function renderCnHero() {
   const reg = latestPat.market_regime || rep.market_regime || ((state.summary.pattern_board || {}).latest || {}).market_regime || null;
 
   if (!reg) {
-    // Rich 7-Market T+5 Benchmark Snapshot fallback so the right Bento is genuinely valuable!
     const markets = state.summary.markets || [];
     const sc = state.summary.scorecard || [];
     const rowsHtml = markets.map((m) => {
@@ -1178,16 +2040,16 @@ function renderCnHero() {
       mRows.sort((a, b) => b.windows["5"].average_excess_return_pct - a.windows["5"].average_excess_return_pct);
       const top = mRows[0] || null;
       if (!top) {
-        return `<div class="mkt-snap-row"><span class="badge">${mname(m.id)}</span><div class="mkt-snap-mid"><div class="mkt-snap-meta">${esc(m.benchmark)}</div></div><div class="mkt-snap-val dim">待评估</div></div>`;
+        return `<div class="mkt-snap-row"><span class="badge">${esc(mname(m.id))}</span><div class="mkt-snap-mid"><div class="mkt-snap-meta">${esc(m.benchmark)}</div></div><div class="mkt-snap-val dim">${esc(t("snap_pending"))}</div></div>`;
       }
       const w5 = top.windows["5"];
       const ex = Number(w5.average_excess_return_pct);
       const barW = Math.min(100, Math.max(8, Math.abs(ex) * 14));
       return `<div class="mkt-snap-row">
-        <div><strong style="font-size:12.5px;">${mname(m.id)}</strong><div class="small dim">${esc(m.id.toUpperCase())}</div></div>
+        <div><strong style="font-size:12.5px;">${esc(mname(m.id))}</strong><div class="small dim">${esc(m.id.toUpperCase())}</div></div>
         <div class="mkt-snap-mid">
           <div class="mkt-snap-strat">${sname(top.strategy)}</div>
-          <div class="mkt-snap-meta">${esc(m.benchmark)} · 跑赢 ${rate(w5.beat_rate)} · ${w5.evaluated}只</div>
+          <div class="mkt-snap-meta">${t("snap_beat_eval", { bench: esc(m.benchmark), beat: rate(w5.beat_rate), n: w5.evaluated })}</div>
           <div class="bar-track" style="margin-top:4px;height:4px;"><div class="bar-fill ${ex >= 0 ? "up-bg" : ""}" style="width:${barW.toFixed(1)}%;${ex < 0 ? "background:var(--down);" : ""}"></div></div>
         </div>
         <div class="mkt-snap-val">${pct(ex, 2)}</div>
@@ -1196,12 +2058,12 @@ function renderCnHero() {
 
     wrap.innerHTML = `
       <div class="pane-head">
-        <div class="pane-title">${ICO_GLOBE} 全球 7 市场 T+5 领跑快照</div>
+        <div class="pane-title">${ICO_GLOBE} ${esc(t("snap_7mkt_title"))}</div>
         <span class="chip">Rules Benchmark</span>
       </div>
       <div class="mkt-snap-list">${rowsHtml}</div>
       <div class="small dim" style="margin-top:auto;padding-top:8px;border-top:1px dashed var(--border);">
-        注：A 股 7 档涨跌分布与连板梯队将在 GitHub Actions 私有日线缓存完成首个交易日构建后自动显示。
+        ${esc(t("snap_note"))}
       </div>
     `;
     return;
@@ -1214,7 +2076,9 @@ function renderCnHero() {
   const advW = (adv / totalTraded) * 100;
   const flatW = (flat / totalTraded) * 100;
   const decW = Math.max(0, 100 - advW - flatW);
-  const amt = reg.total_amount_yi !== null && reg.total_amount_yi !== undefined ? `${Math.round(Number(reg.total_amount_yi))} 亿` : "–";
+  const amtVal = reg.total_amount_yi !== null && reg.total_amount_yi !== undefined
+    ? (state.lang === "en" ? `${(Number(reg.total_amount_yi) * 0.1).toFixed(0)}B RMB` : `${Math.round(Number(reg.total_amount_yi))} ${t("amt_unit")}`)
+    : "–";
   const seal = reg.seal_rate_pct !== null && reg.seal_rate_pct !== undefined ? `${Number(reg.seal_rate_pct).toFixed(1)}%` : "–";
 
   const ladder = reg.consecutive_board_ladder || {};
@@ -1223,51 +2087,51 @@ function renderCnHero() {
   const ladderHtml = ladderEntries.length
     ? `<div class="ladder-list">${ladderEntries.map(([b, cnt]) => {
         const w = Math.max(8, (Number(cnt) / maxCnt) * 100);
-        return `<div class="ladder-row"><span>${esc(b)}板</span><div class="bar-track"><div class="bar-fill up-bg" style="width:${w.toFixed(1)}%"></div></div><span style="text-align:right;font-weight:600">${cnt} 只</span></div>`;
+        return `<div class="ladder-row"><span>${esc(t("ladder_board", { b }))}</span><div class="bar-track"><div class="bar-fill up-bg" style="width:${w.toFixed(1)}%"></div></div><span style="text-align:right;font-weight:600">${esc(t("ladder_cnt", { n: cnt }))}</span></div>`;
       }).join("")}</div>`
-    : '<div class="small dim">今日无非 ST 连板分布</div>';
+    : `<div class="small dim">${esc(t("ladder_empty"))}</div>`;
 
   const hist = (pb.history || []).slice(-6);
   const histHtml = hist.length
-    ? `<div class="hist-ribbon">${hist.map((h) => `<span class="hist-pill" title="上涨 ${num(h.advance_ratio_pct, 1)}%">${esc((h.trade_date || "").slice(5))} · ${esc(h.regime_stage_label || h.regime_stage || "-")} ${h.non_st_limit_up_count ?? 0}/${h.non_st_limit_down_count ?? 0}</span>`).join("")}</div>`
+    ? `<div class="hist-ribbon">${hist.map((h) => `<span class="hist-pill" title="${esc(t("hist_title", { v: num(h.advance_ratio_pct, 1) }))}">${esc((h.trade_date || "").slice(5))} · ${esc(rname(h.regime_stage, h.regime_stage_label))} ${h.non_st_limit_up_count ?? 0}/${h.non_st_limit_down_count ?? 0}</span>`).join("")}</div>`
     : "";
 
   wrap.innerHTML = `
     <div class="pane-head">
-      <div class="pane-title">${ICO_PULSE} A 股微观盘面与情绪分布</div>
-      <span class="chip accent">${esc(reg.trade_date || latestPat.trade_date || "–")} · ${esc(reg.regime_stage_label || reg.regime_stage || "–")}</span>
+      <div class="pane-title">${ICO_PULSE} ${esc(t("cn_hero_title"))}</div>
+      <span class="chip accent">${esc(reg.trade_date || latestPat.trade_date || "–")} · ${esc(rname(reg.regime_stage, reg.regime_stage_label))}</span>
     </div>
-    <div class="breadth-bar" title="涨 ${adv} / 平 ${flat} / 跌 ${dec}">
+    <div class="breadth-bar" title="${esc(t("breadth_up"))} ${adv} / ${esc(t("breadth_flat"))} ${flat} / ${esc(t("breadth_down"))} ${dec}">
       <span style="width:${advW.toFixed(1)}%;background:var(--up)"></span>
       <span style="width:${flatW.toFixed(1)}%;background:var(--muted);opacity:0.45"></span>
       <span style="width:${decW.toFixed(1)}%;background:var(--down)"></span>
     </div>
-    <div class="breadth-meta"><span>涨 ${adv} (${Number(reg.advance_ratio_pct || 0).toFixed(1)}%)</span><span>平 ${flat}</span><span>跌 ${dec}</span></div>
+    <div class="breadth-meta"><span>${esc(t("breadth_up"))} ${adv} (${Number(reg.advance_ratio_pct || 0).toFixed(1)}%)</span><span>${esc(t("breadth_flat"))} ${flat}</span><span>${esc(t("breadth_down"))} ${dec}</span></div>
     ${renderReturnDistSvg(reg.return_distribution)}
     <div class="cn-stat-2x2">
       <div class="mini-stat">
-        <div class="lbl">非 ST 涨停 / 跌停</div>
+        <div class="lbl">${esc(t("stat_luld"))}</div>
         <div class="val"><span class="up">${reg.non_st_limit_up_count ?? 0}</span> / <span class="down">${reg.non_st_limit_down_count ?? 0}</span></div>
-        <div class="sub">一字 ${reg.one_price_limit_up_count ?? 0}涨 / ${reg.one_price_limit_down_count ?? 0}跌</div>
+        <div class="sub">${esc(t("stat_luld_sub", { up: reg.one_price_limit_up_count ?? 0, dn: reg.one_price_limit_down_count ?? 0 }))}</div>
       </div>
       <div class="mini-stat">
-        <div class="lbl">封板率 / 两市成交额</div>
-        <div class="val">${seal} · <span class="small">${amt}</span></div>
-        <div class="sub">炸板 ${reg.non_st_broken_board_count ?? 0} 只 · 最高 ${reg.max_consecutive_limit_up ?? 0} 板</div>
+        <div class="lbl">${esc(t("stat_seal"))}</div>
+        <div class="val">${seal} · <span class="small">${esc(amtVal)}</span></div>
+        <div class="sub">${esc(t("stat_seal_sub", { broken: reg.non_st_broken_board_count ?? 0, streak: reg.max_consecutive_limit_up ?? 0 }))}</div>
       </div>
       <div class="mini-stat">
-        <div class="lbl">昨涨停今日均表现</div>
+        <div class="lbl">${esc(t("stat_prevlu"))}</div>
         <div class="val">${pct(reg.prev_limit_up_avg_return_pct)}</div>
-        <div class="sub">样本 ${reg.prev_limit_up_count ?? 0} 只 · 红盘 ${sharePct(reg.prev_limit_up_win_rate_pct)}</div>
+        <div class="sub">${t("stat_prevlu_sub", { n: reg.prev_limit_up_count ?? 0, win: sharePct(reg.prev_limit_up_win_rate_pct) })}</div>
       </div>
       <div class="mini-stat">
-        <div class="lbl">昨涨停早盘 / 晋级率</div>
+        <div class="lbl">${esc(t("stat_prom"))}</div>
         <div class="val">${pct(reg.prev_limit_up_open_premium_pct)}</div>
-        <div class="sub">连板晋级 ${reg.prev_limit_up_promoted_count ?? 0} 只 (${sharePct(reg.prev_limit_up_promotion_rate_pct)})</div>
+        <div class="sub">${t("stat_prom_sub", { n: reg.prev_limit_up_promoted_count ?? 0, rate: sharePct(reg.prev_limit_up_promotion_rate_pct) })}</div>
       </div>
     </div>
     <div>
-      <div class="small dim" style="margin-bottom:6px;">连板梯队分布（仅观察，不调权重）</div>
+      <div class="small dim" style="margin-bottom:6px;">${esc(t("ladder_title"))}</div>
       ${ladderHtml}
     </div>
     ${histHtml}
@@ -1277,7 +2141,7 @@ function renderCnHero() {
 function initScoreMarketPills() {
   const wrap = $("market-score-pills");
   const markets = state.summary.markets || [];
-  const pills = [{ id: "all", label: "全部市场" }].concat(markets.map((m) => ({ id: m.id, label: mname(m.id) })));
+  const pills = [{ id: "all", label: t("all_markets") }].concat(markets.map((m) => ({ id: m.id, label: mname(m.id) })));
   wrap.innerHTML = pills.map((p) => `<button type="button" class="pill-tab" data-m="${p.id}" aria-pressed="${p.id === state.scoreMarket}">${esc(p.label)}</button>`).join("");
   wrap.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
@@ -1296,7 +2160,7 @@ function renderScorecard() {
   let rows = state.summary.scorecard || [];
   if (state.scoreMarket !== "all") rows = rows.filter((r) => r.market === state.scoreMarket);
   if (!rows.length) {
-    $("scorecard").innerHTML = '<tr><td class="empty">当前筛选暂无运行记录</td></tr>';
+    $("scorecard").innerHTML = `<tr><td class="empty">${esc(t("sc_empty"))}</td></tr>`;
     return;
   }
 
@@ -1310,17 +2174,18 @@ function renderScorecard() {
   const sorted = [...rows].sort((a, b) => metricVal(b) - metricVal(a));
   const maxAbsEx = Math.max(2, ...sorted.map((r) => Math.abs(Number(((r.windows || {})[w] || {}).average_excess_return_pct || 0))));
 
-  const head = `<thead><tr><th>#</th><th>市场</th><th class="l">策略</th><th class="l">入场口径</th><th>运行</th><th>已评估</th><th>待定</th><th>不可成交</th><th>平均收益</th><th>胜率</th><th>同期基准</th><th>超额收益 (T+${w})</th><th>跑赢基准</th></tr></thead>`;
+  const cols = t("sc_cols");
+  const head = `<thead><tr><th>${esc(cols[0])}</th><th>${esc(cols[1])}</th><th class="l">${esc(cols[2])}</th><th class="l">${esc(cols[3])}</th><th>${esc(cols[4])}</th><th>${esc(cols[5])}</th><th>${esc(cols[6])}</th><th>${esc(cols[7])}</th><th>${esc(cols[8])}</th><th>${esc(cols[9])}</th><th>${esc(cols[10])}</th><th>${esc(cols[11].replace("{w}", w))}</th><th>${esc(cols[12])}</th></tr></thead>`;
   const body = sorted.map((r, idx) => {
     const x = (r.windows || {})[w] || {};
     const bench = x.matched_return_pct !== null && x.average_excess_return_pct !== null ? x.matched_return_pct - x.average_excess_return_pct : null;
     const lowSample = (x.evaluated ?? 0) < MIN_SAMPLE;
-    const few = (x.evaluated ?? 0) > 0 && lowSample ? `<span class="tag" title="少于 ${MIN_SAMPLE} 只，样本偏小">&lt;${MIN_SAMPLE}</span>` : "";
+    const few = (x.evaluated ?? 0) > 0 && lowSample ? `<span class="tag" title="${esc(t("sc_low_sample_title", { n: MIN_SAMPLE }))}">&lt;${MIN_SAMPLE}</span>` : "";
     const trBadge = r.track === "ai" ? '<span class="badge ai">AI</span>' : "";
     const modes = (r.entry_modes || ["close"]).join(" / ");
     const hasNextOpen = Array.isArray(r.entry_modes) && r.entry_modes.includes("next_open");
     const unShare = (x.untradable_assessed === false || (!hasNextOpen && x.untradable_assessed !== true) || x.untradable_share_pct === null || x.untradable_share_pct === undefined)
-      ? '<span class="dim" title="切换前收盘口径，未评估开盘一字涨停">未评估</span>'
+      ? `<span class="dim" title="${esc(t("sc_unassessed_title"))}">${esc(t("sc_unassessed"))}</span>`
       : (x.untradable_share_pct > 0 ? `<span class="warn">${sharePct(x.untradable_share_pct)}</span>` : "0.0%");
 
     const ex = x.average_excess_return_pct;
@@ -1332,7 +2197,7 @@ function renderScorecard() {
 
     return `<tr class="${lowSample ? "low-sample" : ""}">
       <td><span class="rank-num ${idx < 3 && !lowSample ? "top" : ""}">${idx + 1}</span></td>
-      <td>${mname(r.market)}</td>
+      <td>${esc(mname(r.market))}</td>
       <td class="l"><strong>${sname(r.strategy)}</strong>${trBadge}</td>
       <td class="l"><span class="badge mode">${esc(modes)}</span></td>
       <td class="mono">${r.runs}</td>
@@ -1356,35 +2221,36 @@ function renderTrackComparison() {
   const w = state.compareWin;
 
   if (!rows.length && !hl.length) {
-    $("track-compare").innerHTML = `<div class="empty" style="padding:14px 16px;">暂无成对「规则 vs AI」战绩记录 — 在 GitHub Secrets 配置 <code>DEEPSEEK_API_KEY</code> / <code>GEMINI_API_KEY</code> / <code>OPENAI_API_KEY</code> 后，系统将在每交易日自动并行运行双赛道并积累同日归因。</div>`;
+    $("track-compare").innerHTML = `<div class="empty" style="padding:14px 16px;">${t("tc_empty_all")}</div>`;
     $("ai-attribution-cards").innerHTML = "";
     return;
   }
 
   if (!rows.length) {
-    $("track-compare").innerHTML = '<div class="empty">暂无到期的规则 vs AI 同日配对样本。</div>';
+    $("track-compare").innerHTML = `<div class="empty">${esc(t("tc_empty_pending"))}</div>`;
   } else {
-    const head = `<thead><tr><th>市场</th><th class="l">策略</th><th>配对日/总共</th><th>AI 缺失率</th><th>选股重合度</th><th>规则同日超额</th><th>AI 同日超额</th><th>AI − 规则 (T+${w})</th><th>AI 独选超额</th><th>AI 剔除超额</th></tr></thead>`;
+    const tc = t("tc_cols");
+    const head = `<thead><tr><th>${esc(tc[0])}</th><th class="l">${esc(tc[1])}</th><th>${esc(tc[2])}</th><th>${esc(tc[3])}</th><th>${esc(tc[4])}</th><th>${esc(tc[5])}</th><th>${esc(tc[6])}</th><th>${esc(tc[7].replace("{w}", w))}</th><th>${esc(tc[8])}</th><th>${esc(tc[9])}</th></tr></thead>`;
     const body = rows.map((r) => {
       const x = (r.windows || {})[w] || {};
       const paired = x.paired_days ?? 0;
       const minPaired = x.min_paired_days ?? 10;
       const sufficient = Boolean(x.sample_sufficient) && x.ai_minus_rules_pct !== null && x.ai_minus_rules_pct !== undefined;
       const deltaCell = sufficient
-        ? `<b>${pct(x.ai_minus_rules_pct)}</b><div class="small dim">胜出 ${x.ai_win_days ?? 0}/${paired}日</div>`
-        : `<span class="badge exp" title="${esc(x.delta_hidden_reason || `需至少 ${minPaired} 个同日配对`)}">样本不足 (${paired}/${minPaired})</span>`;
+        ? `<b>${pct(x.ai_minus_rules_pct)}</b><div class="small dim">${esc(t("tc_win_days", { w: x.ai_win_days ?? 0, n: paired }))}</div>`
+        : `<span class="badge exp" title="${esc(x.delta_hidden_reason || t("tc_insuff_title", { m: minPaired }))}">${esc(t("tc_insuff", { p: paired, m: minPaired }))}</span>`;
       const missRate = r.ai_missing_rate_pct !== null && r.ai_missing_rate_pct !== undefined ? `${Number(r.ai_missing_rate_pct).toFixed(1)}%` : "–";
       const overlap = r.avg_pick_overlap_pct !== null && r.avg_pick_overlap_pct !== undefined ? `${Number(r.avg_pick_overlap_pct).toFixed(1)}%` : "–";
       const uniqTxt = x.ai_unique_count ? `${pct(x.ai_unique_excess_pct)} <span class="dim small">(${x.ai_unique_count})</span>` : '<span class="dim">–</span>';
       const dropTxt = x.rules_dropped_count ? `${pct(x.rules_dropped_excess_pct)} <span class="dim small">(${x.rules_dropped_count})</span>` : '<span class="dim">–</span>';
       return `<tr class="${sufficient ? "" : "low-sample"}">
-        <td>${mname(r.market)}</td>
+        <td>${esc(mname(r.market))}</td>
         <td class="l"><strong>${sname(r.strategy)}</strong></td>
         <td class="mono">${paired} / ${r.common_days ?? paired}</td>
         <td class="mono">${missRate}</td>
         <td class="mono">${overlap}</td>
-        <td class="mono">${pct(x.rules_excess_pct)} <span class="dim small">(${x.rules_matched ?? 0}只)</span></td>
-        <td class="mono">${pct(x.ai_excess_pct)} <span class="dim small">(${x.ai_matched ?? 0}只)</span></td>
+        <td class="mono">${pct(x.rules_excess_pct)} <span class="dim small">(${esc(t("n_picks_sm", { n: x.rules_matched ?? 0 }))})</span></td>
+        <td class="mono">${pct(x.ai_excess_pct)} <span class="dim small">(${esc(t("n_picks_sm", { n: x.ai_matched ?? 0 }))})</span></td>
         <td class="mono">${deltaCell}</td>
         <td class="mono">${uniqTxt}</td>
         <td class="mono">${dropTxt}</td>
@@ -1394,18 +2260,20 @@ function renderTrackComparison() {
   }
 
   const hlWrap = $("ai-attribution-cards");
+  const sep = state.lang === "en" ? "; " : "；";
   const hlCards = hl.map((item) => {
-    const added = (item.added_by_ai || []).map((a) => `${esc(a.name)}(${esc(a.code)})${a.ranking_reason ? `: ${esc(a.ranking_reason.slice(0, 42))}` : ""}`).join("；") || "无";
-    const dropped = (item.dropped_by_ai || []).map((d) => `${esc(d.name)}(${esc(d.code)})`).join("；") || "无";
+    const added = (item.added_by_ai || []).map((a) => `${esc(a.name)}(${esc(a.code)})${a.ranking_reason ? `: ${esc(a.ranking_reason.slice(0, 42))}` : ""}`).join(sep) || t("none_txt");
+    const dropped = (item.dropped_by_ai || []).map((d) => `${esc(d.name)}(${esc(d.code)})`).join(sep) || t("none_txt");
+    const ovStr = item.overlap_pct === null || item.overlap_pct === undefined ? "–" : `${item.overlap_pct}%`;
     return `<div class="card">
       <div class="card-top">
-        <h3><span>${sname(item.strategy)}</span><span class="badge ai">AI 当日归因</span></h3>
-        <div class="sub">重合度 ${item.overlap_pct === null || item.overlap_pct === undefined ? "–" : `${item.overlap_pct}%`} · 规则 ${item.rules_pick_count ?? 0} 只 / AI ${item.ai_pick_count ?? 0} 只</div>
+        <h3><span>${sname(item.strategy)}</span><span class="badge ai">${esc(t("ai_attr_badge"))}</span></h3>
+        <div class="sub">${esc(t("ai_attr_sub", { ov: ovStr, r: item.rules_pick_count ?? 0, a: item.ai_pick_count ?? 0 }))}</div>
       </div>
       <div style="padding:10px 14px;font-size:12.5px;display:flex;flex-direction:column;gap:5px;">
-        ${item.llm_market_view ? `<div><span class="dim">市场观点：</span>${esc(item.llm_market_view)}</div>` : ""}
-        <div><span class="up">AI 新增：</span>${added}</div>
-        <div><span class="dim">AI 剔除：</span>${dropped}</div>
+        ${item.llm_market_view ? `<div><span class="dim">${esc(t("ai_mkt_view"))}</span>${esc(item.llm_market_view)}</div>` : ""}
+        <div><span class="up">${esc(t("ai_added"))}</span>${added}</div>
+        <div><span class="dim">${esc(t("ai_dropped"))}</span>${dropped}</div>
       </div>
     </div>`;
   });
@@ -1420,12 +2288,12 @@ function renderTrackComparison() {
     const fmtCase = (x) => `${esc((x.date || "").slice(5))} ${esc(x.name || x.code)}(${esc(x.code)}) ${pct(x.excess_return_pct)}`;
     return `<div class="card">
       <div class="card-top">
-        <h3><span>${sname(r.strategy)}</span><span class="badge ai">T+${w} 个股案例</span></h3>
+        <h3><span>${sname(r.strategy)}</span><span class="badge ai">${esc(t("case_badge", { w }))}</span></h3>
       </div>
       <div style="padding:10px 14px;font-size:12.5px;display:flex;flex-direction:column;gap:5px;">
-        ${adds.length ? `<div><span class="up">AI 独选高光：</span>${adds.map(fmtCase).join("；")}</div>` : ""}
-        ${avoids.length ? `<div><span class="down">AI 避坑剔除：</span>${avoids.map(fmtCase).join("；")}</div>` : ""}
-        ${misses.length ? `<div><span class="dim">AI 错杀遗憾：</span>${misses.map(fmtCase).join("；")}</div>` : ""}
+        ${adds.length ? `<div><span class="up">${esc(t("case_adds"))}</span>${adds.map(fmtCase).join(sep)}</div>` : ""}
+        ${avoids.length ? `<div><span class="down">${esc(t("case_avoids"))}</span>${avoids.map(fmtCase).join(sep)}</div>` : ""}
+        ${misses.length ? `<div><span class="dim">${esc(t("case_misses"))}</span>${misses.map(fmtCase).join(sep)}</div>` : ""}
       </div>
     </div>`;
   }).filter(Boolean);
@@ -1437,9 +2305,9 @@ function renderTrackComparison() {
 function renderPatternRadar() {
   const pb = state.patterns;
   if (!pb || !pb.latest) {
-    $("pattern-hits-wrap").innerHTML = '<div class="empty">尚未生成 A 股形态雷达快照（当 GitHub Actions 私有日线缓存构建完毕后自动扫描并附带 20 日 K 线）。</div>';
+    $("pattern-hits-wrap").innerHTML = `<div class="empty">${esc(t("pat_not_built"))}</div>`;
     $("universe-baseline-wrap").innerHTML = "";
-    $("replay-summary-wrap").innerHTML = '<div class="empty">尚未生成 250 日形态回放结果。</div>';
+    $("replay-summary-wrap").innerHTML = `<div class="empty">${esc(t("pat_no_replay"))}</div>`;
     $("regime-slice-wrap").innerHTML = "";
     $("overhead-slice-wrap").innerHTML = "";
     return;
@@ -1455,16 +2323,17 @@ function renderPatternRadar() {
   }
 
   if (!patNames.length) {
-    $("pattern-hits-wrap").innerHTML = '<div class="empty">最新快照暂无形态统计条目。</div>';
+    $("pattern-hits-wrap").innerHTML = `<div class="empty">${esc(t("pat_no_entries"))}</div>`;
   } else {
+    const pcols = t("pat_cols");
     const cards = patNames.map((name) => {
       const items = sigMap[name] || [];
       const total = counts[name] || items.length;
       const st = items[0] ? items[0].status : (replayStatus[name] || "experimental");
       const badge = st === "active" ? '<span class="badge active">active</span>' : '<span class="badge exp">experimental</span>';
-      const dname = items[0] && items[0].display_name ? items[0].display_name : name;
+      const dname = pname(name, items[0] && items[0].display_name);
       if (!items.length) {
-        return `<div class="card"><div class="card-top"><h3><span>${esc(dname)}</span>${badge}</h3><div class="sub">${esc(latest.trade_date)} · 命中 0 只</div></div><div class="empty">今日无触发信号</div></div>`;
+        return `<div class="card"><div class="card-top"><h3><span>${esc(dname)}</span>${badge}</h3><div class="sub">${esc(t("pat_hit_zero", { d: latest.trade_date }))}</div></div><div class="empty">${esc(t("pat_no_sig"))}</div></div>`;
       }
       const rows = items.slice(0, 6).map((s) => {
         const obs = s.observe_lag_days ? ` <span class="dim small">-${s.observe_lag_days}d</span>` : "";
@@ -1475,9 +2344,9 @@ function renderPatternRadar() {
       return `<div class="card">
         <div class="card-top">
           <h3><span>${esc(dname)}</span>${badge}</h3>
-          <div class="sub">${esc(latest.trade_date)} · 命中 ${total} 只（展示前 ${Math.min(6, items.length)} 只）</div>
+          <div class="sub">${esc(t("pat_hit_n", { d: latest.trade_date, tot: total, shown: Math.min(6, items.length) }))}</div>
         </div>
-        <div class="scroll"><table><thead><tr><th class="l">股票</th><th>涨跌</th><th>上方筹码</th><th>20日K线</th></tr></thead><tbody>${rows}</tbody></table></div>
+        <div class="scroll"><table><thead><tr><th class="l">${esc(pcols[0])}</th><th>${esc(pcols[1])}</th><th>${esc(pcols[2])}</th><th>${esc(pcols[3])}</th></tr></thead><tbody>${rows}</tbody></table></div>
       </div>`;
     }).join("");
     $("pattern-hits-wrap").innerHTML = `<div class="cards">${cards}</div>`;
@@ -1490,17 +2359,18 @@ function renderPatternRadar() {
     const ub10 = ub.t10 || {};
     if (ub5.sessions) {
       $("universe-baseline-wrap").innerHTML = `<div class="baseline-strip">
-        <b>同期全市场基准 (${ub5.sessions} 日)：</b>
-        <span>全市场等权 T+5 超额 ${pct(ub5.equal_weight_excess_mean_pct)}（裸收益 ${pct(ub5.equal_weight_raw_mean_pct)}）</span>
-        <span>· 流动性 ≥8000万 ${pct(ub5.liquid_excess_mean_pct)}</span>
-        <span>· 沪深300 ${pct(ub5.benchmark_mean_pct)}</span>
-        ${ub10.sessions ? `<span>· T+10 等权超额 ${pct(ub10.equal_weight_excess_mean_pct)}</span>` : ""}
+        <b>${esc(t("ub_title", { s: ub5.sessions }))}</b>
+        <span>${t("ub_ew", { ex: pct(ub5.equal_weight_excess_mean_pct), raw: pct(ub5.equal_weight_raw_mean_pct) })}</span>
+        <span>${t("ub_liq", { ex: pct(ub5.liquid_excess_mean_pct) })}</span>
+        <span>${t("ub_bench", { ret: pct(ub5.benchmark_mean_pct) })}</span>
+        ${ub10.sessions ? `<span>${t("ub_t10", { ex: pct(ub10.equal_weight_excess_mean_pct) })}</span>` : ""}
       </div>`;
     } else {
       $("universe-baseline-wrap").innerHTML = "";
     }
 
-    const repHead = `<thead><tr><th class="l">形态</th><th class="l">谱系/模式</th><th>总信号</th><th>不可成交</th><th>T+5 基准匹配</th><th>T+5 超额</th><th>T+5 胜率</th><th>聚日 t 值</th><th>前半 H1 / 后半 H2</th><th>T+10 超额</th><th>门槛状态</th></tr></thead>`;
+    const rcols = t("rep_cols");
+    const repHead = `<thead><tr><th class="l">${esc(rcols[0])}</th><th class="l">${esc(rcols[1])}</th><th>${esc(rcols[2])}</th><th>${esc(rcols[3])}</th><th>${esc(rcols[4])}</th><th>${esc(rcols[5])}</th><th>${esc(rcols[6])}</th><th>${esc(rcols[7])}</th><th>${esc(rcols[8])}</th><th>${esc(rcols[9])}</th><th>${esc(rcols[10])}</th></tr></thead>`;
     const repRows = replay.patterns.map((p) => {
       const h5 = (p.horizons || {}).t5 || {};
       const h10 = (p.horizons || {}).t10 || {};
@@ -1517,7 +2387,7 @@ function renderPatternRadar() {
         ? `${pct(stab.h1_daily_excess_mean_pct ?? stab.h1_excess_mean_pct)} (${stab.h1_days ?? 0}d) / ${pct(stab.h2_daily_excess_mean_pct ?? stab.h2_excess_mean_pct)} (${stab.h2_days ?? 0}d)`
         : '<span class="dim">–</span>';
       return `<tr class="${muted ? "low-sample" : ""}">
-        <td class="l"><strong>${esc(p.display_name || p.pattern)}</strong> <span class="mono dim small">${esc(p.pattern)}</span></td>
+        <td class="l"><strong>${esc(pname(p.pattern, p.display_name))}</strong> <span class="mono dim small">${esc(p.pattern)}</span></td>
         <td class="l dim">${esc(p.family)} · ${esc(p.mode)}</td>
         <td class="mono">${(h5.scored ?? 0) + (p.untradable_count || 0)}</td>
         <td class="mono">${sharePct(p.untradable_share_pct)}</td>
@@ -1530,10 +2400,10 @@ function renderPatternRadar() {
         <td>${badge}</td>
       </tr>`;
     }).join("");
-    $("replay-summary-wrap").innerHTML = `<h3 class="subhead" style="margin-top:4px;">250 日 next_open 回放门槛评估（${esc(ps.eval_start_date)} .. ${esc(ps.eval_end_date)}，${ps.eval_sessions ?? "-"} 个信号日）</h3>
+    $("replay-summary-wrap").innerHTML = `<h3 class="subhead" style="margin-top:4px;">${esc(t("rep_subhead", { start: ps.eval_start_date, end: ps.eval_end_date, sess: ps.eval_sessions ?? "-" }))}</h3>
       <div class="panel scroll">${`<table>${repHead}<tbody>${repRows}</tbody></table>`}</div>`;
 
-    const slHead = `<thead><tr><th class="l">形态 × 市场阶段（T+5 匹配样本 / 超额）</th>${REGIME_ORDER.map((s) => `<th>${REGIME_LABELS[s]}</th>`).join("")}</tr></thead>`;
+    const slHead = `<thead><tr><th class="l">${esc(t("sl_head_lbl"))}</th>${REGIME_ORDER.map((s) => `<th>${esc(rname(s))}</th>`).join("")}</tr></thead>`;
     const slRows = replay.patterns.map((p) => {
       const cells = REGIME_ORDER.map((s) => {
         const cell = (p.by_regime || {})[s] || {};
@@ -1541,31 +2411,32 @@ function renderPatternRadar() {
         const small = n < MIN_SLICE_SAMPLE;
         return `<td class="mono ${small ? "muted-cell" : ""}">${n}${small ? "*" : ""} / ${pct(cell.t5_excess_mean_pct)}</td>`;
       }).join("");
-      return `<tr><td class="l">${esc(p.display_name || p.pattern)}</td>${cells}</tr>`;
+      return `<tr><td class="l">${esc(pname(p.pattern, p.display_name))}</td>${cells}</tr>`;
     }).join("");
-    $("regime-slice-wrap").innerHTML = `<h3 class="subhead">形态 × 市场阶段切片（带 * 且置灰表示样本 &lt; ${MIN_SLICE_SAMPLE}）</h3>
+    $("regime-slice-wrap").innerHTML = `<h3 class="subhead">${t("sl_subhead", { n: MIN_SLICE_SAMPLE })}</h3>
       <div class="panel scroll"><table>${slHead}<tbody>${slRows}</tbody></table></div>`;
 
     const hasOv = replay.patterns.some((p) => p.by_overhead_supply && Object.keys(p.by_overhead_supply).length);
     if (hasOv) {
-      const ovHead = `<thead><tr><th class="l">形态 × 上方套牢盘切片（T+5 匹配样本 / 超额 / 胜率）</th>${OVERHEAD_BUCKETS.map((b) => `<th>${esc(b.label)}</th>`).join("")}</tr></thead>`;
+      const ovBuckets = OVERHEAD_I18N[state.lang] || OVERHEAD_I18N.zh;
+      const ovHead = `<thead><tr><th class="l">${esc(t("ov_head_lbl"))}</th>${ovBuckets.map((b) => `<th>${esc(b.label)}</th>`).join("")}</tr></thead>`;
       const ovRows = replay.patterns.map((p) => {
-        const cells = OVERHEAD_BUCKETS.map((b) => {
+        const cells = ovBuckets.map((b) => {
           const cell = (p.by_overhead_supply || {})[b.key] || {};
           const n = cell.t5_excess_scored ?? cell.t5_scored ?? 0;
           const small = n < MIN_SLICE_SAMPLE;
           return `<td class="mono ${small ? "muted-cell" : ""}">${n}${small ? "*" : ""} / ${pct(cell.t5_excess_mean_pct)} <span class="dim small">${sharePct(cell.t5_win_rate_pct)}</span></td>`;
         }).join("");
-        return `<tr><td class="l">${esc(p.display_name || p.pattern)}</td>${cells}</tr>`;
+        return `<tr><td class="l">${esc(pname(p.pattern, p.display_name))}</td>${cells}</tr>`;
       }).join("");
-      $("overhead-slice-wrap").innerHTML = `<h3 class="subhead">形态 × 上方 10% 套牢筹码切片（带 * 且置灰表示样本 &lt; ${MIN_SLICE_SAMPLE}）</h3>
+      $("overhead-slice-wrap").innerHTML = `<h3 class="subhead">${t("ov_subhead", { n: MIN_SLICE_SAMPLE })}</h3>
         <div class="panel scroll"><table>${ovHead}<tbody>${ovRows}</tbody></table></div>`;
     } else {
       $("overhead-slice-wrap").innerHTML = "";
     }
   } else {
     $("universe-baseline-wrap").innerHTML = "";
-    $("replay-summary-wrap").innerHTML = '<div class="empty">尚未运行 250 日形态回放。</div>';
+    $("replay-summary-wrap").innerHTML = `<div class="empty">${esc(t("pat_no_replay"))}</div>`;
     $("regime-slice-wrap").innerHTML = "";
     $("overhead-slice-wrap").innerHTML = "";
   }
@@ -1588,7 +2459,7 @@ function renderChart() {
   const tip = $("chart-tip");
   if (tip) tip.style.display = "none";
   if (!lines.length) {
-    $("chart").innerHTML = `<div class="empty">该市场 T+${state.trendWin} 所选赛道还没有到期的选股</div>`;
+    $("chart").innerHTML = `<div class="empty">${esc(t("chart_empty", { w: state.trendWin }))}</div>`;
     $("legend").innerHTML = "";
     return;
   }
@@ -1628,21 +2499,19 @@ function renderChart() {
     }
   });
 
-  $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="分赛道累计平均超额收益">${parts.join("")}</svg>`;
+  $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img">${parts.join("")}</svg>`;
 
   const svg = $("chart").querySelector("svg");
   if (svg && tip) {
     svg.querySelectorAll("circle.pt").forEach((c) => {
       c.addEventListener("mouseenter", () => {
         const val = Number(c.dataset.val);
-        tip.innerHTML = `<b>${c.dataset.label}</b><br>${c.dataset.date} · 超额 <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${c.dataset.n} 只`;
+        tip.innerHTML = `<b>${c.dataset.label}</b><br>${c.dataset.date} · ${esc(t("chart_tip_excess"))} <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${esc(t("chart_tip_picks", { n: c.dataset.n }))}`;
         tip.style.display = "block";
-        const box = svg.getBoundingClientRect();
         const wrapBox = $("chart").parentElement.getBoundingClientRect();
         const cBox = c.getBoundingClientRect();
         tip.style.left = `${Math.min(wrapBox.width - 210, Math.max(8, cBox.left - wrapBox.left + 10))}px`;
         tip.style.top = `${Math.max(8, cBox.top - wrapBox.top - 48)}px`;
-        void box;
       });
       c.addEventListener("mouseleave", () => { tip.style.display = "none"; });
     });
@@ -1666,8 +2535,8 @@ function renderChart() {
 function picksTable(picks, withEval) {
   const wins = state.summary.windows;
   const head = withEval
-    ? `<thead><tr><th>#</th><th class="l">股票</th>${wins.map((w) => `<th>T+${w}</th>`).join("")}</tr></thead>`
-    : `<thead><tr><th>#</th><th class="l">股票</th><th class="l">行业</th><th>价格</th><th>PE</th><th>PB</th></tr></thead>`;
+    ? `<thead><tr><th>#</th><th class="l">${esc(t("tbl_stock"))}</th>${wins.map((w) => `<th>T+${w}</th>`).join("")}</tr></thead>`
+    : `<thead><tr><th>#</th><th class="l">${esc(t("tbl_stock"))}</th><th class="l">${esc(t("tbl_industry"))}</th><th>${esc(t("tbl_price"))}</th><th>PE</th><th>PB</th></tr></thead>`;
   const body = picks.map((p) => {
     const name = `<strong>${esc(p.name)}</strong> <span class="mono dim small">${esc(p.code)}</span>`;
     if (!withEval)
@@ -1675,10 +2544,10 @@ function picksTable(picks, withEval) {
     const cells = wins.map((w) => {
       const e = (p.evaluation || {})[w];
       if (!e) return '<td class="dim mono">–</td>';
-      if (e.status === "pending") return '<td class="dim">待定</td>';
-      if (e.status === "untradable_limit_up") return '<td class="dim" title="次日一字涨停无法成交">不可成交</td>';
-      if (e.status !== "ok") return `<td class="dim" title="${esc(e.status)}">无数据</td>`;
-      return `<td class="mono" title="超额 ${e.excess_return_pct ?? "–"}%">${pct(e.return_pct, 1)}<br><span class="small">${e.excess_return_pct === null ? "" : "超 " + pct(e.excess_return_pct, 1)}</span></td>`;
+      if (e.status === "pending") return `<td class="dim">${esc(t("st_pending"))}</td>`;
+      if (e.status === "untradable_limit_up") return `<td class="dim" title="${esc(t("st_untradable_title"))}">${esc(t("st_untradable"))}</td>`;
+      if (e.status !== "ok") return `<td class="dim" title="${esc(e.status)}">${esc(t("st_nodata"))}</td>`;
+      return `<td class="mono" title="${esc(t("chart_tip_excess"))} ${e.excess_return_pct ?? "–"}%">${pct(e.return_pct, 1)}<br><span class="small">${e.excess_return_pct === null ? "" : esc(t("st_excess_lbl")) + pct(e.excess_return_pct, 1)}</span></td>`;
     }).join("");
     return `<tr><td><span class="rank-num ${p.rank <= 3 ? "top" : ""}">${p.rank}</span></td><td class="l">${name}</td>${cells}</tr>`;
   }).join("");
@@ -1688,7 +2557,8 @@ function picksTable(picks, withEval) {
 function matchesSearch(run, q) {
   if (!q) return true;
   const sLabel = (((state.summary && state.summary.strategy_names) || {})[run.strategy] || run.strategy || "").toLowerCase();
-  if (sLabel.includes(q) || String(run.strategy || "").toLowerCase().includes(q)) return true;
+  const trLabel = ((STRATEGY_I18N[state.lang] || {})[run.strategy] || "").toLowerCase();
+  if (sLabel.includes(q) || trLabel.includes(q) || String(run.strategy || "").toLowerCase().includes(q)) return true;
   return (run.picks || []).some((p) =>
     String(p.code || "").toLowerCase().includes(q) ||
     String(p.name || "").toLowerCase().includes(q) ||
@@ -1703,26 +2573,26 @@ function renderLatest() {
     const badge = r.track === "ai" ? '<span class="badge ai">AI</span>' : "";
     return `<div class="card">
       <div class="card-top">
-        <h3><span>${sname(r.strategy)}${badge}</span><span class="badge">${r.picks.length} 只</span></h3>
-        <div class="sub">${r.date} · 全市场 ${r.snapshot_count ?? "–"} 只 → 硬筛 ${r.after_filter_count ?? "–"} 只${r.degradation ? ` · <span class="up">数据降级</span>` : ""}</div>
+        <h3><span>${sname(r.strategy)}${badge}</span><span class="badge">${esc(t("latest_n_picks", { n: r.picks.length }))}</span></h3>
+        <div class="sub">${esc(t("latest_sub", { d: r.date, snap: r.snapshot_count ?? "–", flt: r.after_filter_count ?? "–" }))}${r.degradation ? ` · <span class="up">${esc(t("degraded_lbl"))}</span>` : ""}</div>
       </div>
-      ${r.picks.length ? picksTable(r.picks, false) : '<div class="empty">当天没有符合条件的股票</div>'}
+      ${r.picks.length ? picksTable(r.picks, false) : `<div class="empty">${esc(t("no_picks_day"))}</div>`}
     </div>`;
-  }).join("") : '<div class="empty">当前过滤条件无匹配策略或标的</div>';
+  }).join("") : `<div class="empty">${esc(t("no_match_latest"))}</div>`;
 }
 
 async function renderDay(day) {
   state.currentDay = day;
-  if (!day) { $("history").innerHTML = '<div class="empty">暂无历史交易日记录</div>'; return; }
+  if (!day) { $("history").innerHTML = `<div class="empty">${esc(t("no_days"))}</div>`; return; }
   let data = state.dayCache[day];
   if (!data) {
-    $("history").innerHTML = '<div class="empty">加载交易日归档…</div>';
+    $("history").innerHTML = `<div class="empty">${esc(t("loading_day"))}</div>`;
     try {
       const res = await fetch(`site/days/${day}.json`, { cache: "no-cache" });
       data = await res.json();
       state.dayCache[day] = data;
     } catch (err) {
-      $("history").innerHTML = `<div class="empty">加载失败：${esc(err.message)}</div>`;
+      $("history").innerHTML = `<div class="empty">${esc(t("load_fail", { msg: err.message }))}</div>`;
       return;
     }
   }
@@ -1731,17 +2601,17 @@ async function renderDay(day) {
   $("history").innerHTML = runs.length ? runs.map((r) => {
     const ev = state.summary.windows.map((w) => {
       const s = (r.evaluation || {})[w];
-      return s && s.evaluated ? `T+${w} ${pct(s.average_excess_return_pct, 1)}` : `T+${w} 待定`;
+      return s && s.evaluated ? `T+${w} ${pct(s.average_excess_return_pct, 1)}` : esc(t("t_win_pending", { w }));
     }).join(" · ");
     const badge = r.track === "ai" ? '<span class="badge ai">AI</span>' : "";
     return `<div class="card">
       <div class="card-top">
-        <h3><span>${mname(r.market)} · ${sname(r.strategy)}${badge}</span></h3>
+        <h3><span>${esc(mname(r.market))} · ${sname(r.strategy)}${badge}</span></h3>
         <div class="sub">${ev}</div>
       </div>
-      ${r.picks.length ? picksTable(r.picks, true) : '<div class="empty">当天没有符合条件的股票</div>'}
+      ${r.picks.length ? picksTable(r.picks, true) : `<div class="empty">${esc(t("no_picks_day"))}</div>`}
     </div>`;
-  }).join("") : '<div class="empty">当前过滤条件在当日无匹配记录</div>';
+  }).join("") : `<div class="empty">${esc(t("no_match_day"))}</div>`;
 }
 
 function initExplorerControls() {
@@ -1773,12 +2643,13 @@ function initExplorerControls() {
 
 async function init() {
   initTheme();
+  initLang();
   initExplorerControls();
   try {
     const res = await fetch("site/summary.json", { cache: "no-cache" });
     state.summary = await res.json();
   } catch (err) {
-    document.querySelector("main").insertAdjacentHTML("beforeend", `<div class="panel empty">数据加载失败：${esc(err.message)}</div>`);
+    document.querySelector("main").insertAdjacentHTML("beforeend", `<div class="panel empty">${esc(t("load_fatal", { msg: err.message }))}</div>`);
     return;
   }
   const [patOutcome, repOutcome, repHtmlOutcome] = await Promise.allSettled([
@@ -1792,11 +2663,12 @@ async function init() {
   if (repOutcome.status === "fulfilled" && repOutcome.value.ok) {
     try { state.report = await repOutcome.value.json(); } catch (_) { state.report = null; }
   }
-  const reportReady = repHtmlOutcome.status === "fulfilled" && repHtmlOutcome.value.ok;
+  state.reportReady = repHtmlOutcome.status === "fulfilled" && repHtmlOutcome.value.ok;
   ["report-top-link", "footer-report-link"].forEach((id) => {
     const el = $(id);
-    if (el) el.style.display = reportReady ? "" : "none";
+    if (el) el.style.display = state.reportReady ? "" : "none";
   });
+  syncReportLinks();
 
   renderMetaAndKpis();
   renderConsensusPane();
@@ -1814,7 +2686,7 @@ async function init() {
   renderChart();
   renderLatest();
   const days = (state.summary.days || []).map((d) => d.date);
-  $("day").innerHTML = days.map((d) => `<option value="${d}">${d}（${state.summary.days.find((x) => x.date === d).runs} 次运行）</option>`).join("");
+  $("day").innerHTML = days.map((d) => `<option value="${d}">${esc(t("day_opt", { d, n: state.summary.days.find((x) => x.date === d).runs }))}</option>`).join("");
   $("day").addEventListener("change", (e) => renderDay(e.target.value));
   if (days.length) renderDay(days[0]);
 }
