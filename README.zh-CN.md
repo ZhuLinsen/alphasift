@@ -135,7 +135,7 @@ alphasift evaluate <run_id> --with-price-path --explain
 
 | 变量 | 作用 | 默认值 |
 |---|---|---|
-| `LITELLM_MODEL` | 主模型，格式 `provider/model` | `gemini/gemini-2.5-flash` |
+| `LITELLM_MODEL` | 主模型，格式 `provider/model` | `gemini/gemini-3.8-flash` |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM 排序所用的供应商 key | - |
 | `LLM_CHANNELS` / `LITELLM_CONFIG` | 多渠道或 LiteLLM Router 配置 | - |
 | `TUSHARE_TOKEN` | A 股数据源链路中 Tushare 优先 | - |

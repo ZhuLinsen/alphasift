@@ -8,7 +8,8 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _PACKAGE_DIR = Path(__file__).resolve().parent
 DEFAULT_POST_ANALYZERS = ["scorecard"]
-DEFAULT_LLM_MODEL = "gemini/gemini-2.5-flash"
+DEFAULT_LLM_MODEL = "gemini/gemini-3.8-flash"
+DEFAULT_GEMINI_FALLBACK_MODELS = ["gemini/gemini-4-hydrogen"]
 DEFAULT_SNAPSHOT_SOURCE_PRIORITY = ["em_datacenter", "sina", "efinance", "akshare_em"]
 TUSHARE_FIRST_SOURCE_PRIORITY = ["tushare", "em_datacenter", "sina", "efinance", "akshare_em"]
 _ENV_FILE_CACHE: dict[Path, tuple[tuple[int, int], dict[str, str]]] = {}
@@ -303,7 +304,7 @@ class Config:
             llm_model=llm_model,
             llm_base_url=_resolve_llm_base_url(llm_model),
             llm_config_path=_parse_optional_path_env("LITELLM_CONFIG"),
-            llm_fallback_models=_parse_csv_env("LITELLM_FALLBACK_MODELS", []),
+            llm_fallback_models=_resolve_llm_fallback_models(llm_model),
             llm_channels=channels,
             llm_context=os.getenv("LLM_CONTEXT", ""),
             llm_candidate_context_enabled=_parse_bool_env("LLM_CANDIDATE_CONTEXT_ENABLED", False),
@@ -503,6 +504,14 @@ def _resolve_llm_model(channels: list[dict[str, object]]) -> str:
     if os.getenv("AIHUBMIX_KEY"):
         return _normalize_litellm_model(os.getenv("OPENAI_MODEL", "gpt-4o-mini"), "openai")
     return DEFAULT_LLM_MODEL
+
+
+def _resolve_llm_fallback_models(llm_model: str) -> list[str]:
+    if os.getenv("LITELLM_FALLBACK_MODELS") is not None:
+        return _parse_csv_env("LITELLM_FALLBACK_MODELS", [])
+    if llm_model == DEFAULT_LLM_MODEL:
+        return list(DEFAULT_GEMINI_FALLBACK_MODELS)
+    return []
 
 
 def _normalize_litellm_model(model: str, protocol: str = "openai") -> str:

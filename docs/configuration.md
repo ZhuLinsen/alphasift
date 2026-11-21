@@ -18,7 +18,7 @@ alphasift screen dual_low --no-llm
 
 ```env
 GEMINI_API_KEY=...
-LITELLM_MODEL=gemini/gemini-2.5-flash
+LITELLM_MODEL=gemini/gemini-3.8-flash
 ```
 
 使用 Tushare 兜底数据源时，填入：
@@ -31,14 +31,14 @@ TUSHARE_TOKEN=...
 
 | 变量 | 必须 | 说明 | 默认值 |
 |------|------|------|--------|
-| `LITELLM_MODEL` | 推荐 | 主模型，兼容 daily_stock_analysis，格式 `provider/model` | `gemini/gemini-2.5-flash` |
-| `LITELLM_FALLBACK_MODELS` | 否 | 备选模型，逗号分隔 | - |
+| `LITELLM_MODEL` | 推荐 | 主模型，兼容 daily_stock_analysis，格式 `provider/model` | `gemini/gemini-3.8-flash` |
+| `LITELLM_FALLBACK_MODELS` | 否 | 备选模型，逗号分隔 | 默认主模型时为 `gemini/gemini-4-hydrogen` |
 | `LLM_CHANNELS` | 否 | 多渠道配置，配合 `LLM_{NAME}_*` 使用 | - |
 | `LITELLM_CONFIG` | 否 | 高级 LiteLLM Router YAML 配置文件路径 | - |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM 排序时至少一种 | 供应商 API Key，兼容 daily_stock_analysis 配置 | - |
 | `OPENAI_BASE_URL` / `OLLAMA_API_BASE` | 否 | OpenAI 兼容接口或 Ollama 地址 | - |
 | `LLM_API_KEY` | 否 | 旧版兼容 API Key，会优先覆盖供应商 key | - |
-| `LLM_MODEL` | 否 | 旧版兼容模型名；`LITELLM_MODEL` 优先 | `gemini/gemini-2.5-flash` |
+| `LLM_MODEL` | 否 | 旧版兼容模型名；`LITELLM_MODEL` 优先 | `gemini/gemini-3.8-flash` |
 | `LLM_BASE_URL` | 否 | 旧版兼容自定义 API 地址 | - |
 | `LLM_CONTEXT` | 否 | 传给 LLM 的市场、新闻或主题上下文 | - |
 | `LLM_TEMPERATURE` | 否 | LLM 排序温度，默认偏确定性 | `0.2` |
@@ -114,7 +114,7 @@ LITELLM_FALLBACK_MODELS=openai/gpt-4o-mini,anthropic/claude-3-5-sonnet
 
 ```env
 GEMINI_API_KEY=...
-LITELLM_MODEL=gemini/gemini-2.5-flash
+LITELLM_MODEL=gemini/gemini-3.8-flash
 ```
 
 如果已有 `daily_stock_analysis` 的 `.env`，通常可以复用其中的 `LITELLM_MODEL`、`LITELLM_FALLBACK_MODELS`、`LLM_CHANNELS`、`LLM_{NAME}_*`、`OPENAI_*`、`GEMINI_*`、`DEEPSEEK_*`、`OLLAMA_API_BASE` 等字段。

@@ -312,3 +312,35 @@ def test_config_from_env_loads_env_file_once_per_process(monkeypatch, tmp_path):
     assert os.getenv("LITELLM_MODEL") is None
     assert os.getenv("OPENAI_API_KEY") is None
     assert third.llm_model == DEFAULT_LLM_MODEL
+
+
+def test_default_gemini_model_and_hydrogen_fallback(monkeypatch):
+    for name in (
+        "LITELLM_MODEL",
+        "LLM_MODEL",
+        "AGENT_LITELLM_MODEL",
+        "LITELLM_FALLBACK_MODELS",
+        "GEMINI_MODEL",
+        "OPENAI_API_KEY",
+        "DEEPSEEK_API_KEY",
+        "OLLAMA_API_BASE",
+        "AIHUBMIX_KEY",
+        "LLM_CHANNELS",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    monkeypatch.setenv("GEMINI_API_KEY", "AIza-test-key")
+    cfg = Config.from_env()
+    assert DEFAULT_LLM_MODEL == "gemini/gemini-3.8-flash"
+    assert cfg.llm_model == "gemini/gemini-3.8-flash"
+    assert cfg.llm_fallback_models == ["gemini/gemini-4-hydrogen"]
+
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-4-hydrogen")
+    cfg_h = Config.from_env()
+    assert cfg_h.llm_model == "gemini/gemini-4-hydrogen"
+    assert cfg_h.llm_fallback_models == []
+
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    monkeypatch.setenv("LITELLM_FALLBACK_MODELS", "none")
+    cfg_none = Config.from_env()
+    assert cfg_none.llm_fallback_models == []

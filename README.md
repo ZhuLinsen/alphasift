@@ -135,7 +135,7 @@ Copy `.env.example` to `.env`. AlphaSift reads LiteLLM-style settings, so it can
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `LITELLM_MODEL` | Main model, `provider/model` | `gemini/gemini-2.5-flash` |
+| `LITELLM_MODEL` | Main model, `provider/model` | `gemini/gemini-3.8-flash` |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | Provider key for LLM ranking | - |
 | `LLM_CHANNELS` / `LITELLM_CONFIG` | Multi-channel or LiteLLM Router config | - |
 | `TUSHARE_TOKEN` | Puts Tushare first in the A-share chain | - |

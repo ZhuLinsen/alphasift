@@ -135,7 +135,7 @@ alphasift evaluate <run_id> --with-price-path --explain
 
 | 変数 | 用途 | デフォルト |
 |---|---|---|
-| `LITELLM_MODEL` | メインのモデル。`provider/model` の形式 | `gemini/gemini-2.5-flash` |
+| `LITELLM_MODEL` | メインのモデル。`provider/model` の形式 | `gemini/gemini-3.8-flash` |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM による順位付けのためのプロバイダーのキー | - |
 | `LLM_CHANNELS` / `LITELLM_CONFIG` | マルチチャンネルまたは LiteLLM Router の設定 | - |
 | `TUSHARE_TOKEN` | A 株の連鎖で Tushare を先頭にします | - |
