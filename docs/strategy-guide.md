@@ -87,6 +87,7 @@ screening:
     theme_heat: float      # 主题/板块热度，可选软因子
 
   scoring_profile:         # 可选，覆盖 L1 因子评分曲线中的默认参数
+    factor_rank_blend: float  # 0-1，合成 screen_score 时混入截面排名分对齐离散度（Pick.factor_scores 保持原始公式分）
     momentum_chase_start_pct: float
     activity_ideal_volume_ratio: float
     activity_ideal_turnover_rate: float
@@ -191,6 +192,7 @@ alphasift strategies --template momentum_breakout_daily --json
 - 高弹性题材策略可提高 `high_turnover_rate`、`abnormal_volume_ratio`
 - 行业集中度偏好可用 `portfolio_profile.buckets` 调整，例如把银行、券商、保险归为金融风险桶
 - 默认 `soft` 模式只按超出数量扣分，分差大时同一行业仍可能占满前几名；需要硬性分散时设 `mode: hard_cap`，超出上限的候选会排到所有未超限候选之后，只在其他行业候选不足时才回补。行业来自 LLM 行业判断或快照/行业映射中的 `industry` 字段，没有行业标签的候选不受上限约束
+- 线性公式因子（`momentum`、`reversal`、`activity`、`stability`）截面离散度通常远小于排名因子（`value`、`liquidity`、`size`）；多因子或趋势质量策略若希望与市值/流动性同尺度竞争排名，可在 `scoring_profile` 中设置 `factor_rank_blend`（如 `1.0`），`Pick.factor_scores` 仍保留原始公式分，小样本池（`n <= 5`）会自动退回 `0.0`
 - 事件驱动策略可用 `event_profile` 偏好回购、订单、业绩改善，也可以提高公告相对新闻的来源权重
 
 不要把 profile 当作回测拟合参数频繁调到极端值；它更适合表达策略风格和风险偏好。

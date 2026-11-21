@@ -2,7 +2,7 @@
 name: momentum_quality
 display_name: 趋势质量
 description: 要求均线多头排列与60日中期主升趋势，结合基本面与活跃度筛选真趋势领涨候选
-version: "1.2"
+version: "1.3"
 category: framework
 tags: [momentum, quality, trend, daily_k, llm_friendly]
 style:
@@ -44,6 +44,7 @@ screening:
     theme_heat: 0.08
     value: 0.06
   scoring_profile:
+    factor_rank_blend: 1.0
     momentum_chase_start_pct: 5.0
     momentum_chase_penalty_slope: 14.0
     activity_ideal_volume_ratio: 2.2

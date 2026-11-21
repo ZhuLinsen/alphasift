@@ -151,9 +151,16 @@ def load_daily_report_runs(
     seen_ids: set[str] = set()
 
     for ref in run_refs or []:
-        cand = Path(ref)
-        if not cand.is_file() and (target_runs_dir / f"{ref}.json").is_file():
-            cand = target_runs_dir / f"{ref}.json"
+        if isinstance(ref, Path):
+            cand = ref
+        else:
+            direct = Path(ref)
+            in_runs = target_runs_dir / f"{ref}.json"
+            # When ref is a bare run_id (no path separators), prefer target_runs_dir over CWD.
+            if "/" not in str(ref) and "\\" not in str(ref) and in_runs.is_file():
+                cand = in_runs
+            else:
+                cand = direct if direct.is_file() else in_runs
         sr = load_screen_result(cand, data_dir=config.data_dir)
         key_id = sr.run_id or str(cand)
         if key_id not in seen_ids:

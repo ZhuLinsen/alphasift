@@ -2,7 +2,7 @@
 name: low_volatility_quality
 display_name: 低波质量
 description: 偏防守的质量型候选，优先选择波动较低、回撤浅、估值不过热且数据质量可靠的股票
-version: "1.1"
+version: "1.2"
 category: quality
 tags: [quality, defensive, low_volatility, daily_k]
 style:
@@ -47,6 +47,7 @@ screening:
     theme_heat: 0.05
     reversal: 0.02
   scoring_profile:
+    factor_rank_blend: 1.0
     momentum_60d_overheat_pct: 32.0
     momentum_chase_start_pct: 4.0
     momentum_chase_penalty_slope: 18.0

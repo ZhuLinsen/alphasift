@@ -759,3 +759,220 @@ def test_notify_urls_comma_preserves_mailto_recipients(monkeypatch) -> None:
         "pushplus://TOK1",
         "sct://SCT1",
     ]
+
+
+def test_notify_shorthand_schemes_retry_redaction_ntfy_title_and_stable_keys(tmp_path, monkeypatch) -> None:
+    from alphasift.config import Config
+    from alphasift.notify import push_daily_report, resolve_notify_targets
+
+    monkeypatch.setattr("alphasift.notify.time.sleep", lambda *_a, **_kw: None)
+    monkeypatch.setenv(
+        "NOTIFY_URLS",
+        ",".join(
+            [
+                "wecom://WECOM_SECRET_KEY",
+                "feishu://FEISHU_TOK#secret=FEISHU_HMAC_SEC",
+                "dingtalk://DING_TOK#secret=DING_HMAC_SEC",
+                "discord://12345/DISC_TOK",
+                "slack://T1/B2/SLACK_TOK",
+                "custom://https://hook.example.com/in#token=CUSTOM_BEARER_TOK",
+                "ntfy://alphasift-topic",
+                "bark://BARK_KEY_1",
+                "bark://BARK_KEY_2",
+            ]
+        ),
+    )
+    monkeypatch.delenv("ALPHASIFT_NOTIFY_URLS", raising=False)
+    cfg = Config.from_env()
+    targets = resolve_notify_targets(cfg)
+    by_ch = {t["channel"]: t for t in targets}
+    assert by_ch["wecom"]["target"] == "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=WECOM_SECRET_KEY"
+    assert by_ch["feishu"]["secret"] == "FEISHU_HMAC_SEC"
+    assert by_ch["dingtalk"]["secret"] == "DING_HMAC_SEC"
+    assert by_ch["discord"]["target"] == "https://discord.com/api/webhooks/12345/DISC_TOK"
+    assert by_ch["slack"]["target"] == "https://hooks.slack.com/services/T1/B2/SLACK_TOK"
+    assert by_ch["custom"]["target"] == "https://hook.example.com/in"
+    assert by_ch["custom"]["token"] == "CUSTOM_BEARER_TOK"
+
+    calls: list[tuple[str, dict]] = []
+    flaky_attempts = {"slack": 0}
+
+    class _Resp:
+        def __init__(self, status_code: int, body: dict | None = None, text: str = "") -> None:
+            self.status_code = status_code
+            self._body = body
+            self.text = text
+
+        def raise_for_status(self) -> None:
+            if self.status_code >= 400:
+                import requests as _req
+
+                err = _req.HTTPError(f"HTTP {self.status_code} key=INLINE_SECRET bot99:XYZ")
+                err.response = self
+                raise err
+
+        def json(self) -> dict:
+            if self._body is None:
+                raise ValueError("non-json")
+            return self._body
+
+    def fake_post(url: str, **kwargs):
+        calls.append((url, kwargs))
+        if "hooks.slack.com" in url:
+            flaky_attempts["slack"] += 1
+            if flaky_attempts["slack"] == 1:
+                return _Resp(502, text="<html>Bad Gateway</html>")
+            return _Resp(200, {})
+        if "pushplus.plus" in url or "api.day.app" in url:
+            return _Resp(200, {"code": 200})
+        if "wecom" in url or "qyapi" in url or "oapi.dingtalk.com" in url:
+            return _Resp(200, {"errcode": 0})
+        if "open.feishu.cn" in url:
+            return _Resp(200, {"code": 0})
+        return _Resp(200, {})
+
+    ledger = tmp_path / "ledger.json"
+    res = push_daily_report(
+        {"trade_date": "2026-11-21", "im_card_markdown": "**Brief**"},
+        config=cfg,
+        state_path=ledger,
+        post_fn=fake_post,
+    )
+    assert res["status"] == "ok"
+    assert flaky_attempts["slack"] == 2
+    ntfy_call = next(kw for u, kw in calls if "ntfy.sh" in u)
+    assert ntfy_call["headers"]["Title"] == "AlphaSift Daily Brief (2026-11-21)"
+
+    ledger_data = json.loads(ledger.read_text(encoding="utf-8"))
+    bark_keys = sorted(k for k in ledger_data if k.startswith("2026-11-21:bark:"))
+    assert len(bark_keys) == 2
+
+    # Non-JSON 200 and regex redaction test
+    def broken_json_post(url: str, **kwargs):
+        return _Resp(200, None, text="<html>gateway bot12345:SECRET_PART key=ABC999</html>")
+
+    from alphasift.notify import send_test_notification
+
+    err = send_test_notification(config=cfg, channels=["wecom"], post_fn=broken_json_post)
+    assert err["status"] == "error"
+    msg = json.dumps(err)
+    assert "SECRET_PART" not in msg
+    assert "ABC999" not in msg
+    assert "non-JSON response body" in msg
+
+
+def test_notify_round6_hardening_url_redaction_retries_and_ledger_transitions(tmp_path, monkeypatch):
+    from alphasift.notify import _CRED_REDACT_RE, _parse_notify_url, push_daily_report
+
+    # 1. Embedded https:// URL inside shorthand scheme retains full query string and strips ?secret= / ?token=
+    dt = _parse_notify_url("dingtalk://https://oapi.dingtalk.com/robot/send?access_token=TOK_DT#secret=SEC_DT")
+    assert dt is not None
+    assert dt["target"] == "https://oapi.dingtalk.com/robot/send?access_token=TOK_DT"
+    assert dt["secret"] == "SEC_DT"
+
+    fs = _parse_notify_url("feishu://https://open.feishu.cn/open-apis/bot/v2/hook/HOOK_FS?secret=SEC_FS&extra=1")
+    assert fs is not None
+    assert fs["secret"] == "SEC_FS"
+    assert "SEC_FS" not in fs["target"]
+    assert "extra=1" in fs["target"]
+
+    # 2. JSON-quoted secret scrubbing via _CRED_REDACT_RE
+    scrubbed = _CRED_REDACT_RE.sub(
+        lambda m: f"{m.group(1) or m.group(3) or m.group(5) or ''}***",
+        'error body {"token":"MY_JSON_TOK","secret": "SEC99"}',
+    )
+    assert "MY_JSON_TOK" not in scrubbed
+    assert "SEC99" not in scrubbed
+
+    # 3. 500 is NOT retried while 429 honors Retry-After
+    class _HdrResp:
+        def __init__(self, status_code: int, headers: dict | None = None, body: dict | None = None) -> None:
+            self.status_code = status_code
+            self.headers = headers or {}
+            self._body = body or {"errcode": 0}
+            self.text = ""
+
+        def raise_for_status(self) -> None:
+            if self.status_code >= 400:
+                import requests as _req
+
+                err = _req.HTTPError(f"HTTP {self.status_code}")
+                err.response = self
+                raise err
+
+        def json(self) -> dict:
+            return self._body
+
+    monkeypatch.setenv("WECOM_WEBHOOK_URL", "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=KEY_A")
+    monkeypatch.delenv("NOTIFY_URLS", raising=False)
+    monkeypatch.delenv("ALPHASIFT_NOTIFY_URLS", raising=False)
+    cfg_a = Config.from_env()
+    ledger = tmp_path / "ledger.json"
+
+    attempts_500 = {"n": 0}
+
+    def post_500(url: str, **kwargs):
+        attempts_500["n"] += 1
+        return _HdrResp(500)
+
+    res_500 = push_daily_report(
+        {"trade_date": "2026-11-21", "im_card_markdown": "**Brief**"},
+        config=cfg_a,
+        state_path=ledger,
+        post_fn=post_500,
+    )
+    assert res_500["status"] == "error"
+    assert attempts_500["n"] == 1  # HTTP 500 not retried
+
+    # Reset failed status via 429 -> Retry-After honored -> sent
+    slept: list[float] = []
+    monkeypatch.setattr("alphasift.notify.time.sleep", lambda s: slept.append(s))
+    calls_429 = {"n": 0}
+
+    def post_429_then_ok(url: str, **kwargs):
+        calls_429["n"] += 1
+        if calls_429["n"] == 1:
+            return _HdrResp(429, headers={"Retry-After": "1.2"})
+        return _HdrResp(200, body={"errcode": 0})
+
+    res_a = push_daily_report(
+        {"trade_date": "2026-11-21", "im_card_markdown": "**Brief**"},
+        config=cfg_a,
+        state_path=ledger,
+        post_fn=post_429_then_ok,
+    )
+    assert res_a["status"] == "ok"
+    assert calls_429["n"] == 2
+    assert slept == [1.2]
+
+    # 4. Target replacement A -> B sends B cleanly (not falsely skipped by legacy key)
+    monkeypatch.setenv("WECOM_WEBHOOK_URL", "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=KEY_B")
+    cfg_b = Config.from_env()
+    sent_urls: list[str] = []
+
+    def track_post(url: str, **kwargs):
+        sent_urls.append(url)
+        return _HdrResp(200, body={"errcode": 0})
+
+    res_b = push_daily_report(
+        {"trade_date": "2026-11-21", "im_card_markdown": "**Brief**"},
+        config=cfg_b,
+        state_path=ledger,
+        post_fn=track_post,
+    )
+    assert res_b["status"] == "ok"
+    assert any("KEY_B" in u for u in sent_urls)
+
+    # 5. Expansion A -> A,B skips both since A is in legacy key (matching target_fp) and B is in fp key
+    monkeypatch.delenv("WECOM_WEBHOOK_URL", raising=False)
+    monkeypatch.setenv("NOTIFY_URLS", "wecom://KEY_A,wecom://KEY_B")
+    cfg_ab = Config.from_env()
+    sent_ab: list[str] = []
+    res_ab = push_daily_report(
+        {"trade_date": "2026-11-21", "im_card_markdown": "**Brief**"},
+        config=cfg_ab,
+        state_path=ledger,
+        post_fn=lambda url, **kw: sent_ab.append(url) or _HdrResp(200, body={"errcode": 0}),
+    )
+    assert res_ab["status"] == "skipped_duplicate"
+    assert sent_ab == []

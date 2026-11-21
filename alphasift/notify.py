@@ -21,7 +21,7 @@ import ssl
 import threading
 import time
 from typing import Any
-from urllib.parse import parse_qs, quote_plus, unquote, urlsplit, urlunsplit
+from urllib.parse import parse_qs, quote, quote_plus, unquote, urlencode, urlsplit, urlunsplit
 
 import requests
 
@@ -66,21 +66,48 @@ _SMTP_DEFAULTS: dict[str, tuple[str, int, str]] = {
 }
 
 
+def _extract_url_secrets(url: str) -> list[str]:
+    text = str(url or "").strip()
+    if "://" not in text:
+        return []
+    parsed = urlsplit(text)
+    if parsed.scheme.lower() not in {"http", "https"}:
+        return []
+    segments: list[str] = []
+    for raw_seg in (parsed.path or "").split("/"):
+        seg = unquote(raw_seg).strip()
+        if len(seg) >= 6 and seg not in {"webhook", "services", "open-apis", "cgi-bin"}:
+            segments.append(seg)
+    return segments
+
+
+def _valid_http_target(url: str) -> bool:
+    parsed = urlsplit(str(url or "").strip())
+    return (
+        parsed.scheme.lower() in {"http", "https"}
+        and bool(parsed.netloc)
+        and not any(ch.isspace() for ch in parsed.netloc)
+    )
+
+
 def _strip_fragment_param(raw: str, key: str) -> tuple[str, str]:
     parsed = urlsplit(raw)
     secret = ""
     kept_frag = parsed.fragment
+    kept_query = parsed.query
     if parsed.fragment:
         frag_qs = parse_qs(parsed.fragment, keep_blank_values=True)
         if key in frag_qs:
             secret = (frag_qs[key][0] or "").strip()
             kept_pairs = [(k, v) for k, vals in frag_qs.items() if k != key for v in vals]
-            kept_frag = "&".join(f"{k}={v}" for k, v in kept_pairs)
+            kept_frag = urlencode(kept_pairs, doseq=True)
     if not secret and parsed.query:
         qs = parse_qs(parsed.query, keep_blank_values=True)
         if key in qs:
             secret = (qs[key][0] or "").strip()
-    clean_url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, parsed.query, kept_frag))
+            kept_q_pairs = [(k, v) for k, vals in qs.items() if k != key for v in vals]
+            kept_query = urlencode(kept_q_pairs, doseq=True)
+    clean_url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, kept_query, kept_frag))
     return clean_url, secret
 
 
@@ -171,13 +198,15 @@ def _parse_notify_url(raw: str) -> dict[str, Any] | None:
             target = f"https://{key_or_host}"
         else:
             target = f"https://api.day.app/{key_or_host}"
+        if not _valid_http_target(target):
+            return None
         return {
             "channel": "bark",
             "target": target,
             "secret": "",
             "token": "",
             "extra": {},
-            "secrets": [s for s in (cleaned, target, key_or_host) if s],
+            "secrets": [s for s in (cleaned, target, key_or_host, *_extract_url_secrets(target)) if s],
         }
     if scheme in {"tgram", "tg"}:
         bot_token = unquote(parsed.netloc or "").strip()
@@ -195,18 +224,151 @@ def _parse_notify_url(raw: str) -> dict[str, Any] | None:
             target = f"https://{parsed.netloc.strip()}/{path.lstrip('/')}"
         else:
             target = f"https://ntfy.sh/{parsed.netloc.strip()}"
+        if not _valid_http_target(target):
+            return None
         return {
             "channel": "ntfy",
             "target": target,
             "secret": "",
             "token": "",
             "extra": {},
-            "secrets": [cleaned, target],
+            "secrets": [s for s in (cleaned, target, *_extract_url_secrets(target)) if s],
+        }
+    if scheme == "wecom":
+        raw_rest = cleaned.split("://", 1)[1].strip()
+        if not raw_rest:
+            return None
+        if raw_rest.lower().startswith(("http://", "https://")):
+            if not _valid_http_target(raw_rest):
+                return None
+            target = raw_rest
+            token_val = ""
+        else:
+            token_val = unquote(raw_rest.strip("/")).strip()
+            if not token_val:
+                return None
+            target = f"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={token_val}"
+        return {
+            "channel": "wecom",
+            "target": target,
+            "secret": "",
+            "token": "",
+            "extra": {},
+            "secrets": [s for s in (cleaned, target, token_val, *_extract_url_secrets(target)) if s],
+        }
+    if scheme in {"feishu", "lark"}:
+        raw_rest = cleaned.split("://", 1)[1].strip()
+        if not raw_rest:
+            return None
+        if raw_rest.lower().startswith(("http://", "https://")):
+            target, secret = _strip_fragment_param(raw_rest, "secret")
+            if not _valid_http_target(target):
+                return None
+            token_val = ""
+        else:
+            without_sec, secret = _strip_fragment_param(cleaned, "secret")
+            p2 = urlsplit(without_sec)
+            token_val = unquote((p2.netloc + p2.path).strip("/")).strip()
+            if not token_val:
+                return None
+            target = f"https://open.feishu.cn/open-apis/bot/v2/hook/{token_val}"
+        return {
+            "channel": "feishu",
+            "target": target,
+            "secret": secret,
+            "token": "",
+            "extra": {},
+            "secrets": [s for s in (cleaned, target, token_val, secret, *_extract_url_secrets(target)) if s],
+        }
+    if scheme == "dingtalk":
+        raw_rest = cleaned.split("://", 1)[1].strip()
+        if not raw_rest:
+            return None
+        if raw_rest.lower().startswith(("http://", "https://")):
+            target, secret = _strip_fragment_param(raw_rest, "secret")
+            if not _valid_http_target(target):
+                return None
+            token_val = ""
+        else:
+            without_sec, secret = _strip_fragment_param(cleaned, "secret")
+            p2 = urlsplit(without_sec)
+            token_val = unquote((p2.netloc + p2.path).strip("/")).strip()
+            if not token_val:
+                return None
+            target = f"https://oapi.dingtalk.com/robot/send?access_token={token_val}"
+        return {
+            "channel": "dingtalk",
+            "target": target,
+            "secret": secret,
+            "token": "",
+            "extra": {},
+            "secrets": [s for s in (cleaned, target, token_val, secret, *_extract_url_secrets(target)) if s],
+        }
+    if scheme == "discord":
+        raw_rest = cleaned.split("://", 1)[1].strip()
+        if not raw_rest:
+            return None
+        if raw_rest.lower().startswith(("http://", "https://")):
+            if not _valid_http_target(raw_rest):
+                return None
+            target = raw_rest
+            tail = ""
+        else:
+            tail = unquote(raw_rest.strip("/")).strip()
+            if not tail:
+                return None
+            target = f"https://discord.com/api/webhooks/{tail}"
+        return {
+            "channel": "discord",
+            "target": target,
+            "secret": "",
+            "token": "",
+            "extra": {},
+            "secrets": [s for s in (cleaned, target, tail, *tail.split("/"), *_extract_url_secrets(target)) if s],
+        }
+    if scheme == "slack":
+        raw_rest = cleaned.split("://", 1)[1].strip()
+        if not raw_rest:
+            return None
+        if raw_rest.lower().startswith(("http://", "https://")):
+            if not _valid_http_target(raw_rest):
+                return None
+            target = raw_rest
+            tail = ""
+        else:
+            tail = unquote(raw_rest.strip("/")).strip()
+            if not tail:
+                return None
+            target = f"https://hooks.slack.com/services/{tail}"
+        return {
+            "channel": "slack",
+            "target": target,
+            "secret": "",
+            "token": "",
+            "extra": {},
+            "secrets": [s for s in (cleaned, target, tail, *_extract_url_secrets(target)) if s],
+        }
+    if scheme == "custom":
+        inner = cleaned[len("custom://") :].strip()
+        if not inner:
+            return None
+        if not inner.lower().startswith(("http://", "https://")):
+            inner = f"https://{inner}"
+        target, token = _strip_fragment_param(inner, "token")
+        if not _valid_http_target(target):
+            return None
+        return {
+            "channel": "custom",
+            "target": target,
+            "secret": "",
+            "token": token,
+            "extra": {},
+            "secrets": [s for s in (cleaned, target, token, *_extract_url_secrets(target)) if s],
         }
 
     if scheme in {"http", "https"}:
         if "qyapi.weixin.qq.com" in host:
-            return {"channel": "wecom", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned]}
+            return {"channel": "wecom", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned, *_extract_url_secrets(cleaned)]}
         if "open.feishu.cn" in host or "open.larksuite.com" in host:
             target, secret = _strip_fragment_param(cleaned, "secret")
             return {
@@ -215,7 +377,7 @@ def _parse_notify_url(raw: str) -> dict[str, Any] | None:
                 "secret": secret,
                 "token": "",
                 "extra": {},
-                "secrets": [s for s in (cleaned, target, secret) if s],
+                "secrets": [s for s in (cleaned, target, secret, *_extract_url_secrets(target)) if s],
             }
         if "oapi.dingtalk.com" in host:
             target, secret = _strip_fragment_param(cleaned, "secret")
@@ -225,7 +387,7 @@ def _parse_notify_url(raw: str) -> dict[str, Any] | None:
                 "secret": secret,
                 "token": "",
                 "extra": {},
-                "secrets": [s for s in (cleaned, target, secret) if s],
+                "secrets": [s for s in (cleaned, target, secret, *_extract_url_secrets(target)) if s],
             }
         if "pushplus.plus" in host:
             qs = parse_qs(parsed.query)
@@ -240,15 +402,15 @@ def _parse_notify_url(raw: str) -> dict[str, Any] | None:
                 "secrets": [s for s in (cleaned, token) if s],
             }
         if "sctapi.ftqq.com" in host or "push.ft07.com" in host:
-            return {"channel": "serverchan", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned]}
+            return {"channel": "serverchan", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned, *_extract_url_secrets(cleaned)]}
         if "api.day.app" in host:
-            return {"channel": "bark", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned]}
+            return {"channel": "bark", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned, *_extract_url_secrets(cleaned)]}
         if "discord.com" in host or "discordapp.com" in host:
-            return {"channel": "discord", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned]}
+            return {"channel": "discord", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned, *_extract_url_secrets(cleaned)]}
         if "hooks.slack.com" in host:
-            return {"channel": "slack", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned]}
+            return {"channel": "slack", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned, *_extract_url_secrets(cleaned)]}
         if "ntfy.sh" in host:
-            return {"channel": "ntfy", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned]}
+            return {"channel": "ntfy", "target": cleaned, "secret": "", "token": "", "extra": {}, "secrets": [cleaned, *_extract_url_secrets(cleaned)]}
         target, token = _strip_fragment_param(cleaned, "token")
         return {
             "channel": "custom",
@@ -256,7 +418,7 @@ def _parse_notify_url(raw: str) -> dict[str, Any] | None:
             "secret": "",
             "token": token,
             "extra": {},
-            "secrets": [s for s in (cleaned, target, token) if s],
+            "secrets": [s for s in (cleaned, target, token, *_extract_url_secrets(target)) if s],
         }
 
     return {
@@ -278,10 +440,13 @@ def resolve_notify_targets(config: Config) -> list[dict[str, Any]]:
         if not entry or not entry.get("target"):
             return
         extra = entry.get("extra") or {}
+        receivers_key = ",".join(
+            sorted(str(r).strip() for r in (extra.get("receivers") or []) if str(r).strip())
+        )
         dedup_key = (
             str(entry["channel"]),
             str(entry["target"]),
-            str(extra.get("chat_id") or extra.get("topic") or ""),
+            str(extra.get("chat_id") or extra.get("topic") or receivers_key or ""),
         )
         if dedup_key in seen:
             return
@@ -290,11 +455,11 @@ def resolve_notify_targets(config: Config) -> list[dict[str, Any]]:
 
     # Legacy explicit config fields retain canonical channel ordering first.
     if config.wecom_webhook_url:
-        _add({"channel": "wecom", "target": config.wecom_webhook_url, "secret": "", "token": "", "extra": {}, "secrets": [config.wecom_webhook_url]})
+        _add({"channel": "wecom", "target": config.wecom_webhook_url, "secret": "", "token": "", "extra": {}, "secrets": [config.wecom_webhook_url, *_extract_url_secrets(config.wecom_webhook_url)]})
     if config.feishu_webhook_url:
-        _add({"channel": "feishu", "target": config.feishu_webhook_url, "secret": config.feishu_webhook_secret, "token": "", "extra": {}, "secrets": [config.feishu_webhook_url, config.feishu_webhook_secret]})
+        _add({"channel": "feishu", "target": config.feishu_webhook_url, "secret": config.feishu_webhook_secret, "token": "", "extra": {}, "secrets": [config.feishu_webhook_url, config.feishu_webhook_secret, *_extract_url_secrets(config.feishu_webhook_url)]})
     if config.dingtalk_webhook_url:
-        _add({"channel": "dingtalk", "target": config.dingtalk_webhook_url, "secret": config.dingtalk_webhook_secret, "token": "", "extra": {}, "secrets": [config.dingtalk_webhook_url, config.dingtalk_webhook_secret]})
+        _add({"channel": "dingtalk", "target": config.dingtalk_webhook_url, "secret": config.dingtalk_webhook_secret, "token": "", "extra": {}, "secrets": [config.dingtalk_webhook_url, config.dingtalk_webhook_secret, *_extract_url_secrets(config.dingtalk_webhook_url)]})
     if config.pushplus_token:
         _add({"channel": "pushplus", "target": config.pushplus_token, "secret": "", "token": "", "extra": {"topic": config.pushplus_topic}, "secrets": [config.pushplus_token]})
     if config.serverchan_sendkey:
@@ -304,7 +469,7 @@ def resolve_notify_targets(config: Config) -> list[dict[str, Any]]:
         if norm_bark and norm_bark["channel"] == "bark":
             _add(norm_bark)
         else:
-            _add({"channel": "bark", "target": config.bark_url, "secret": "", "token": "", "extra": {}, "secrets": [config.bark_url]})
+            _add({"channel": "bark", "target": config.bark_url, "secret": "", "token": "", "extra": {}, "secrets": [config.bark_url, *_extract_url_secrets(config.bark_url)]})
     if config.email_sender and config.email_password:
         receivers = [r.strip() for r in (config.email_receivers or "").split(",") if r.strip()] or [config.email_sender]
         _add({
@@ -324,17 +489,17 @@ def resolve_notify_targets(config: Config) -> list[dict[str, Any]]:
     if config.telegram_bot_token and config.telegram_chat_id:
         _add({"channel": "telegram", "target": config.telegram_bot_token, "secret": "", "token": "", "extra": {"chat_id": config.telegram_chat_id}, "secrets": [config.telegram_bot_token, config.telegram_chat_id]})
     if config.discord_webhook_url:
-        _add({"channel": "discord", "target": config.discord_webhook_url, "secret": "", "token": "", "extra": {}, "secrets": [config.discord_webhook_url]})
+        _add({"channel": "discord", "target": config.discord_webhook_url, "secret": "", "token": "", "extra": {}, "secrets": [config.discord_webhook_url, *_extract_url_secrets(config.discord_webhook_url)]})
     if config.slack_webhook_url:
-        _add({"channel": "slack", "target": config.slack_webhook_url, "secret": "", "token": "", "extra": {}, "secrets": [config.slack_webhook_url]})
+        _add({"channel": "slack", "target": config.slack_webhook_url, "secret": "", "token": "", "extra": {}, "secrets": [config.slack_webhook_url, *_extract_url_secrets(config.slack_webhook_url)]})
     if config.ntfy_url:
         norm_ntfy = _parse_notify_url(config.ntfy_url)
         if norm_ntfy and norm_ntfy["channel"] == "ntfy":
             _add(norm_ntfy)
         else:
-            _add({"channel": "ntfy", "target": config.ntfy_url, "secret": "", "token": "", "extra": {}, "secrets": [config.ntfy_url]})
+            _add({"channel": "ntfy", "target": config.ntfy_url, "secret": "", "token": "", "extra": {}, "secrets": [config.ntfy_url, *_extract_url_secrets(config.ntfy_url)]})
     if config.custom_webhook_url:
-        _add({"channel": "custom", "target": config.custom_webhook_url, "secret": "", "token": config.custom_webhook_token, "extra": {}, "secrets": [config.custom_webhook_url, config.custom_webhook_token]})
+        _add({"channel": "custom", "target": config.custom_webhook_url, "secret": "", "token": config.custom_webhook_token, "extra": {}, "secrets": [config.custom_webhook_url, config.custom_webhook_token, *_extract_url_secrets(config.custom_webhook_url)]})
 
     for raw in config.notify_urls:
         _add(_parse_notify_url(raw))
@@ -404,9 +569,84 @@ def _dingtalk_sign(timestamp_ms: int, secret: str) -> str:
     return quote_plus(base64.b64encode(digest))
 
 
+_CRED_REDACT_RE = re.compile(
+    r'(?i)(["\']?(?:access_token|token|key|secret|password|sendkey)["\']?\s*[:=]\s*["\']?)([^\s&,\'"\}\]]+)'
+    r'|(bot\d+:)([A-Za-z0-9_-]+)'
+    r'|(Bearer\s+)([^\s,\'"\}\]]+)'
+)
+_TRANSIENT_HTTP_CODES = frozenset({429, 502, 503, 504, 520, 521, 522, 523, 524})
+_NTFY_DATE_RE = re.compile(r"\(([^()]+)\)\s*$")
+
+
+def _safe_json(resp: Any) -> dict[str, Any]:
+    try:
+        payload = resp.json()
+    except ValueError as exc:
+        preview = " ".join(str(getattr(resp, "text", "") or "").split())[:800]
+        raise RuntimeError(f"non-JSON response body: {preview or type(exc).__name__}") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"unexpected JSON response type: {type(payload).__name__}")
+    return payload
+
+
+def _retry_delay(resp: Any, default: float = 0.5) -> float:
+    if getattr(resp, "status_code", None) == 429:
+        headers = getattr(resp, "headers", None)
+        if hasattr(headers, "get"):
+            ra_raw = headers.get("Retry-After") or headers.get("retry-after")
+            if ra_raw is not None:
+                try:
+                    return max(0.0, min(float(str(ra_raw).strip()), 5.0))
+                except ValueError:
+                    pass
+    return default
+
+
+def _post_with_retry(
+    post_fn: Any,
+    url: str,
+    *,
+    max_retries: int = 1,
+    sleep_fn: Any = None,
+    **kwargs: Any,
+) -> Any:
+    sleep = sleep_fn or time.sleep
+    attempts = max(0, int(max_retries)) + 1
+    for idx in range(attempts):
+        resp = post_fn(url, **kwargs)
+        code = getattr(resp, "status_code", None)
+        if idx < attempts - 1 and isinstance(code, int) and code in _TRANSIENT_HTTP_CODES:
+            sleep(_retry_delay(resp))
+            continue
+        try:
+            resp.raise_for_status()
+            return resp
+        except requests.HTTPError as exc:
+            err_resp = getattr(exc, "response", None)
+            err_code = getattr(err_resp, "status_code", code)
+            if idx < attempts - 1 and isinstance(err_code, int) and err_code in _TRANSIENT_HTTP_CODES:
+                sleep(_retry_delay(err_resp))
+                continue
+            raise
+    return resp  # pragma: no cover
+
+
+def _ntfy_ascii_title(title: str) -> str:
+    ascii_clean = " ".join(title.encode("ascii", "ignore").decode("ascii").split())
+    raw_clean = " ".join(title.split())
+    if ascii_clean and ascii_clean == raw_clean:
+        return ascii_clean
+    m = _NTFY_DATE_RE.search(raw_clean)
+    if m:
+        date_part = " ".join(m.group(1).encode("ascii", "ignore").decode("ascii").split())
+        if date_part:
+            return f"AlphaSift Daily Brief ({date_part})"
+    return "AlphaSift Daily Brief"
+
+
 def _redact_error(exc: Exception, config: Config, extra_secrets: Sequence[str] = ()) -> str:
     text = f"{type(exc).__name__}: {exc}"
-    secrets_pool: list[str] = [
+    raw_pool: list[str] = [
         config.wecom_webhook_url,
         config.feishu_webhook_url,
         config.feishu_webhook_secret,
@@ -427,8 +667,25 @@ def _redact_error(exc: Exception, config: Config, extra_secrets: Sequence[str] =
         *config.notify_urls,
         *extra_secrets,
     ]
-    for secret in sorted({s for s in secrets_pool if s}, key=len, reverse=True):
+    expanded: set[str] = set()
+    for secret in raw_pool:
+        if not secret:
+            continue
+        expanded.add(secret)
+        decoded = unquote(secret)
+        if decoded:
+            expanded.add(decoded)
+        encoded = quote(secret, safe="")
+        if encoded:
+            expanded.add(encoded)
+        for seg in _extract_url_secrets(secret):
+            expanded.add(seg)
+    for secret in sorted(expanded, key=len, reverse=True):
         text = text.replace(secret, "***")
+    text = _CRED_REDACT_RE.sub(
+        lambda m: f"{m.group(1) or m.group(3) or m.group(5) or ''}***",
+        text,
+    )
     return text[:240]
 
 
@@ -464,9 +721,13 @@ def _ledger_lock(ledger_path: Path) -> Iterator[None]:
 
 
 def _send_wecom(webhook_url: str, content: str, *, timeout_sec: float, post_fn=requests.post) -> None:
-    resp = post_fn(webhook_url, json={"msgtype": "markdown", "markdown": {"content": content}}, timeout=timeout_sec)
-    resp.raise_for_status()
-    payload = resp.json()
+    resp = _post_with_retry(
+        post_fn,
+        webhook_url,
+        json={"msgtype": "markdown", "markdown": {"content": content}},
+        timeout=timeout_sec,
+    )
+    payload = _safe_json(resp)
     if int(payload.get("errcode", -1)) != 0:
         raise RuntimeError(f"wecom errcode={payload.get('errcode')} errmsg={payload.get('errmsg', '')}")
 
@@ -491,9 +752,8 @@ def _send_feishu(
         ts = int(time.time())
         body["timestamp"] = str(ts)
         body["sign"] = _feishu_sign(ts, secret)
-    resp = post_fn(webhook_url, json=body, timeout=timeout_sec)
-    resp.raise_for_status()
-    payload = resp.json()
+    resp = _post_with_retry(post_fn, webhook_url, json=body, timeout=timeout_sec)
+    payload = _safe_json(resp)
     code = payload.get("code", payload.get("StatusCode", -1))
     if int(code) != 0:
         raise RuntimeError(f"feishu code={code} msg={payload.get('msg', payload.get('StatusMessage', ''))}")
@@ -513,13 +773,13 @@ def _send_dingtalk(
         ts_ms = int(time.time() * 1000)
         sep = "&" if "?" in webhook_url else "?"
         target = f"{webhook_url}{sep}timestamp={ts_ms}&sign={_dingtalk_sign(ts_ms, secret)}"
-    resp = post_fn(
+    resp = _post_with_retry(
+        post_fn,
         target,
         json={"msgtype": "markdown", "markdown": {"title": title, "text": content}},
         timeout=timeout_sec,
     )
-    resp.raise_for_status()
-    payload = resp.json()
+    payload = _safe_json(resp)
     if int(payload.get("errcode", -1)) != 0:
         raise RuntimeError(f"dingtalk errcode={payload.get('errcode')} errmsg={payload.get('errmsg', '')}")
 
@@ -541,9 +801,8 @@ def _send_pushplus(
     }
     if topic:
         body["topic"] = topic
-    resp = post_fn("https://www.pushplus.plus/send", json=body, timeout=timeout_sec)
-    resp.raise_for_status()
-    payload = resp.json()
+    resp = _post_with_retry(post_fn, "https://www.pushplus.plus/send", json=body, timeout=timeout_sec)
+    payload = _safe_json(resp)
     if int(payload.get("code", -1)) != 200:
         raise RuntimeError(f"pushplus code={payload.get('code')} msg={payload.get('msg', '')}")
 
@@ -564,9 +823,13 @@ def _send_serverchan(
             url = f"https://{match.group(1)}.push.ft07.com/send/{sendkey_or_url}.send"
         else:
             url = f"https://sctapi.ftqq.com/{sendkey_or_url}.send"
-    resp = post_fn(url, json={"title": title[:32], "desp": content}, timeout=timeout_sec)
-    resp.raise_for_status()
-    payload = resp.json()
+    resp = _post_with_retry(
+        post_fn,
+        url,
+        json={"title": title[:32], "desp": content},
+        timeout=timeout_sec,
+    )
+    payload = _safe_json(resp)
     if int(payload.get("code", -1)) != 0:
         raise RuntimeError(f"serverchan code={payload.get('code')} msg={payload.get('message', payload.get('info', ''))}")
 
@@ -584,18 +847,21 @@ def _send_bark(
     body: dict[str, Any] = {"title": title[:120], "body": content, "group": "AlphaSift"}
     if detail_url:
         body["url"] = detail_url
-    resp = post_fn(target, json=body, timeout=timeout_sec)
-    resp.raise_for_status()
-    payload = resp.json()
-    if isinstance(payload, dict) and int(payload.get("code", 200)) != 200:
+    resp = _post_with_retry(post_fn, target, json=body, timeout=timeout_sec)
+    payload = _safe_json(resp)
+    if int(payload.get("code", 200)) != 200:
         raise RuntimeError(f"bark code={payload.get('code')} msg={payload.get('message', '')}")
 
 
 def _send_telegram(bot_token: str, chat_id: str, content: str, *, timeout_sec: float, post_fn=requests.post) -> None:
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    resp = post_fn(url, json={"chat_id": chat_id, "text": content, "disable_web_page_preview": True}, timeout=timeout_sec)
-    resp.raise_for_status()
-    payload = resp.json()
+    resp = _post_with_retry(
+        post_fn,
+        url,
+        json={"chat_id": chat_id, "text": content, "disable_web_page_preview": True},
+        timeout=timeout_sec,
+    )
+    payload = _safe_json(resp)
     if payload.get("ok") is not True:
         raise RuntimeError(f"telegram error={payload.get('description', 'unknown')}")
 
@@ -612,13 +878,11 @@ def _send_discord(
     embed: dict[str, Any] = {"title": title[:256], "description": content[:4096], "color": 3899638}
     if detail_url:
         embed["url"] = detail_url
-    resp = post_fn(webhook_url, json={"content": "", "embeds": [embed]}, timeout=timeout_sec)
-    resp.raise_for_status()
+    _post_with_retry(post_fn, webhook_url, json={"content": "", "embeds": [embed]}, timeout=timeout_sec)
 
 
 def _send_slack(webhook_url: str, content: str, *, title: str, timeout_sec: float, post_fn=requests.post) -> None:
-    resp = post_fn(webhook_url, json={"text": f"*{title}*\n{content}"}, timeout=timeout_sec)
-    resp.raise_for_status()
+    _post_with_retry(post_fn, webhook_url, json={"text": f"*{title}*\n{content}"}, timeout=timeout_sec)
 
 
 def _send_ntfy(
@@ -630,11 +894,10 @@ def _send_ntfy(
     timeout_sec: float,
     post_fn=requests.post,
 ) -> None:
-    headers = {"Title": title.encode("ascii", "ignore").decode("ascii") or "AlphaSift"}
+    headers = {"Title": _ntfy_ascii_title(title)}
     if detail_url:
         headers["Click"] = detail_url
-    resp = post_fn(ntfy_url, data=content.encode("utf-8"), headers=headers, timeout=timeout_sec)
-    resp.raise_for_status()
+    _post_with_retry(post_fn, ntfy_url, data=content.encode("utf-8"), headers=headers, timeout=timeout_sec)
 
 
 def _resolve_smtp_settings(sender: str, smtp_host: str = "", smtp_port: int = 0) -> tuple[str, int, str]:
@@ -722,8 +985,7 @@ def _send_custom_webhook(
     kwargs: dict[str, Any] = {"json": payload, "timeout": timeout_sec}
     if token:
         kwargs["headers"] = {"Authorization": f"Bearer {token}"}
-    resp = post_fn(webhook_url, **kwargs)
-    resp.raise_for_status()
+    _post_with_retry(post_fn, webhook_url, **kwargs)
 
 
 def _send_apprise(uri: str, content: str, *, title: str) -> None:
@@ -946,18 +1208,55 @@ def push_daily_report(
     sent: list[str] = []
     skipped: list[dict[str, str]] = []
     errors: list[dict[str, str]] = []
-    channel_counts: dict[str, int] = {}
+    channel_totals: dict[str, int] = {}
+    for spec in target_specs:
+        ch_name = spec["channel"]
+        channel_totals[ch_name] = channel_totals.get(ch_name, 0) + 1
 
     for spec in target_specs:
         channel = spec["channel"]
-        idx = channel_counts.get(channel, 0)
-        channel_counts[channel] = idx + 1
-        key = f"{trade_date}:{channel}" if idx == 0 else f"{trade_date}:{channel}:{idx}"
+        extra = spec.get("extra") or {}
+        receivers_fp = ",".join(
+            sorted(str(r).strip() for r in (extra.get("receivers") or []) if str(r).strip())
+        )
+        ident = f"{channel}\0{spec.get('target', '')}\0{extra.get('chat_id') or extra.get('topic') or receivers_fp or ''}"
+        fp_full = hashlib.sha256(ident.encode("utf-8")).hexdigest()[:12]
+        legacy_key = f"{trade_date}:{channel}"
+        fp_key = f"{trade_date}:{channel}:{fp_full}"
+        is_single = channel_totals.get(channel, 0) <= 1
         claim_record: dict[str, Any] | None = None
 
         with _ledger_lock(ledger_path):
             state = _load_state(ledger_path)
-            existing = state.get(key)
+            legacy_rec = state.get(legacy_key)
+            fp_rec = state.get(fp_key)
+            legacy_matches = isinstance(legacy_rec, dict) and legacy_rec.get("target_fp") in (None, fp_full)
+
+            if is_single:
+                if isinstance(fp_rec, dict):
+                    key = fp_key
+                    existing = fp_rec
+                elif legacy_matches:
+                    key = legacy_key
+                    existing = legacy_rec
+                elif isinstance(legacy_rec, dict):
+                    key = fp_key
+                    existing = fp_rec
+                else:
+                    key = legacy_key
+                    existing = None
+            else:
+                legacy_exact = isinstance(legacy_rec, dict) and legacy_rec.get("target_fp") == fp_full
+                if isinstance(fp_rec, dict):
+                    key = fp_key
+                    existing = fp_rec
+                elif legacy_exact:
+                    key = legacy_key
+                    existing = legacy_rec
+                else:
+                    key = fp_key
+                    existing = None
+
             if isinstance(existing, dict) and not force:
                 existing_status = existing.get("status")
                 if existing_status in (None, "sent"):
@@ -981,6 +1280,7 @@ def push_daily_report(
                 "status": "pending",
                 "trade_date": trade_date,
                 "channel": channel,
+                "target_fp": fp_full,
                 "claimed_at": datetime.now(timezone.utc).isoformat(),
                 "pid": os.getpid(),
                 "attempts": attempts,

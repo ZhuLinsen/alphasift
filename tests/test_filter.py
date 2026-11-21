@@ -311,3 +311,19 @@ def test_apply_hard_filters_matches_one_pass_numeric_and_daily_filters():
         & (df["atr_20_pct"] <= 5)
     )
     assert result["name"].tolist() == df.loc[expected_mask, "name"].tolist()
+
+
+def test_exclude_st_blocks_romanized_st_prefixes_while_preserving_english_names():
+    df = pd.DataFrame([
+        {"name": "*ST Alpha", "amount": 100_000_000},
+        {"name": "S*ST Beta", "amount": 100_000_000},
+        {"name": "ST", "amount": 100_000_000},
+        {"name": "SST", "amount": 100_000_000},
+        {"name": "*ST华泰", "amount": 100_000_000},
+        {"name": "ST Engineering", "amount": 100_000_000},
+        {"name": "COST", "amount": 100_000_000},
+        {"name": "STERIS", "amount": 100_000_000},
+        {"name": "FIRST SOLAR", "amount": 100_000_000},
+    ])
+    filtered = apply_hard_filters(df, HardFilterConfig(exclude_st=True))
+    assert filtered["name"].tolist() == ["ST Engineering", "COST", "STERIS", "FIRST SOLAR"]

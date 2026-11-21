@@ -9,7 +9,7 @@ def test_audit_reports_profile_coverage_for_builtin_strategies():
     assert result["strategy_count"] == 12
     assert result["profile_coverage"]["scoring_profile"]["configured"] == 12
     assert result["profile_coverage"]["risk_profile"]["configured"] == 12
-    assert result["profile_coverage"]["portfolio_profile"]["configured"] == 11
+    assert result["profile_coverage"]["portfolio_profile"]["configured"] == 12
     assert result["profile_coverage"]["scorecard_profile"]["configured"] == 10
     assert result["project_gaps"]
 

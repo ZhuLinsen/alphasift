@@ -459,3 +459,42 @@ def test_git_tracked_strategies_are_bundled_in_package():
         bundled_file = bundled_dir / repo_file.name
         assert bundled_file.is_file(), f"Missing bundled strategy mirror: {bundled_file}"
         assert repo_file.read_bytes() == bundled_file.read_bytes()
+
+
+def test_builtin_momentum_and_defensive_strategies_enable_dispersion_and_hard_caps():
+    strategies = load_all_strategies(Path("strategies"))
+
+    for name in ("balanced_alpha", "momentum_quality", "low_volatility_quality", "us_momentum_quality"):
+        strat = strategies[name]
+        assert strat.screening.scoring_profile["factor_rank_blend"] == pytest.approx(1.0)
+        assert strat.screening.portfolio_profile["mode"] == "hard_cap"
+
+    blue_chip = strategies["blue_chip_income"]
+    assert blue_chip.screening.portfolio_profile["mode"] == "hard_cap"
+    assert "factor_rank_blend" not in blue_chip.screening.scoring_profile
+
+
+def test_load_strategy_validates_factor_rank_blend_bounds(tmp_path):
+    def _write_cfg(value: str) -> Path:
+        path = tmp_path / "blend.yaml"
+        path.write_text(
+            "\n".join([
+                "name: blend_test",
+                "display_name: Blend Test",
+                "description: demo",
+                "screening:",
+                "  enabled: true",
+                "  market_scope: [cn]",
+                "  scoring_profile:",
+                f"    factor_rank_blend: {value}",
+            ]),
+            encoding="utf-8",
+        )
+        return path
+
+    valid = load_strategy(_write_cfg("0.6"))
+    assert valid.screening.scoring_profile["factor_rank_blend"] == pytest.approx(0.6)
+
+    for bad_value in ("1.2", "-0.1", "true", '"bad"', "null"):
+        with pytest.raises(ValueError, match="factor_rank_blend"):
+            load_strategy(_write_cfg(bad_value))

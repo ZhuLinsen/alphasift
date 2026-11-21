@@ -3,6 +3,7 @@
 
 import hashlib
 import logging
+import math
 from dataclasses import asdict, fields
 from pathlib import Path
 
@@ -108,6 +109,7 @@ _SCORING_PROFILE_KEYS = {
     "theme_heat_cooling_score_penalty_cap",
     "theme_heat_overheat_score",
     "theme_heat_overheat_penalty_slope",
+    "factor_rank_blend",
 }
 _RISK_PROFILE_KEYS = {
     "chase_change_pct",
@@ -214,9 +216,7 @@ def load_strategy(filepath: Path) -> Strategy:
         hard_filters=hard_filters,
         tech_weight=screening_data.get("tech_weight", 0.35),
         factor_weights=screening_data.get("factor_weights", {}),
-        scoring_profile=_optional_mapping(
-            screening_data, "scoring_profile", filepath, allowed_keys=_SCORING_PROFILE_KEYS
-        ),
+        scoring_profile=_scoring_profile(screening_data, filepath),
         risk_profile=_optional_mapping(
             screening_data, "risk_profile", filepath, allowed_keys=_RISK_PROFILE_KEYS
         ),
@@ -1038,6 +1038,27 @@ def _raise_unknown_keys(data: dict, allowed_keys: set[str], context: str) -> Non
         raise ValueError(
             f"Unknown keys in {context}: {', '.join(unknown_keys)}"
         )
+
+
+def _scoring_profile(screening_data: dict, filepath: Path) -> dict:
+    profile = _optional_mapping(
+        screening_data, "scoring_profile", filepath, allowed_keys=_SCORING_PROFILE_KEYS
+    )
+    if "factor_rank_blend" in profile:
+        raw = profile["factor_rank_blend"]
+        err = (
+            f"Invalid scoring_profile.factor_rank_blend in {filepath.name}: {raw!r} "
+            "(expected finite float between 0.0 and 1.0)"
+        )
+        if isinstance(raw, bool):
+            raise ValueError(err)
+        try:
+            val = float(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(err) from exc
+        if not math.isfinite(val) or not (0.0 <= val <= 1.0):
+            raise ValueError(err)
+    return profile
 
 
 def _portfolio_profile(screening_data: dict, filepath: Path) -> dict:

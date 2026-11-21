@@ -524,6 +524,7 @@ def screen(
             config.llm_model,
             config.llm_base_url,
             context=effective_context,
+            candidate_context_rows=candidate_context_rows,
             rank_weight=config.llm_rank_weight,
             max_retries=config.llm_max_retries,
             min_coverage=config.llm_min_coverage,
@@ -544,7 +545,7 @@ def screen(
         llm_portfolio_risk = llm_result.portfolio_risk
         llm_coverage = llm_result.coverage
         llm_parse_errors = llm_result.errors
-        llm_ranked = any(p.llm_score is not None for p in picks)
+        llm_ranked = bool(llm_result.ranked)
         if not llm_ranked:
             degradation.append("LLM ranking failed: fell back to screen_score")
             for i, p in enumerate(picks):

@@ -10,6 +10,7 @@ from alphasift.ranker import (
     _parse_ranking_response,
     _parse_ranking_response_detail,
     rank_candidates,
+    rank_candidates_with_metadata,
 )
 
 
@@ -405,3 +406,136 @@ def test_ranking_prompt_includes_red_flag_and_anti_familiarity_rules() -> None:
     prompt = _build_ranking_prompt(picks, hints="")
     assert "<= 35" in prompt
     assert "禁止品牌/名气偏见" in prompt
+
+
+def test_rank_candidates_enforces_red_flag_cap_retry_isolation_and_omitted_picks(monkeypatch) -> None:
+    from alphasift.ranker import rank_candidates_with_metadata
+
+    # 1. Code enforces llm_score <= 35 when unresolved adverse filing flags appear
+    p_bad = Pick(rank=1, code="600001", name="Example", final_score=80.0, screen_score=80.0)
+    monkeypatch.setattr(
+        "alphasift.ranker._call_llm",
+        lambda *_a, **_kw: json.dumps(
+            {
+                "ranked": [
+                    {
+                        "code": "600001",
+                        "llm_score": 95,
+                        "risk_flags": ["unresolved adverse filing"],
+                    }
+                ]
+            }
+        ),
+    )
+    capped = rank_candidates_with_metadata([p_bad], "", "k", "fake/model")
+    assert capped.ranked is True
+    assert capped.picks[0].llm_score == 35.0
+    assert "red_flag_capped" in capped.picks[0].risk_flags
+
+    # 2. Failed low-coverage attempt never mutates fallback picks' llm_score
+    picks_fail = [
+        Pick(rank=1, code="000001", name="A", final_score=80.0, screen_score=80.0),
+        Pick(rank=2, code="000002", name="B", final_score=75.0, screen_score=75.0),
+    ]
+    call_idx = {"n": 0}
+
+    def low_cov_then_crash(*_a, **_kw):
+        call_idx["n"] += 1
+        if call_idx["n"] == 1:
+            return json.dumps({"ranked": [{"code": "000001", "llm_score": 90}]})
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("alphasift.ranker._call_llm", low_cov_then_crash)
+    failed = rank_candidates_with_metadata(picks_fail, "", "k", "fake/model", max_retries=1, min_coverage=0.8)
+    assert failed.ranked is False
+    assert all(p.llm_score is None for p in failed.picks)
+
+    # 3. Omitted picks never receive synthetic LLM scores
+    picks_partial = [
+        Pick(rank=1, code="000001", name="A", final_score=80.0, screen_score=80.0),
+        Pick(rank=2, code="000002", name="B", final_score=75.0, screen_score=75.0),
+        Pick(rank=3, code="000003", name="C", final_score=70.0, screen_score=70.0),
+    ]
+    monkeypatch.setattr(
+        "alphasift.ranker._call_llm",
+        lambda *_a, **_kw: json.dumps(
+            {
+                "ranked": [
+                    {"code": "000001", "llm_score": 88},
+                    {"code": "000002", "llm_score": 82},
+                ]
+            }
+        ),
+    )
+    partial = rank_candidates_with_metadata(picks_partial, "", "k", "fake/model", min_coverage=0.6)
+    by_code = {p.code: p for p in partial.picks}
+    assert by_code["000003"].llm_score is None
+    assert by_code["000003"].final_score == 70.0
+    assert "llm_omitted" in by_code["000003"].risk_flags
+
+
+def test_rank_candidates_round6_negated_risk_dsa_news_omitted_cap_and_zero_cov(monkeypatch):
+    # 1. Negated risk phrases & benign "市场调查" do NOT trigger red-flag cap
+    p_clean = Pick(
+        rank=1,
+        code="600010",
+        name="CleanCorp",
+        final_score=80.0,
+        screen_score=80.0,
+        dsa_analysis_summary="公司公告无立案调查且已解除警示；完成年度市场调查。",
+    )
+    monkeypatch.setattr(
+        "alphasift.ranker._call_llm",
+        lambda *_a, **_kw: json.dumps({"ranked": [{"code": "600010", "llm_score": 90}]}),
+    )
+    res_clean = rank_candidates_with_metadata([p_clean], "", "k", "fake/model")
+    assert res_clean.ranked is True
+    assert res_clean.picks[0].llm_score == 90.0
+    assert "red_flag_capped" not in res_clean.picks[0].risk_flags
+
+    # 2. dsa_news adverse title triggers cap + omitted adverse pick also has final_score capped
+    p_news = Pick(
+        rank=1,
+        code="600011",
+        name="NewsRisk",
+        final_score=85.0,
+        screen_score=85.0,
+        dsa_news=[{"title": "公司收到证监会立案调查通知书"}],
+    )
+    p_omit_risk = Pick(
+        rank=2,
+        code="600012",
+        name="OmitRisk",
+        final_score=92.0,
+        screen_score=92.0,
+        risk_flags=["大股东减持"],
+    )
+    monkeypatch.setattr(
+        "alphasift.ranker._call_llm",
+        lambda *_a, **_kw: json.dumps({"ranked": [{"code": "600011", "llm_score": 96}]}),
+    )
+    res_mixed = rank_candidates_with_metadata(
+        [p_news, p_omit_risk],
+        "",
+        "k",
+        "fake/model",
+        rank_weight=0.40,
+        min_coverage=0.5,
+    )
+    by_code = {p.code: p for p in res_mixed.picks}
+    assert by_code["600011"].llm_score == 35.0
+    assert "red_flag_capped" in by_code["600011"].risk_flags
+    assert by_code["600012"].llm_score is None
+    assert "llm_omitted" in by_code["600012"].risk_flags
+    assert "red_flag_capped" in by_code["600012"].risk_flags
+    assert by_code["600012"].final_score == 92.0 * 0.6 + 35.0 * 0.4
+
+    # 3. Even with min_coverage=0.0, matched_count == 0 falls back safely (ranked=False)
+    p_zero = Pick(rank=1, code="600013", name="ZeroCov", final_score=77.0, screen_score=77.0)
+    monkeypatch.setattr(
+        "alphasift.ranker._call_llm",
+        lambda *_a, **_kw: json.dumps({"ranked": [{"code": "999999", "llm_score": 99}]}),
+    )
+    res_zero = rank_candidates_with_metadata([p_zero], "", "k", "fake/model", max_retries=0, min_coverage=0.0)
+    assert res_zero.ranked is False
+    assert res_zero.picks[0].llm_score is None

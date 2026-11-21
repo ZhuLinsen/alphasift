@@ -7,6 +7,8 @@ import html
 import json
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+import re
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
@@ -201,7 +203,10 @@ def build_api_response(
         if not run_ref:
             return 400, {"error": "missing_run", "message": "Query parameter `run` is required."}
         try:
-            run = load_screen_result(run_ref, data_dir=config.data_dir)
+            safe_run_path = _validate_safe_run_file(run_ref, data_dir=config.data_dir)
+            run = load_screen_result(safe_run_path, data_dir=config.data_dir)
+        except ValueError as exc:
+            return 400, {"error": "invalid_run_id", "message": str(exc), "run": run_ref}
         except FileNotFoundError as exc:
             return 404, {"error": "run_not_found", "message": str(exc), "run": run_ref}
         return 200, build_run_report_payload(
@@ -233,6 +238,19 @@ def build_api_response(
             "patterns": [asdict(item) for item in list_patterns(include_experimental=include_exp)],
         }
     if path in {"/market-stats", "/patterns/scan", "/daily-report"}:
+        safe_run_paths: list[str] = []
+        if path == "/daily-report":
+            requested_ai_brief = (_single(params, "ai_brief") or "off").lower()
+            if requested_ai_brief == "on":
+                return 403, {
+                    "error": "llm_get_disabled",
+                    "message": "HTTP GET /daily-report does not spend LLM credits; use CLI daily-report --ai-brief on.",
+                }
+            for raw_id in _multi(params, "run_id"):
+                try:
+                    safe_run_paths.append(str(_validate_safe_run_file(raw_id, data_dir=config.data_dir)))
+                except ValueError as exc:
+                    return 400, {"error": "invalid_run_id", "message": str(exc), "run_id": raw_id}
         try:
             daily_pack = load_pack(pack_dir(config))
         except (OSError, PackError, ValueError) as exc:
@@ -267,11 +285,12 @@ def build_api_response(
             # /daily-report
             include_ann = _bool_param(params, "announcements", False)
             include_runs = _bool_param(params, "include_runs", True)
-            run_ids = _multi(params, "run_id") or None
+            run_ids = safe_run_paths or None
             expected_date = _single(params, "expected_trade_date") or None
             allow_stale = _bool_param(params, "allow_stale_pack", True)
             detail_url = _single(params, "detail_url") or config.dashboard_url
-            ai_brief = (_single(params, "ai_brief") or "off").lower()
+            # Read-only HTTP GET never spends paid LLM credits by default.
+            ai_brief = "off"
             ann_max = max(0, min(30, _int_param(params, "announcement_max_codes", 8)))
             strategy_runs = (
                 load_daily_report_runs(
@@ -441,6 +460,29 @@ def _has_match_criteria(criteria: dict[str, Any]) -> bool:
             "category",
         )
     ) or criteria.get("daily_required") is not None or bool(criteria.get("strict"))
+
+
+_SAFE_RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+
+
+def _validate_safe_run_file(run_ref: str, *, data_dir: Path) -> Path:
+    cleaned = str(run_ref or "").strip()
+    if (
+        not cleaned
+        or "/" in cleaned
+        or "\\" in cleaned
+        or ".." in cleaned
+        or not _SAFE_RUN_ID_RE.fullmatch(cleaned)
+    ):
+        raise ValueError(f"Unsafe run identifier: {cleaned!r}")
+    runs_root = (data_dir / "runs").resolve()
+    raw_path = runs_root / f"{cleaned}.json"
+    if raw_path.is_symlink():
+        raise ValueError(f"Symlink run file is not allowed: {cleaned!r}")
+    candidate = raw_path.resolve()
+    if not candidate.is_relative_to(runs_root):
+        raise ValueError(f"Run path escapes runs directory: {cleaned!r}")
+    return candidate
 
 
 def _find_strategy(config: Config, strategy_name: str) -> Any | None:

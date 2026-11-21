@@ -4,6 +4,8 @@
 import json
 import logging
 import os
+import re
+from copy import deepcopy
 from dataclasses import dataclass
 
 from alphasift.models import Pick
@@ -20,9 +22,60 @@ def _normalize_code(value: object) -> str:
     # US tickers may pass through (see normalize_code docstring).
     return normalize_code(value, allow_ticker=True)
 
+
 logger = logging.getLogger(__name__)
 _DEFAULT_RANKING_PROMPT_MAX_CHARS = 24_000
 _PROMPT_TRIM_MARKER = "[prompt_trimmed]"
+_ADVERSE_FILING_MARKERS = (
+    "unresolved adverse filing",
+    "adverse filing",
+    "red_flag_capped",
+    "立案调查",
+    "监管调查",
+    "证监会调查",
+    "被调查",
+    "立案",
+    "股东减持",
+    "拟减持",
+    "大股东减持",
+    "业绩预亏",
+    "亏损",
+    "*st",
+    "冻结",
+    "留置",
+    "退市",
+    "终止上市",
+    "st风险",
+    "警示函",
+    "监管函",
+    "问询函",
+    "行政处罚",
+    "处罚",
+    "造假",
+    "违约",
+    "大幅下滑",
+    "under investigation",
+    "pending investigation",
+    "regulatory investigation",
+    "delisting",
+    "regulatory penalty",
+    "regulatory_penalty",
+)
+_NEGATED_RISK_RE = re.compile(
+    r"(?:无|未发生|不存在|不涉及|未受|未遭到|已解除|已撤销|撤销)"
+    r"(?:任何|重大|相关|新的)?"
+    r"(?:立案调查|监管调查|证监会调查|调查|行政处罚|处罚|退市风险警示|警示|违约|冻结|留置|减持)"
+    r"|\b(?:no|not|without|resolved|cleared|lifted)\s+"
+    r"(?:pending\s+|under\s+|any\s+)?"
+    r"(?:investigation|adverse filing|delisting|penalty)\b",
+    re.I,
+)
+_SEVERE_CONTEXT_FLAGS = frozenset({"监管", "退市风险", "财务风险", "业绩压力", "减持", "诉讼风险"})
+_LLM_RED_FLAG_MAX_SCORE = 35.0
+
+
+def _strip_negated_risk_phrases(text: str) -> str:
+    return _NEGATED_RISK_RE.sub(" ", text)
 
 
 @dataclass
@@ -33,6 +86,8 @@ class RankingParseResult:
     market_view: str = ""
     selection_logic: str = ""
     portfolio_risk: str = ""
+    matched_codes: set[str] | None = None
+    matched_count: int = 0
 
 
 @dataclass
@@ -118,10 +173,27 @@ def rank_candidates_with_metadata(
     max_prompt_chars: int | None = _DEFAULT_RANKING_PROMPT_MAX_CHARS,
     degradation: list[str] | None = None,
     max_tokens: int | None = 2048,
+    candidate_context_rows: list[dict[str, object]] | None = None,
 ) -> LLMRankingResult:
     """Use LLM to re-rank candidates and return global research metadata."""
     if not candidates:
         return LLMRankingResult(picks=candidates)
+
+    adverse_context_by_code: dict[str, list[str]] = {}
+    for row in candidate_context_rows or []:
+        norm_code = _normalize_code(row.get("code", ""))
+        if not norm_code:
+            continue
+        raw_flags = row.get("negative_event_flags")
+        if isinstance(raw_flags, (list, tuple, set)):
+            flags = [str(x).strip() for x in raw_flags if str(x).strip()]
+        elif isinstance(raw_flags, str) and raw_flags.strip():
+            flags = [x.strip() for x in raw_flags.replace("，", ",").split(",") if x.strip()]
+        else:
+            flags = []
+        severe = [f for f in flags if f in _SEVERE_CONTEXT_FLAGS]
+        if severe:
+            adverse_context_by_code[norm_code] = severe
 
     prompt = _build_ranking_prompt(
         candidates,
@@ -155,23 +227,54 @@ def rank_candidates_with_metadata(
                 timeout_sec=timeout_sec,
                 max_tokens=max_tokens,
             )
-            parsed = _parse_ranking_response_detail(response, candidates)
+            parsed = _parse_ranking_response_detail(
+                response,
+                [deepcopy(pick) for pick in candidates],
+            )
             last_errors = parsed.errors
-            if parsed.coverage >= min_coverage:
+            if parsed.coverage >= min_coverage and parsed.matched_count > 0:
                 break
-        if parsed is None or parsed.coverage < min_coverage:
+        if parsed is None or parsed.coverage < min_coverage or parsed.matched_count == 0:
             raise ValueError(
                 "LLM ranking response coverage below threshold: "
                 f"{0 if parsed is None else parsed.coverage:.2f}; "
                 f"errors={last_errors}"
             )
         ranked = parsed.picks
+        matched_codes = parsed.matched_codes
+        weight = min(max(rank_weight, 0.0), 1.0)
         for i, pick in enumerate(ranked):
-            pick.rank = i + 1
+            norm_code = _normalize_code(pick.code)
+            was_matched = matched_codes is None or norm_code in matched_codes
+            adverse_reasons = _unresolved_adverse_reasons(
+                pick,
+                context_flags=adverse_context_by_code.get(norm_code, ()),
+            )
+            if not was_matched:
+                pick.llm_score = None
+                if "llm_omitted" not in pick.risk_flags:
+                    pick.risk_flags = [*pick.risk_flags, "llm_omitted"]
+                if adverse_reasons:
+                    cap_final = float(pick.screen_score) * (1.0 - weight) + _LLM_RED_FLAG_MAX_SCORE * weight
+                    pick.final_score = min(float(pick.screen_score), cap_final)
+                    if "red_flag_capped" not in pick.risk_flags:
+                        pick.risk_flags = [*pick.risk_flags, "red_flag_capped"]
+                    note = f"触发红线上限({_LLM_RED_FLAG_MAX_SCORE:.0f}): {', '.join(adverse_reasons[:3])}"
+                    pick.risk_summary = f"{pick.risk_summary}; {note}" if pick.risk_summary else note
+                else:
+                    pick.final_score = float(pick.screen_score)
+                continue
             if pick.llm_score is None:
                 pick.llm_score = 100.0 - i * (100.0 / max(len(ranked), 1))
-            weight = min(max(rank_weight, 0.0), 1.0)
-            pick.final_score = pick.screen_score * (1 - weight) + (pick.llm_score or 0) * weight
+            if adverse_reasons and pick.llm_score > _LLM_RED_FLAG_MAX_SCORE:
+                pick.llm_score = _LLM_RED_FLAG_MAX_SCORE
+                if "red_flag_capped" not in pick.llm_risks:
+                    pick.llm_risks = [*pick.llm_risks, "red_flag_capped"]
+                if "red_flag_capped" not in pick.risk_flags:
+                    pick.risk_flags = [*pick.risk_flags, "red_flag_capped"]
+                note = f"触发红线上限({_LLM_RED_FLAG_MAX_SCORE:.0f}): {', '.join(adverse_reasons[:3])}"
+                pick.risk_summary = f"{pick.risk_summary}; {note}" if pick.risk_summary else note
+            pick.final_score = pick.screen_score * (1 - weight) + (pick.llm_score or 0.0) * weight
         ranked.sort(key=lambda item: item.final_score, reverse=True)
         for i, pick in enumerate(ranked, start=1):
             pick.rank = i
@@ -187,6 +290,41 @@ def rank_candidates_with_metadata(
     except Exception as e:
         logger.warning("LLM ranking failed, falling back to screen_score: %s", e)
         return LLMRankingResult(picks=candidates, errors=[str(e)])
+
+
+def _unresolved_adverse_reasons(
+    pick: Pick,
+    *,
+    context_flags: tuple[str, ...] | list[str] = (),
+) -> list[str]:
+    reasons: list[str] = []
+    for flag in context_flags:
+        if flag and flag not in reasons:
+            reasons.append(str(flag))
+    news_items = list(pick.dsa_news or [])
+    if not news_items and isinstance(pick.dsa_context, dict):
+        news_payload = pick.dsa_context.get("news")
+        if isinstance(news_payload, dict) and isinstance(news_payload.get("results"), list):
+            news_items = [item for item in news_payload["results"] if isinstance(item, dict)]
+    news_titles = [
+        str(item.get("title") or "").strip()
+        for item in news_items
+        if isinstance(item, dict) and item.get("title")
+    ]
+    text_sources = [
+        *pick.llm_risks,
+        *pick.risk_flags,
+        *pick.deep_analysis_risk_flags,
+        pick.risk_summary,
+        pick.dsa_analysis_summary,
+        *news_titles,
+    ]
+    cleaned_sources = [_strip_negated_risk_phrases(str(x)) for x in text_sources if x]
+    combined = " | ".join(cleaned_sources).lower()
+    for marker in _ADVERSE_FILING_MARKERS:
+        if marker in combined and marker not in reasons:
+            reasons.append(marker)
+    return reasons
 
 
 def _build_ranking_prompt(
@@ -583,13 +721,13 @@ def _parse_ranking_response_detail(response: str, candidates: list[Pick]) -> Ran
     if not response or not response.strip():
         errors.append("empty_response")
         logger.warning("Empty LLM ranking response")
-        return RankingParseResult(candidates, 0.0, errors)
+        return RankingParseResult(candidates, 0.0, errors, matched_codes=set(), matched_count=0)
 
     parsed = _extract_ranking_json(response, errors)
     if parsed is None:
         errors.append("no_json_found")
         logger.warning("No JSON object or array found in LLM response")
-        return RankingParseResult(candidates, 0.0, errors)
+        return RankingParseResult(candidates, 0.0, errors, matched_codes=set(), matched_count=0)
     if isinstance(parsed, dict):
         items = parsed.get("ranked", [])
         market_view = _safe_str(parsed.get("market_view"), max_len=260)
@@ -603,7 +741,7 @@ def _parse_ranking_response_detail(response: str, candidates: list[Pick]) -> Ran
     if not isinstance(items, list):
         errors.append("ranked_not_list")
         logger.warning("LLM ranking JSON has no ranked list")
-        return RankingParseResult(candidates, 0.0, errors)
+        return RankingParseResult(candidates, 0.0, errors, matched_codes=set(), matched_count=0)
 
     code_to_pick = {_normalize_code(p.code): p for p in candidates if _normalize_code(p.code)}
 
@@ -648,7 +786,8 @@ def _parse_ranking_response_detail(response: str, candidates: list[Pick]) -> Ran
         elif code:
             errors.append(f"unknown_code:{code}")
 
-    # Append any candidates not mentioned by LLM
+    # Append any candidates not mentioned by LLM, preserving which codes were actually matched.
+    matched_codes = {_normalize_code(p.code) for p in ranked if _normalize_code(p.code)}
     ranked.extend(code_to_pick.values())
     coverage = matched / max(len(candidates), 1)
     return RankingParseResult(
@@ -658,6 +797,8 @@ def _parse_ranking_response_detail(response: str, candidates: list[Pick]) -> Ran
         market_view=market_view,
         selection_logic=selection_logic,
         portfolio_risk=portfolio_risk,
+        matched_codes=matched_codes,
+        matched_count=matched,
     )
 
 

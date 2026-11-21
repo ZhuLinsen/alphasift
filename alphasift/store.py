@@ -213,10 +213,18 @@ def _string_list(value: object) -> list[str]:
 
 
 def resolve_run_path(run_ref: str | Path, *, data_dir: Path) -> Path:
-    path = Path(run_ref)
+    if isinstance(run_ref, Path):
+        if run_ref.is_file():
+            return run_ref
+        raise FileNotFoundError(f"Saved run not found: {run_ref}")
+    raw = str(run_ref)
+    candidate = data_dir / "runs" / f"{raw}.json"
+    # Prefer data_dir/runs/<id>.json over same-named CWD files when given a bare run ID.
+    if "/" not in raw and "\\" not in raw and candidate.is_file():
+        return candidate
+    path = Path(raw)
     if path.is_file():
         return path
-    candidate = data_dir / "runs" / f"{run_ref}.json"
     if candidate.is_file():
         return candidate
     raise FileNotFoundError(f"Saved run not found: {run_ref}")

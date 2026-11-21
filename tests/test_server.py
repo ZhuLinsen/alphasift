@@ -480,3 +480,55 @@ def test_api_unknown_route_returns_endpoint_index(tmp_path):
     assert status == 404
     assert payload["error"] == "not_found"
     assert "/doctor/data-sources" in payload["available_endpoints"]
+
+
+def test_api_report_rejects_path_traversal_and_blocks_llm_on_get(tmp_path):
+    outside = tmp_path / "secret.json"
+    outside.write_text('{"secret": 1}', encoding="utf-8")
+    cfg = _config(tmp_path)
+
+    bad_status, bad_payload = build_api_response(cfg, "/report", query=f"run={outside}")
+    assert bad_status == 400
+    assert bad_payload["error"] == "invalid_run_id"
+
+    trav_status, trav_payload = build_api_response(cfg, "/report", query="run=../secret")
+    assert trav_status == 400
+    assert trav_payload["error"] == "invalid_run_id"
+
+    llm_status, llm_payload = build_api_response(cfg, "/daily-report", query="ai_brief=on")
+    assert llm_status == 403
+    assert llm_payload["error"] == "llm_get_disabled"
+
+
+def test_api_report_rejects_cwd_shadow_and_symlinks(tmp_path, monkeypatch):
+    import json
+
+    cfg = _config(tmp_path)
+    runs_dir = cfg.data_dir / "runs"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    real_run = runs_dir / "2026-11-21_balanced_alpha.json"
+    real_run.write_text(
+        json.dumps({"strategy": "balanced_alpha", "run_id": "2026-11-21_balanced_alpha", "picks": []}),
+        encoding="utf-8",
+    )
+
+    cwd_dir = tmp_path / "cwd"
+    cwd_dir.mkdir()
+    (cwd_dir / "shadow.json").write_text('{"strategy": "evil"}', encoding="utf-8")
+    monkeypatch.chdir(cwd_dir)
+
+    shadow_status, shadow_payload = build_api_response(cfg, "/report", query="run=shadow")
+    assert shadow_status == 404
+    assert shadow_payload["error"] == "run_not_found"
+
+    outside_target = tmp_path / "outside.json"
+    outside_target.write_text('{"strategy": "outside"}', encoding="utf-8")
+    sym_run = runs_dir / "symrun.json"
+    sym_run.symlink_to(outside_target)
+    sym_status, sym_payload = build_api_response(cfg, "/report", query="run=symrun")
+    assert sym_status == 400
+    assert sym_payload["error"] == "invalid_run_id"
+
+    dr_bad_status, dr_bad_payload = build_api_response(cfg, "/daily-report", query="run_id=../bad")
+    assert dr_bad_status == 400
+    assert dr_bad_payload["error"] == "invalid_run_id"

@@ -44,12 +44,20 @@ class SnapshotFieldMissingError(ValueError):
 def _not_st_mask(names: pd.Series) -> pd.Series:
     """True for rows that are not A-share ST / delisting names.
 
-    ST / 退市 tags are an A-share naming convention. Only apply them to names
-    with CJK characters so tickers like COST or STERIS survive.
+    Matches CJK ST/delisting names as well as explicit asterisked romanized ST
+    prefixes (e.g. ``*ST Alpha``, ``S*ST Beta``) or standalone ``ST``, while
+    preserving ordinary English names like ``ST Engineering``, ``COST``,
+    ``STERIS``, or ``FIRST SOLAR``.
     """
-    text = names.astype("string")
-    has_cjk = text.str.contains(r"[\u4e00-\u9fff]", na=False)
-    return ~(has_cjk & text.str.contains(r"ST|退", na=False))
+    text = names.astype("string").fillna("")
+    has_cjk = text.str.contains(r"[\u4e00-\u9fff]", regex=True)
+    cjk_st = has_cjk & text.str.contains(r"ST|退", regex=True)
+    ascii_st_prefix = text.str.strip().str.contains(
+        r"^(?:S?\*ST(?:\b|\s|[A-Za-z0-9_])|S?ST$)",
+        case=True,
+        regex=True,
+    )
+    return ~(cjk_st | ascii_st_prefix)
 
 
 def apply_hard_filters(df: pd.DataFrame, filters: HardFilterConfig) -> pd.DataFrame:
