@@ -8,7 +8,7 @@
 
 [English](README.md) | [中文](README.zh-CN.md) | 日本語
 
-**公開トラックレコード：** 毎営業日の引け後に全内蔵戦略を自動実行して結果を保存し、T+5 / T+10 / T+20 で各市場のベンチマークに対する超過リターンを比較しています — [ダッシュボード](https://zhulinsen.github.io/alphasift/)および生ログは [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) ブランチをご覧ください。
+**公開トラックレコード：** 毎営業日の引け後に全内蔵戦略を自動実行して結果を保存し、T+5 / T+10 / T+20 で各市場のベンチマークに対する超過リターンを比較しています — [ダッシュボード](https://zhulinsen.github.io/alphasift/)、[日次レポート](https://zhulinsen.github.io/alphasift/site/daily_report.html)および生ログは [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) ブランチをご覧ください。
 
 ```text
 full market ──► L1 hard filters + factor scores ──► L2 LLM ranking (optional)
@@ -92,7 +92,7 @@ alphasift evaluate <run_id> --with-price-path --explain
 
 | `--market` | 市場 | スナップショットのソース | 備考 |
 |---|---|---|---|
-| `cn` | 中国 A 株 | sina → efinance → akshare_em → em_datacenter（トークンを設定すると Tushare が先頭） | 健全性に応じた順序。EastMoney による業種の補完 |
+| `cn` | 中国 A 株 | em_datacenter → sina → efinance → akshare_em（トークンを設定すると Tushare が先頭） | 健全性に応じた順序。EastMoney による業種の補完 |
 | `us` | アメリカ | Yahoo のスクリーナー（NYSE / Nasdaq の時価総額 10 億ドル以上の上場銘柄、ADR を含む） | `ALPHASIFT_US_TICKERS` を使うと、代わりに明示的なティッカーの一覧を使います |
 | `hk` | 香港 | Yahoo のスクリーナー | 対象の下限は約 80 億香港ドル |
 | `jp` | 日本 | Yahoo のスクリーナー | 対象の下限は約 1,500 億円 |

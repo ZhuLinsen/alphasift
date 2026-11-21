@@ -8,7 +8,7 @@
 
 English | [中文](README.zh-CN.md) | [日本語](README.ja.md)
 
-**Track record:** every built-in strategy runs after each close and its picks are measured at T+5 / T+10 / T+20 against the market benchmark — see the [dashboard](https://zhulinsen.github.io/alphasift/) and the raw runs on the [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) branch.
+**Track record:** every built-in strategy runs after each close and its picks are measured at T+5 / T+10 / T+20 against the market benchmark — see the [dashboard](https://zhulinsen.github.io/alphasift/), the [daily report](https://zhulinsen.github.io/alphasift/site/daily_report.html) and the raw runs on the [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) branch.
 
 ```text
 full market ──► L1 hard filters + factor scores ──► L2 LLM ranking (optional)
@@ -92,7 +92,7 @@ On an overseas server, the A-share run takes about 10 seconds once source health
 
 | `--market` | Market | Snapshot source | Notes |
 |---|---|---|---|
-| `cn` | China A-shares | sina → efinance → akshare_em → em_datacenter (Tushare first when a token is set) | Health-aware ordering; EastMoney industry backfill |
+| `cn` | China A-shares | em_datacenter → sina → efinance → akshare_em (Tushare first when a token is set) | Health-aware ordering; EastMoney industry backfill |
 | `us` | United States | Yahoo screener (NYSE / Nasdaq listings ≥ $1B, including ADRs) | `ALPHASIFT_US_TICKERS` uses an explicit ticker list instead |
 | `hk` | Hong Kong | Yahoo screener | Universe floor ≈ HK$8B |
 | `jp` | Japan | Yahoo screener | Universe floor ≈ ¥150B |
