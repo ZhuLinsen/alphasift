@@ -937,6 +937,20 @@ const I18N = {
     no_match_day: "当前过滤条件在当日无匹配记录",
     day_opt: "{d}（{n} 次运行）",
     t_win_pending: "T+{w} 待定",
+    live_latest_fmt: "最新 · {d}",
+    live_7mkt: "实时 · 7大市场",
+    rules_bench_chip: "规则基准",
+    latest_fallback: "最新",
+    tc_hidden_reason_fmt: "同日配对 {p} < {m} 天",
+    st_missing_title: "缺少基准或入场行情数据",
+    rule_hl_fmt: "{stale}市场处于{stage}，上涨 {adv}%（中位数 {med}），涨跌停 {lu}/{ld}（封板率 {seal}）",
+    rule_hl_stale: "【旧包降级】",
+    rule_hl_flag: "，公告排雷命中 {n} 只高风险",
+    rule_hl_cons: "，跨策略共识 {n} 只",
+    rule_sub_cons: "多策略共振标的：{items}",
+    rule_sub_nocons: "当日各策略候选分散（<2 策略重合）",
+    rule_sub_sec: "行业分布：{items}",
+    rule_sub_ai: "AI 调仓（+{add} / -{drop}）",
   },
   en: {
     page_title: "AlphaSift · Quantitative Discovery & T+N Benchmark",
@@ -1140,6 +1154,20 @@ const I18N = {
     no_match_day: "No picks match current filter on this date",
     day_opt: "{d} ({n} runs)",
     t_win_pending: "T+{w} pending",
+    live_latest_fmt: "LATEST · {d}",
+    live_7mkt: "LIVE · 7 Markets",
+    rules_bench_chip: "Rules Benchmark",
+    latest_fallback: "Latest",
+    tc_hidden_reason_fmt: "Paired sessions {p} < {m} required",
+    st_missing_title: "Missing quote or benchmark data",
+    rule_hl_fmt: "{stale}Market regime {stage}, {adv}% advancing (median {med}), L/U-L/D {lu}/{ld} (seal {seal})",
+    rule_hl_stale: "[Stale Pack] ",
+    rule_hl_flag: ", {n} announcement alert(s)",
+    rule_hl_cons: ", {n} consensus pick(s)",
+    rule_sub_cons: "Consensus leaders: {items}",
+    rule_sub_nocons: "Scattered picks today (<2 strategy overlap)",
+    rule_sub_sec: "Top sectors: {items}",
+    rule_sub_ai: "AI re-ranked (+{add} / -{drop})",
   },
   ja: {
     page_title: "AlphaSift · クオンツ観測・T+N検証ベンチマーク",
@@ -1343,6 +1371,20 @@ const I18N = {
     no_match_day: "この日付で条件に一致する銘柄はありません",
     day_opt: "{d}（{n} 回実行）",
     t_win_pending: "T+{w} 保留",
+    live_latest_fmt: "最新 · {d}",
+    live_7mkt: "稼働中 · 7市場",
+    rules_bench_chip: "ルール基準",
+    latest_fallback: "最新",
+    tc_hidden_reason_fmt: "同日ペア {p} 日 < {m} 日",
+    st_missing_title: "価格またはベンチマークデータ欠損",
+    rule_hl_fmt: "{stale}相場局面 {stage}、上昇銘柄 {adv}%（中央値 {med}）、S高/安 {lu}/{ld}（維持率 {seal}）",
+    rule_hl_stale: "【旧パック縮退】",
+    rule_hl_flag: "・開示警戒 {n} 銘柄",
+    rule_hl_cons: "・重複コンセンサス {n} 銘柄",
+    rule_sub_cons: "注目コンセンサス：{items}",
+    rule_sub_nocons: "本日は戦略間の重複なし（候補分散）",
+    rule_sub_sec: "業種偏重：{items}",
+    rule_sub_ai: "AI 軌道リバランス（追加 {add} / 除外 {drop}）",
   },
 };
 
@@ -1448,6 +1490,25 @@ const MIN_SAMPLE = 20;
 const MIN_SLICE_SAMPLE = 100;
 const MIN_PATTERN_GRAD_SAMPLE = 200;
 
+const SECTOR_I18N = {
+  en: {
+    "未分类": "Unclassified", "白酒": "Baijiu", "酿酒行业": "Alcohol & Beverage", "半导体": "Semiconductors",
+    "银行": "Banking", "证券": "Brokers", "券商": "Brokers", "保险": "Insurance", "煤炭开采": "Coal Mining",
+    "医药": "Healthcare", "化学制药": "Pharmaceuticals", "中药": "TCM Pharma", "消费": "Consumer",
+    "汽车": "Autos", "电子元件": "Electronics", "软件开发": "Software", "互联网服务": "Internet",
+    "电力行业": "Utilities", "建筑施工": "Construction", "化工原料": "Chemicals", "地产": "Real Estate",
+    "新能源": "Clean Energy", "有色金属": "Metals", "机械设备": "Machinery", "军工": "Defense",
+  },
+  ja: {
+    "未分类": "未分類", "白酒": "白酒・酒造", "酿酒行业": "酒類飲料", "半导体": "半導体",
+    "银行": "銀行", "证券": "証券", "券商": "証券", "保险": "保険", "煤炭开采": "石炭鉱業",
+    "医药": "医薬", "化学制药": "医薬品", "中药": "漢方薬", "消费": "消費財",
+    "汽车": "自動車", "电子元件": "電子部品", "软件开发": "ソフトウェア", "互联网服务": "ネットサービス",
+    "电力行业": "電力", "建筑施工": "建設", "化工原料": "化学", "地产": "不動産",
+    "新能源": "新エネルギー", "有色金属": "非鉄金属", "机械设备": "機械", "军工": "防衛・航空",
+  },
+};
+
 const state = {
   lang: "zh",
   theme: "dark",
@@ -1468,6 +1529,7 @@ const state = {
   searchQuery: "",
   dayCache: {},
   currentDay: null,
+  dayReqId: 0,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1495,6 +1557,25 @@ function t(key, vars) {
 const mname = (id) => (MARKET_I18N[state.lang] || MARKET_I18N.zh)[id] || id;
 const sesname = (id) => (SESSION_I18N[state.lang] || SESSION_I18N.zh)[id] || id;
 const rname = (id, serverFallback) => (REGIME_I18N[state.lang] || REGIME_I18N.zh)[id] || serverFallback || id || "-";
+const indname = (raw) => {
+  const s = String(raw ?? "").trim();
+  if (!s || s === "未分类") return t("other_ind");
+  const map = SECTOR_I18N[state.lang];
+  return (map && map[s]) || s;
+};
+const tStatus = (status) => {
+  if (status === "pending") return t("st_pending");
+  if (status === "untradable_limit_up") return t("st_untradable_title");
+  if (status === "missing") return t("st_missing_title");
+  return t("st_nodata");
+};
+const tHiddenReason = (raw, paired, minPaired) => {
+  if (!raw || state.lang === "zh") return raw || t("tc_insuff_title", { m: minPaired });
+  if (/同日配对|paired/i.test(String(raw))) {
+    return t("tc_hidden_reason_fmt", { p: paired, m: minPaired });
+  }
+  return t("tc_insuff_title", { m: minPaired });
+};
 
 function sname(name) {
   const map = STRATEGY_I18N[state.lang];
@@ -1580,11 +1661,21 @@ function refreshAllViews() {
   if (state.currentDay) renderDay(state.currentDay);
 }
 
+function syncQueryState() {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", state.lang);
+    url.searchParams.set("theme", state.theme);
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  } catch (_) {}
+}
+
 function setLang(lang) {
   const norm = normalizeLang(lang) || "zh";
   if (!SUPPORTED_LANGS.includes(norm)) return;
   state.lang = norm;
   try { localStorage.setItem("alphasift-lang", norm); } catch (_) {}
+  syncQueryState();
   applyStaticI18n();
   refreshAllViews();
 }
@@ -1626,6 +1717,7 @@ function initTheme() {
     document.documentElement.setAttribute("data-theme", next);
     syncThemeBtn(next);
     syncReportLinks();
+    syncQueryState();
     try { localStorage.setItem("alphasift-theme", next); } catch (_) {}
   });
 }
@@ -1846,7 +1938,7 @@ function renderMetaAndKpis() {
   const livePill = $("live-pill");
   if (livePill) {
     const latestDay = (s.days && s.days[0] && s.days[0].date) || "";
-    livePill.innerHTML = `<span class="live-dot"></span>${latestDay ? `LATEST · ${esc(latestDay)}` : "LIVE · 7 Markets"}`;
+    livePill.innerHTML = `<span class="live-dot"></span>${latestDay ? esc(t("live_latest_fmt", { d: latestDay })) : esc(t("live_7mkt"))}`;
   }
 
   const rep = state.report || s.latest_report || {};
@@ -1908,7 +2000,7 @@ function renderMetaAndKpis() {
       ? `<div class="kpi-cell">
            <div class="kpi-label"><span>${esc(t("kpi3_cons_lbl"))}</span><span class="badge accent">${esc(t("kpi3_cons_badge", { n: topConsensus.strategy_count }))}</span></div>
            <div class="kpi-val">${esc(topConsensus.name)} <span class="small dim">${esc(topConsensus.code)}</span></div>
-           <div class="kpi-foot">${esc(t("kpi3_cons_foot", { ind: topConsensus.industry, score: (topConsensus.avg_final_score != null ? Number(topConsensus.avg_final_score).toFixed(1) : "–"), price: (topConsensus.price != null ? Number(topConsensus.price).toFixed(2) : "–") }))}</div>
+           <div class="kpi-foot">${esc(t("kpi3_cons_foot", { ind: indname(topConsensus.industry), score: (topConsensus.avg_final_score != null ? Number(topConsensus.avg_final_score).toFixed(1) : "–"), price: (topConsensus.price != null ? Number(topConsensus.price).toFixed(2) : "–") }))}</div>
          </div>`
       : `<div class="kpi-cell"><div class="kpi-label">${esc(t("kpi3_empty_lbl"))}</div><div class="kpi-val dim">–</div><div class="kpi-foot">${esc(t("kpi3_empty_foot"))}</div></div>`;
 
@@ -1940,14 +2032,53 @@ function renderConsensusPane() {
 
   const consensus = (syn.consensus_picks && syn.consensus_picks.length) ? syn.consensus_picks : clientSyn.consensus;
   const sectors = (syn.sector_concentration && syn.sector_concentration.length) ? syn.sector_concentration : clientSyn.sectors;
-  const tradeDate = rep.trade_date || clientSyn.latestDate || "Latest";
+  const tradeDate = rep.trade_date || clientSyn.latestDate || t("latest_fallback");
   const flagged = ann.flagged_items || [];
   const checked = Number(ann.checked_count || 0);
 
   let headlineHtml = "";
   if (brief.headline) {
     const modeBadge = brief.mode === "llm" ? `<span class="badge ai">${esc(t("ai_brief_badge"))}</span>` : `<span class="badge">${esc(t("rule_brief_badge"))}</span>`;
-    headlineHtml = `<div class="brief-callout"><b>${modeBadge} ${esc(t("brief_headline_lbl"))}</b>${esc(brief.headline)}${brief.consensus_and_ai_edge ? `<div class="small dim" style="margin-top:4px;">${esc(brief.consensus_and_ai_edge)}</div>` : ""}</div>`;
+    let hlText = brief.headline;
+    let subText = brief.consensus_and_ai_edge || "";
+    if (state.lang !== "zh" && brief.mode !== "llm") {
+      const reg = rep.market_regime || ((state.patterns || {}).latest || {}).market_regime || ((state.summary.pattern_board || {}).latest || {}).market_regime || null;
+      if (reg) {
+        const adv = Number(reg.advance_ratio_pct || 0).toFixed(1);
+        const med = reg.median_return_pct !== null && reg.median_return_pct !== undefined
+          ? `${Number(reg.median_return_pct) > 0 ? "+" : ""}${Number(reg.median_return_pct).toFixed(2)}%`
+          : "–";
+        const seal = reg.seal_rate_pct !== null && reg.seal_rate_pct !== undefined ? `${Number(reg.seal_rate_pct).toFixed(1)}%` : "–";
+        hlText = t("rule_hl_fmt", {
+          stale: rep.pack_is_stale ? t("rule_hl_stale") : "",
+          stage: rname(reg.regime_stage, reg.regime_stage_label),
+          adv,
+          med,
+          lu: reg.non_st_limit_up_count ?? 0,
+          ld: reg.non_st_limit_down_count ?? 0,
+          seal,
+        });
+        if (flagged.length) hlText += t("rule_hl_flag", { n: flagged.length });
+        else if (consensus.length) hlText += t("rule_hl_cons", { n: consensus.length });
+      }
+      const subParts = [];
+      if (consensus.length) {
+        subParts.push(t("rule_sub_cons", { items: consensus.slice(0, 3).map((c) => `${c.code} ${c.name} (${c.strategy_count})`).join(", ") }));
+      } else {
+        subParts.push(t("rule_sub_nocons"));
+      }
+      if (sectors.length) {
+        subParts.push(t("rule_sub_sec", { items: sectors.slice(0, 3).map((s) => `${indname(s.industry)} (${s.share_pct}%)`).join(", ") }));
+      }
+      const aiHl = rep.ai_highlights || [];
+      if (aiHl.length) {
+        const addN = aiHl.reduce((acc, h) => acc + ((h && h.added_by_ai) || []).length, 0);
+        const dropN = aiHl.reduce((acc, h) => acc + ((h && h.dropped_by_ai) || []).length, 0);
+        subParts.push(t("rule_sub_ai", { add: addN, drop: dropN }));
+      }
+      subText = subParts.join(" · ");
+    }
+    headlineHtml = `<div class="brief-callout"><b>${modeBadge} ${esc(t("brief_headline_lbl"))}</b>${esc(hlText)}${subText ? `<div class="small dim" style="margin-top:4px;">${esc(subText)}</div>` : ""}</div>`;
   }
 
   let annHtml = "";
@@ -1976,7 +2107,7 @@ function renderConsensusPane() {
       return `<tr>
         <td><span class="rank-num ${idx < 3 ? "top" : ""}">${idx + 1}</span></td>
         <td class="l"><strong>${esc(c.name)}</strong> <span class="mono small dim">${esc(c.code)}</span></td>
-        <td class="l dim">${esc(c.industry || "–")}</td>
+        <td class="l dim">${c.industry ? esc(indname(c.industry)) : "–"}</td>
         <td><span class="badge accent">${esc(t("n_strat_badge", { n: c.strategy_count }))}</span></td>
         <td class="l">${stratTags}${more}</td>
         <td class="mono">${num(c.avg_final_score, 1)}</td>
@@ -1998,7 +2129,7 @@ function renderConsensusPane() {
         <div class="small dim" style="display:flex;justify-content:space-between;"><span>${esc(t("sector_dist_title", { n: Math.min(5, sectors.length) }))}</span><span class="mono">${esc(t("sector_dist_col"))}</span></div>
         ${sectors.slice(0, 5).map((s) => `
           <div class="sector-row">
-            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.industry)}</span>
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(indname(s.industry))}</span>
             <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, Number(s.share_pct || 0)).toFixed(1)}%"></div></div>
             <span class="mono small" style="text-align:right;">${Number(s.share_pct || 0).toFixed(1)}% (${s.pick_count})</span>
           </div>`).join("")}
@@ -2055,7 +2186,7 @@ function renderCnHero() {
     wrap.innerHTML = `
       <div class="pane-head">
         <div class="pane-title">${ICO_GLOBE} ${esc(t("snap_7mkt_title"))}</div>
-        <span class="chip">Rules Benchmark</span>
+        <span class="chip">${esc(t("rules_bench_chip"))}</span>
       </div>
       <div class="mkt-snap-list">${rowsHtml}</div>
       <div class="small dim" style="margin-top:auto;padding-top:8px;border-top:1px dashed var(--border);">
@@ -2234,7 +2365,7 @@ function renderTrackComparison() {
       const sufficient = Boolean(x.sample_sufficient) && x.ai_minus_rules_pct !== null && x.ai_minus_rules_pct !== undefined;
       const deltaCell = sufficient
         ? `<b>${pct(x.ai_minus_rules_pct)}</b><div class="small dim">${esc(t("tc_win_days", { w: x.ai_win_days ?? 0, n: paired }))}</div>`
-        : `<span class="badge exp" title="${esc(x.delta_hidden_reason || t("tc_insuff_title", { m: minPaired }))}">${esc(t("tc_insuff", { p: paired, m: minPaired }))}</span>`;
+        : `<span class="badge exp" title="${esc(tHiddenReason(x.delta_hidden_reason, paired, minPaired))}">${esc(t("tc_insuff", { p: paired, m: minPaired }))}</span>`;
       const missRate = r.ai_missing_rate_pct !== null && r.ai_missing_rate_pct !== undefined ? `${Number(r.ai_missing_rate_pct).toFixed(1)}%` : "–";
       const overlap = r.avg_pick_overlap_pct !== null && r.avg_pick_overlap_pct !== undefined ? `${Number(r.avg_pick_overlap_pct).toFixed(1)}%` : "–";
       const uniqTxt = x.ai_unique_count ? `${pct(x.ai_unique_excess_pct)} <span class="dim small">(${x.ai_unique_count})</span>` : '<span class="dim">–</span>';
@@ -2536,13 +2667,13 @@ function picksTable(picks, withEval) {
   const body = picks.map((p) => {
     const name = `<strong>${esc(p.name)}</strong> <span class="mono dim small">${esc(p.code)}</span>`;
     if (!withEval)
-      return `<tr><td><span class="rank-num ${p.rank <= 3 ? "top" : ""}">${p.rank}</span></td><td class="l">${name}</td><td class="l dim">${esc(p.industry)}</td><td class="mono">${num(p.price)}</td><td class="mono">${num(p.pe_ratio, 1)}</td><td class="mono">${num(p.pb_ratio, 2)}</td></tr>`;
+      return `<tr><td><span class="rank-num ${p.rank <= 3 ? "top" : ""}">${p.rank}</span></td><td class="l">${name}</td><td class="l dim">${esc(indname(p.industry))}</td><td class="mono">${num(p.price)}</td><td class="mono">${num(p.pe_ratio, 1)}</td><td class="mono">${num(p.pb_ratio, 2)}</td></tr>`;
     const cells = wins.map((w) => {
       const e = (p.evaluation || {})[w];
       if (!e) return '<td class="dim mono">–</td>';
       if (e.status === "pending") return `<td class="dim">${esc(t("st_pending"))}</td>`;
       if (e.status === "untradable_limit_up") return `<td class="dim" title="${esc(t("st_untradable_title"))}">${esc(t("st_untradable"))}</td>`;
-      if (e.status !== "ok") return `<td class="dim" title="${esc(e.status)}">${esc(t("st_nodata"))}</td>`;
+      if (e.status !== "ok") return `<td class="dim" title="${esc(tStatus(e.status))}">${esc(t("st_nodata"))}</td>`;
       return `<td class="mono" title="${esc(t("chart_tip_excess"))} ${e.excess_return_pct ?? "–"}%">${pct(e.return_pct, 1)}<br><span class="small">${e.excess_return_pct === null ? "" : esc(t("st_excess_lbl")) + pct(e.excess_return_pct, 1)}</span></td>`;
     }).join("");
     return `<tr><td><span class="rank-num ${p.rank <= 3 ? "top" : ""}">${p.rank}</span></td><td class="l">${name}</td>${cells}</tr>`;
@@ -2579,6 +2710,7 @@ function renderLatest() {
 
 async function renderDay(day) {
   state.currentDay = day;
+  const reqId = ++state.dayReqId;
   if (!day) { $("history").innerHTML = `<div class="empty">${esc(t("no_days"))}</div>`; return; }
   let data = state.dayCache[day];
   if (!data) {
@@ -2588,10 +2720,12 @@ async function renderDay(day) {
       data = await res.json();
       state.dayCache[day] = data;
     } catch (err) {
+      if (reqId !== state.dayReqId) return;
       $("history").innerHTML = `<div class="empty">${esc(t("load_fail", { msg: err.message }))}</div>`;
       return;
     }
   }
+  if (reqId !== state.dayReqId) return;
   const q = (state.searchQuery || "").trim().toLowerCase();
   const runs = (data.runs || []).filter((r) => matchesSearch(r, q));
   $("history").innerHTML = runs.length ? runs.map((r) => {

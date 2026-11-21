@@ -280,3 +280,64 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
     assert "evaluate --track track --markets" in tr_text and '--pack-dir "$ALPHASIFT_PACK_DIR"' in tr_text
     assert "--output-html track/site/daily_report.html" in tr_text
     assert "--ai-brief auto" in tr_text
+
+
+def test_dashboard_page_i18n_race_guard_url_sync_and_js_syntax(tmp_path) -> None:
+    import re
+    import subprocess
+
+    page_path = Path(__file__).resolve().parents[1] / "scripts" / "track_record_page.html"
+    html_text = page_path.read_text(encoding="utf-8")
+
+    # 1. Race guard and query-param history.replaceState sync exist
+    assert "dayReqId: 0" in html_text
+    assert "const reqId = ++state.dayReqId" in html_text
+    assert "if (reqId !== state.dayReqId) return;" in html_text
+    assert "window.history.replaceState" in html_text
+    assert "syncQueryState();" in html_text
+
+    # 2. Hardcoded untranslated literals removed from renderers
+    assert '<span class="chip">Rules Benchmark</span>' not in html_text
+    assert 't("live_7mkt")' in html_text
+    assert 't("live_latest_fmt"' in html_text
+    assert "tHiddenReason(x.delta_hidden_reason" in html_text
+    assert "indname(" in html_text
+    assert "tStatus(e.status)" in html_text
+    assert "rule_hl_fmt:" in html_text
+
+    # 3. Extract script block and verify JS syntax + full zh/en/ja I18N key parity with node
+    m = re.search(r"<script>([\s\S]*)</script>", html_text)
+    assert m is not None
+    js_path = tmp_path / "track_record.js"
+    js_path.write_text(m.group(1), encoding="utf-8")
+    subprocess.run(["node", "--check", str(js_path)], check=True)
+
+    check_js = tmp_path / "check_i18n.js"
+    dict_match = re.search(r"(const I18N = \{[\s\S]*?\n\};)", html_text)
+    assert dict_match is not None
+    check_js.write_text(
+        dict_match.group(1)
+        + """
+const zhKeys = Object.keys(I18N.zh).sort();
+const enKeys = Object.keys(I18N.en).sort();
+const jaKeys = Object.keys(I18N.ja).sort();
+for (const k of new Set([...zhKeys, ...enKeys, ...jaKeys])) {
+  if (!zhKeys.includes(k)) { console.error("Missing in ZH:", k); process.exit(1); }
+  if (!enKeys.includes(k)) { console.error("Missing in EN:", k); process.exit(2); }
+  if (!jaKeys.includes(k)) { console.error("Missing in JA:", k); process.exit(3); }
+}
+for (const lang of ["en", "ja"]) {
+  for (const [k, v] of Object.entries(I18N[lang])) {
+    if (k === "rule_sub_cons" || k === "rule_sub_sec") continue;
+    if (typeof v === "string" && /[\\u4e00-\\u9fff]/.test(v) && lang === "en") {
+      console.error("CJK in EN:", k, v);
+      process.exit(4);
+    }
+  }
+}
+console.log("I18N_PARITY_OK", zhKeys.length);
+""",
+        encoding="utf-8",
+    )
+    out = subprocess.run(["node", str(check_js)], check=True, capture_output=True, text=True)
+    assert "I18N_PARITY_OK" in out.stdout

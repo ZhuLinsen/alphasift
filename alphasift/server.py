@@ -29,6 +29,7 @@ from alphasift.store import list_saved_runs, load_screen_result
 from alphasift.strategy import compare_strategies, list_strategies, match_strategies, strategy_facets
 from alphasift.strategy_cards import build_strategy_cards
 from alphasift.strategy_templates import get_strategy_template, list_strategy_templates
+from alphasift.workbench_ui import render_workbench_html
 
 
 def build_api_response(
@@ -329,7 +330,9 @@ def build_html_response(
     *,
     query: str = "",
 ) -> tuple[int, str]:
-    """Return HTTP status and HTML content for standalone HTML report endpoints."""
+    """Return HTTP status and HTML content for standalone UI and report endpoints."""
+    if path in {"/ui", "/"}:
+        return 200, render_workbench_html()
     if path != "/daily-report.html":
         return 404, (
             "<!doctype html><meta charset='utf-8'><h1>404 Not Found</h1>"
@@ -342,6 +345,18 @@ def build_html_response(
             f"<!doctype html><meta charset='utf-8'><h1>{status}</h1><p>{msg}</p>"
         )
     return 200, render_daily_report_html(payload)
+
+
+def _prefers_html(accept_header: str, query: str) -> bool:
+    params = parse_qs(query, keep_blank_values=False)
+    if (params.get("format") or [""])[-1].strip().lower() == "json":
+        return False
+    lowered = str(accept_header or "").lower()
+    html_pos = lowered.find("text/html")
+    if html_pos < 0:
+        return False
+    json_pos = lowered.find("application/json")
+    return json_pos < 0 or html_pos < json_pos
 
 
 def serve_api(
@@ -366,7 +381,9 @@ def _handler_for_config(config: Config):
 
         def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler.
             parsed = urlparse(self.path)
-            if parsed.path == "/daily-report.html":
+            if parsed.path in {"/ui", "/daily-report.html"} or (
+                parsed.path == "/" and _prefers_html(self.headers.get("Accept", ""), parsed.query)
+            ):
                 status, html_body = build_html_response(config, parsed.path, query=parsed.query)
                 self._send_html(status, html_body)
                 return
@@ -381,6 +398,15 @@ def _handler_for_config(config: Config):
             self.send_response(status)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("X-Frame-Options", "DENY")
+            self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header(
+                "Content-Security-Policy",
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+            )
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -390,6 +416,7 @@ def _handler_for_config(config: Config):
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
@@ -404,6 +431,7 @@ def _index_payload() -> dict[str, Any]:
         "schema_version": 1,
         "endpoints": [
             "/health",
+            "/ui",
             "/result-schema",
             "/daily-report-schema",
             "/overview",

@@ -532,3 +532,71 @@ def test_api_report_rejects_cwd_shadow_and_symlinks(tmp_path, monkeypatch):
     dr_bad_status, dr_bad_payload = build_api_response(cfg, "/daily-report", query="run_id=../bad")
     assert dr_bad_status == 400
     assert dr_bad_payload["error"] == "invalid_run_id"
+
+
+def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tmp_path):
+    from http.server import ThreadingHTTPServer
+    import json
+    import subprocess
+    import threading
+    import urllib.request
+    from alphasift.server import _handler_for_config
+    from alphasift.workbench_ui import render_workbench_html
+
+    cfg = _config(tmp_path)
+    html_text = render_workbench_html()
+    assert "http://" not in html_text and "https://" not in html_text
+
+    script_body = html_text.split("<script>", 1)[1].rsplit("</script>", 1)[0]
+    js_file = tmp_path / "wb.js"
+    js_file.write_text(script_body, encoding="utf-8")
+    subprocess.run(["node", "--check", str(js_file)], check=True)
+
+    # Pure build_api_response("/") stays pure JSON
+    idx_status, idx_payload = build_api_response(cfg, "/")
+    assert idx_status == 200
+    assert "/ui" in idx_payload["endpoints"]
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _handler_for_config(cfg))
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        # 1. GET /ui returns Workbench HTML + strict security headers
+        req_ui = urllib.request.Request(f"http://127.0.0.1:{port}/ui")
+        with urllib.request.urlopen(req_ui, timeout=5) as resp:
+            assert resp.status == 200
+            assert "text/html" in resp.headers.get("Content-Type", "")
+            assert resp.headers.get("X-Content-Type-Options") == "nosniff"
+            assert resp.headers.get("X-Frame-Options") == "DENY"
+            assert "frame-ancestors 'none'" in resp.headers.get("Content-Security-Policy", "")
+            assert "AlphaSift" in resp.read().decode("utf-8")
+
+        # 2. GET / with Accept: text/html serves Workbench UI
+        req_html = urllib.request.Request(
+            f"http://127.0.0.1:{port}/",
+            headers={"Accept": "text/html,application/xhtml+xml,*/*;q=0.8"},
+        )
+        with urllib.request.urlopen(req_html, timeout=5) as resp:
+            assert "text/html" in resp.headers.get("Content-Type", "")
+
+        # 3. GET / with Accept: application/json or ?format=json serves pure JSON index
+        req_json = urllib.request.Request(
+            f"http://127.0.0.1:{port}/",
+            headers={"Accept": "application/json"},
+        )
+        with urllib.request.urlopen(req_json, timeout=5) as resp:
+            assert "application/json" in resp.headers.get("Content-Type", "")
+            assert resp.headers.get("X-Content-Type-Options") == "nosniff"
+            data = json.loads(resp.read().decode("utf-8"))
+            assert "/ui" in data["endpoints"]
+
+        req_fmt = urllib.request.Request(
+            f"http://127.0.0.1:{port}/?format=json",
+            headers={"Accept": "text/html"},
+        )
+        with urllib.request.urlopen(req_fmt, timeout=5) as resp:
+            assert "application/json" in resp.headers.get("Content-Type", "")
+    finally:
+        server.shutdown()
+        server.server_close()
