@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import copy
+
 SCREEN_RESULT_SCHEMA_VERSION = 1
 DAILY_REPORT_SCHEMA_VERSION = 1
 
@@ -79,6 +81,8 @@ SCREEN_RESULT_SCHEMA: dict[str, object] = {
         "deep_analysis_operation_advice",
         "deep_analysis_trend_prediction",
         "deep_analysis_risk_flags",
+        "llm_watch_items",
+        "llm_invalidators",
     ],
     "ui_card_fields": {
         "identity": ["rank", "code", "name", "final_score", "screen_score"],
@@ -122,14 +126,7 @@ SCREEN_RESULT_SCHEMA: dict[str, object] = {
 
 def screen_result_schema() -> dict[str, object]:
     """Return a copy of the stable ScreenResult schema metadata."""
-    return {
-        key: value.copy()
-        if isinstance(value, dict)
-        else list(value)
-        if isinstance(value, list)
-        else value
-        for key, value in SCREEN_RESULT_SCHEMA.items()
-    }
+    return copy.deepcopy(SCREEN_RESULT_SCHEMA)
 
 
 DAILY_REPORT_SCHEMA: dict[str, object] = {

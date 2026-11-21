@@ -33,10 +33,13 @@ _BASE_URL_ENV = {
 }
 _CHANNEL_PROTOCOLS = _GATEWAYS.keys() - {"anthropic"}
 _SECRET_LIKE = re.compile(
-    r"(?i)(?:\b(?:bearer\s+\S+|(?:sk|pk|rk|key)-[\w-]{8,}|AIza[\w-]{16,}|[\w-]{32,})"
+    r"(?i)(?:bearer\s+\S+"
     r"|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"
     r"|[0-9a-f]{12,}\.[A-Za-z0-9_-]{10,}"
-    r"|\b(?:access_token|token|key|secret|password|api_key)\s*[=:]\s*[^\s&,'\"\}\]]+)"
+    r"|\b(?:sk|pk|rk|key)-[\w-]{8,}"
+    r"|\bAIza[\w-]{16,}"
+    r"|\b(?:access_token|token|key|secret|password|api_key)\s*[=:]\s*['\"]?[^\s&,'\"\}\]]+['\"]?"
+    r"|\b[\w-]{32,}\b)"
 )
 
 
@@ -183,7 +186,7 @@ def _validated_endpoint(base_url: str) -> str:
         raise LLMClientError("Invalid LLM endpoint URL")
     if parsed.username or parsed.password:
         raise LLMClientError("Invalid LLM endpoint URL: embedded credentials disallowed")
-    if parsed.query or parsed.fragment:
+    if parsed.query or parsed.fragment or "?" in cleaned or "#" in cleaned:
         raise LLMClientError("Invalid LLM endpoint URL: query and fragment disallowed")
     return cleaned.rstrip("/")
 

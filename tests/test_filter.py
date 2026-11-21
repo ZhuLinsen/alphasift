@@ -356,3 +356,34 @@ def test_hard_filter_waterfall_attaches_quantiles_and_tight_threshold_hints():
 
     bool_step = next(s for s in steps if s["filter"] == "require_ma_bullish")
     assert "quantiles" not in bool_step
+
+    import json
+
+    inf_df = pd.DataFrame([
+        {"name": "A", "amount": 1.0},
+        {"name": "B", "amount": float("inf")},
+        {"name": "C", "amount": float("-inf")},
+        {"name": "D", "amount": 5.0},
+    ])
+    inf_steps = hard_filter_waterfall(
+        inf_df,
+        HardFilterConfig(amount_min=10.0),
+        include_quantiles=True,
+    )
+    inf_amt = next(s for s in inf_steps if s["filter"] == "amount_min")
+    assert inf_amt["quantiles"]["valid_count"] == 2
+    assert inf_amt["quantiles"]["p50"] == 3.0
+    json.dumps(inf_steps, allow_nan=False)
+
+    # Object dtype bool + pd.NA columns should NOT produce numeric quantiles
+    obj_bool_df = pd.DataFrame([
+        {"name": "X1", "amount": 200_000_000, "ma_bullish": True},
+        {"name": "X2", "amount": 200_000_000, "ma_bullish": False},
+        {"name": "X3", "amount": 200_000_000, "ma_bullish": pd.NA},
+    ])
+    obj_steps = hard_filter_waterfall(
+        obj_bool_df,
+        HardFilterConfig(require_ma_bullish=True),
+        include_quantiles=True,
+    )
+    assert "quantiles" not in obj_steps[0]

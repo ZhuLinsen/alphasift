@@ -120,10 +120,9 @@ def apply_portfolio_overlay(
     bucket_counts: dict[str, int] = {}
     bucket_penalties: dict[str, list[tuple[str, str, float]]] = {}
     for pick in ordered:
-        sector = _canonical_sector(_pick_sector(pick))
+        sector, bucket = _pick_bucket(pick, buckets=portfolio_profile.get("buckets"))
         if not sector:
             continue
-        bucket = _portfolio_bucket(sector, pick.llm_theme, buckets=portfolio_profile.get("buckets"))
         bucket_counts[bucket] = bucket_counts.get(bucket, 0) + 1
         excess = bucket_counts[bucket] - max_same_sector
         if excess <= 0:
@@ -169,11 +168,10 @@ def _apply_bucket_hard_cap(
     counts: dict[str, int] = {}
     deferred: dict[str, list[str]] = {}
     for pick in ordered:
-        sector = _canonical_sector(_pick_sector(pick))
+        sector, bucket = _pick_bucket(pick, buckets=buckets)
         if not sector:
             within.append(pick)
             continue
-        bucket = _portfolio_bucket(sector, pick.llm_theme, buckets=buckets)
         counts[bucket] = counts.get(bucket, 0) + 1
         if counts[bucket] <= max_same_bucket:
             within.append(pick)
@@ -315,12 +313,7 @@ def summarize_portfolio_exposure(
     bucket_picks: dict[str, list[Pick]] = {}
     selected_codes = {p.code for p in selected_picks}
     for pick in selected_picks:
-        sector = _pick_sector(pick)
-        bucket = (
-            _portfolio_bucket(sector, pick.llm_theme or pick.concepts, buckets=buckets)
-            if (sector or pick.llm_theme or pick.concepts)
-            else "unclassified"
-        )
+        _, bucket = _pick_bucket(pick, buckets=buckets)
         bucket_picks.setdefault(bucket, []).append(pick)
 
     exposure: dict[str, dict[str, object]] = {}
@@ -337,34 +330,33 @@ def summarize_portfolio_exposure(
         if is_over:
             overconcentrated.append(bucket)
 
+    limit_count = max(0, int(replacement_limit))
     replacements: list[dict[str, object]] = []
-    seen_codes = set(selected_codes)
-    active_buckets = set(bucket_picks.keys()) - {"unclassified"}
-    ordered_pool = sorted(
-        candidate_pool or [],
-        key=lambda p: (0 if _portfolio_bucket(_pick_sector(p), p.llm_theme or p.concepts, buckets=buckets) not in active_buckets else 1, -float(p.final_score), p.code),
-    )
-    for cand in ordered_pool:
-        if cand.code in seen_codes:
-            continue
-        seen_codes.add(cand.code)
-        c_sector = _pick_sector(cand)
-        c_bucket = (
-            _portfolio_bucket(c_sector, cand.llm_theme or cand.concepts, buckets=buckets)
-            if (c_sector or cand.llm_theme or cand.concepts)
-            else "unclassified"
+    if limit_count > 0:
+        seen_codes = set(selected_codes)
+        active_buckets = set(bucket_picks.keys()) - {"unclassified"}
+        ordered_pool = sorted(
+            candidate_pool or [],
+            key=lambda p: (0 if _pick_bucket(p, buckets=buckets)[1] not in active_buckets else 1, -float(p.final_score), p.code),
         )
-        if c_bucket in overconcentrated:
-            continue
-        replacements.append({
-            "code": cand.code,
-            "name": cand.name,
-            "bucket": c_bucket,
-            "sector": c_sector,
-            "final_score": round(float(cand.final_score), 4),
-        })
-        if len(replacements) >= max(0, int(replacement_limit)):
-            break
+        for cand in ordered_pool:
+            if cand.code in seen_codes:
+                continue
+            seen_codes.add(cand.code)
+            c_sector, c_bucket = _pick_bucket(cand, buckets=buckets)
+            if c_bucket in overconcentrated or (
+                c_bucket != "unclassified" and len(bucket_picks.get(c_bucket, [])) >= limit
+            ):
+                continue
+            replacements.append({
+                "code": cand.code,
+                "name": cand.name,
+                "bucket": c_bucket,
+                "sector": c_sector,
+                "final_score": round(float(cand.final_score), 4),
+            })
+            if len(replacements) >= limit_count:
+                break
 
     return exposure, overconcentrated, replacements
 
@@ -392,6 +384,13 @@ def _canonical_sector(label: str) -> str:
 
 def _pick_sector(pick: Pick) -> str:
     return pick.llm_sector or pick.industry
+
+
+def _pick_bucket(pick: Pick, *, buckets: object = None) -> tuple[str, str]:
+    sector = _canonical_sector(_pick_sector(pick))
+    if not sector:
+        return "", "unclassified"
+    return sector, _portfolio_bucket(sector, pick.llm_theme, buckets=buckets)
 
 
 def _risk_profile(profile: dict[str, object] | None) -> dict[str, float]:

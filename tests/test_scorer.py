@@ -360,3 +360,11 @@ def test_explain_topic_alignment_covers_direct_concept_unmatched_and_missing():
     missing = explain_topic_alignment(pd.NA, None, "")
     assert missing["status"] == "unassessed"
     assert missing["matched_topics"] == []
+
+    # Multi-word labels must not falsely match single-word substrings
+    partial = explain_topic_alignment("Insurance", "", "Life Insurance:90")
+    assert partial["status"] == "unmatched"
+    assert partial["matched_topics"] == []
+    exact_multi = explain_topic_alignment("Life Insurance", "", "Life Insurance:90")
+    assert exact_multi["status"] == "aligned"
+    assert exact_multi["role"] == "direct_industry"

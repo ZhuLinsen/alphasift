@@ -344,3 +344,16 @@ def test_default_gemini_model_and_hydrogen_fallback(monkeypatch):
     monkeypatch.setenv("LITELLM_FALLBACK_MODELS", "none")
     cfg_none = Config.from_env()
     assert cfg_none.llm_fallback_models == []
+
+    monkeypatch.setenv("LITELLM_FALLBACK_MODELS", "")
+    cfg_empty = Config.from_env()
+    assert cfg_empty.llm_fallback_models == []
+
+    # Keyless non-Ollama channel with models should NOT mark LLM config as usable
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.setenv("LLM_CHANNELS", "primary")
+    monkeypatch.setenv("LLM_PRIMARY_PROTOCOL", "openai")
+    monkeypatch.setenv("LLM_PRIMARY_MODELS", "deepseek-chat")
+    monkeypatch.setenv("LLM_PRIMARY_BASE_URL", "https://api.deepseek.com")
+    cfg_keyless = Config.from_env()
+    assert cfg_keyless.has_usable_llm_config() is False

@@ -2,6 +2,7 @@
 """screen_score calculation."""
 
 import math
+import re
 
 import pandas as pd
 
@@ -561,11 +562,11 @@ def _topic_tokens(value: object) -> set[str]:
     text = str(value).strip()
     if not text or text.lower() in {"nan", "none", "<na>"}:
         return set()
-    normalized = text
-    for sep in ["|", ",", "，", ";", "；", "/"]:
-        normalized = normalized.replace(sep, " ")
     tokens = set()
-    for raw in normalized.split():
+    for part in re.split(r"[|,，;；/\n、]+", text):
+        raw = " ".join(part.split()).strip()
+        if not raw:
+            continue
         token = raw.split(":", 1)[0].strip()
         if token and token.lower() not in {"rank", "nan", "none", "<na>"}:
             tokens.add(token)

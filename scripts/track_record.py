@@ -250,7 +250,7 @@ def _should_run_ai_track(market: str, ai_track: str, config: Any) -> bool:
     mode = (ai_track or "auto").strip().lower()
     if mode == "off" or market not in AI_TRACK_MARKETS:
         return False
-    return bool(config.has_llm_config())
+    return bool(config.has_usable_llm_config())
 
 
 def _ai_run_id(result: Any, expected_date: str) -> str:

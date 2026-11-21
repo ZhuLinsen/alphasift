@@ -75,10 +75,18 @@ def _json_safe(obj: Any) -> Any:
         return obj if math.isfinite(obj) else None
     if isinstance(obj, str):
         return obj
+    if type(obj).__name__ == "NaTType":
+        return None
     if isinstance(obj, (date, datetime)):
         return obj.isoformat()
     if isinstance(obj, Path):
         return str(obj)
+    ndim = getattr(obj, "ndim", None)
+    if isinstance(ndim, int) and ndim > 0 and hasattr(obj, "tolist") and callable(getattr(obj, "tolist")):
+        try:
+            return _json_safe(obj.tolist())
+        except Exception:
+            pass
     if hasattr(obj, "item") and callable(getattr(obj, "item")):
         try:
             return _json_safe(obj.item())
@@ -574,13 +582,21 @@ def _read_bounded_line(stream: BinaryIO, limit: int = _MAX_CONTENT_LENGTH) -> by
     return line
 
 
-def _read_exact_bytes(stream: BinaryIO, length: int) -> bytes:
+class _FramingError(ValueError):
+    """Raised when reading a framed STDIO message fails after framing mode is known."""
+
+    def __init__(self, message: str, *, framing: str = "line") -> None:
+        super().__init__(message)
+        self.framing = framing
+
+
+def _read_exact_bytes(stream: BinaryIO, length: int, *, framing: str = "headers") -> bytes:
     chunks: list[bytes] = []
     remaining = length
     while remaining > 0:
         chunk = stream.read(remaining)
         if not chunk:
-            raise ValueError("Truncated Content-Length body")
+            raise _FramingError("Truncated Content-Length body", framing=framing)
         chunks.append(chunk)
         remaining -= len(chunk)
     return b"".join(chunks)
@@ -610,14 +626,14 @@ def read_stdio_message(stream: BinaryIO) -> tuple[str, bytes] | None:
         header_lines += 1
         header_bytes += len(line)
         if header_lines > _MAX_HEADER_LINES or header_bytes > _MAX_HEADER_BYTES:
-            raise ValueError("MCP headers exceed maximum limits")
+            raise _FramingError("MCP headers exceed maximum limits", framing="headers")
         decoded = line.decode("ascii", errors="replace").rstrip("\r\n")
         if ":" in decoded:
             k, v = decoded.split(":", 1)
             key_lower = k.strip().lower()
             val_clean = v.strip()
             if key_lower == "content-length" and key_lower in headers and headers[key_lower] != val_clean:
-                raise ValueError("Conflicting Content-Length headers")
+                raise _FramingError("Conflicting Content-Length headers", framing="headers")
             headers[key_lower] = val_clean
         line = _read_bounded_line(stream, limit=_MAX_HEADER_BYTES)
         if not line:
@@ -625,11 +641,11 @@ def read_stdio_message(stream: BinaryIO) -> tuple[str, bytes] | None:
 
     raw_len = headers.get("content-length")
     if raw_len is None or not raw_len.isdigit():
-        raise ValueError("Missing or invalid Content-Length header")
+        raise _FramingError("Missing or invalid Content-Length header", framing="headers")
     length = int(raw_len)
     if length < 0 or length > _MAX_CONTENT_LENGTH:
-        raise ValueError(f"Invalid Content-Length: {length}")
-    body = _read_exact_bytes(stream, length)
+        raise _FramingError(f"Invalid Content-Length: {length}", framing="headers")
+    body = _read_exact_bytes(stream, length, framing="headers")
     return "headers", body
 
 
@@ -673,10 +689,11 @@ def serve_mcp(
             try:
                 frame = read_stdio_message(reader)
             except ValueError as exc:
+                err_framing = exc.framing if isinstance(exc, _FramingError) else "line"
                 write_stdio_message(
                     writer,
                     {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": str(exc)}},
-                    framing="line",
+                    framing=err_framing,
                 )
                 break
             if frame is None:

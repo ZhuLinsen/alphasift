@@ -376,13 +376,32 @@ def test_round9_key_origin_isolation_empty_content_fallback_and_userinfo_block(m
             temperature=0.2,
         )
 
-    # 3b. Query/fragment injection and empty-string Actions env fallbacks
-    with pytest.raises(LLMClientError, match="query and fragment disallowed"):
-        complete(
-            LLMAttempt("https://example.test/v1?api_key=bad", "m", "k"),
-            messages=[{"role": "user", "content": "hi"}],
-            temperature=0.2,
-        )
+    # 3b. Query/fragment injection (including bare ? / # delimiters) and Zhipu/JWT redaction
+    for bad_url in (
+        "https://example.test/v1?api_key=bad",
+        "https://example.test/v1?",
+        "https://example.test/v1#",
+    ):
+        with pytest.raises(LLMClientError, match="query and fragment disallowed"):
+            complete(
+                LLMAttempt(bad_url, "m", "k"),
+                messages=[{"role": "user", "content": "hi"}],
+                temperature=0.2,
+            )
+
+    from alphasift.llm_client import _provider_reason
+
+    err_resp = requests.Response()
+    err_resp.status_code = 400
+    err_resp._content = (
+        b'{"error": {"message": "zhipu=4f8e0123456789abcdef0123456789ab.AbCdEfGh12345678 '
+        b'jwt=eyJabcdef1234567890abcdef1234567890.eyJsub12345.sig123456 '
+        b'api_key=\\"quoted-secret-value\\""}}'
+    )
+    sanitized = _provider_reason(err_resp, "")
+    assert "AbCdEfGh12345678" not in sanitized
+    assert "eyJsub12345" not in sanitized
+    assert "quoted-secret-value" not in sanitized
 
     monkeypatch.setenv("LLM_CHANNELS", "primary")
     monkeypatch.setenv("LLM_PRIMARY_PROTOCOL", "")

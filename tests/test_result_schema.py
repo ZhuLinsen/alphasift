@@ -83,3 +83,66 @@ def test_screen_result_contract_fixture_and_legacy_roundtrip(tmp_path):
     loaded_legacy = load_screen_result(leg_file, data_dir=tmp_path)
     assert loaded_legacy.portfolio_topic_exposure == {}
     assert loaded_legacy.picks[0].topic_alignment_status == ""
+
+    # Live ScreenResult serialization matches schema metadata + positional saved_path backwards-compatible
+    from dataclasses import asdict
+    import pandas as pd
+    from alphasift.config import Config
+    from alphasift.pipeline import screen
+
+    pos = ScreenResult(
+        "dual_low",
+        "cn",
+        "1.0",
+        "framework",
+        10,
+        2,
+        [],
+        "run01",
+        "rules",
+        False,
+        "",
+        "",
+        "",
+        None,
+        [],
+        [],
+        "em",
+        [],
+        False,
+        [],
+        False,
+        0,
+        True,
+        True,
+        [],
+        "/tmp/run01.json",
+        "2026-11-21T00:00:00Z",
+    )
+    assert pos.saved_path == "/tmp/run01.json"
+    assert pos.created_at == "2026-11-21T00:00:00Z"
+    assert pos.portfolio_topic_exposure == {}
+
+    snap = pd.DataFrame([
+        {
+            "code": "600519",
+            "name": "贵州茅台",
+            "price": 1520.0,
+            "amount": 2_000_000_000,
+            "total_mv": 1_800_000_000_000,
+            "pe_ratio": 22.0,
+            "pb_ratio": 7.0,
+            "change_pct": 1.2,
+            "turnover_rate": 0.4,
+            "volume_ratio": 1.1,
+            "industry": "白酒",
+            "concepts": "高股息",
+        }
+    ])
+    live = screen("balanced_alpha", market="cn", max_output=1, use_llm=False, daily_enrich=False, config=Config(data_dir=tmp_path), snapshot_df=snap)
+    live_dict = asdict(live)
+    for field_name in cast(list[str], schema["top_level_fields"]):
+        assert field_name in live_dict
+    for pick_dict in live_dict["picks"]:
+        for field_name in cast(list[str], schema["pick_fields"]):
+            assert field_name in pick_dict

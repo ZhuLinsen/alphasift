@@ -20,7 +20,7 @@ Consumers should treat these top-level fields as stable integration points:
 - `degradation`, `snapshot_source`, `source_errors`
 - `deep_analysis_requested`, `post_analyzers`
 - `daily_enriched`, `daily_enrich_count`
-- `risk_enabled`, `portfolio_diversity_enabled`, `portfolio_concentration_notes`
+- `risk_enabled`, `portfolio_diversity_enabled`, `portfolio_concentration_notes`, `portfolio_topic_exposure`, `overconcentrated_topics`, `replacement_candidates`
 
 ## Stable pick fields
 
@@ -29,7 +29,7 @@ Important UI/API fields on each pick include:
 - identity: `rank`, `code`, `name`, `final_score`, `screen_score`
 - factor diagnostics: `factor_scores`, `ranking_reason`
 - risk: `risk_summary`, `risk_score`, `risk_level`, `risk_flags`, `portfolio_penalty`, `portfolio_flags`
-- topic/source context: `industry`, `concepts`, `board_heat_score`, `board_heat_summary`
+- topic/source context: `industry`, `concepts`, `topic_alignment_status`, `topic_alignment_role`, `topic_alignment_reason`, `matched_topics`, `unmatched_topics`, `board_heat_score`, `board_heat_summary`
 - daily quality: `daily_quality_score`, `daily_quality_flags`, `daily_source`
 - post-analysis: `post_analysis_status`, `post_analysis_summaries`, `post_analysis_score_deltas`, `post_analysis_tags`
 - optional DSA context: `dsa_context`, `dsa_news`, `dsa_analysis_summary`
@@ -42,6 +42,8 @@ For upstream UI / DSA / agent integrations, use these field groups:
 - source health: `snapshot_source`, `source_errors`, `daily_source`, `daily_quality_flags`
 - filter/source degradation: `degradation`
 - risk flags: `risk_level`, `risk_flags`, `portfolio_flags`, `risk_summary`
+- topic alignment: `topic_alignment_status`, `topic_alignment_role`, `topic_alignment_reason`, `matched_topics`, `unmatched_topics`
+- portfolio exposure: `portfolio_topic_exposure`, `overconcentrated_topics`, `replacement_candidates`
 - watch items / invalidators: `llm_watch_items`, `llm_invalidators`, `deep_analysis_operation_advice`
 - post-analysis: `post_analysis_status`, `post_analysis_summaries`, `post_analysis_tags`
 

@@ -268,3 +268,21 @@ def test_mcp_round9_security_and_strict_schema_validation(tmp_path):
     framing, payload = read_stdio_message(ws_stream)
     assert framing == "line"
     assert json.loads(payload)["method"] == "ping"
+
+    # 9. Single-element NumPy arrays retain shape & NaT serializes as None
+    import numpy as np
+    import pandas as pd
+
+    arr_out = _json_safe({"a1": np.array([4]), "a2": np.array([[4]]), "s": np.float64(2.5), "t": pd.NaT})
+    assert arr_out == {"a1": [4], "a2": [[4]], "s": 2.5, "t": None}
+
+    # 10. Truncated Content-Length frame returns Content-Length-framed error
+    from alphasift.mcp import serve_mcp
+
+    trunc_in = io.BytesIO(b"Content-Length: 50\r\n\r\n{\"jsonrpc\":\"2.0\"")
+    trunc_out = io.BytesIO()
+    serve_mcp(cfg, in_stream=trunc_in, out_stream=trunc_out)
+    raw_err = trunc_out.getvalue()
+    assert raw_err.startswith(b"Content-Length: ")
+    _, err_body = raw_err.split(b"\r\n\r\n", 1)
+    assert json.loads(err_body.decode("utf-8"))["error"]["code"] == -32700

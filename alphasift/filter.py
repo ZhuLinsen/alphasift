@@ -2,6 +2,7 @@
 """L1 hard filter — apply strategy hard_filters to snapshot DataFrame."""
 
 import logging
+import math
 from dataclasses import replace
 
 import pandas as pd
@@ -217,10 +218,12 @@ def _step_quantiles(
     raw = df.loc[active_mask, col]
     if pd.api.types.is_bool_dtype(raw):
         return None
+    if any(isinstance(v, bool) for v in raw.dropna()):
+        return None
     nums = pd.to_numeric(raw, errors="coerce")
     if pd.api.types.is_bool_dtype(nums):
         return None
-    nums = nums.astype("float64").dropna()
+    nums = nums.astype("float64").replace([float("inf"), float("-inf")], float("nan")).dropna()
     if nums.empty:
         return None
     q25, q50, q75 = nums.quantile([0.25, 0.50, 0.75]).tolist()
@@ -260,7 +263,7 @@ def hard_filter_waterfall(
         removed = before - after
         quantiles = (
             _step_quantiles(df, mask, value_columns)
-            if include_quantiles and before > 0 and value_columns
+            if include_quantiles and threshold is not None and before > 0 and value_columns
             else None
         )
         step: dict[str, object] = {
@@ -492,7 +495,14 @@ def _rejection_samples(
             item["name"] = str(row.get(name_col, ""))
         if value_col:
             value = row.get(value_col)
-            item["value"] = None if pd.isna(value) else value
+            if hasattr(value, "item") and callable(getattr(value, "item")):
+                value = value.item()
+            if pd.isna(value):
+                item["value"] = None
+            elif isinstance(value, (int, float)) and not isinstance(value, bool):
+                item["value"] = value if math.isfinite(float(value)) else None
+            else:
+                item["value"] = value
         samples.append(item)
     return samples
 

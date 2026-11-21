@@ -309,7 +309,16 @@ class Config:
 
         if configuration_error(self.llm_channels, str(self.llm_config_path or "")):
             return False
-        has_channels_with_models = any(bool(ch.get("models")) for ch in self.llm_channels)
+        has_channels_with_models = any(
+            bool(ch.get("models"))
+            and (
+                str(ch.get("protocol", "")).lower() == "ollama"
+                or bool(ch.get("api_keys"))
+                or bool(self.llm_api_key)
+                or bool(gateway_api_keys(str(ch.get("protocol", "")).lower()))
+            )
+            for ch in self.llm_channels
+        )
         return any([
             bool(self.llm_api_key),
             has_channels_with_models,
@@ -612,7 +621,10 @@ def _resolve_llm_model(channels: list[dict[str, object]]) -> str:
 
 def _resolve_llm_fallback_models(llm_model: str) -> list[str]:
     raw_fb = os.getenv("LITELLM_FALLBACK_MODELS")
-    if raw_fb is not None and raw_fb.strip() != "":
+    if raw_fb is not None:
+        cleaned = raw_fb.strip()
+        if not cleaned or cleaned.lower() in {"none", "off", "false", "0"}:
+            return []
         return _parse_csv_env("LITELLM_FALLBACK_MODELS", [])
     if llm_model == DEFAULT_LLM_MODEL:
         return list(DEFAULT_GEMINI_FALLBACK_MODELS)

@@ -161,6 +161,9 @@ def _source_health_summary(result: ScreenResult) -> dict[str, Any]:
         "daily_enrich_count": result.daily_enrich_count,
         "post_analyzers": list(result.post_analyzers),
         "portfolio_concentration_notes": list(result.portfolio_concentration_notes),
+        "portfolio_topic_exposure": dict(result.portfolio_topic_exposure),
+        "overconcentrated_topics": list(result.overconcentrated_topics),
+        "replacement_candidates": list(result.replacement_candidates),
     }
 
 
@@ -179,6 +182,11 @@ def _pick_card(pick: Pick) -> dict[str, Any]:
         "change_pct": _round_value(pick.change_pct),
         "industry": pick.industry,
         "concepts": pick.concepts,
+        "topic_alignment_status": pick.topic_alignment_status,
+        "topic_alignment_role": pick.topic_alignment_role,
+        "topic_alignment_reason": pick.topic_alignment_reason,
+        "matched_topics": list(pick.matched_topics),
+        "unmatched_topics": list(pick.unmatched_topics),
         "board_heat_score": _round_value(pick.board_heat_score),
         "board_heat_state": pick.board_heat_state,
         "board_heat_summary": pick.board_heat_summary,

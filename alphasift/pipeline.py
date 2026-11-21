@@ -2,6 +2,7 @@
 """Main pipeline — orchestrates L1 → L2 → result."""
 
 import logging
+import math
 import uuid
 from pathlib import Path
 
@@ -393,7 +394,11 @@ def screen(
         if enriched is not None:
             if daily_needed:
                 if explain_filters:
-                    daily_waterfall = hard_filter_waterfall(enriched, screening.hard_filters)
+                    daily_waterfall = hard_filter_waterfall(
+                        enriched,
+                        screening.hard_filters,
+                        include_quantiles=True,
+                    )
                     if daily_waterfall:
                         degradation.append(
                             "Daily hard-filter waterfall: "
@@ -605,7 +610,10 @@ def screen(
     raw_bucket_cap = (screening.portfolio_profile or {}).get("max_same_bucket")
     effective_bucket_cap = (
         int(raw_bucket_cap)
-        if isinstance(raw_bucket_cap, (int, float)) and not isinstance(raw_bucket_cap, bool) and int(raw_bucket_cap) > 0
+        if isinstance(raw_bucket_cap, (int, float))
+        and not isinstance(raw_bucket_cap, bool)
+        and math.isfinite(float(raw_bucket_cap))
+        and int(raw_bucket_cap) > 0
         else config.portfolio_max_same_llm_sector
     )
     portfolio_topic_exposure, overconcentrated_topics, replacement_candidates = summarize_portfolio_exposure(
@@ -657,19 +665,23 @@ def _df_to_picks(df: pd.DataFrame) -> list[Pick]:
             for factor, col in factor_cols.items()
             if col in df.columns
         }
-        industry_val = _safe_text(row.get("industry", row.get("行业", row.get("所属行业", ""))))
-        concepts_val = _safe_text(row.get("concepts", row.get("概念", row.get("概念题材", ""))))
-        board_summary_val = _safe_text(row.get("board_heat_summary"))
-        align = explain_topic_alignment(industry_val, concepts_val, board_summary_val)
+        raw_industry = row.get("industry", row.get("行业", row.get("所属行业", "")))
+        raw_concepts = row.get("concepts", row.get("概念", row.get("概念题材", "")))
+        raw_board_summary = row.get("board_heat_summary")
+        align = explain_topic_alignment(raw_industry, raw_concepts, raw_board_summary)
+        industry_val = _safe_text(raw_industry)
+        concepts_val = _safe_text(raw_concepts)
+        board_summary_val = _safe_text(raw_board_summary)
+        screen_val = _safe_float(row.get("screen_score")) or 0.0
         picks.append(Pick(
             rank=i + 1,
             code=normalize_code(row.get("code", row.get("代码", "")), allow_ticker=True),
             name=str(row.get("name", row.get("名称", row.get("股票名称", "")))),
-            screen_score=float(row.get("screen_score", 0)),
-            final_score=float(row.get("screen_score", 0)),
-            price=float(row.get("price", row.get("最新价", 0)) or 0),
-            change_pct=float(row.get("change_pct", row.get("涨跌幅", 0)) or 0),
-            amount=float(row.get("amount", row.get("成交额", 0)) or 0),
+            screen_score=screen_val,
+            final_score=screen_val,
+            price=_safe_float(row.get("price", row.get("最新价"))) or 0.0,
+            change_pct=_safe_float(row.get("change_pct", row.get("涨跌幅"))) or 0.0,
+            amount=_safe_float(row.get("amount", row.get("成交额"))) or 0.0,
             total_mv=_safe_float(row.get("total_mv", row.get("总市值"))),
             turnover_rate=_safe_float(row.get("turnover_rate", row.get("换手率"))),
             volume_ratio=_safe_float(row.get("volume_ratio", row.get("量比"))),

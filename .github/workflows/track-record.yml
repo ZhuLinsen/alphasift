@@ -39,8 +39,11 @@ env:
 jobs:
   pack:
     if: >-
-      (github.event_name == 'schedule' && github.event.schedule == '30 10 * * 1-5') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.session || 'asia') == 'asia')
+      (
+        (github.event_name == 'schedule' && github.event.schedule == '30 10 * * 1-5') ||
+        (github.event_name == 'workflow_dispatch' && (inputs.session || 'asia') == 'asia')
+      ) &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     permissions:
       contents: read
     uses: ./.github/workflows/data-pack.yml
@@ -52,7 +55,7 @@ jobs:
 
   record:
     needs: [pack]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
     runs-on: ubuntu-latest
     timeout-minutes: 150
     permissions:
@@ -166,6 +169,7 @@ jobs:
           LLM_CANDIDATE_CONTEXT_ENABLED: ${{ vars.LLM_CANDIDATE_CONTEXT_ENABLED || 'true' }}
           LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES: "12"
         run: |
+          if [ -z "${LITELLM_FALLBACK_MODELS:-}" ]; then unset LITELLM_FALLBACK_MODELS; fi
           python scripts/track_record.py screen --track track \
             --session "$SESSION" --markets "$MARKETS" --pack-dir "$ALPHASIFT_PACK_DIR" \
             || echo "::warning::no strategy saved a run this session"
@@ -259,6 +263,7 @@ jobs:
           CUSTOM_WEBHOOK_URL: ${{ secrets.CUSTOM_WEBHOOK_URL }}
           CUSTOM_WEBHOOK_TOKEN: ${{ secrets.CUSTOM_WEBHOOK_TOKEN }}
         run: |
+          if [ -z "${LITELLM_FALLBACK_MODELS:-}" ]; then unset LITELLM_FALLBACK_MODELS; fi
           if [ -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
             alphasift daily-report \
               --pack-dir "$ALPHASIFT_PACK_DIR" \
@@ -281,7 +286,7 @@ jobs:
           fi
 
       - name: Commit to track-record
-        if: ${{ github.ref == 'refs/heads/main' && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true' || vars.ALPHASIFT_ENABLE_LEDGER == 'true') }}
+        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true' || vars.ALPHASIFT_ENABLE_LEDGER == 'true') }}
         working-directory: track
         env:
           SESSION: ${{ steps.session.outputs.session }}
@@ -302,19 +307,19 @@ jobs:
           git push origin HEAD:track-record
 
       - name: Stage the dashboard
-        if: ${{ github.ref == 'refs/heads/main' && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
+        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
         run: |
           mkdir -p _site
           cp track/index.html _site/
           cp -r track/site _site/site
       - uses: actions/upload-pages-artifact@v5
-        if: ${{ github.ref == 'refs/heads/main' && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
+        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
         with:
           path: _site
 
   deploy:
     needs: record
-    if: ${{ !cancelled() && needs.record.result == 'success' && github.ref == 'refs/heads/main' && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
+    if: ${{ !cancelled() && needs.record.result == 'success' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
     runs-on: ubuntu-latest
     permissions:
       pages: write
