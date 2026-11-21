@@ -448,9 +448,16 @@ def main():
         help="允许使用落后于 expected-trade-date 的日线包生成带旧包标记的降级日报",
     )
     drpt.add_argument("--detail-url", default=None, help="覆盖 IM 卡片里的看板详情链接")
+    drpt.add_argument(
+        "--ai-brief",
+        choices=["auto", "on", "off"],
+        default="auto",
+        help="生成 AI 盘后综述简报模式：auto(有 LLM Key 时启用)、on、off",
+    )
     drpt.add_argument("--announcement-max-codes", type=int, default=12, help="公告排雷最多抽检前 N 只候选，默认 12")
     drpt.add_argument("--output-json", default=None, help="写出 DailyReport report.json 路径")
     drpt.add_argument("--output-card", default=None, help="额外写出 <1200 字 IM Markdown 卡片路径")
+    drpt.add_argument("--output-html", default=None, help="额外写出可打印独立 HTML 研报路径")
     drpt.add_argument("--push", action="store_true", help="按已配置渠道幂等推送到企微/飞书/Telegram（无配置静默跳过）")
     drpt.add_argument("--channel", action="append", default=None, help="仅推送指定渠道（wecom/feishu/telegram），可重复")
     drpt.add_argument("--force-push", action="store_true", help="忽略同交易日幂等锁强制重发")
@@ -1087,6 +1094,7 @@ def main():
             write_daily_card,
             write_daily_report,
         )
+        from alphasift.daily_report_html import write_daily_report_html
         from alphasift.notify import push_daily_report
 
         config = Config.from_env()
@@ -1100,6 +1108,19 @@ def main():
                 trade_date=args.trade_date or daily_pack.trade_date,
             )
             allow_stale = True if not args.expected_trade_date else bool(args.allow_stale_pack)
+            track_summary = None
+            summary_candidates = []
+            if args.output_html:
+                summary_candidates.append(Path(args.output_html).expanduser().parent / "summary.json")
+            if args.runs_dir:
+                summary_candidates.append(Path(args.runs_dir).expanduser().parent.parent / "site" / "summary.json")
+            for cand in summary_candidates:
+                if cand.is_file():
+                    try:
+                        track_summary = json.loads(cand.read_text(encoding="utf-8"))
+                        break
+                    except (OSError, ValueError):
+                        pass
             report = build_daily_report(
                 daily_pack,
                 trade_date=args.trade_date,
@@ -1110,11 +1131,16 @@ def main():
                 include_announcements=not args.no_announcements,
                 announcement_max_codes=args.announcement_max_codes,
                 announcement_cache_dir=config.data_dir / "candidate_context_cache",
+                ai_brief_mode=args.ai_brief,
+                config=config,
+                track_comparison=(track_summary or {}).get("track_comparison") if isinstance(track_summary, dict) else None,
             )
             if args.output_json:
                 write_daily_report(args.output_json, report)
             if args.output_card:
                 write_daily_card(args.output_card, report["im_card_markdown"])
+            if args.output_html:
+                write_daily_report_html(args.output_html, report, track_summary=track_summary)
             if args.push or args.dry_run_push:
                 report["push"] = push_daily_report(
                     report,

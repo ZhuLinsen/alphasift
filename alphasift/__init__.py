@@ -5,7 +5,9 @@ __version__ = "0.2.0"
 
 from alphasift.pipeline import screen
 from alphasift.evaluate import evaluate_saved_run, evaluate_saved_runs
+from alphasift.daily_brief import generate_ai_daily_brief
 from alphasift.daily_report import build_daily_report
+from alphasift.daily_report_html import render_daily_report_html
 from alphasift.doctor import doctor_radar_readiness
 from alphasift.market_regime import compute_market_regime, compute_market_regime_series
 from alphasift.notify import push_daily_report
@@ -26,6 +28,8 @@ __all__ = [
     "evaluate_saved_run",
     "evaluate_saved_runs",
     "build_daily_report",
+    "generate_ai_daily_brief",
+    "render_daily_report_html",
     "doctor_radar_readiness",
     "compute_market_regime",
     "compute_market_regime_series",

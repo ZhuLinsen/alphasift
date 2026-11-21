@@ -247,6 +247,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
       <a href="#details-patterns">形态雷达</a>
       <a href="#details-replay">250日回放</a>
       <a href="#details-latest">选股明细</a>
+      <a href="site/daily_report.html">📄 今日研报</a>
       <button type="button" class="theme-btn" id="theme-toggle" aria-label="切换主题">🌓 主题</button>
     </div>
   </div>
@@ -629,20 +630,28 @@ function renderCnHero() {
     annHtml = '<div class="dim small">暂无当日公告排雷数据（生成 DailyReport 后自动写入）。</div>';
   }
   const aiHl = rep.ai_highlights || [];
-  let aiSnippet = "当日暂无 AI 调仓记录（未配置 LLM Key 时仅运行规则赛道）。";
+  const aiBrief = rep.ai_brief || {};
+  const syn = rep.cross_strategy_synthesis || {};
+  const consensus = syn.consensus_picks || [];
+  let aiSnippet = aiBrief.headline ? esc(aiBrief.headline) : "当日暂无 AI 调仓记录（未配置 LLM Key 时仅运行规则赛道）。";
   if (aiHl.length) {
     const addedTot = aiHl.reduce((acc, h) => acc + ((h.added_by_ai || []).length), 0);
     const dropTot = aiHl.reduce((acc, h) => acc + ((h.dropped_by_ai || []).length), 0);
     const view = (aiHl.find((h) => h.llm_market_view) || {}).llm_market_view || "";
-    aiSnippet = `AI 赛道共 ${aiHl.length} 组策略，较规则新增 ${addedTot} 只 / 剔除 ${dropTot} 只${view ? ` · 「${esc(view.slice(0, 54))}」` : ""}`;
+    const briefPrefix = aiBrief.headline ? `${esc(aiBrief.headline)} · ` : "";
+    aiSnippet = `${briefPrefix}AI 赛道共 ${aiHl.length} 组策略，较规则新增 ${addedTot} 只 / 剔除 ${dropTot} 只${view ? ` · 「${esc(view.slice(0, 48))}」` : ""}`;
   }
+  const consensusLine = consensus.length
+    ? `<div class="ai-mini-strip" style="margin-top:0;padding-top:6px;"><b>多策略共识 (${consensus.length})：</b>${consensus.slice(0, 3).map((c) => `${esc(c.name)}(${esc(c.code)}·${c.strategy_count}策略)`).join("、")}</div>`
+    : "";
   const cardAlerts = `<div class="hero-card${flagged.length ? " alert-hot" : ""}">
     <div class="hero-head">
       <span class="hero-title">公告排雷预警与 AI 要点</span>
       <span class="chip ${flagged.length ? "bad" : checked > 0 ? "ok" : ""}">${flagged.length ? `${flagged.length} 条高风险` : checked > 0 ? `抽检 ${checked} 通过` : "待生成"}</span>
     </div>
     ${annHtml}
-    <div class="ai-mini-strip"><b>AI 当日要点：</b>${aiSnippet}</div>
+    ${consensusLine}
+    <div class="ai-mini-strip"><b>AI 与综合简评：</b>${aiSnippet}</div>
   </div>`;
 
   wrap.innerHTML = cardBreadth + cardLimits + cardLadder + cardAlerts;
@@ -686,11 +695,7 @@ function renderTrackComparison() {
   const hlWrap = $("ai-attribution-cards");
   const rep = state.report || (state.summary && state.summary.latest_report) || {};
   const hl = rep.ai_highlights || [];
-  if (!hl.length) {
-    hlWrap.innerHTML = "";
-    return;
-  }
-  hlWrap.innerHTML = `<div class="cards">${hl.map((item) => {
+  const hlCards = hl.map((item) => {
     const added = (item.added_by_ai || []).map((a) => `${esc(a.name)}(${esc(a.code)})${a.ranking_reason ? `: ${esc(a.ranking_reason.slice(0, 40))}` : ""}`).join("；") || "无";
     const dropped = (item.dropped_by_ai || []).map((d) => `${esc(d.name)}(${esc(d.code)})`).join("；") || "无";
     return `<div class="panel card">
@@ -702,7 +707,28 @@ function renderTrackComparison() {
         <div><span class="dim">AI 剔除：</span>${dropped}</div>
       </div>
     </div>`;
-  }).join("")}</div>`;
+  });
+
+  const caseCards = rows.map((r) => {
+    const winObj = (r.windows || {})[w] || {};
+    const cs = winObj.ai_case_studies || {};
+    const adds = cs.best_ai_adds || [];
+    const avoids = cs.best_ai_avoids || [];
+    const misses = cs.missed_by_ai || [];
+    if (!adds.length && !avoids.length && !misses.length) return "";
+    const fmtCase = (x) => `${esc((x.date || "").slice(5))} ${esc(x.name || x.code)}(${esc(x.code)}) ${pct(x.excess_return_pct)}`;
+    return `<div class="panel card">
+      <h3>${sname(r.strategy)} <span class="badge ai">T+${w} 个股案例</span></h3>
+      <div style="padding:4px 13px 12px;font-size:12.5px;display:flex;flex-direction:column;gap:5px;">
+        ${adds.length ? `<div><span class="up">AI 独选高光：</span>${adds.map(fmtCase).join("；")}</div>` : ""}
+        ${avoids.length ? `<div><span class="down">AI 避坑剔除：</span>${avoids.map(fmtCase).join("；")}</div>` : ""}
+        ${misses.length ? `<div><span class="dim">AI 错杀遗憾：</span>${misses.map(fmtCase).join("；")}</div>` : ""}
+      </div>
+    </div>`;
+  }).filter(Boolean);
+
+  const allCards = [...hlCards, ...caseCards];
+  hlWrap.innerHTML = allCards.length ? `<div class="cards">${allCards.join("")}</div>` : "";
 }
 
 function renderScorecard() {

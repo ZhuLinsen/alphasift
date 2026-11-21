@@ -157,6 +157,12 @@ jobs:
         if: steps.session.outputs.session == 'asia'
         env:
           ALPHASIFT_DASHBOARD_URL: ${{ vars.ALPHASIFT_DASHBOARD_URL }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
           FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
@@ -169,8 +175,10 @@ jobs:
               --runs-dir track/data/runs \
               --expected-trade-date "${{ steps.cn_date.outputs.cn_trade_date }}" \
               --allow-stale-pack \
+              --ai-brief auto \
               --output-json track/site/report.json \
               --output-card track/site/daily_card.md \
+              --output-html track/site/daily_report.html \
               --push \
               --explain || echo "::warning::daily-report skipped"
           fi

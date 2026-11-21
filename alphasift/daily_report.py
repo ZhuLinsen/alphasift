@@ -23,7 +23,7 @@ from alphasift.markets import get_market, latest_settled_close
 from alphasift.models import ScreenResult
 from alphasift.normalize import normalize_code
 from alphasift.pack import DailyPack
-from alphasift.patterns import PatternSpec, list_patterns, scan_patterns
+from alphasift.patterns import PatternSpec, extract_mini_kline_bars, list_patterns, scan_patterns
 from alphasift.result_schema import DAILY_REPORT_SCHEMA, DAILY_REPORT_SCHEMA_VERSION
 from alphasift.source_guard import call_with_timeout
 from alphasift.store import load_screen_result
@@ -376,6 +376,21 @@ def build_daily_report(
             "errors": [],
         }
 
+    sig_codes: list[str] = []
+    seen_sig_codes: set[str] = set()
+    for group in (active_patterns, experimental_patterns):
+        for pat in group:
+            for sig in pat["signals"]:
+                c = str(sig.get("code") or "")
+                if c and c not in seen_sig_codes:
+                    seen_sig_codes.add(c)
+                    sig_codes.append(c)
+    kline_map = (
+        extract_mini_kline_bars(daily_pack, sig_codes, trade_date=scan.trade_date, bars=20)
+        if sig_codes
+        else {}
+    )
+
     risk_map = ann_risks["by_code"]
     for st in strategy_entries:
         for pk in st["picks"]:
@@ -386,6 +401,7 @@ def build_daily_report(
                 sig["announcement_risk_flags"] = list(
                     (risk_map.get(sig["code"]) or {}).get("negative_event_flags") or []
                 )
+                sig["kline"] = kline_map.get(str(sig.get("code") or ""), [])
 
     ai_highlights = _build_ai_highlights(strategy_runs or [])
     if pack_is_stale and stale_reason:

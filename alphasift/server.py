@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import html
 import json
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -11,6 +12,7 @@ from urllib.parse import parse_qs, urlparse
 
 from alphasift.config import Config
 from alphasift.daily_report import build_daily_report, load_daily_report_runs
+from alphasift.daily_report_html import render_daily_report_html
 from alphasift.doctor import doctor_data_sources, doctor_radar_readiness
 from alphasift.market_regime import compute_market_regime, compute_market_regime_series
 from alphasift.overview import build_overview
@@ -269,6 +271,7 @@ def build_api_response(
             expected_date = _single(params, "expected_trade_date") or None
             allow_stale = _bool_param(params, "allow_stale_pack", True)
             detail_url = _single(params, "detail_url") or config.dashboard_url
+            ai_brief = (_single(params, "ai_brief") or "off").lower()
             ann_max = max(0, min(30, _int_param(params, "announcement_max_codes", 8)))
             strategy_runs = (
                 load_daily_report_runs(
@@ -289,6 +292,8 @@ def build_api_response(
                 include_announcements=include_ann,
                 announcement_max_codes=ann_max,
                 announcement_cache_dir=config.data_dir / "candidate_context_cache",
+                ai_brief_mode=ai_brief,
+                config=config,
             )
         except (ValueError, IndexError, FileNotFoundError) as exc:
             return 400, {"error": "invalid_request", "message": str(exc)}
@@ -297,6 +302,27 @@ def build_api_response(
         "path": path,
         "available_endpoints": _index_payload()["endpoints"],
     }
+
+
+def build_html_response(
+    config: Config,
+    path: str,
+    *,
+    query: str = "",
+) -> tuple[int, str]:
+    """Return HTTP status and HTML content for standalone HTML report endpoints."""
+    if path != "/daily-report.html":
+        return 404, (
+            "<!doctype html><meta charset='utf-8'><h1>404 Not Found</h1>"
+            f"<p>{html.escape(path)}</p>"
+        )
+    status, payload = build_api_response(config, "/daily-report", query=query)
+    if status != 200:
+        msg = html.escape(str(payload.get("message") or payload.get("error") or "Error"))
+        return status, (
+            f"<!doctype html><meta charset='utf-8'><h1>{status}</h1><p>{msg}</p>"
+        )
+    return 200, render_daily_report_html(payload)
 
 
 def serve_api(
@@ -321,11 +347,24 @@ def _handler_for_config(config: Config):
 
         def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler.
             parsed = urlparse(self.path)
+            if parsed.path == "/daily-report.html":
+                status, html_body = build_html_response(config, parsed.path, query=parsed.query)
+                self._send_html(status, html_body)
+                return
             status, payload = build_api_response(config, parsed.path, query=parsed.query)
             self._send_json(status, payload)
 
         def log_message(self, format: str, *args) -> None:  # noqa: A002 - stdlib signature.
             return
+
+        def _send_html(self, status: int, content: str) -> None:
+            body = content.encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
 
         def _send_json(self, status: int, payload: dict[str, Any]) -> None:
             body = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
@@ -368,6 +407,7 @@ def _index_payload() -> dict[str, Any]:
             "/patterns",
             "/patterns/scan",
             "/daily-report",
+            "/daily-report.html",
         ],
     }
 
