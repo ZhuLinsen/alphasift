@@ -1,0 +1,15 @@
+# Allowlist only build inputs so local .env*, data/, .codex/, logs, and caches stay outside Docker build context.
+*
+!/pyproject.toml
+!/MANIFEST.in
+!/README.md
+!/SKILL.md
+!/.env.example
+!/LICENSE
+!/alphasift
+!/strategies
+!/patterns
+!/agents
+**/__pycache__
+**/*.pyc
+**/*.pyo

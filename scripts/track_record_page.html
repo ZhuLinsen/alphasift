@@ -567,7 +567,7 @@ footer {
 <main id="top">
   <header class="masthead">
     <div class="masthead-left">
-      <div class="eyebrow">OPEN-SOURCE QUANTITATIVE DISCOVERY &amp; T+N BENCHMARK</div>
+      <div class="eyebrow" data-i18n="hero_eyebrow">OPEN-SOURCE QUANTITATIVE DISCOVERY &amp; T+N BENCHMARK</div>
       <h1 data-i18n="hero_title">AlphaSift · 量化形态观测与回测基准</h1>
       <p class="masthead-sub" data-i18n-html="hero_sub">每交易日收盘自动运行全市场 YAML 策略、公告排雷与可选 AI 重排，按 <code>T+5 / T+10 / T+20</code> 真实行情与一字涨停不可成交口径公开验证超额收益。</p>
       <div class="meta" id="meta"></div>
@@ -951,6 +951,10 @@ const I18N = {
     rule_sub_nocons: "当日各策略候选分散（<2 策略重合）",
     rule_sub_sec: "行业分布：{items}",
     rule_sub_ai: "AI 调仓（+{add} / -{drop}）",
+    rule_hl_noreg_fmt: "{date} 规则汇总（{cons} 项共振 · {flag} 项公告提示）",
+    hero_eyebrow: "开源全市场量化选股与 T+N 真实基准",
+    pat_status_active: "active · 已通过",
+    pat_status_exp: "experimental",
   },
   en: {
     page_title: "AlphaSift · Quantitative Discovery & T+N Benchmark",
@@ -1168,6 +1172,10 @@ const I18N = {
     rule_sub_nocons: "Scattered picks today (<2 strategy overlap)",
     rule_sub_sec: "Top sectors: {items}",
     rule_sub_ai: "AI re-ranked (+{add} / -{drop})",
+    rule_hl_noreg_fmt: "{date} Rules summary ({cons} consensus pick(s) · {flag} flagged)",
+    hero_eyebrow: "OPEN-SOURCE QUANTITATIVE DISCOVERY & T+N BENCHMARK",
+    pat_status_active: "active",
+    pat_status_exp: "experimental",
   },
   ja: {
     page_title: "AlphaSift · クオンツ観測・T+N検証ベンチマーク",
@@ -1385,6 +1393,10 @@ const I18N = {
     rule_sub_nocons: "本日は戦略間の重複なし（候補分散）",
     rule_sub_sec: "業種偏重：{items}",
     rule_sub_ai: "AI 軌道リバランス（追加 {add} / 除外 {drop}）",
+    rule_hl_noreg_fmt: "{date} ルール集計（コンセンサス {cons}件 · 警戒 {flag}件）",
+    hero_eyebrow: "オープンソース多市場クオンツ探索・T+N 公開ベンチマーク",
+    pat_status_active: "採用 (active)",
+    pat_status_exp: "試験観測",
   },
 };
 
@@ -2060,6 +2072,8 @@ function renderConsensusPane() {
         });
         if (flagged.length) hlText += t("rule_hl_flag", { n: flagged.length });
         else if (consensus.length) hlText += t("rule_hl_cons", { n: consensus.length });
+      } else {
+        hlText = t("rule_hl_noreg_fmt", { date: tradeDate, cons: consensus.length, flag: flagged.length });
       }
       const subParts = [];
       if (consensus.length) {
@@ -2068,7 +2082,7 @@ function renderConsensusPane() {
         subParts.push(t("rule_sub_nocons"));
       }
       if (sectors.length) {
-        subParts.push(t("rule_sub_sec", { items: sectors.slice(0, 3).map((s) => `${indname(s.industry)} (${s.share_pct}%)`).join(", ") }));
+        subParts.push(t("rule_sub_sec", { items: sectors.slice(0, 3).map((s) => `${indname(s.industry)} (${Number(s.share_pct || 0).toFixed(1)}%)`).join(", ") }));
       }
       const aiHl = rep.ai_highlights || [];
       if (aiHl.length) {
@@ -2457,7 +2471,9 @@ function renderPatternRadar() {
       const items = sigMap[name] || [];
       const total = counts[name] || items.length;
       const st = items[0] ? items[0].status : (replayStatus[name] || "experimental");
-      const badge = st === "active" ? '<span class="badge active">active</span>' : '<span class="badge exp">experimental</span>';
+      const badge = st === "active"
+        ? `<span class="badge active">${esc(t("pat_status_active"))}</span>`
+        : `<span class="badge exp">${esc(t("pat_status_exp"))}</span>`;
       const dname = pname(name, items[0] && items[0].display_name);
       if (!items.length) {
         return `<div class="card"><div class="card-top"><h3><span>${esc(dname)}</span>${badge}</h3><div class="sub">${esc(t("pat_hit_zero", { d: latest.trade_date }))}</div></div><div class="empty">${esc(t("pat_no_sig"))}</div></div>`;
@@ -2507,8 +2523,8 @@ function renderPatternRadar() {
       const t5ExcessN = h5.excess_scored ?? h5.scored ?? 0;
       const muted = status !== "active" || t5ExcessN < MIN_PATTERN_GRAD_SAMPLE;
       const badge = status === "active"
-        ? '<span class="badge active">active</span>'
-        : '<span class="badge exp">experimental</span>';
+        ? `<span class="badge active">${esc(t("pat_status_active"))}</span>`
+        : `<span class="badge exp">${esc(t("pat_status_exp"))}</span>`;
       const tStat = stab.t_stat !== null && stab.t_stat !== undefined ? `${Number(stab.t_stat).toFixed(2)}` : "–";
       const h1h2 = (stab.h1_days || stab.h2_days)
         ? `${pct(stab.h1_daily_excess_mean_pct ?? stab.h1_excess_mean_pct)} (${stab.h1_days ?? 0}d) / ${pct(stab.h2_daily_excess_mean_pct ?? stab.h2_excess_mean_pct)} (${stab.h2_days ?? 0}d)`
@@ -2633,7 +2649,7 @@ function renderChart() {
     svg.querySelectorAll("circle.pt").forEach((c) => {
       c.addEventListener("mouseenter", () => {
         const val = Number(c.dataset.val);
-        tip.innerHTML = `<b>${c.dataset.label}</b><br>${c.dataset.date} · ${esc(t("chart_tip_excess"))} <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${esc(t("chart_tip_picks", { n: c.dataset.n }))}`;
+        tip.innerHTML = `<b>${esc(c.dataset.label)}</b><br>${esc(c.dataset.date)} · ${esc(t("chart_tip_excess"))} <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${esc(t("chart_tip_picks", { n: c.dataset.n }))}`;
         tip.style.display = "block";
         const wrapBox = $("chart").parentElement.getBoundingClientRect();
         const cBox = c.getBoundingClientRect();
@@ -2712,11 +2728,16 @@ async function renderDay(day) {
   state.currentDay = day;
   const reqId = ++state.dayReqId;
   if (!day) { $("history").innerHTML = `<div class="empty">${esc(t("no_days"))}</div>`; return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(day))) {
+    $("history").innerHTML = `<div class="empty">${esc(t("load_fail", { msg: "invalid date" }))}</div>`;
+    return;
+  }
   let data = state.dayCache[day];
   if (!data) {
     $("history").innerHTML = `<div class="empty">${esc(t("loading_day"))}</div>`;
     try {
       const res = await fetch(`site/days/${day}.json`, { cache: "no-cache" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       data = await res.json();
       state.dayCache[day] = data;
     } catch (err) {
@@ -2734,12 +2755,13 @@ async function renderDay(day) {
       return s && s.evaluated ? `T+${w} ${pct(s.average_excess_return_pct, 1)}` : esc(t("t_win_pending", { w }));
     }).join(" · ");
     const badge = r.track === "ai" ? '<span class="badge ai">AI</span>' : "";
+    const picks = r.picks || [];
     return `<div class="card">
       <div class="card-top">
         <h3><span>${esc(mname(r.market))} · ${sname(r.strategy)}${badge}</span></h3>
         <div class="sub">${ev}</div>
       </div>
-      ${r.picks.length ? picksTable(r.picks, true) : `<div class="empty">${esc(t("no_picks_day"))}</div>`}
+      ${picks.length ? picksTable(picks, true) : `<div class="empty">${esc(t("no_picks_day"))}</div>`}
     </div>`;
   }).join("") : `<div class="empty">${esc(t("no_match_day"))}</div>`;
 }
@@ -2818,7 +2840,7 @@ async function init() {
   const days = (state.summary.days || []).map((d) => d.date);
   $("day").innerHTML = days.map((d) => `<option value="${d}">${esc(t("day_opt", { d, n: state.summary.days.find((x) => x.date === d).runs }))}</option>`).join("");
   $("day").addEventListener("change", (e) => renderDay(e.target.value));
-  if (days.length) renderDay(days[0]);
+  renderDay(days[0] || "");
 }
 init();
 </script>

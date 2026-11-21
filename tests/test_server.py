@@ -546,6 +546,39 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
     cfg = _config(tmp_path)
     html_text = render_workbench_html()
     assert "http://" not in html_text and "https://" not in html_text
+    assert "/strategy-compare?base=" in html_text
+    assert "/strategy-compare?names=" not in html_text
+    assert "noopener noreferrer" in html_text
+    # Workbench aligns with actual backend JSON schema fields
+    assert "s.market_scope" in html_text
+    assert "radLlm.configured" in html_text
+    assert 'p.status || "experimental"' in html_text
+    assert "ov.summary" in html_text
+    assert "snapshot_source_priority" in html_text
+    assert "!ep.startsWith(\"//\")" in html_text
+
+    # Regression checks for Audit #4 security fixes
+    from alphasift.daily_report_html import render_daily_report_html
+
+    xss_html = render_daily_report_html({
+        "trade_date": "2026-11-21",
+        "pack_trade_date": "2026-11-21",
+        "detail_url": "</script><script>alert(1)</script>",
+    })
+    assert "</script><script>alert(1)" not in xss_html
+    assert 'href="javascript:' not in render_daily_report_html({"detail_url": "javascript:alert(1)"})
+
+    bad_pat_st, bad_pat = build_api_response(cfg, "/patterns/scan", query="pattern=/etc/passwd")
+    assert bad_pat_st in {400, 503}
+    if bad_pat_st == 400:
+        assert bad_pat["error"] == "invalid_pattern"
+
+    unknown_ov_st, unknown_ov = build_api_response(cfg, "/overview", query="strategy=missing_strat")
+    assert unknown_ov_st == 404
+    assert unknown_ov["error"] == "strategy_not_found"
+
+    conflict_doc_st, _ = build_api_response(cfg, "/doctor/data-sources", query="strategy=dual_low&all_strategies=1")
+    assert conflict_doc_st == 400
 
     script_body = html_text.split("<script>", 1)[1].rsplit("</script>", 1)[0]
     js_file = tmp_path / "wb.js"
@@ -562,25 +595,38 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        # 1. GET /ui returns Workbench HTML + strict security headers
+        # 1. GET /ui returns Workbench HTML + strict hashed script CSP (no unsafe-inline script-src)
         req_ui = urllib.request.Request(f"http://127.0.0.1:{port}/ui")
         with urllib.request.urlopen(req_ui, timeout=5) as resp:
             assert resp.status == 200
             assert "text/html" in resp.headers.get("Content-Type", "")
             assert resp.headers.get("X-Content-Type-Options") == "nosniff"
             assert resp.headers.get("X-Frame-Options") == "DENY"
-            assert "frame-ancestors 'none'" in resp.headers.get("Content-Security-Policy", "")
+            csp = resp.headers.get("Content-Security-Policy", "")
+            assert "frame-ancestors 'none'" in csp
+            assert "'sha256-" in csp
+            assert "'unsafe-inline'" not in csp.split("style-src")[0]
             assert "AlphaSift" in resp.read().decode("utf-8")
 
-        # 2. GET / with Accept: text/html serves Workbench UI
+        # 2. GET / with Accept: text/html serves Workbench UI + Vary: Accept
         req_html = urllib.request.Request(
             f"http://127.0.0.1:{port}/",
             headers={"Accept": "text/html,application/xhtml+xml,*/*;q=0.8"},
         )
         with urllib.request.urlopen(req_html, timeout=5) as resp:
             assert "text/html" in resp.headers.get("Content-Type", "")
+            assert resp.headers.get("Vary") == "Accept"
 
-        # 3. GET / with Accept: application/json or ?format=json serves pure JSON index
+        # 3. GET / with Accept: text/html;q=0, application/json OR ?format=json serves pure JSON without wildcard CORS
+        req_qzero = urllib.request.Request(
+            f"http://127.0.0.1:{port}/",
+            headers={"Accept": "text/html;q=0, application/json;q=0.9"},
+        )
+        with urllib.request.urlopen(req_qzero, timeout=5) as resp:
+            assert "application/json" in resp.headers.get("Content-Type", "")
+            assert resp.headers.get("Vary") == "Accept"
+            assert resp.headers.get("Access-Control-Allow-Origin") is None
+
         req_json = urllib.request.Request(
             f"http://127.0.0.1:{port}/",
             headers={"Accept": "application/json"},
@@ -588,6 +634,7 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
         with urllib.request.urlopen(req_json, timeout=5) as resp:
             assert "application/json" in resp.headers.get("Content-Type", "")
             assert resp.headers.get("X-Content-Type-Options") == "nosniff"
+            assert resp.headers.get("Access-Control-Allow-Origin") is None
             data = json.loads(resp.read().decode("utf-8"))
             assert "/ui" in data["endpoints"]
 
@@ -597,6 +644,17 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
         )
         with urllib.request.urlopen(req_fmt, timeout=5) as resp:
             assert "application/json" in resp.headers.get("Content-Type", "")
+
+        # 4. Live /daily-report.html safely strips dangerous detail_url schemes & closes no script tags
+        req_dr = urllib.request.Request(
+            f"http://127.0.0.1:{port}/daily-report.html?detail_url=javascript:alert(1)",
+        )
+        try:
+            with urllib.request.urlopen(req_dr, timeout=5) as resp:
+                body_dr = resp.read().decode("utf-8")
+                assert "javascript:alert(1)" not in body_dr
+        except urllib.error.HTTPError as err_dr:
+            assert err_dr.code in {400, 503}
     finally:
         server.shutdown()
         server.server_close()

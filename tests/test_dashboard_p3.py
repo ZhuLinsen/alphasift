@@ -296,7 +296,7 @@ def test_dashboard_page_i18n_race_guard_url_sync_and_js_syntax(tmp_path) -> None
     assert "window.history.replaceState" in html_text
     assert "syncQueryState();" in html_text
 
-    # 2. Hardcoded untranslated literals removed from renderers
+    # 2. Hardcoded untranslated literals & raw tooltip sinks removed from renderers
     assert '<span class="chip">Rules Benchmark</span>' not in html_text
     assert 't("live_7mkt")' in html_text
     assert 't("live_latest_fmt"' in html_text
@@ -304,6 +304,10 @@ def test_dashboard_page_i18n_race_guard_url_sync_and_js_syntax(tmp_path) -> None
     assert "indname(" in html_text
     assert "tStatus(e.status)" in html_text
     assert "rule_hl_fmt:" in html_text
+    assert "rule_hl_noreg_fmt:" in html_text
+    assert "esc(c.dataset.label)" in html_text
+    assert "if (!res.ok)" in html_text
+    assert "renderDay(days[0] || \"\")" in html_text
 
     # 3. Extract script block and verify JS syntax + full zh/en/ja I18N key parity with node
     m = re.search(r"<script>([\s\S]*)</script>", html_text)

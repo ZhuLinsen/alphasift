@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import html
 import json
 from dataclasses import asdict
@@ -14,7 +16,7 @@ from urllib.parse import parse_qs, urlparse
 
 from alphasift.config import Config
 from alphasift.daily_report import build_daily_report, load_daily_report_runs
-from alphasift.daily_report_html import render_daily_report_html
+from alphasift.daily_report_html import _safe_detail_url, render_daily_report_html
 from alphasift.doctor import doctor_data_sources, doctor_radar_readiness
 from alphasift.market_regime import compute_market_regime, compute_market_regime_series
 from alphasift.overview import build_overview
@@ -49,14 +51,24 @@ def build_api_response(
     if path == "/daily-report-schema":
         return 200, daily_report_schema()
     if path == "/overview":
-        return 200, build_overview(
-            config,
-            strategy_name=_single(params, "strategy") or None,
-            runs_limit=_int_param(params, "runs_limit", 5),
-            live_data_check=_bool_param(params, "live", False),
-            strategy_match=_strategy_match_params(params),
-            match_limit=_int_param(params, "match_limit", 5),
-        )
+        strategy_arg = _single(params, "strategy") or None
+        if strategy_arg and _find_strategy(config, strategy_arg) is None:
+            return 404, {
+                "error": "strategy_not_found",
+                "message": f"Strategy '{strategy_arg}' not found.",
+                "strategy": strategy_arg,
+            }
+        try:
+            return 200, build_overview(
+                config,
+                strategy_name=strategy_arg,
+                runs_limit=_int_param(params, "runs_limit", 5, min_val=1, max_val=200),
+                live_data_check=_bool_param(params, "live", False),
+                strategy_match=_strategy_match_params(params),
+                match_limit=_int_param(params, "match_limit", 5, min_val=1, max_val=100),
+            )
+        except ValueError as exc:
+            return 400, {"error": "invalid_request", "message": str(exc)}
     if path == "/strategies":
         criteria = _strategy_match_params(params)
         if _has_match_criteria(criteria):
@@ -175,19 +187,19 @@ def build_api_response(
     if path == "/strategy-run-summary":
         return 200, build_strategy_run_summary(
             data_dir=config.data_dir,
-            limit=_int_param(params, "limit", 100),
+            limit=_int_param(params, "limit", 100, min_val=1, max_val=200),
             strategy=_single(params, "strategy") or None,
         )
     if path == "/data-source-history":
         return 200, build_data_source_history(
             data_dir=config.data_dir,
-            limit=_int_param(params, "limit", 100),
+            limit=_int_param(params, "limit", 100, min_val=1, max_val=200),
             strategy=_single(params, "strategy") or None,
         )
     if path == "/strategy-performance":
         return 200, build_strategy_performance_summary(
             data_dir=config.data_dir,
-            limit=_int_param(params, "limit", 100),
+            limit=_int_param(params, "limit", 100, min_val=1, max_val=200),
             strategy=_single(params, "strategy") or None,
         )
     if path == "/runs":
@@ -195,7 +207,7 @@ def build_api_response(
             "schema_version": 1,
             "runs": list_saved_runs(
                 data_dir=config.data_dir,
-                limit=_int_param(params, "limit", 20),
+                limit=_int_param(params, "limit", 20, min_val=1, max_val=200),
                 strategy=_single(params, "strategy") or None,
             ),
         }
@@ -212,26 +224,32 @@ def build_api_response(
             return 404, {"error": "run_not_found", "message": str(exc), "run": run_ref}
         return 200, build_run_report_payload(
             run,
-            max_picks=_int_param(params, "max_picks", 10),
+            max_picks=_int_param(params, "max_picks", 10, min_val=1, max_val=200),
         )
     if path == "/doctor/data-sources":
-        result = doctor_data_sources(
-            config,
-            snapshot_sources=_multi(params, "snapshot_source") or None,
-            daily_source=_single(params, "daily_source") or None,
-            daily_code=_single(params, "daily_code") or "000001",
-            run_live=_bool_param(params, "live", False),
-            check_daily=not _bool_param(params, "no_daily", False),
-            strategy_name=_single(params, "strategy") or None,
-            all_strategies=_bool_param(params, "all_strategies", False),
-            compare_snapshot_sources=_bool_param(params, "compare_snapshot_sources", False),
-        )
+        try:
+            result = doctor_data_sources(
+                config,
+                snapshot_sources=_multi(params, "snapshot_source") or None,
+                daily_source=_single(params, "daily_source") or None,
+                daily_code=_single(params, "daily_code") or "000001",
+                run_live=_bool_param(params, "live", False),
+                check_daily=not _bool_param(params, "no_daily", False),
+                strategy_name=_single(params, "strategy") or None,
+                all_strategies=_bool_param(params, "all_strategies", False),
+                compare_snapshot_sources=_bool_param(params, "compare_snapshot_sources", False),
+            )
+        except ValueError as exc:
+            return 400, {"error": "invalid_request", "message": str(exc)}
         return 200, result.to_dict()
     if path == "/doctor/radar":
-        return 200, doctor_radar_readiness(
-            config,
-            trade_date=_single(params, "trade_date") or None,
-        )
+        try:
+            return 200, doctor_radar_readiness(
+                config,
+                trade_date=_single(params, "trade_date") or None,
+            )
+        except ValueError as exc:
+            return 400, {"error": "invalid_request", "message": str(exc)}
     if path == "/patterns":
         include_exp = _bool_param(params, "include_experimental", True)
         return 200, {
@@ -275,11 +293,30 @@ def build_api_response(
                 series = compute_market_regime_series(daily_pack, end_index=end_idx)[-days:]
                 return 200, {"schema_version": 1, "days": [item.to_dict() for item in series]}
             if path == "/patterns/scan":
-                patterns = _multi(params, "pattern") or None
+                raw_patterns = _multi(params, "pattern")
                 include_exp = _bool_param(params, "include_experimental", False)
+                selected_patterns: list[str] | None = None
+                if raw_patterns:
+                    known = {spec.name for spec in list_patterns(include_experimental=True)}
+                    deduped: list[str] = []
+                    for item in raw_patterns:
+                        if "/" in item or "\\" in item or ".." in item or item not in known:
+                            return 400, {
+                                "error": "invalid_pattern",
+                                "message": f"Unknown or unsafe pattern name: {item!r}",
+                                "pattern": item,
+                            }
+                        if item not in deduped:
+                            deduped.append(item)
+                    if len(deduped) > 32:
+                        return 400, {
+                            "error": "too_many_patterns",
+                            "message": "Too many patterns requested (max 32).",
+                        }
+                    selected_patterns = deduped
                 return 200, scan_patterns(
                     daily_pack,
-                    patterns=patterns,
+                    patterns=selected_patterns,
                     trade_date=trade_date,
                     include_experimental=include_exp,
                 ).to_dict()
@@ -289,7 +326,8 @@ def build_api_response(
             run_ids = safe_run_paths or None
             expected_date = _single(params, "expected_trade_date") or None
             allow_stale = _bool_param(params, "allow_stale_pack", True)
-            detail_url = _single(params, "detail_url") or config.dashboard_url
+            default_detail = _safe_detail_url(config.dashboard_url, fallback="../index.html")
+            detail_url = _safe_detail_url(_single(params, "detail_url") or default_detail, fallback=default_detail)
             # Read-only HTTP GET never spends paid LLM credits by default.
             ai_brief = "off"
             ann_max = max(0, min(30, _int_param(params, "announcement_max_codes", 8)))
@@ -347,16 +385,50 @@ def build_html_response(
     return 200, render_daily_report_html(payload)
 
 
+def _parse_accept_q(params: list[str]) -> float:
+    for p in params:
+        if "=" in p:
+            k, v = p.split("=", 1)
+            if k.strip().lower() == "q":
+                try:
+                    return max(0.0, min(1.0, float(v.strip())))
+                except ValueError:
+                    return 0.0
+    return 1.0
+
+
 def _prefers_html(accept_header: str, query: str) -> bool:
     params = parse_qs(query, keep_blank_values=False)
     if (params.get("format") or [""])[-1].strip().lower() == "json":
         return False
-    lowered = str(accept_header or "").lower()
-    html_pos = lowered.find("text/html")
-    if html_pos < 0:
+    best_html_q = 0.0
+    best_json_q = 0.0
+    for raw_range in str(accept_header or "").split(","):
+        tokens = [tok.strip() for tok in raw_range.split(";") if tok.strip()]
+        if not tokens:
+            continue
+        media = tokens[0].lower()
+        q = _parse_accept_q(tokens[1:])
+        if q <= 0.0:
+            continue
+        if media in {"text/html", "application/xhtml+xml"}:
+            best_html_q = max(best_html_q, q)
+        elif media == "application/json":
+            best_json_q = max(best_json_q, q)
+    if best_html_q <= 0.0:
         return False
-    json_pos = lowered.find("application/json")
-    return json_pos < 0 or html_pos < json_pos
+    return best_html_q >= best_json_q
+
+
+def _script_src_csp(html_content: str) -> str:
+    scripts = re.findall(r"<script>([\s\S]*?)</script>", html_content)
+    if not scripts:
+        return "'none'"
+    hashes = []
+    for body in scripts:
+        digest = hashlib.sha256(body.encode("utf-8")).digest()
+        hashes.append(f"'sha256-{base64.b64encode(digest).decode('ascii')}'")
+    return " ".join(hashes)
 
 
 def serve_api(
@@ -381,29 +453,33 @@ def _handler_for_config(config: Config):
 
         def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler.
             parsed = urlparse(self.path)
+            vary_accept = parsed.path == "/"
             if parsed.path in {"/ui", "/daily-report.html"} or (
                 parsed.path == "/" and _prefers_html(self.headers.get("Accept", ""), parsed.query)
             ):
                 status, html_body = build_html_response(config, parsed.path, query=parsed.query)
-                self._send_html(status, html_body)
+                self._send_html(status, html_body, vary_accept=vary_accept)
                 return
             status, payload = build_api_response(config, parsed.path, query=parsed.query)
-            self._send_json(status, payload)
+            self._send_json(status, payload, vary_accept=vary_accept)
 
         def log_message(self, format: str, *args) -> None:  # noqa: A002 - stdlib signature.
             return
 
-        def _send_html(self, status: int, content: str) -> None:
+        def _send_html(self, status: int, content: str, *, vary_accept: bool = False) -> None:
             body = content.encode("utf-8")
+            script_csp = _script_src_csp(content)
             self.send_response(status)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
+            if vary_accept:
+                self.send_header("Vary", "Accept")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("X-Frame-Options", "DENY")
             self.send_header("Referrer-Policy", "no-referrer")
             self.send_header(
                 "Content-Security-Policy",
-                "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                f"default-src 'self'; script-src {script_csp}; "
                 "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
                 "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
             )
@@ -411,13 +487,14 @@ def _handler_for_config(config: Config):
             self.end_headers()
             self.wfile.write(body)
 
-        def _send_json(self, status: int, payload: dict[str, Any]) -> None:
+        def _send_json(self, status: int, payload: dict[str, Any], *, vary_accept: bool = False) -> None:
             body = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
+            if vary_accept:
+                self.send_header("Vary", "Accept")
             self.send_header("X-Content-Type-Options", "nosniff")
-            self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -532,11 +609,23 @@ def _multi(params: dict[str, list[str]], key: str) -> list[str]:
     return [item for item in dict.fromkeys(values) if item]
 
 
-def _int_param(params: dict[str, list[str]], key: str, default: int) -> int:
+def _int_param(
+    params: dict[str, list[str]],
+    key: str,
+    default: int,
+    *,
+    min_val: int | None = None,
+    max_val: int | None = None,
+) -> int:
     try:
-        return int(_single(params, key) or default)
+        val = int(_single(params, key) or default)
     except ValueError:
-        return default
+        val = default
+    if min_val is not None:
+        val = max(min_val, val)
+    if max_val is not None:
+        val = min(max_val, val)
+    return val
 
 
 def _optional_bool_param(params: dict[str, list[str]], key: str) -> bool | None:

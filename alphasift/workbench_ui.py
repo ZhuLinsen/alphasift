@@ -109,6 +109,7 @@ def render_workbench_html() -> str:
   .badge.warn { color: var(--amber); border-color: rgba(245,158,11,0.45); }
   .badge.bad { color: var(--rose); border-color: rgba(244,63,94,0.45); }
   .badge.accent { color: var(--accent); border-color: rgba(56,189,248,0.45); }
+  .card.bad { border-color: rgba(244,63,94,0.5); }
   .hidden { display: none; }
   pre {
     background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
@@ -236,6 +237,7 @@ def render_workbench_html() -> str:
     radar: null,
     sources: null,
     index: null,
+    selectedRunId: "",
     activeRun: null,
     compareResult: null,
     runReqId: 0,
@@ -313,56 +315,95 @@ def render_workbench_html() -> str:
     }
   }
 
+  function stratMarkets(s) {
+    return Array.isArray(s && s.market_scope) && s.market_scope.length ? s.market_scope : ["cn"];
+  }
+
   function renderOverview() {
     const root = clear(document.getElementById("panel-overview"));
     const ov = state.overview || {};
+    const ovSum = ov.summary || {};
     const radar = state.radar || {};
+    const radPat = radar.patterns || {};
+    const radLlm = radar.llm || {};
+    const radPack = radar.pack || {};
+    const radNotify = radar.notify || {};
     const src = state.sources || {};
 
+    const mkts = Array.from(new Set(state.strategies.flatMap((s) => stratMarkets(s))));
     const kpiGrid = el("div", { class: "kpi-grid" }, [
       el("div", { class: "card" }, [
         el("div", { class: "kpi-label", text: t("kpi_strats") }),
-        el("div", { class: "kpi-val", text: String(state.strategies.length || ov.strategy_count || 0) }),
-        el("div", { class: "kpi-sub", text: (ov.markets || ["cn","hk","us","jp","kr","tw","in"]).join(", ").toUpperCase() }),
+        el("div", { class: "kpi-val", text: String(state.strategies.length || ovSum.strategy_count || 0) }),
+        el("div", { class: "kpi-sub", text: (mkts.length ? mkts : ["cn","hk","us","jp","kr","tw","in"]).join(", ").toUpperCase() }),
       ]),
       el("div", { class: "card" }, [
         el("div", { class: "kpi-label", text: t("kpi_pats") }),
-        el("div", { class: "kpi-val", text: String(state.patterns.length || ov.pattern_count || 0) }),
-        el("div", { class: "kpi-sub", text: "250-day next_open verified" }),
+        el("div", { class: "kpi-val", text: String(state.patterns.length || radPat.total || 0) }),
+        el("div", {
+          class: "kpi-sub",
+          text: radPat.total !== undefined
+            ? String(radPat.active_count || 0) + " active · " + String(radPat.experimental_count || 0) + " experimental"
+            : "250-day next_open verified",
+        }),
       ]),
       el("div", { class: "card" }, [
         el("div", { class: "kpi-label", text: t("kpi_runs") }),
-        el("div", { class: "kpi-val", text: String(state.runs.length) }),
+        el("div", { class: "kpi-val", text: String(state.runs.length || ovSum.recent_run_count || 0) }),
         el("div", { class: "kpi-sub", text: state.runs[0] ? String(state.runs[0].run_id || "") : "-" }),
       ]),
       el("div", { class: "card" }, [
         el("div", { class: "kpi-label", text: t("kpi_health") }),
         el("div", { class: "kpi-val", text: String(radar.status || src.status || "ok").toUpperCase() }),
-        el("div", { class: "kpi-sub", text: "LLM: " + (radar.llm_ready ? "ready" : "rules-only") }),
+        el("div", { class: "kpi-sub", text: "LLM: " + (radLlm.configured ? String(radLlm.ai_track_mode || "configured") : "rules-only") }),
       ]),
     ]);
     root.appendChild(kpiGrid);
 
     const row = el("div", { class: "row" });
     const radarCard = el("div", { class: "card" }, [el("h3", { class: "section-title", text: t("radar_status") })]);
-    const radarChecks = (radar.checks || []);
-    if (radarChecks.length) {
-      const list = el("div");
-      for (const chk of radarChecks.slice(0, 12)) {
-        const st = String(chk.status || (chk.ok ? "ok" : "warn"));
-        const tone = st === "ok" || st === "pass" ? "ok" : st === "error" || st === "fail" ? "bad" : "warn";
-        list.appendChild(el("div", { style: "margin:6px 0;" }, [
-          makeBadge(st.toUpperCase(), tone),
-          el("span", { text: (chk.name || chk.key || "check") + (chk.detail ? " — " + chk.detail : "") }),
-        ]));
-      }
-      radarCard.appendChild(list);
-    } else {
-      radarCard.appendChild(el("div", { class: "empty", text: JSON.stringify({ llm_ready: radar.llm_ready, notify_targets: radar.notify_targets || [] }) }));
+    const radarItems = [
+      {
+        label: "LLM Track",
+        tone: radLlm.configured ? "ok" : "warn",
+        badge: radLlm.configured ? "CONFIGURED" : "RULES",
+        detail: String(radLlm.ai_track_mode || "rules_only"),
+      },
+      {
+        label: "IM Notify",
+        tone: radNotify.any_configured ? "ok" : "warn",
+        badge: radNotify.any_configured ? "READY" : "NONE",
+        detail: (radNotify.configured_channels || []).length
+          ? (radNotify.configured_channels || []).join(", ")
+          : "0 targets configured",
+      },
+      {
+        label: "CN DailyPack",
+        tone: radPack.valid && radPack.fresh ? "ok" : radPack.exists ? "warn" : "bad",
+        badge: radPack.valid ? (radPack.fresh ? "FRESH" : "STALE") : "ABSENT",
+        detail: (radPack.trade_date || "-") + " / expected " + (radPack.expected_trade_date || "-"),
+      },
+      {
+        label: "Pattern Parity",
+        tone: radPat.mirror_sync_ok ? "ok" : "bad",
+        badge: radPat.mirror_sync_ok ? "SYNCED" : "DRIFT",
+        detail: String(radPat.active_count || 0) + " active / " + String(radPat.experimental_count || 0) + " experimental",
+      },
+    ];
+    const list = el("div");
+    for (const item of radarItems) {
+      list.appendChild(el("div", { style: "margin:6px 0;" }, [
+        makeBadge(item.badge, item.tone),
+        el("span", { text: item.label + " — " + item.detail }),
+      ]));
     }
+    if (Array.isArray(radar.recommendations) && radar.recommendations.length) {
+      list.appendChild(el("pre", { text: radar.recommendations.join("\\n") }));
+    }
+    radarCard.appendChild(list);
 
     const srcCard = el("div", { class: "card" }, [el("h3", { class: "section-title", text: t("doc_sources") })]);
-    const srcOrder = (src.source_order || (src.config && src.config.source_priority) || []);
+    const srcOrder = (src.config && src.config.snapshot_source_priority) || [];
     if (Array.isArray(srcOrder) && srcOrder.length) {
       const box = el("div");
       for (const name of srcOrder) box.appendChild(makeBadge(String(name), "accent"));
@@ -382,7 +423,8 @@ def render_workbench_html() -> str:
     const search = el("input", { type: "search", placeholder: t("filter_ph") });
     const mktSel = el("select");
     mktSel.appendChild(el("option", { value: "", text: t("all_mkts") }));
-    for (const m of Array.from(new Set(state.strategies.map((s) => s.market).filter(Boolean))).sort()) {
+    const allMkts = Array.from(new Set(state.strategies.flatMap((s) => stratMarkets(s)))).sort();
+    for (const m of allMkts) {
       mktSel.appendChild(el("option", { value: m, text: m.toUpperCase() }));
     }
     bar.appendChild(search);
@@ -396,29 +438,32 @@ def render_workbench_html() -> str:
       const q = search.value.trim().toLowerCase();
       const mk = mktSel.value;
       const filtered = state.strategies.filter((s) => {
-        if (mk && s.market !== mk) return false;
+        const mkts = stratMarkets(s);
+        if (mk && !mkts.includes(mk)) return false;
         if (!q) return true;
-        const hay = [s.name, s.display_name, s.market, s.category, (s.tags || []).join(" ")].join(" ").toLowerCase();
+        const hay = [s.name, s.display_name, mkts.join(" "), s.category, (s.tags || []).join(" ")].join(" ").toLowerCase();
         return hay.includes(q);
       });
       const table = el("table");
       const thead = el("thead", null, el("tr", null, [
         el("th", { text: "Name" }),
-        el("th", { text: "Market" }),
+        el("th", { text: "Markets" }),
         el("th", { text: "Category" }),
         el("th", { text: "Version" }),
-        el("th", { text: "Max Picks" }),
+        el("th", { text: "Horizon" }),
         el("th", { text: "Daily Required" }),
         el("th", { text: "Tags" }),
       ]));
       const tbody = el("tbody");
       for (const s of filtered) {
+        const mkts = stratMarkets(s);
+        const holding = (s.style && s.style.holding_period) || "-";
         tbody.appendChild(el("tr", null, [
           el("td", null, [el("strong", { text: s.display_name || s.name }), el("div", { class: "kpi-sub", text: s.name })]),
-          el("td", null, makeBadge(String(s.market || "-").toUpperCase(), "accent")),
+          el("td", null, mkts.map((m) => makeBadge(String(m).toUpperCase(), "accent"))),
           el("td", { text: String(s.category || "-") }),
           el("td", { class: "mono", text: String(s.version || "-") }),
-          el("td", { class: "mono", text: String(s.max_output || "-") }),
+          el("td", { class: "mono", text: String(holding) }),
           el("td", null, makeBadge(s.requires_daily_features ? "YES" : "NO", s.requires_daily_features ? "warn" : "ok")),
           el("td", null, (s.tags || []).slice(0, 4).map((tg) => makeBadge(String(tg)))),
         ]));
@@ -448,7 +493,9 @@ def render_workbench_html() -> str:
       const cmpOut = el("pre", { text: state.compareResult ? JSON.stringify(state.compareResult, null, 2) : "" });
       btnCmp.addEventListener("click", async function () {
         try {
-          const data = await fetchJson("/strategy-compare?names=" + encodeURIComponent(selA.value + "," + selB.value));
+          const data = await fetchJson(
+            "/strategy-compare?base=" + encodeURIComponent(selA.value) + "&target=" + encodeURIComponent(selB.value)
+          );
           state.compareResult = data;
           cmpOut.textContent = JSON.stringify(data, null, 2);
         } catch (err) {
@@ -467,20 +514,22 @@ def render_workbench_html() -> str:
     const table = el("table");
     table.appendChild(el("thead", null, el("tr", null, [
       el("th", { text: "Pattern" }),
-      el("th", { text: "Market" }),
+      el("th", { text: "Markets" }),
       el("th", { text: "Family" }),
-      el("th", { text: "Horizon" }),
+      el("th", { text: "Min History" }),
       el("th", { text: "Status" }),
     ])));
     const tbody = el("tbody");
     for (const p of state.patterns) {
-      const exp = Boolean(p.experimental);
+      const statusText = String(p.status || "experimental");
+      const isActive = statusText === "active";
+      const mkts = Array.isArray(p.market_scope) && p.market_scope.length ? p.market_scope : ["cn"];
       tbody.appendChild(el("tr", null, [
         el("td", null, [el("strong", { text: p.display_name || p.name }), el("div", { class: "kpi-sub", text: p.name })]),
-        el("td", null, makeBadge(String(p.market || "cn").toUpperCase(), "accent")),
+        el("td", null, mkts.map((m) => makeBadge(String(m).toUpperCase(), "accent"))),
         el("td", { text: String(p.family || "-") }),
-        el("td", { class: "mono", text: p.default_horizon ? "T+" + p.default_horizon : "T+5" }),
-        el("td", null, makeBadge(exp ? "experimental" : "graduated", exp ? "warn" : "ok")),
+        el("td", { class: "mono", text: p.min_history_days ? p.min_history_days + "d" : "-" }),
+        el("td", null, makeBadge(statusText, isActive ? "ok" : "warn")),
       ]));
     }
     table.appendChild(tbody);
@@ -490,6 +539,7 @@ def render_workbench_html() -> str:
 
   async function selectRun(runId) {
     if (!runId) return;
+    state.selectedRunId = runId;
     const reqId = ++state.runReqId;
     try {
       const data = await fetchJson("/report?run=" + encodeURIComponent(runId));
@@ -516,7 +566,7 @@ def render_workbench_html() -> str:
       const rid = String(r.run_id || "");
       const label = rid + " · " + String(r.strategy || "") + " (" + String(r.market || "").toUpperCase() + ")";
       const opt = el("option", { value: rid, text: label });
-      if (state.activeRun && state.activeRun.run && state.activeRun.run.run_id === rid) opt.selected = true;
+      if (state.selectedRunId === rid) opt.selected = true;
       sel.appendChild(opt);
     }
     sel.addEventListener("change", function () { selectRun(sel.value); });
@@ -524,7 +574,7 @@ def render_workbench_html() -> str:
     root.appendChild(bar);
 
     if (!state.activeRun) {
-      selectRun(String(state.runs[0].run_id || ""));
+      selectRun(state.selectedRunId || String(state.runs[0].run_id || ""));
       return;
     }
     if (state.activeRun.error) {
@@ -573,8 +623,8 @@ def render_workbench_html() -> str:
     for (const p of picks) {
       const alignSt = p.topic_alignment_status || "unassessed";
       const alignTone = alignSt === "aligned" ? "ok" : alignSt === "unmatched" ? "warn" : "";
-      const riskLvl = p.risk_level || "low";
-      const riskTone = riskLvl === "high" ? "bad" : riskLvl === "medium" ? "warn" : "ok";
+      const riskLvl = p.risk_level || "unassessed";
+      const riskTone = riskLvl === "high" ? "bad" : riskLvl === "medium" ? "warn" : riskLvl === "low" ? "ok" : "";
       tbody.appendChild(el("tr", null, [
         el("td", { class: "mono", text: String(p.rank || "-") }),
         el("td", null, [el("strong", { text: String(p.name || p.code) }), el("div", { class: "kpi-sub mono", text: String(p.code || "") })]),
@@ -620,7 +670,9 @@ def render_workbench_html() -> str:
     ];
     const box = el("div");
     for (const ep of eps) {
-      box.appendChild(el("a", { class: "ep-link", href: ep, target: "_blank", rel: "noopener", text: ep }));
+      if (typeof ep === "string" && ep.startsWith("/") && !ep.startsWith("//")) {
+        box.appendChild(el("a", { class: "ep-link", href: ep, target: "_blank", rel: "noopener noreferrer", text: ep }));
+      }
     }
     epCard.appendChild(box);
     root.appendChild(epCard);
@@ -652,6 +704,7 @@ def render_workbench_html() -> str:
     state.runs = (runs && (runs.runs || runs.items)) || [];
     state.radar = radar;
     state.sources = src;
+    state.activeRun = null;
     renderAll();
   }
 

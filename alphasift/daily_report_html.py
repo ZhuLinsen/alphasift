@@ -7,6 +7,7 @@ import html
 import json
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from alphasift.daily_brief import BRIEF_DISCLAIMER
 
@@ -24,6 +25,39 @@ _GITHUB_URL = "https://github.com/ZhuLinsen/alphasift"
 
 def _esc(val: object) -> str:
     return html.escape("" if val is None else str(val), quote=True)
+
+
+def _safe_detail_url(raw: object, fallback: str = "../index.html") -> str:
+    """Allow only http(s) URLs or clean same-origin relative paths without HTML/control delimiters."""
+    cleaned = str(raw or "").strip()
+    if not cleaned:
+        return fallback
+    if any(ch in cleaned for ch in '<>"\'\r\n\t\0'):
+        return fallback
+    if cleaned.startswith("//"):
+        return fallback
+    parsed = urlsplit(cleaned)
+    if parsed.scheme:
+        if parsed.scheme.lower() in {"http", "https"} and parsed.netloc:
+            return cleaned
+        return fallback
+    if parsed.netloc:
+        return fallback
+    if cleaned.startswith("../index.html") or (cleaned.startswith("/") and not cleaned.startswith("//")) or cleaned.startswith("index.html"):
+        return cleaned
+    return fallback
+
+
+def _js_json(val: object) -> str:
+    """Serialize JSON safely for inline <script> blocks by escaping HTML-closing sequences."""
+    return (
+        json.dumps(val, ensure_ascii=False)
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
 
 
 def _i18n(key: str, **vars_map: object) -> str:
@@ -196,7 +230,7 @@ def render_daily_report_html(
     """Render a standalone, dependency-free, printable HTML daily research report."""
     trade_date = _esc(report.get("trade_date") or "-")
     pack_date = _esc(report.get("pack_trade_date") or "-")
-    detail_url = str(report.get("detail_url") or "").strip() or "../index.html"
+    detail_url = _safe_detail_url(report.get("detail_url"), fallback="../index.html")
     is_stale = bool(report.get("pack_is_stale"))
     stale_reason = str(report.get("stale_reason") or "").strip()
 
@@ -687,7 +721,7 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
         </svg>
         <span>GitHub</span>
       </a>
-      <button type="button" class="theme-btn" onclick="window.print()">
+      <button type="button" class="theme-btn" id="print-btn">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         <span {_i18n("btn_print")}>打印 / PDF</span>
       </button>
@@ -723,8 +757,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
 </main>
 <script>
 (function () {{
-  var TRADE_DATE = {json.dumps(str(report.get("trade_date") or "-"), ensure_ascii=False)};
-  var DETAIL_BASE = {json.dumps(detail_url, ensure_ascii=False)};
+  var TRADE_DATE = {_js_json(str(report.get("trade_date") or "-"))};
+  var DETAIL_BASE = {_js_json(detail_url)};
   var I18N = {{
     zh: {{
       page_title: "AlphaSift · A 股盘后投研日报 (" + TRADE_DATE + ")",
@@ -1114,6 +1148,10 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       var b = e.target.closest("button");
       if (b && b.getAttribute("data-lang")) applyLang(b.getAttribute("data-lang"));
     }});
+  }}
+  var printBtn = document.getElementById("print-btn");
+  if (printBtn) {{
+    printBtn.addEventListener("click", function () {{ window.print(); }});
   }}
   if (btn) {{
     btn.addEventListener("click", function () {{

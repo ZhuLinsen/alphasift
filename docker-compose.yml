@@ -1,0 +1,19 @@
+services:
+  alphasift:
+    build: .
+    container_name: alphasift-workbench
+    ports:
+      - "127.0.0.1:8765:8765"
+    environment:
+      ALPHASIFT_DATA_DIR: /app/data
+    # Copy .env.example to .env locally if using optional LLM or notification webhooks
+    # env_file:
+    #   - .env
+    volumes:
+      - alphasift_data:/app/data
+      # To use a host bind mount instead of the managed named volume, ensure host UID 10001 can write:
+      # - ./data:/app/data
+    restart: unless-stopped
+
+volumes:
+  alphasift_data:
