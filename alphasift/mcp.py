@@ -7,6 +7,8 @@ from collections.abc import Callable
 from contextlib import redirect_stdout
 from dataclasses import asdict
 import json
+import math
+import os
 from pathlib import Path
 import sys
 from typing import Any, BinaryIO
@@ -25,14 +27,36 @@ from alphasift.strategy import compare_strategies, list_strategies, load_all_str
 
 MCP_PROTOCOL_VERSION = "2024-11-05"
 _MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+_MAX_HEADER_LINES = 32
+_MAX_HEADER_BYTES = 8192
+_MAX_PATTERN_SELECTION = 32
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _clamp_int(value: Any, *, default: int, minimum: int, maximum: int) -> int:
-    if value is None or isinstance(value, bool):
+    if value is None:
         return default
-    parsed = int(value)
-    return max(minimum, min(parsed, maximum))
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"Expected integer parameter, got {type(value).__name__}")
+    return max(minimum, min(value, maximum))
+
+
+def _optional_bool(args: dict[str, Any], key: str, default: bool) -> bool:
+    if key not in args or args[key] is None:
+        return default
+    val = args[key]
+    if not isinstance(val, bool):
+        raise ValueError(f"Parameter {key!r} must be a boolean")
+    return val
+
+
+def _optional_str(args: dict[str, Any], key: str) -> str:
+    if key not in args or args[key] is None:
+        return ""
+    val = args[key]
+    if not isinstance(val, str):
+        raise ValueError(f"Parameter {key!r} must be a string")
+    return val.strip()
 
 
 def _require_str(args: dict[str, Any], key: str) -> str:
@@ -42,8 +66,25 @@ def _require_str(args: dict[str, Any], key: str) -> str:
     return raw.strip()
 
 
+def _json_safe(obj: Any) -> Any:
+    """Normalize NaN/Inf floats and non-JSON stdlib types before strict JSON serialization."""
+    if obj is None or isinstance(obj, (bool, int)):
+        return obj
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, str):
+        return obj
+    if isinstance(obj, Path):
+        return str(obj)
+    if isinstance(obj, dict):
+        return {str(k): _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple, set)):
+        return [_json_safe(v) for v in obj]
+    return str(obj)
+
+
 class _RPCParamError(Exception):
-    """Raised on JSON-RPC protocol/param errors (-32602 / -32601)."""
+    """Raised on JSON-RPC protocol/param errors (-32602 / -32601 / -32600)."""
 
     def __init__(self, code: int, message: str) -> None:
         super().__init__(message)
@@ -132,7 +173,7 @@ def _tool_definitions() -> list[dict[str, Any]]:
                     "patterns": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Optional list of pattern names.",
+                        "description": "Optional list of built-in pattern names.",
                     },
                     "trade_date": {"type": "string", "description": "Optional YYYY-MM-DD trade date."},
                     "include_experimental": {"type": "boolean", "default": False},
@@ -212,7 +253,7 @@ class MCPServer:
         }
 
     def _handle_list_strategies(self, args: dict[str, Any]) -> Any:
-        market = str(args.get("market") or "").strip().lower()
+        market = _optional_str(args, "market").lower()
         if market:
             get_market(market)
         items = [asdict(item) for item in list_strategies(self.config.strategies_dir)]
@@ -233,11 +274,15 @@ class MCPServer:
     def _handle_compare_strategies(self, args: dict[str, Any]) -> Any:
         base = _require_str(args, "base")
         target = _require_str(args, "target")
+        if "/" in base or "\\" in base or ".." in base or "/" in target or "\\" in target or ".." in target:
+            raise ValueError("Unsafe strategy name")
         return compare_strategies(base, target, self.config.strategies_dir)
 
     def _handle_screen(self, args: dict[str, Any]) -> Any:
         strategy = _require_str(args, "strategy")
-        market = str(args.get("market") or "cn").strip().lower()
+        if "/" in strategy or "\\" in strategy or ".." in strategy:
+            raise ValueError(f"Unsafe strategy name: {strategy!r}")
+        market = (_optional_str(args, "market") or "cn").lower()
         get_market(market)
         raw_max_output = args.get("max_output")
         max_output = (
@@ -245,11 +290,12 @@ class MCPServer:
             if raw_max_output is not None
             else None
         )
-        use_llm = bool(args.get("use_llm", False))
-        explain_filters = bool(args.get("explain_filters", False))
-        llm_context = args.get("llm_context")
-        if llm_context is not None:
-            llm_context = str(llm_context)[:4000]
+        use_llm = _optional_bool(args, "use_llm", False)
+        explain_filters = _optional_bool(args, "explain_filters", False)
+        raw_ctx = args.get("llm_context")
+        if raw_ctx is not None and not isinstance(raw_ctx, str):
+            raise ValueError("Parameter 'llm_context' must be a string")
+        llm_context = raw_ctx[:4000] if raw_ctx is not None else None
         result = screen(
             strategy,
             market=market,
@@ -262,25 +308,38 @@ class MCPServer:
         return asdict(result)
 
     def _handle_list_patterns(self, args: dict[str, Any]) -> Any:
-        include_exp = bool(args.get("include_experimental", False))
+        include_exp = _optional_bool(args, "include_experimental", False)
         return {"patterns": [asdict(item) for item in list_patterns(include_experimental=include_exp)]}
 
     def _handle_scan_patterns(self, args: dict[str, Any]) -> Any:
         raw_patterns = args.get("patterns")
+        patterns: list[str] | None = None
         if raw_patterns is not None:
             if not isinstance(raw_patterns, list) or not all(isinstance(p, str) for p in raw_patterns):
                 raise ValueError("Parameter 'patterns' must be a list of strings.")
-            patterns = [p.strip() for p in raw_patterns if p.strip()] or None
-        else:
-            patterns = None
-        raw_date = args.get("trade_date")
-        trade_date = str(raw_date).strip() if raw_date else None
-        include_exp = bool(args.get("include_experimental", False))
+            known = {spec.name for spec in list_patterns(include_experimental=True)}
+            selected: list[str] = []
+            seen: set[str] = set()
+            for raw_item in raw_patterns:
+                cleaned = raw_item.strip()
+                if not cleaned:
+                    continue
+                if "/" in cleaned or "\\" in cleaned or ".." in cleaned or cleaned not in known:
+                    raise ValueError(f"Unknown or unsafe pattern name: {cleaned!r}")
+                if cleaned not in seen:
+                    seen.add(cleaned)
+                    selected.append(cleaned)
+                if len(selected) >= _MAX_PATTERN_SELECTION:
+                    break
+            patterns = selected or None
+
+        trade_date = _optional_str(args, "trade_date") or None
+        include_exp = _optional_bool(args, "include_experimental", False)
         try:
             daily_pack = load_pack(pack_dir(self.config))
         except (OSError, PackError, ValueError) as exc:
             raise RuntimeError(
-                f"CN DailyPack unavailable at {pack_dir(self.config)}: {exc}. "
+                f"CN DailyPack unavailable: {type(exc).__name__}. "
                 "Build a pack with `alphasift pack build` first."
             ) from exc
         return scan_patterns(
@@ -291,9 +350,9 @@ class MCPServer:
         ).to_dict()
 
     def _handle_overview(self, args: dict[str, Any]) -> Any:
-        strategy = str(args.get("strategy") or "").strip() or None
+        strategy = _optional_str(args, "strategy") or None
         runs_limit = _clamp_int(args.get("runs_limit"), default=5, minimum=1, maximum=50)
-        live = bool(args.get("live_data_check", False))
+        live = _optional_bool(args, "live_data_check", False)
         return build_overview(
             self.config,
             strategy_name=strategy,
@@ -302,12 +361,12 @@ class MCPServer:
         )
 
     def _handle_doctor_data_sources(self, args: dict[str, Any]) -> Any:
-        strategy = str(args.get("strategy") or "").strip() or None
-        market = str(args.get("market") or "").strip().lower() or None
+        strategy = _optional_str(args, "strategy") or None
+        market = _optional_str(args, "market").lower() or None
         if market:
             get_market(market)
-        run_live = bool(args.get("run_live", False))
-        check_daily = bool(args.get("check_daily", True))
+        run_live = _optional_bool(args, "run_live", False)
+        check_daily = _optional_bool(args, "check_daily", True)
         return doctor_data_sources(
             self.config,
             strategy_name=strategy,
@@ -321,8 +380,8 @@ class MCPServer:
 
     def _handle_list_runs(self, args: dict[str, Any]) -> Any:
         limit = _clamp_int(args.get("limit"), default=20, minimum=1, maximum=100)
-        strategy = str(args.get("strategy") or "").strip() or None
-        market = str(args.get("market") or "").strip().lower() or None
+        strategy = _optional_str(args, "strategy") or None
+        market = _optional_str(args, "market").lower() or None
         return {
             "runs": list_saved_runs(
                 data_dir=self.config.data_dir,
@@ -343,16 +402,27 @@ class MCPServer:
         raise FileNotFoundError("SKILL.md not found")
 
     def handle_request(self, request: dict[str, Any]) -> dict[str, Any] | None:
-        if not isinstance(request, dict) or request.get("jsonrpc") != "2.0" or not isinstance(request.get("method"), str):
+        if not isinstance(request, dict):
             return {
                 "jsonrpc": "2.0",
-                "id": request.get("id") if isinstance(request, dict) else None,
+                "id": None,
+                "error": {"code": -32600, "message": "Invalid JSON-RPC 2.0 request"},
+            }
+        raw_id = request.get("id")
+        valid_id = raw_id is None or (isinstance(raw_id, (str, int)) and not isinstance(raw_id, bool))
+        req_id = raw_id if valid_id else None
+        is_notification = "id" not in request
+
+        if request.get("jsonrpc") != "2.0" or not isinstance(request.get("method"), str) or not valid_id:
+            if is_notification:
+                return None
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
                 "error": {"code": -32600, "message": "Invalid JSON-RPC 2.0 request"},
             }
 
         method = request["method"]
-        req_id = request.get("id")
-        is_notification = "id" not in request
         params = request.get("params")
         if params is None:
             params = {}
@@ -378,6 +448,14 @@ class MCPServer:
                 "jsonrpc": "2.0",
                 "id": req_id,
                 "error": {"code": exc.code, "message": exc.message},
+            }
+        except Exception as exc:  # noqa: BLE001
+            if is_notification:
+                return None
+            return {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "error": {"code": -32603, "message": f"Internal error: {type(exc).__name__}"},
             }
 
         if is_notification:
@@ -412,13 +490,19 @@ class MCPServer:
                 raise _RPCParamError(-32602, "Invalid params: tool arguments must be an object")
             try:
                 payload = handler(arguments)
+                safe_text = json.dumps(
+                    _json_safe(payload),
+                    ensure_ascii=False,
+                    indent=2,
+                    allow_nan=False,
+                )
                 return {
-                    "content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False, indent=2)}],
+                    "content": [{"type": "text", "text": safe_text}],
                     "isError": False,
                 }
             except Exception as exc:  # noqa: BLE001
                 return {
-                    "content": [{"type": "text", "text": f"{type(exc).__name__}: {exc}"}],
+                    "content": [{"type": "text", "text": f"{type(exc).__name__}: {str(exc)[:300]}"}],
                     "isError": True,
                 }
         if method == "resources/list":
@@ -452,7 +536,7 @@ class MCPServer:
                         {
                             "uri": uri,
                             "mimeType": "application/json",
-                            "text": json.dumps(payload, ensure_ascii=False, indent=2),
+                            "text": json.dumps(_json_safe(payload), ensure_ascii=False, indent=2, allow_nan=False),
                         }
                     ]
                 }
@@ -460,10 +544,17 @@ class MCPServer:
         raise _RPCParamError(-32601, f"Method not found: {method}")
 
 
+def _read_bounded_line(stream: BinaryIO, limit: int = _MAX_CONTENT_LENGTH) -> bytes:
+    line = stream.readline(limit + 1)
+    if len(line) > limit:
+        raise ValueError("MCP frame line exceeds maximum length")
+    return line
+
+
 def read_stdio_message(stream: BinaryIO) -> tuple[str, bytes] | None:
     """Read either a Content-Length framed body or a newline-delimited JSON line."""
     while True:
-        first_line = stream.readline()
+        first_line = _read_bounded_line(stream)
         if not first_line:
             return None
         if first_line in (b"\r\n", b"\n"):
@@ -476,20 +567,30 @@ def read_stdio_message(stream: BinaryIO) -> tuple[str, bytes] | None:
 
     headers: dict[str, str] = {}
     line = first_line
+    header_bytes = 0
+    header_lines = 0
     while True:
         if line in (b"\r\n", b"\n", b""):
             break
+        header_lines += 1
+        header_bytes += len(line)
+        if header_lines > _MAX_HEADER_LINES or header_bytes > _MAX_HEADER_BYTES:
+            raise ValueError("MCP headers exceed maximum limits")
         decoded = line.decode("ascii", errors="replace").rstrip("\r\n")
         if ":" in decoded:
             k, v = decoded.split(":", 1)
-            headers[k.strip().lower()] = v.strip()
-        line = stream.readline()
+            key_lower = k.strip().lower()
+            val_clean = v.strip()
+            if key_lower == "content-length" and key_lower in headers and headers[key_lower] != val_clean:
+                raise ValueError("Conflicting Content-Length headers")
+            headers[key_lower] = val_clean
+        line = _read_bounded_line(stream, limit=_MAX_HEADER_BYTES)
         if not line:
             return None
 
     raw_len = headers.get("content-length")
-    if raw_len is None:
-        raise ValueError("Missing Content-Length header")
+    if raw_len is None or not raw_len.isdigit():
+        raise ValueError("Missing or invalid Content-Length header")
     length = int(raw_len)
     if length < 0 or length > _MAX_CONTENT_LENGTH:
         raise ValueError(f"Invalid Content-Length: {length}")
@@ -501,7 +602,9 @@ def read_stdio_message(stream: BinaryIO) -> tuple[str, bytes] | None:
 
 def write_stdio_message(stream: BinaryIO, payload: dict[str, Any], *, framing: str = "line") -> None:
     """Serialize one JSON-RPC response in either header-framed or line-delimited mode."""
-    encoded = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    encoded = json.dumps(_json_safe(payload), ensure_ascii=False, allow_nan=False).encode(
+        "utf-8", errors="replace"
+    )
     if framing == "headers":
         header = f"Content-Length: {len(encoded)}\r\n\r\n".encode("ascii")
         stream.write(header + encoded)
@@ -519,30 +622,45 @@ def serve_mcp(
     """Run blocking STDIO JSON-RPC loop for MCP clients."""
     server = MCPServer(config or Config.from_env())
     reader = in_stream or sys.stdin.buffer
-    writer = out_stream or sys.stdout.buffer
+    owned_writer: BinaryIO | None = None
 
-    while True:
+    if out_stream is not None:
+        writer = out_stream
+    else:
         try:
-            frame = read_stdio_message(reader)
-        except ValueError as exc:
-            write_stdio_message(
-                writer,
-                {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": str(exc)}},
-                framing="line",
-            )
-            continue
-        if frame is None:
-            break
-        framing, body = frame
-        try:
-            request = json.loads(body.decode("utf-8"))
-        except ValueError:
-            write_stdio_message(
-                writer,
-                {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}},
-                framing=framing,
-            )
-            continue
-        response = server.handle_request(request)
-        if response is not None:
-            write_stdio_message(writer, response, framing=framing)
+            protocol_fd = os.dup(sys.stdout.fileno())
+            os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
+            owned_writer = os.fdopen(protocol_fd, "wb", buffering=0)
+            writer = owned_writer
+        except (OSError, ValueError, AttributeError):
+            writer = sys.stdout.buffer
+
+    try:
+        while True:
+            try:
+                frame = read_stdio_message(reader)
+            except ValueError as exc:
+                write_stdio_message(
+                    writer,
+                    {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": str(exc)}},
+                    framing="line",
+                )
+                break
+            if frame is None:
+                break
+            framing, body = frame
+            try:
+                request = json.loads(body.decode("utf-8"))
+            except (ValueError, RecursionError):
+                write_stdio_message(
+                    writer,
+                    {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}},
+                    framing=framing,
+                )
+                continue
+            response = server.handle_request(request)
+            if response is not None:
+                write_stdio_message(writer, response, framing=framing)
+    finally:
+        if owned_writer is not None:
+            owned_writer.close()

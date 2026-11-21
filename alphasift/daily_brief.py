@@ -413,9 +413,9 @@ def generate_ai_daily_brief(
     has_llm_cfg = bool(
         config is not None
         and (
-            config.llm_api_key
-            or config.llm_channels
-            or config.llm_config_path
+            config.has_usable_llm_config()
+            if hasattr(config, "has_usable_llm_config")
+            else (config.llm_api_key or config.llm_channels or config.llm_config_path)
         )
     )
     if mode == "auto" and not has_llm_cfg and llm_caller is None:

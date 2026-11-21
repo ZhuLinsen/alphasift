@@ -303,6 +303,14 @@ class Config:
             self.llm_model.startswith("ollama/"),
         ])
 
+    def has_usable_llm_config(self) -> bool:
+        """Return whether a supported non-legacy LLM route is usable."""
+        from alphasift.llm_client import configuration_error
+
+        if configuration_error(self.llm_channels, str(self.llm_config_path or "")):
+            return False
+        return self.has_llm_config()
+
     @classmethod
     def from_env(cls) -> "Config":
         _load_env_file()
@@ -621,8 +629,12 @@ def _resolve_llm_base_url(model: str) -> str:
     provider, _ = split_model(model)
     if provider == "ollama":
         return os.getenv("OLLAMA_API_BASE", "")
-    if provider in {"openai", "gemini", "deepseek", "anthropic"}:
+    if provider == "openai":
         if os.getenv("AIHUBMIX_KEY"):
             return gateway_base_url("aihubmix")
+        return os.getenv("OPENAI_BASE_URL", "")
+    # Never route non-OpenAI provider keys (e.g. GEMINI_API_KEY / DEEPSEEK_API_KEY)
+    # to OPENAI_BASE_URL unless LLM_API_KEY explicitly overrides credentials too.
+    if provider in {"gemini", "deepseek", "anthropic"} and os.getenv("LLM_API_KEY", "").strip():
         return os.getenv("OPENAI_BASE_URL", "")
     return ""

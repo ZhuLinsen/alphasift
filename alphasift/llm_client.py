@@ -6,6 +6,8 @@ import re
 from dataclasses import dataclass, field
 from http import HTTPStatus
 
+from urllib.parse import quote, urlsplit
+
 import requests
 
 logger = logging.getLogger(__name__)
@@ -148,17 +150,34 @@ def build_attempts(
         for value in models if isinstance(models, list) else []:
             provider, name = split_model(normalize_model(str(value), protocol))
             same_provider = provider == primary_provider
+            default_origin = _GATEWAYS.get(provider, ("", ()))[0].rstrip("/")
             url = gateway_base_url(provider, channel_url or (base_url if same_provider else ""))
-            keys = channel_keys if isinstance(channel_keys, list) else []
-            if not keys:
+            explicit_keys = [str(k or "") for k in channel_keys] if isinstance(channel_keys, list) else []
+            keys: list[str]
+            if explicit_keys:
+                keys = explicit_keys
+            elif not channel_url or url.rstrip("/") == default_origin or provider == "ollama":
                 keys = (primary_keys if same_provider else gateway_api_keys(provider)) or [""]
+            else:
+                # Custom third-party channel URL without explicit channel keys must NOT
+                # receive unrelated provider gateway keys by ambient inheritance.
+                keys = [""]
             target = primary_channels if name == primary_name else remaining_channels
-            target.extend(LLMAttempt(url, name, str(key or "")) for key in keys if name)
+            target.extend(LLMAttempt(url, name, key) for key in keys if name)
 
     attempts = [*primary_channels, *direct_attempts(model), *remaining_channels]
     for fallback in fallback_models:
         attempts.extend(direct_attempts(fallback.strip()))
     return list(dict.fromkeys(attempts))
+
+
+def _validated_endpoint(base_url: str) -> str:
+    parsed = urlsplit(str(base_url or "").strip())
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+        raise LLMClientError("Invalid LLM endpoint URL")
+    if parsed.username or parsed.password:
+        raise LLMClientError("Invalid LLM endpoint URL: embedded credentials disallowed")
+    return base_url.rstrip("/")
 
 
 def complete(
@@ -172,6 +191,7 @@ def complete(
     silent: bool = True,
 ) -> str:
     """Make one request and return the first assistant message's text."""
+    endpoint_base = _validated_endpoint(attempt.base_url)
     payload: dict[str, object] = {"model": attempt.model, "messages": messages, "temperature": temperature}
     if max_tokens is not None and int(max_tokens) > 0:
         payload["max_tokens"] = int(max_tokens)
@@ -180,7 +200,7 @@ def complete(
     headers = {"Authorization": f"Bearer {attempt.api_key}"} if attempt.api_key else {}
     try:
         response = requests.post(
-            f"{attempt.base_url.rstrip('/')}/chat/completions",
+            f"{endpoint_base}/chat/completions",
             headers=headers,
             json=payload,
             timeout=timeout,
@@ -204,10 +224,10 @@ def complete(
         content = response.json()["choices"][0]["message"]["content"]
     except (ValueError, KeyError, IndexError, TypeError):
         raise LLMClientError("Invalid LLM chat completion response", status_code=status) from None
-    if content is None:
-        return ""
     if not isinstance(content, str):
         raise LLMClientError("Invalid LLM assistant text", status_code=status)
+    if not content.strip():
+        raise LLMClientError("Empty LLM chat completion content", status_code=status)
     return content
 
 
@@ -226,8 +246,11 @@ def _provider_reason(response: requests.Response, api_key: str) -> str:
     reason = " ".join(reason.split())
     if api_key:
         reason = reason.replace(api_key, "***")
+        encoded = quote(api_key, safe="")
+        if encoded:
+            reason = reason.replace(encoded, "***")
     # A relay can echo a credential other than ours, so also mask anything key-shaped.
-    return _SECRET_LIKE.sub("***", reason)[:200]
+    return _SECRET_LIKE.sub("***", reason)[:180]
 
 
 def _response_error(response: requests.Response, *, check_json_mode: bool, api_key: str = "") -> LLMClientError:
@@ -235,9 +258,10 @@ def _response_error(response: requests.Response, *, check_json_mode: bool, api_k
     timed_out = status in (408, 504)
     # Error bodies can echo credentials and prompts: classify on the raw text, but only
     # surface the provider's short message field, truncated and with the key redacted.
-    detail = response.text.lower() if check_json_mode and status in (400, 415, 422, 501) else ""
-    rejected = any(marker in detail for marker in ("response_format", "json mode", "json_object")) or (
-        "json" in detail and ("not support" in detail or "unsupported" in detail)
+    detail = response.text.lower() if check_json_mode and status in (400, 415, 422) else ""
+    rejected = (
+        ("response_format" in detail or "json_object" in detail or "json mode" in detail)
+        and any(tok in detail for tok in ("unsupported", "not support", "invalid", "unrecognized", "unknown", "disabled", "disallowed"))
     )
     try:
         message = f"LLM HTTP {status} {HTTPStatus(status).phrase}"

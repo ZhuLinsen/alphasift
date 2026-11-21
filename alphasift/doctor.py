@@ -1076,7 +1076,7 @@ def doctor_radar_readiness(
     active_patterns = [s.name for s in specs if s.status == "active"]
     experimental_patterns = [s.name for s in specs if s.status == "experimental"]
     push_info = notify_readiness(config)
-    llm_ready = config.has_llm_config()
+    llm_ready = config.has_usable_llm_config() if hasattr(config, "has_usable_llm_config") else config.has_llm_config()
 
     recommendations: list[str] = []
     if not pack_info["valid"]:

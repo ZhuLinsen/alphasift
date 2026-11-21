@@ -89,18 +89,31 @@ jobs:
 
       - name: Pick the session
         id: session
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULE_EXPR: ${{ github.event.schedule }}
+          INPUT_SESSION: ${{ inputs.session || 'asia' }}
+          INPUT_MARKETS: ${{ inputs.markets }}
         run: |
-          session="${{ inputs.session || 'asia' }}"
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            if [ "${{ github.event.schedule }}" = "30 22 * * 1-5" ]; then session=us; else session=asia; fi
+          session="$INPUT_SESSION"
+          if [ "$EVENT_NAME" = "schedule" ]; then
+            if [ "$SCHEDULE_EXPR" = "30 22 * * 1-5" ]; then session=us; else session=asia; fi
           fi
-          markets="${{ inputs.markets }}"
+          case "$session" in
+            asia|us|rebuild) ;;
+            *) echo "::error::Invalid session: $session"; exit 1 ;;
+          esac
+          markets="$INPUT_MARKETS"
           if [ -z "$markets" ]; then
             case "$session" in
               asia) markets=cn,hk,jp,kr,tw,in ;;
               us) markets=us ;;
               rebuild) markets=cn,hk,jp,kr,tw,in,us ;;
             esac
+          fi
+          if ! [[ "$markets" =~ ^(cn|us|hk|jp|kr|tw|in)(,(cn|us|hk|jp|kr|tw|in))*$ ]]; then
+            echo "::error::Invalid markets subset: $markets"
+            exit 1
           fi
           echo "session=$session" >> "$GITHUB_OUTPUT"
           echo "markets=$markets" >> "$GITHUB_OUTPUT"
@@ -127,6 +140,8 @@ jobs:
       - name: Screen
         if: steps.session.outputs.session != 'rebuild'
         env:
+          SESSION: ${{ steps.session.outputs.session }}
+          MARKETS: ${{ steps.session.outputs.markets }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
@@ -135,6 +150,11 @@ jobs:
           LITELLM_MODEL: ${{ secrets.LITELLM_MODEL || vars.LITELLM_MODEL }}
           LITELLM_FALLBACK_MODELS: ${{ secrets.LITELLM_FALLBACK_MODELS || vars.LITELLM_FALLBACK_MODELS }}
           LLM_CHANNELS: ${{ secrets.LLM_CHANNELS || vars.LLM_CHANNELS }}
+          LLM_PRIMARY_PROTOCOL: ${{ secrets.LLM_PRIMARY_PROTOCOL || vars.LLM_PRIMARY_PROTOCOL }}
+          LLM_PRIMARY_BASE_URL: ${{ secrets.LLM_PRIMARY_BASE_URL || vars.LLM_PRIMARY_BASE_URL }}
+          LLM_PRIMARY_API_KEY: ${{ secrets.LLM_PRIMARY_API_KEY }}
+          LLM_PRIMARY_API_KEYS: ${{ secrets.LLM_PRIMARY_API_KEYS }}
+          LLM_PRIMARY_MODELS: ${{ secrets.LLM_PRIMARY_MODELS || vars.LLM_PRIMARY_MODELS }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
@@ -142,7 +162,7 @@ jobs:
           LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES: "12"
         run: |
           python scripts/track_record.py screen --track track \
-            --session "${{ steps.session.outputs.session }}" --markets "${{ steps.session.outputs.markets }}" --pack-dir "$ALPHASIFT_PACK_DIR" \
+            --session "$SESSION" --markets "$MARKETS" --pack-dir "$ALPHASIFT_PACK_DIR" \
             || echo "::warning::no strategy saved a run this session"
 
       - name: Resolve CN target trade date
@@ -150,14 +170,16 @@ jobs:
         if: steps.session.outputs.session == 'asia'
         run: |
           cn_date=$(python3 - <<'PY'
-          import glob, json
+          import glob, json, re
           logs = sorted(glob.glob("track/data/logs/*-asia.json"))
           val = ""
           if logs:
               try:
                   with open(logs[-1], encoding="utf-8") as fh:
                       data = json.load(fh)
-                  val = str((data.get("effective_dates") or {}).get("cn") or "").strip()
+                  raw = str((data.get("effective_dates") or {}).get("cn") or "").strip()
+                  if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
+                      val = raw
               except Exception:
                   val = ""
           print(val)
@@ -171,19 +193,24 @@ jobs:
 
       - name: Record CN pattern board
         if: steps.session.outputs.session == 'asia'
+        env:
+          CN_TRADE_DATE: ${{ steps.cn_date.outputs.cn_trade_date }}
         run: |
           if [ -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
             python scripts/track_record.py patterns --track track --pack-dir "$ALPHASIFT_PACK_DIR" \
-              --expected-trade-date "${{ steps.cn_date.outputs.cn_trade_date }}" --allow-stale-pack --with-replay \
+              --expected-trade-date "$CN_TRADE_DATE" --allow-stale-pack --with-replay \
               || echo "::warning::CN pattern board skipped"
           fi
 
       - name: Evaluate T+N
-        run: python scripts/track_record.py evaluate --track track --markets "${{ steps.session.outputs.markets }}" --pack-dir "$ALPHASIFT_PACK_DIR"
+        env:
+          MARKETS: ${{ steps.session.outputs.markets }}
+        run: python scripts/track_record.py evaluate --track track --markets "$MARKETS" --pack-dir "$ALPHASIFT_PACK_DIR"
 
       - name: Daily report and optional IM push
         if: steps.session.outputs.session == 'asia'
         env:
+          CN_TRADE_DATE: ${{ steps.cn_date.outputs.cn_trade_date }}
           ALPHASIFT_DASHBOARD_URL: ${{ vars.ALPHASIFT_DASHBOARD_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -193,6 +220,11 @@ jobs:
           LITELLM_MODEL: ${{ secrets.LITELLM_MODEL || vars.LITELLM_MODEL }}
           LITELLM_FALLBACK_MODELS: ${{ secrets.LITELLM_FALLBACK_MODELS || vars.LITELLM_FALLBACK_MODELS }}
           LLM_CHANNELS: ${{ secrets.LLM_CHANNELS || vars.LLM_CHANNELS }}
+          LLM_PRIMARY_PROTOCOL: ${{ secrets.LLM_PRIMARY_PROTOCOL || vars.LLM_PRIMARY_PROTOCOL }}
+          LLM_PRIMARY_BASE_URL: ${{ secrets.LLM_PRIMARY_BASE_URL || vars.LLM_PRIMARY_BASE_URL }}
+          LLM_PRIMARY_API_KEY: ${{ secrets.LLM_PRIMARY_API_KEY }}
+          LLM_PRIMARY_API_KEYS: ${{ secrets.LLM_PRIMARY_API_KEYS }}
+          LLM_PRIMARY_MODELS: ${{ secrets.LLM_PRIMARY_MODELS || vars.LLM_PRIMARY_MODELS }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
@@ -221,7 +253,7 @@ jobs:
             alphasift daily-report \
               --pack-dir "$ALPHASIFT_PACK_DIR" \
               --runs-dir track/data/runs \
-              --expected-trade-date "${{ steps.cn_date.outputs.cn_trade_date }}" \
+              --expected-trade-date "$CN_TRADE_DATE" \
               --allow-stale-pack \
               --ai-brief auto \
               --output-json track/site/report.json \
@@ -241,15 +273,22 @@ jobs:
       - name: Commit to track-record
         if: ${{ github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true' || vars.ALPHASIFT_ENABLE_LEDGER == 'true' }}
         working-directory: track
+        env:
+          SESSION: ${{ steps.session.outputs.session }}
+          IS_PAGES_ENABLED: ${{ github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true' }}
         run: |
           if [ ! -d .git ]; then echo "track-record branch checkout absent; skip commit"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          if [ "$IS_PAGES_ENABLED" = "true" ]; then
+            git add -A
+          else
+            git add data/
+          fi
           if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
           tz="Asia/Shanghai"
-          if [ "${{ steps.session.outputs.session }}" = "us" ]; then tz="America/New_York"; fi
-          git commit -q -m "track: ${{ steps.session.outputs.session }} $(TZ=$tz date +%F)"
+          if [ "$SESSION" = "us" ]; then tz="America/New_York"; fi
+          git commit -q -m "track: $SESSION $(TZ=$tz date +%F)"
           git push origin HEAD:track-record
 
       - name: Stage the dashboard

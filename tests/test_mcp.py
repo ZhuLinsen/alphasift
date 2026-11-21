@@ -192,3 +192,58 @@ def test_mcp_stdio_subprocess_supports_line_and_content_length_framing(tmp_path)
         pos = body_start + length
     assert [m["id"] for m in decoded_msgs] == [10, 11]
     assert len(decoded_msgs[1]["result"]["tools"]) == 10
+
+
+def test_mcp_round9_security_and_strict_schema_validation(tmp_path):
+    cfg = Config(data_dir=tmp_path)
+    server = MCPServer(cfg)
+
+    # 1. String "false" must NOT be coerced to bool(True) and turn on billable LLM calls
+    res_bad_bool = server.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 20,
+            "method": "tools/call",
+            "params": {"name": "alphasift_screen", "arguments": {"strategy": "dual_low", "use_llm": "false"}},
+        }
+    )
+    assert res_bad_bool["result"]["isError"] is True
+    assert "boolean" in res_bad_bool["result"]["content"][0]["text"]
+
+    # 2. Arbitrary file paths in patterns[] are rejected BEFORE touching load_pattern
+    secret_yaml = tmp_path / "secret.yaml"
+    secret_yaml.write_text("api_key: super-secret\n", encoding="utf-8")
+    res_path = server.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 21,
+            "method": "tools/call",
+            "params": {"name": "alphasift_scan_patterns", "arguments": {"patterns": [str(secret_yaml)]}},
+        }
+    )
+    assert res_path["result"]["isError"] is True
+    assert "Unknown or unsafe pattern name" in res_path["result"]["content"][0]["text"]
+    assert "super-secret" not in res_path["result"]["content"][0]["text"]
+
+    # 3. Non-finite NaN values in tool outputs serialize cleanly as null without crashing
+    from alphasift.mcp import _json_safe
+
+    cleaned = _json_safe({"score": float("nan"), "inf": float("inf"), "ok": 1.5})
+    assert cleaned == {"score": None, "inf": None, "ok": 1.5}
+    dumped = json.dumps(cleaned, allow_nan=False)
+    assert "null" in dumped
+
+    # 4. Invalid request ID types (float / bool / dict) are rejected with -32600
+    bad_id = server.handle_request({"jsonrpc": "2.0", "id": True, "method": "ping"})
+    assert bad_id["error"]["code"] == -32600
+
+    # 5. Conflicting Content-Length headers are rejected cleanly
+    import io
+    from alphasift.mcp import read_stdio_message
+
+    bad_hdr = io.BytesIO(b"Content-Length: 2\r\nContent-Length: 5\r\n\r\n{}")
+    try:
+        read_stdio_message(bad_hdr)
+        raise AssertionError("Expected ValueError for conflicting Content-Length")
+    except ValueError as exc:
+        assert "Conflicting Content-Length" in str(exc)

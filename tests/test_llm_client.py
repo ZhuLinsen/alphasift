@@ -348,3 +348,52 @@ def test_default_gemini_timeout_falls_through_to_hydrogen(monkeypatch):
         "gemini-3.8-flash",
         "gemini-4-hydrogen",
     ]
+
+
+def test_round9_key_origin_isolation_empty_content_fallback_and_userinfo_block(monkeypatch):
+    # 1. GEMINI_API_KEY + OPENAI_BASE_URL must NOT forward Gemini key to OpenAI custom proxy
+    monkeypatch.setenv("GEMINI_API_KEY", "gem-secret")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://thirdparty-openai-relay.test/v1")
+    cfg = Config.from_env()
+    attempts = _attempts(cfg)
+    assert all(a.base_url == "https://generativelanguage.googleapis.com/v1beta/openai" for a in attempts)
+
+    # 2. Custom channel base_url without explicit channel api_keys does NOT inherit ambient provider keys
+    monkeypatch.setenv("LLM_CHANNELS", "custom")
+    monkeypatch.setenv("LLM_CUSTOM_PROTOCOL", "gemini")
+    monkeypatch.setenv("LLM_CUSTOM_BASE_URL", "https://untrusted-custom.test/v1")
+    monkeypatch.setenv("LLM_CUSTOM_MODELS", "gemini-3.8-flash")
+    cfg_chan = Config.from_env()
+    chan_attempts = _attempts(cfg_chan)
+    custom_only = [a for a in chan_attempts if a.base_url == "https://untrusted-custom.test/v1"]
+    assert custom_only and all(a.api_key == "" for a in custom_only)
+
+    # 3. URL with embedded userinfo credentials is blocked before sending Authorization header
+    with pytest.raises(LLMClientError, match="embedded credentials disallowed"):
+        complete(
+            LLMAttempt("https://user:pass@example.test/v1", "m", "k"),
+            messages=[{"role": "user", "content": "hi"}],
+            temperature=0.2,
+        )
+
+    # 4. Empty/null assistant content raises so _call_llm falls through to fallback model
+    empty_resp = requests.Response()
+    empty_resp.status_code = 200
+    empty_resp._content = b'{"choices": [{"message": {"content": null}}]}'
+    ok_resp = requests.Response()
+    ok_resp.status_code = 200
+    ok_resp._content = b'{"choices": [{"message": {"content": "fallback-good"}}]}'
+    post = Mock(side_effect=[empty_resp, ok_resp])
+    monkeypatch.setattr("alphasift.llm_client.requests.post", post)
+    out = _call_llm(
+        "prompt",
+        "k",
+        "gemini/gemini-3.8-flash",
+        "",
+        fallback_models=["gemini/gemini-4-hydrogen"],
+    )
+    assert out == "fallback-good"
+    assert [c.kwargs["json"]["model"] for c in post.call_args_list] == [
+        "gemini-3.8-flash",
+        "gemini-4-hydrogen",
+    ]
