@@ -370,6 +370,20 @@ def run_session(
         # Track record is an immutable daily ledger of live picks: never fall back
         # to stale last-good snapshot caches from earlier trading days.
         config = dataclasses.replace(Config.from_env(), fallback_snapshot_path=None)
+        cn_pack = None
+        if pack_dir is not None and (Path(pack_dir).expanduser() / "manifest.json").is_file() and "cn" in target_markets:
+            try:
+                from alphasift.pack import load_pack
+
+                cn_pack = load_pack(Path(pack_dir).expanduser())
+            except Exception:  # noqa: BLE001
+                cn_pack = None
+        raw_ctx_env = os.getenv("LLM_CANDIDATE_CONTEXT_ENABLED")
+        cn_ai_collect_ctx = (
+            False
+            if (raw_ctx_env is not None and raw_ctx_env.strip().lower() in {"0", "false", "no", "off"})
+            else True
+        )
         recorded_dates: dict[tuple[str, str, str], set[str]] = {}
         for existing in load_runs(track):
             recorded_dates.setdefault(
@@ -492,6 +506,7 @@ def run_session(
                         config=config,
                         snapshot_df=market_snapshot,
                         allow_snapshot_refetch=False,
+                        daily_pack=cn_pack if market == "cn" else None,
                         timeout_sec=SCREEN_TIMEOUT_SEC,
                         label=f"screen {market} {strategy}",
                     )
@@ -531,14 +546,29 @@ def run_session(
                     started_ai = time.monotonic()
                     ai_entry: dict[str, Any] = {"market": market, "strategy": strategy, "track": "ai"}
                     try:
+                        ai_kwargs: dict[str, Any] = {
+                            "market": market,
+                            "use_llm": True,
+                            "config": config,
+                            "snapshot_df": market_snapshot,
+                            "allow_snapshot_refetch": False,
+                            "daily_pack": cn_pack if market == "cn" else None,
+                        }
+                        if market == "cn":
+                            ai_kwargs["collect_llm_candidate_context"] = cn_ai_collect_ctx
+                            ai_kwargs["candidate_context_max_candidates"] = max(
+                                12,
+                                config.llm_candidate_context_max_candidates,
+                            )
+                            ai_kwargs["candidate_context_providers"] = [
+                                "announcement",
+                                "news",
+                                "fund_flow",
+                            ]
                         ai_result = call_with_timeout(
                             screen,
                             strategy,
-                            market=market,
-                            use_llm=True,
-                            config=config,
-                            snapshot_df=market_snapshot,
-                            allow_snapshot_refetch=False,
+                            **ai_kwargs,
                             timeout_sec=AI_SCREEN_TIMEOUT_SEC,
                             label=f"ai screen {market} {strategy}",
                         )

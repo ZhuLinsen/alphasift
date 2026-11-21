@@ -3,6 +3,10 @@ name: Track record
 # Every trading day after the close: run each built-in strategy with --no-llm
 # --save-run, commit the saved runs to the track-record branch, evaluate T+N
 # against the market benchmark, and publish the dashboard to GitHub Pages.
+#
+# Fork protection (Plan A): public website rendering, track-record branch push,
+# and GitHub Pages deploy only run on the upstream repository unless a fork
+# explicitly sets repo variable ALPHASIFT_ENABLE_PAGES=true.
 
 on:
   schedule:
@@ -57,14 +61,18 @@ jobs:
       ALPHASIFT_SOURCE_HEALTH_PATH: ${{ github.workspace }}/state/source_health.json
       ALPHASIFT_DAILY_HISTORY_CACHE_DIR: ${{ github.workspace }}/state/daily_history
       ALPHASIFT_INDUSTRY_PROVIDER_CACHE_DIR: ${{ github.workspace }}/state/industry_provider_cache
+      ALPHASIFT_CANDIDATE_CONTEXT_CACHE_DIR: ${{ github.workspace }}/state/candidate_context
       ALPHASIFT_PACK_DIR: ${{ github.workspace }}/pack
       ALPHASIFT_NOTIFY_STATE_PATH: ${{ github.workspace }}/state/notify_state.json
     steps:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
+        continue-on-error: true
         with:
           ref: track-record
           path: track
+      - name: Ensure track workspace
+        run: mkdir -p track/data/runs track/data/logs track/site
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -120,9 +128,14 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL }}
+          LITELLM_MODEL: ${{ secrets.LITELLM_MODEL || vars.LITELLM_MODEL }}
+          LITELLM_FALLBACK_MODELS: ${{ secrets.LITELLM_FALLBACK_MODELS || vars.LITELLM_FALLBACK_MODELS }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_CANDIDATE_CONTEXT_ENABLED: ${{ vars.LLM_CANDIDATE_CONTEXT_ENABLED || 'true' }}
+          LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES: "12"
         run: |
           python scripts/track_record.py screen --track track \
             --session "${{ steps.session.outputs.session }}" --markets "${{ steps.session.outputs.markets }}" --pack-dir "$ALPHASIFT_PACK_DIR" \
@@ -171,17 +184,30 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL }}
+          LITELLM_MODEL: ${{ secrets.LITELLM_MODEL || vars.LITELLM_MODEL }}
+          LITELLM_FALLBACK_MODELS: ${{ secrets.LITELLM_FALLBACK_MODELS || vars.LITELLM_FALLBACK_MODELS }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          NOTIFY_URLS: ${{ secrets.NOTIFY_URLS }}
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
           FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
           DINGTALK_WEBHOOK_URL: ${{ secrets.DINGTALK_WEBHOOK_URL }}
           DINGTALK_WEBHOOK_SECRET: ${{ secrets.DINGTALK_WEBHOOK_SECRET }}
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          PUSHPLUS_TOPIC: ${{ secrets.PUSHPLUS_TOPIC }}
+          SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+          BARK_URL: ${{ secrets.BARK_URL }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          NTFY_URL: ${{ secrets.NTFY_URL }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVERS: ${{ secrets.EMAIL_RECEIVERS }}
           CUSTOM_WEBHOOK_URL: ${{ secrets.CUSTOM_WEBHOOK_URL }}
           CUSTOM_WEBHOOK_TOKEN: ${{ secrets.CUSTOM_WEBHOOK_TOKEN }}
         run: |
@@ -202,11 +228,15 @@ jobs:
       - name: Build site data
         run: |
           python scripts/track_record.py build --track track
-          cp scripts/track_record_page.html track/index.html
+          if [ "${{ github.repository }}" = "ZhuLinsen/alphasift" ] || [ "${{ vars.ALPHASIFT_ENABLE_PAGES }}" = "true" ]; then
+            cp scripts/track_record_page.html track/index.html
+          fi
 
       - name: Commit to track-record
+        if: ${{ github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true' }}
         working-directory: track
         run: |
+          if [ ! -d .git ]; then echo "track-record branch checkout absent; skip commit"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
@@ -217,17 +247,19 @@ jobs:
           git push origin HEAD:track-record
 
       - name: Stage the dashboard
+        if: ${{ github.ref == 'refs/heads/main' && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
         run: |
           mkdir -p _site
           cp track/index.html _site/
           cp -r track/site _site/site
       - uses: actions/upload-pages-artifact@v5
+        if: ${{ github.ref == 'refs/heads/main' && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
         with:
           path: _site
 
   deploy:
     needs: record
-    if: ${{ !cancelled() && needs.record.result == 'success' && github.ref == 'refs/heads/main' }}
+    if: ${{ !cancelled() && needs.record.result == 'success' && github.ref == 'refs/heads/main' && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
     runs-on: ubuntu-latest
     permissions:
       pages: write

@@ -267,6 +267,11 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
     assert tr_data["jobs"]["record"]["needs"] == ["pack"]
     deploy_if = str(tr_data["jobs"]["deploy"].get("if") or "")
     assert "needs.record.result == 'success'" in deploy_if and "!cancelled()" in deploy_if
+    assert "github.repository == 'ZhuLinsen/alphasift'" in deploy_if
+    assert "ALPHASIFT_ENABLE_PAGES" in deploy_if
+    assert "ALPHASIFT_ENABLE_PAGES" in tr_text
+    assert "NOTIFY_URLS" in tr_text
+    assert "LLM_CANDIDATE_CONTEXT_ENABLED" in tr_text
     assert "gh release create" not in tr_text and "gh release upload" not in tr_text
     assert "actions/cache/restore" in tr_text
     assert "alphasift pack pull" not in tr_text

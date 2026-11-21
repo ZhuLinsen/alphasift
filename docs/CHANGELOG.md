@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **1 行极简统一推送、Fork 防护守卫与 AI 情报排雷激活**：
+  - `alphasift/notify.py` 与 `alphasift/config.py` 新增 1 行统一 `NOTIFY_URLS` 自动协议嗅探（同时保留分渠道变量），原生零额外依赖支持 **12 种通道**（企微、飞书、钉钉、PushPlus、Server酱/³、Bark、SMTP 邮件、Telegram、Discord、Slack、ntfy、自定义 Webhook）及可选 `apprise` 90+ 通道兜底；简化顶栏界面移除 RSS 按钮（保留 `<link>` 与页脚低存在感 `site/feed.xml`）。
+  - `.github/workflows/track-record.yml` 落地 Fork 防护方案 A：公开网站构建、`track-record` 分支提交与 GitHub Pages 部署默认仅在上游仓库生效，Fork 仓库需显式设置 Repo Variable `ALPHASIFT_ENABLE_PAGES=true` 才部署网站。
+  - `alphasift/ranker.py` 强化 AI 排雷降权准则（未消化重大利空硬压 `<= 35` 分、禁止名气偏见）；`scripts/track_record.py` 对 CN 复用单次加载的 `DailyPack` 并在 AI 赛道默认开启 Top 12 候选公告/新闻/资金流上下文收集；`alphasift/evaluate.py` 修复 `pd.to_datetime(..., format="mixed")` 消除测试告警。
+
 - **Web 多语言国际化（`zh`/`en`/`ja`）、6 通道推送 + Atom RSS 与旗舰文档重构**：
   - `scripts/track_record_page.html` 与 `alphasift/daily_report_html.py` 全面接入中/英/日三语切换（`?lang=zh|en|ja` + `localStorage` 持久化 + 浏览器语言检测），覆盖导航、KPI、策略/形态/市场阶段标签、排行榜、图表提示、历史回看及打印版日报。
   - `alphasift/notify.py`、`alphasift/config.py` 与 `track-record.yml` 新增 **钉钉（HMAC-SHA256 签名）**、**Discord（Embed 卡片）** 与 **自定义 Webhook（结构化 JSON +可选 Bearer 鉴权）**，形成 6 通道幂等推送矩阵；新增 `alphasift notify status` / `alphasift notify test` CLI。

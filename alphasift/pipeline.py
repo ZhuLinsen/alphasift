@@ -485,7 +485,7 @@ def screen(
                 news_limit=config.llm_candidate_context_news_limit,
                 announcement_limit=config.llm_candidate_context_announcement_limit,
                 cache_dir=(
-                    config.data_dir / "candidate_context"
+                    (config.llm_candidate_context_cache_dir or (config.data_dir / "candidate_context"))
                     if config.llm_candidate_context_cache_enabled
                     else None
                 ),

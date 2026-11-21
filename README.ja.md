@@ -15,13 +15,11 @@
   <a href="https://zhulinsen.github.io/alphasift/?lang=ja"><img src="https://img.shields.io/badge/dashboard-live%20(日%20%7C%20中%20%7C%20EN)-22c55e.svg" alt="ライブダッシュボード"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-3b82f6.svg" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-10b981.svg" alt="Apache 2.0"></a>
-  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><img src="https://img.shields.io/badge/RSS-Atom%201.0-f59e0b.svg" alt="Atom RSS"></a>
 </p>
 
 <p>
   <a href="https://zhulinsen.github.io/alphasift/?lang=ja"><strong>ライブダッシュボード</strong></a> ·
   <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=ja"><strong>日次レポート</strong></a> ·
-  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><strong>Atom RSS 購読</strong></a> ·
   <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record"><strong>track-record 生ログ</strong></a> ·
   <a href="SKILL.md"><strong>Agent Skill</strong></a>
 </p>
@@ -50,7 +48,7 @@
       <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=light">
         <img src="docs/assets/dashboard-light.png" alt="AlphaSift ライブダッシュボード（ライト・多言語切替）" width="100%">
       </a>
-      <br><sub><b>Editorial Paper Light</b> — ヘッダーの <code>中 | EN | 日</code> で即座に言語切替、Atom RSS 対応</sub>
+      <br><sub><b>Editorial Paper Light</b> — ヘッダーの <code>中 | EN | 日</code> で即座に言語切替、検証済みトラックレコード</sub>
     </td>
   </tr>
   <tr>
@@ -70,10 +68,10 @@
 ```mermaid
 flowchart LR
   M["7市場スナップショット + 非公開日足パック DailyPack"] --> L1["L1 YAML ハードフィルタ + マルチファクター採点"]
-  L1 --> L2["L2 任意 LLM 再ランク (Gemini 3.8 Flash / DeepSeek / OpenAI)"]
+  L1 --> L2["L2 インテリジェンス重視 AI (Gemini 3.8 Flash / DeepSeek / OpenAI)"]
   L2 --> RK["リスク層 + 8業種バケット上限分散 (hard_cap)"]
   RK --> L3["L3 事後分析 (scorecard / DSA / HTTP) + 開示リスク検査"]
-  L3 --> OUT["印刷対応 HTML レポート + 6チャネル冪等通知 + Atom RSS"]
+  L3 --> OUT["印刷対応 HTML レポート + 1行 NOTIFY_URLS 12チャネル通知"]
   RK --> AUD["track-record 履歴保存 + next_open T+N 超過リターン検証"]
 ```
 
@@ -82,9 +80,9 @@ flowchart LR
 | **API キー不要の決定的エンジン** | L1 スクリーニング、マルチファクター評価、リスク制御、8 業種分散（`portfolio_profile.mode: hard_cap`）はすべて API キーなしで決定的に動作します。 |
 | **A 株 10 戦略の直交化** | 時価総額・スタイル別（超大型高配当 `blue_chip_income` ≥ 500 億元 vs 中小型 `dual_low` 50–600 億元等）＋ `max_same_bucket: 1` により重複を解消。250 日パックの 3 時点検証（`2026-09-21` / `10-20` / `11-20`）で戦略間の平均重複率は **8.0%–24.9% → 0.9%–1.8%**（最大 **100% → 20%**）、銀行セクター集中度は **22%–31.1% → 4.0%–9.1%** へ低減しました。 |
 | **250日 `next_open` 実証パターン検出** | 過去 180 営業日・5,218 銘柄の実証リプレイで `T+5 一致 ≥ 200` かつ `対 CSI 300 超過 > 0%` のパターンのみ `active` 認定。基準を満たした 2 パターンが卒業し、5 パターンは `experimental` として分離表示されます。 |
-| **Rules vs AI デュアルトラック** | `GEMINI_API_KEY`（デフォルト `gemini/gemini-3.8-flash` ＋ `gemini/gemini-4-hydrogen` 自動フォールバック）、`DEEPSEEK_API_KEY`、`OPENAI_API_KEY` 等を設定すると同日に `rules` と `ai` を並行実行し、AI 追加／除外銘柄の超過寄与を追跡します。 |
-| **自己修復データチェーンと非公開運用** | 中国 A 株チェーン（`em_datacenter → sina → efinance → akshare_em`、トークン設定時は Tushare 優先）は健全性に応じて自動並べ替え。日足生データはローカル／GitHub Actions 非公開キャッシュに限定し、公開リリースで再配布しません。 |
-| **6 チャネル冪等通知 ＋ Atom RSS** | **WeCom・Feishu（HMAC 署名）・DingTalk（HMAC 署名）・Telegram・Discord・カスタム Webhook（JSON + Bearer 認証）** とゼロ設定 **`site/feed.xml` Atom 1.0 RSS** に対応。`(trade_date, channel)` のファイルロックで重複送信を防ぎます。 |
+| **情報連動 Rules vs AI トラック** | `GEMINI_API_KEY`（デフォルト `gemini/gemini-3.8-flash` ＋ `gemini/gemini-4-hydrogen` 自動フォールバック）等を設定すると、`LLM_CANDIDATE_CONTEXT_ENABLED=true` により上位 12 銘柄の適時開示・ニュース・資金フローを注入し、重大悪材料は `llm_score <= 35` に制限（知名度バイアス禁止）。 |
+| **自己修復・Fork Pages 保護ガード** | 中国 A 株チェーン（`em_datacenter → sina → efinance → akshare_em`、トークン設定時は Tushare 優先）は健全性に応じて自動並べ替え、日足生データは非公開キャッシュのみ使用。**Plan A Fork 保護：** Fork 先は `ALPHASIFT_ENABLE_PAGES=true` を設定しない限り重複サイトを公開せず、スクリーニングと通知のみ安全実行します。 |
+| **1行 `NOTIFY_URLS` 12チャネル通知** | 追加依存なしで **PushPlus・Server醤/³・Bark・Email (SMTP)・WeCom・Feishu・DingTalk・Telegram・Discord・Slack・ntfy・Custom JSON** を URI 自動判別で通知（`apprise` 導入時は 90+ 連携対応、フッターに `site/feed.xml` も提供）。 |
 
 ---
 
@@ -123,28 +121,42 @@ alphasift notify test --dry-run
 
 ---
 
-## 通知チャネル・RSS 購読一覧
+## 1行 `NOTIFY_URLS` 通知チャネル一覧（12種標準対応）
 
-| チャネル | 設定環境変数 | 仕様 |
-|---|---|---|
-| **Atom 1.0 RSS** | 設定不要（`site/feed.xml`） | GitHub Pages 更新時に自動配信される標準フィード |
-| **WeCom** (`wecom`) | `WECOM_WEBHOOK_URL` | `<1200` 文字の Markdown 通知カード |
-| **Feishu** (`feishu`) | `FEISHU_WEBHOOK_URL` / `FEISHU_WEBHOOK_SECRET` | インタラクティブカード（シークレット設定時は HMAC-SHA256 署名付き） |
-| **DingTalk** (`dingtalk`) | `DINGTALK_WEBHOOK_URL` / `DINGTALK_WEBHOOK_SECRET` | Markdown 通知（シークレット設定時は URL クエリ署名付き） |
-| **Telegram** (`telegram`) | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Bot API 経由のコンパクトサマリー |
-| **Discord** (`discord`) | `DISCORD_WEBHOOK_URL` | ダッシュボードリンク付き Embed カード |
-| **Custom Webhook** (`custom`) | `CUSTOM_WEBHOOK_URL` / `CUSTOM_WEBHOOK_TOKEN` | 構造化 JSON（`event`, `trade_date`, `markdown`, `summary`）＋ Bearer 認証対応 |
+1つの変数 **`NOTIFY_URLS`** にカンマまたは改行区切りで URL を指定するだけでプロトコルを自動判定します（追加パッケージ不要、従来の個別変数も完全互換）：
+
+```bash
+NOTIFY_URLS="pushplus://YOUR_TOKEN,sct://YOUR_SENDKEY,bark://api.day.app/YOUR_KEY,mailto://sender@qq.com:auth_code@qq.com?to=me@qq.com,https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
+```
+
+| チャネル | 1行 `NOTIFY_URLS` 書式 | 個別環境変数 | 仕様 |
+|---|---|---|---|
+| **PushPlus** (`pushplus`) | `pushplus://TOKEN[/TOPIC]` | `PUSHPLUS_TOKEN`, `PUSHPLUS_TOPIC` | WeChat 向けプッシュ |
+| **Server醤 / ³** (`serverchan`) | `sct://SENDKEY`（`sctp123t...` 自動判別） | `SERVERCHAN_SENDKEY` | ServerChan / ServerChan³ |
+| **Bark** (`bark`) | `bark://KEY` / `bark://host/KEY` | `BARK_URL` | iOS APNs プッシュ |
+| **Email** (`email`) | `mailto://user:pass@host[:port]?to=a,b` | `EMAIL_SENDER`, `EMAIL_PASSWORD`, `EMAIL_RECEIVERS` | 標準ライブラリ `smtplib`（主要ドメイン SSL/TLS 自動推定） |
+| **WeCom** (`wecom`) | `wecom://KEY` / Webhook URL | `WECOM_WEBHOOK_URL` | `<1200` 文字 Markdown カード |
+| **Feishu** (`feishu`) | `feishu://TOKEN[#secret=SEC]` | `FEISHU_WEBHOOK_URL`, `FEISHU_WEBHOOK_SECRET` | HMAC-SHA256 署名対応カード |
+| **DingTalk** (`dingtalk`) | `dingtalk://TOKEN[#secret=SEC]` | `DINGTALK_WEBHOOK_URL`, `DINGTALK_WEBHOOK_SECRET` | query HMAC 署名対応 Markdown |
+| **Telegram** (`telegram`) | `tgram://BOT_TOKEN/CHAT_ID` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Bot API コンパクト通知 |
+| **Discord** (`discord`) | `discord://ID/TOKEN` / Webhook URL | `DISCORD_WEBHOOK_URL` | ダッシュボードリンク付き Embed |
+| **Slack** (`slack`) | `slack://T.../B.../...` / Webhook URL | `SLACK_WEBHOOK_URL` | Incoming Webhook |
+| **ntfy** (`ntfy`) | `ntfy://topic` / `https://ntfy.sh/topic` | `NTFY_URL` | pub-sub プッシュ通知 |
+| **Custom JSON** (`custom`) | `custom://https://...` / 不明な HTTPS | `CUSTOM_WEBHOOK_URL`, `CUSTOM_WEBHOOK_TOKEN` | JSON ＋ Bearer 認証対応 |
+| **Apprise（任意）** | 任意の Apprise スキーム（`apprise` 導入時） | `NOTIFY_URLS` | 90+ 通知先へ自動フォールバック |
+
+> 全チャネルで `(trade_date, channel)` のファイルロック冪等台帳を共有し、すべてのトークン・URL 秘密情報はエラー出力時に自動マスクされます。フッターに控えめな [`site/feed.xml`](https://zhulinsen.github.io/alphasift/site/feed.xml) Atom 1.0 RSS も出力します。
 
 ---
 
 <details>
-<summary><strong>対応市場・内蔵 12 戦略・2026-11-20 実行例・制限事項</strong></summary>
+<summary><strong>対応市場・内蔵 12 戦略・2026-11-20 実行例・Fork Pages 保護</strong></summary>
 
 - **対応市場（7 市場）**：`cn`（中国 A 株）、`us`（米国株 ≥ $1B）、`hk`（香港株）、`jp`（日本株 ≥ ¥1,500 億）、`kr`（韓国株、Yahoo + Naver Finance）、`tw`（台湾株）、`in`（インド株）。
 - **2026-11-20 実測出力例**：
   - 中国 A 株 `dual_low`：5,215 銘柄 → 205 銘柄 → 5 業種分散 Top 5（`601997` 貴陽銀行、`601117` 中国化学、`600741` 華域汽車、`603799` 華友鈷業、`601233` 桐昆股份）。
   - 日本株 `global_value --market jp`：748 銘柄 → 311 銘柄（`9501.T` 東京電力HD、`5401.T` 日本製鉄、`1605.T` INPEX、`9104.T` 商船三井、`9022.T` JR東海）。
-- **既知の制限**：AlphaSift は銘柄発掘・事後検証エンジンであり、自動売買執行システムではありません（配当・休場調整除く）。詳細は [docs/configuration.md](docs/configuration.md) および [docs/deployment.md](docs/deployment.md) をご参照ください。
+- **Plan A Fork Pages 保護 & 制限事項**：Fork リポジトリでは重複サイト公開を防ぐため、Variables に `ALPHASIFT_ENABLE_PAGES=true` を設定しない限り GitHub Pages 構築・デプロイをスキップします（銘柄スキャンと通知は正常動作）。詳細は [docs/configuration.md](docs/configuration.md) と [docs/deployment.md](docs/deployment.md) をご参照ください。
 
 </details>
 

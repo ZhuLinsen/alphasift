@@ -1262,7 +1262,10 @@ def _normalize_price_path(path: pd.DataFrame, *, fill_missing_extremes: bool = T
             )
     valid = df["close"].notna() & (df["close"] > 0)
     if "date" in df.columns:
-        parsed_dates = pd.to_datetime(df["date"], errors="coerce")
+        try:
+            parsed_dates = pd.to_datetime(df["date"], format="mixed", errors="coerce")
+        except (TypeError, ValueError):
+            parsed_dates = pd.to_datetime(df["date"], errors="coerce")
         if not pd.api.types.is_datetime64_any_dtype(parsed_dates):
             parsed_dates = pd.to_datetime(
                 df["date"], errors="coerce", utc=True

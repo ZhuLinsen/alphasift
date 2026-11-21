@@ -592,3 +592,170 @@ def test_notify_dingtalk_discord_custom_redaction_and_cli_test(tmp_path: Path, m
     dry_out = json.loads(capsys.readouterr().out)
     assert dry_out["status"] == "dry_run"
     assert dry_out["skipped"] == [{"channel": "discord", "reason": "dry_run"}]
+
+
+def test_notify_urls_parsing_readiness_and_dispatch(tmp_path, monkeypatch) -> None:
+    from alphasift.config import Config
+    from alphasift.notify import notify_readiness, push_daily_report, send_test_notification
+
+    for var in (
+        "ALPHASIFT_WECOM_WEBHOOK_URL",
+        "WECOM_WEBHOOK_URL",
+        "ALPHASIFT_FEISHU_WEBHOOK_URL",
+        "FEISHU_WEBHOOK_URL",
+        "ALPHASIFT_DINGTALK_WEBHOOK_URL",
+        "DINGTALK_WEBHOOK_URL",
+        "ALPHASIFT_TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_BOT_TOKEN",
+        "ALPHASIFT_TELEGRAM_CHAT_ID",
+        "TELEGRAM_CHAT_ID",
+        "ALPHASIFT_DISCORD_WEBHOOK_URL",
+        "DISCORD_WEBHOOK_URL",
+        "ALPHASIFT_CUSTOM_WEBHOOK_URL",
+        "CUSTOM_WEBHOOK_URL",
+    ):
+        monkeypatch.delenv(var, raising=False)
+
+    urls = "\n".join(
+        [
+            "pushplus://PP_SECRET_TOKEN/finance_topic",
+            "sct://SCT_PLAIN_KEY",
+            "sct://sctp456tSECRET",
+            "bark://BARK_SECRET_KEY",
+            "https://hooks.slack.com/services/T00/B00/SECRET_SLACK",
+            "ntfy://alphasift-alerts",
+            "mailto://sender@qq.com:EMAIL_AUTH_SECRET@qq.com?to=recv1@example.com,recv2@example.com",
+            "tgram://123456:TG_SECRET_TOKEN/-100999888",
+        ]
+    )
+    monkeypatch.setenv("ALPHASIFT_NOTIFY_URLS", urls)
+
+    cfg = Config.from_env()
+    readiness = notify_readiness(cfg)
+    assert readiness["notify_urls_count"] == 8
+    assert readiness["target_count"] == 8
+    for ch in ("pushplus", "serverchan", "bark", "email", "telegram", "slack", "ntfy"):
+        assert ch in readiness["configured_channels"]
+        assert readiness[f"{ch}_configured"] is True
+
+    posted: list[tuple[str, dict]] = []
+
+    class _FakeResp:
+        def __init__(self, body: dict) -> None:
+            self._body = body
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict:
+            return self._body
+
+    def fake_post(url: str, **kwargs):
+        posted.append((url, kwargs))
+        if "pushplus.plus" in url:
+            return _FakeResp({"code": 200, "msg": "ok"})
+        if "ftqq.com" in url or "ft07.com" in url:
+            return _FakeResp({"code": 0, "message": "ok"})
+        if "api.day.app" in url:
+            return _FakeResp({"code": 200, "message": "ok"})
+        if "api.telegram.org" in url:
+            return _FakeResp({"ok": True})
+        return _FakeResp({"ok": True})
+
+    smtp_calls: list[dict] = []
+
+    class _FakeSMTP:
+        def __init__(self, host: str, port: int, *, mode: str, timeout: float) -> None:
+            self.record = {"host": host, "port": port, "mode": mode, "timeout": timeout, "quit": False}
+            smtp_calls.append(self.record)
+
+        def login(self, user: str, password: str) -> None:
+            self.record["login"] = (user, password)
+
+        def send_message(self, msg) -> None:
+            self.record["subject"] = msg["Subject"]
+            self.record["to"] = msg["To"]
+
+        def quit(self) -> None:
+            self.record["quit"] = True
+
+    ledger = tmp_path / "notify_state.json"
+    res = push_daily_report(
+        {
+            "trade_date": "2026-11-21",
+            "im_card_markdown": "**AlphaSift 2026-11-21 Brief**\nTop pick: 601997",
+            "detail_url": "https://zhulinsen.github.io/alphasift/",
+        },
+        config=cfg,
+        state_path=ledger,
+        post_fn=fake_post,
+        smtp_factory=_FakeSMTP,
+    )
+    assert res["status"] == "ok"
+    assert res["errors"] == []
+    assert len(res["sent"]) == 8
+
+    urls_hit = [u for u, _ in posted]
+    assert "https://www.pushplus.plus/send" in urls_hit
+    assert "https://sctapi.ftqq.com/SCT_PLAIN_KEY.send" in urls_hit
+    assert "https://456.push.ft07.com/send/sctp456tSECRET.send" in urls_hit
+    assert "https://api.day.app/BARK_SECRET_KEY" in urls_hit
+    assert "https://hooks.slack.com/services/T00/B00/SECRET_SLACK" in urls_hit
+    assert "https://ntfy.sh/alphasift-alerts" in urls_hit
+    assert "https://api.telegram.org/bot123456:TG_SECRET_TOKEN/sendMessage" in urls_hit
+
+    pp_call = next(kw for u, kw in posted if "pushplus.plus" in u)
+    assert pp_call["json"]["token"] == "PP_SECRET_TOKEN"
+    assert pp_call["json"]["topic"] == "finance_topic"
+
+    assert len(smtp_calls) == 1
+    assert smtp_calls[0]["host"] == "smtp.qq.com"
+    assert smtp_calls[0]["port"] == 465
+    assert smtp_calls[0]["mode"] == "ssl"
+    assert smtp_calls[0]["login"] == ("sender@qq.com", "EMAIL_AUTH_SECRET")
+    assert "recv1@example.com" in smtp_calls[0]["to"]
+    assert "recv2@example.com" in smtp_calls[0]["to"]
+    assert smtp_calls[0]["quit"] is True
+
+    # Idempotency skips duplicate targets on second run for the same trade_date.
+    dup = push_daily_report(
+        {
+            "trade_date": "2026-11-21",
+            "im_card_markdown": "**AlphaSift 2026-11-21 Brief**",
+        },
+        config=cfg,
+        state_path=ledger,
+        post_fn=fake_post,
+        smtp_factory=_FakeSMTP,
+    )
+    assert dup["status"] == "skipped_duplicate"
+    assert len(dup["skipped"]) == 8
+
+    # Errors redact every secret/token from NOTIFY_URLS.
+    def failing_post(url: str, **kwargs):
+        raise RuntimeError(f"failed posting to {url} payload={kwargs}")
+
+    def failing_smtp(host: str, port: int, *, mode: str, timeout: float):
+        raise RuntimeError(f"smtp failure EMAIL_AUTH_SECRET on {host}:{port}")
+
+    err_res = send_test_notification(config=cfg, post_fn=failing_post, smtp_factory=failing_smtp)
+    assert err_res["status"] == "error"
+    serialized = json.dumps(err_res)
+    for leaked in ("PP_SECRET_TOKEN", "SCT_PLAIN_KEY", "sctp456tSECRET", "BARK_SECRET_KEY", "SECRET_SLACK", "TG_SECRET_TOKEN", "EMAIL_AUTH_SECRET"):
+        assert leaked not in serialized
+
+
+def test_notify_urls_comma_preserves_mailto_recipients(monkeypatch) -> None:
+    from alphasift.config import Config
+
+    monkeypatch.setenv(
+        "NOTIFY_URLS",
+        "mailto://sender@qq.com:auth@qq.com?to=r1@example.com,r2@example.com, pushplus://TOK1 , sct://SCT1",
+    )
+    monkeypatch.delenv("ALPHASIFT_NOTIFY_URLS", raising=False)
+    cfg = Config.from_env()
+    assert cfg.notify_urls == [
+        "mailto://sender@qq.com:auth@qq.com?to=r1@example.com,r2@example.com",
+        "pushplus://TOK1",
+        "sct://SCT1",
+    ]

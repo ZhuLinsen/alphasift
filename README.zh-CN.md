@@ -15,13 +15,11 @@
   <a href="https://zhulinsen.github.io/alphasift/?lang=zh"><img src="https://img.shields.io/badge/dashboard-live%20(中%20%7C%20EN%20%7C%20日)-22c55e.svg" alt="在线看板"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-3b82f6.svg" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-10b981.svg" alt="Apache 2.0"></a>
-  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><img src="https://img.shields.io/badge/RSS-Atom%201.0-f59e0b.svg" alt="Atom RSS"></a>
 </p>
 
 <p>
   <a href="https://zhulinsen.github.io/alphasift/?lang=zh"><strong>在线看板</strong></a> ·
   <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=zh"><strong>今日盘后研报</strong></a> ·
-  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><strong>Atom RSS 订阅</strong></a> ·
   <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record"><strong>track-record 原始账本</strong></a> ·
   <a href="SKILL.md"><strong>Agent Skill</strong></a>
 </p>
@@ -50,7 +48,7 @@
       <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=light">
         <img src="docs/assets/dashboard-light.png" alt="AlphaSift 在线看板（亮色 · 英文多语言适配）" width="100%">
       </a>
-      <br><sub><b>Editorial Paper Light + 三语切换</b> — 顶部一键切换 <code>中 | EN | 日</code>、明暗主题与 Atom RSS</sub>
+      <br><sub><b>Editorial Paper Light + 三语切换</b> — 顶部一键切换 <code>中 | EN | 日</code>、明暗主题与公开账本</sub>
     </td>
   </tr>
   <tr>
@@ -70,10 +68,10 @@
 ```mermaid
 flowchart LR
   M["7市场全市场快照 + 私有日线包 DailyPack"] --> L1["L1 YAML 硬筛选与多因子评分"]
-  L1 --> L2["L2 可选 LLM 横向重排 (Gemini 3.8 Flash / DeepSeek / OpenAI)"]
+  L1 --> L2["L2 情报红线 AI 复核 + Top-12 上下文 (Gemini 3.8 Flash / DeepSeek / OpenAI)"]
   L2 --> RK["风险过滤 + 8 行业桶硬上限分散"]
   RK --> L3["L3 后置分析 (scorecard / DSA / HTTP) + 公告排雷"]
-  L3 --> OUT["可打印 HTML 日报 + 6 通道幂等推送 + Atom RSS"]
+  L3 --> OUT["可打印 HTML 日报 + 一行 NOTIFY_URLS 12 通道推送"]
   RK --> AUD["不可篡改 track-record 账本 + next_open T+N 后验评估"]
 ```
 
@@ -82,9 +80,9 @@ flowchart LR
 | **零 Key 确定性选股底座** | L1 硬筛条件、因子评分曲线、风险惩罚与 8 行业分散上限完全确定性运行，不配置任何 LLM API Key 即可跑全链路。 |
 | **10 组 A 股策略正交化去重合** | 统一启用 8 行业桶 `portfolio_profile.mode: hard_cap`（`max_same_bucket: 1`），并按市值梯度、红利/GARP/动量/反转风格正交错位。经本地 250 日数据包在 `2026-09-21`、`10-20`、`11-20` 三日回测，策略两两平均重合度由 **8.0%–24.9% 降至 0.9%–1.8%**（最大单对 **100% → 20%**），银行占比由 **22%–31.1% 降至 4.0%–9.1%**。 |
 | **250 日实盘口径形态雷达** | 所有无状态形态需通过 `next_open` 回放门槛（`T+5 基准匹配样本 ≥ 200` 且相对沪深 300 超额 `> 0%`）才升级 `active`，其余保持 `experimental` 置灰观察，不混水摸鱼。 |
-| **策略 + AI 双赛道配对归因** | 默认主模型已升级为 **`gemini/gemini-3.8-flash`**（自动挂载 `gemini/gemini-4-hydrogen` 回退），同步兼容 DeepSeek、OpenAI 与 Ollama；支持同日运行 `rules` 与 `ai` 双赛道并归因“AI 独选 / AI 剔除”收益贡献。 |
-| **数据源自愈与严格私有化日线包** | A 股快照链（`em_datacenter → sina → efinance → akshare_em`，配置 `TUSHARE_TOKEN` 时 Tushare 优先）支持熔断避障与超时预算；原始日线包（`daily.npz` / `meta.csv.gz`）**仅留存本地或 GitHub Actions 私有缓存**，绝不通过公开 Release 二次分发。 |
-| **6 通道幂等推送 + 零配置 RSS** | 支持 **企业微信、飞书（HMAC 签名）、钉钉（HMAC 签名）、Telegram、Discord、自定义 Webhook（JSON + Bearer 鉴权）** 与公开看板 **`site/feed.xml` Atom 1.0 RSS**；按 `(trade_date, channel)` 文件锁严格去重，旧包默认拦截推送。 |
+| **情报驱动 AI 红线复核赛道** | 默认主模型 **`gemini/gemini-3.8-flash`**（自动挂载 `gemini/gemini-4-hydrogen` 回退），兼容 DeepSeek / OpenAI / Ollama。CN AI 赛道默认开启 `LLM_CANDIDATE_CONTEXT_ENABLED=true`，注入 Top 12 公告/资讯/资金流上下文并执行严格红线惩罚（未消除重大负面公告 `llm_score <= 35`，严禁名气偏见），同日与 `rules` 赛道配对归因。 |
+| **数据源自愈与 Fork 网页隔离** | A 股快照链（`em_datacenter → sina → efinance → akshare_em`，配 `TUSHARE_TOKEN` 时 Tushare 优先）支持熔断避障；原始日线包仅存本地或 Actions 私有缓存。**Plan A Fork 护栏**：Fork 仓库默认只跑选股与推送、不自动发布重复官网（仅 `ALPHASIFT_ENABLE_PAGES=true` 时才部署网页）。 |
+| **一行 `NOTIFY_URLS` 12 通道推送** | 零额外依赖自动嗅探并直连 **PushPlus、Server酱/³、Bark、Email（SMTP）、企业微信、飞书、钉钉、Telegram、Discord、Slack、ntfy、自定义 Webhook**（装 `apprise` 可兜底 90+ 平台），按 `(trade_date, channel)` 文件锁去重；底部低调提供 `site/feed.xml`。 |
 
 ---
 
@@ -137,19 +135,31 @@ alphasift serve --host 127.0.0.1 --port 8000
 
 ---
 
-## 通知推送与订阅矩阵
+## 一行推送与多通道通知矩阵（`NOTIFY_URLS`）
 
-| 通道 | 环境变量 | 能力说明 |
-|---|---|---|
-| **Atom 1.0 RSS** | 零配置（`site/feed.xml`） | 每次发布 GitHub Pages 自动更新，任意 RSS 阅读器免密钥订阅 |
-| **企业微信** (`wecom`) | `WECOM_WEBHOOK_URL` | `<1200` 字公告预警优先 Markdown 群机器人卡片 |
-| **飞书** (`feishu`) | `FEISHU_WEBHOOK_URL` / `FEISHU_WEBHOOK_SECRET` | 交互式蓝色标题卡片，配 secret 时自动生成 HMAC-SHA256 签名 |
-| **钉钉** (`dingtalk`) | `DINGTALK_WEBHOOK_URL` / `DINGTALK_WEBHOOK_SECRET` | Markdown 消息，配 secret 时自动生成 URL query timestamp+sign 签名 |
-| **Telegram** (`telegram`) | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Bot API 紧凑简报（关闭网页预览） |
-| **Discord** (`discord`) | `DISCORD_WEBHOOK_URL` | 富文本 Embed 卡片，点击标题直达在线看板 |
-| **自定义 Webhook** (`custom`) | `CUSTOM_WEBHOOK_URL` / `CUSTOM_WEBHOOK_TOKEN` | POST 结构化 JSON（`event`、`trade_date`、`markdown`、`summary`），支持 Bearer Token |
+推荐直接使用一行 **`NOTIFY_URLS`**（逗号或换行分隔多目标，系统自动识别协议），无需额外第三方推送库；同时完全保留传统单通道环境变量兼容：
 
-> 所有通知通道共用进程/文件双锁幂等账本（按 `trade_date + channel`），旧包自动跳过不骚扰群聊，错误日志自动脱敏绝不泄露密钥或 Webhook token。
+```bash
+NOTIFY_URLS="pushplus://YOUR_TOKEN,sct://YOUR_SENDKEY,bark://api.day.app/YOUR_KEY,mailto://sender@qq.com:auth_code@qq.com?to=me@qq.com,https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
+```
+
+| 通道 | 一行 `NOTIFY_URLS` 写法 | 独立环境变量（兼容） | 说明 |
+|---|---|---|---|
+| **PushPlus** (`pushplus`) | `pushplus://TOKEN[/TOPIC]` | `PUSHPLUS_TOKEN`, `PUSHPLUS_TOPIC` | 微信直达图文简报 |
+| **Server酱 / ³** (`serverchan`) | `sct://SENDKEY`（兼容 `SCT...` 与 `sctp123t...`） | `SERVERCHAN_SENDKEY` | 自动识别 `sctp{num}t` 路由至 Server酱³ |
+| **Bark** (`bark`) | `bark://KEY` 或 `bark://host/KEY` | `BARK_URL` | iOS 锁屏弹窗推送 |
+| **Email 邮件** (`email`) | `mailto://user:pass@host[:port]?to=a,b` | `EMAIL_SENDER`, `EMAIL_PASSWORD`, `EMAIL_RECEIVERS` | 标准库 `smtplib`，自动推断 QQ/163/Gmail/Outlook SMTP |
+| **企业微信** (`wecom`) | `wecom://KEY` 或完整 Webhook URL | `WECOM_WEBHOOK_URL` | `<1200` 字预警优先 Markdown 卡片 |
+| **飞书** (`feishu`) | `feishu://TOKEN[#secret=SEC]` 或完整 URL | `FEISHU_WEBHOOK_URL`, `FEISHU_WEBHOOK_SECRET` | 交互式蓝色卡片，可选 HMAC-SHA256 签名 |
+| **钉钉** (`dingtalk`) | `dingtalk://TOKEN[#secret=SEC]` 或完整 URL | `DINGTALK_WEBHOOK_URL`, `DINGTALK_WEBHOOK_SECRET` | Markdown 消息，可选 query HMAC 签名 |
+| **Telegram** (`telegram`) | `tgram://BOT_TOKEN/CHAT_ID` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Bot API 紧凑简报 |
+| **Discord** (`discord`) | `discord://ID/TOKEN` 或完整 URL | `DISCORD_WEBHOOK_URL` | 富文本 Embed 卡片 |
+| **Slack** (`slack`) | `slack://T.../B.../...` 或 `https://hooks.slack.com/...` | `SLACK_WEBHOOK_URL` | Slack Incoming Webhook |
+| **ntfy** (`ntfy`) | `ntfy://topic` 或 `https://ntfy.sh/topic` | `NTFY_URL` | 支持自建与官方 pub-sub 推送 |
+| **自定义 Webhook** (`custom`) | `custom://https://...` 或任意 HTTPS URL | `CUSTOM_WEBHOOK_URL`, `CUSTOM_WEBHOOK_TOKEN` | JSON（`event`、`trade_date`、`markdown`、`summary`）+ Bearer 鉴权 |
+| **Apprise（可选兜底）** | 安装 `apprise` 后支持任意 Apprise Scheme | `NOTIFY_URLS` | 自动兜底 90+ 通知平台 |
+
+> 所有通知通道共用进程/文件双锁幂等账本（按 `trade_date + channel`），旧包自动跳过，错误日志对 `NOTIFY_URLS` 与全部密钥严格脱敏。公开看板页脚另低调提供 [`site/feed.xml`](https://zhulinsen.github.io/alphasift/site/feed.xml) Atom 1.0 RSS 订阅源。
 
 ---
 
@@ -203,7 +213,7 @@ alphasift serve --host 127.0.0.1 --port 8000
 | `us, hk, jp, tw, in` | Yahoo Finance 筛选器 + `yfinance` | 海外服务器直连可用，仅依赖单一非官方接口 |
 | `kr` | Yahoo Finance + Naver Finance | 从 Naver 补充韩股 PE/PB（`ALPHASIFT_KR_VALUATION=0` 可关闭） |
 
-详细环境变量见 [docs/configuration.md](docs/configuration.md)、[.env.example](.env.example) 与 [部署指南](docs/deployment.md)。
+详细环境变量见 [docs/configuration.md](docs/configuration.md)、[.env.example](.env.example) 与 [部署指南](docs/deployment.md)（含一行推送 `NOTIFY_URLS`、CN AI 上下文开关 `LLM_CANDIDATE_CONTEXT_ENABLED=true`，以及 Fork 启用网页所需的 `ALPHASIFT_ENABLE_PAGES=true`）。
 
 **已知限制：** AlphaSift 定位为候选发现与后验审计引擎，并非自动交易或全复权分红组合回测器；公开账本在切换日（默认 `2026-11-21`）前为历史 `close` 口径（不可成交率标「未评估」），切换日起按 `next_open` 并严控开盘一字涨停不可成交口径。
 

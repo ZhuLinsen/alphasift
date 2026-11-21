@@ -15,13 +15,11 @@
   <a href="https://zhulinsen.github.io/alphasift/?lang=en"><img src="https://img.shields.io/badge/dashboard-live%20(ZH%20%7C%20EN%20%7C%20JA)-22c55e.svg" alt="Live Dashboard"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-3b82f6.svg" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-10b981.svg" alt="Apache 2.0"></a>
-  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><img src="https://img.shields.io/badge/RSS-Atom%201.0-f59e0b.svg" alt="Atom RSS"></a>
 </p>
 
 <p>
   <a href="https://zhulinsen.github.io/alphasift/?lang=en"><strong>Live Dashboard</strong></a> ·
   <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=en"><strong>Daily Research Brief</strong></a> ·
-  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><strong>Atom RSS Feed</strong></a> ·
   <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record"><strong>track-record Ledger</strong></a> ·
   <a href="SKILL.md"><strong>Agent Skill</strong></a>
 </p>
@@ -50,7 +48,7 @@ Every trading session runs all built-in strategies automatically, evaluates prio
       <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=light">
         <img src="docs/assets/dashboard-light.png" alt="AlphaSift Live Dashboard (Light · English)" width="100%">
       </a>
-      <br><sub><b>Editorial Paper Light</b> — Multilingual UI Switcher (<code>中 | EN | 日</code>), Atom RSS &amp; Audited Track Record</sub>
+      <br><sub><b>Editorial Paper Light</b> — Multilingual UI Switcher (<code>中 | EN | 日</code>) &amp; Audited Track Record</sub>
     </td>
   </tr>
   <tr>
@@ -70,10 +68,10 @@ Every trading session runs all built-in strategies automatically, evaluates prio
 ```mermaid
 flowchart LR
   M["7 Markets Snapshot & Private DailyPack"] --> L1["L1 YAML Hard Filters & Factor Scoring"]
-  L1 --> L2["L2 Optional LLM Re-Ranking (Gemini 3.8 Flash / DeepSeek / OpenAI)"]
+  L1 --> L2["L2 Red-Flag Skeptic LLM + Top-12 Context (Gemini 3.8 Flash / DeepSeek / OpenAI)"]
   L2 --> RK["Risk Overlay & 8-Bucket Hard Sector Cap"]
   RK --> L3["L3 Post-Analysis (scorecard / DSA / HTTP) & Filing Check"]
-  L3 --> OUT["Printable HTML Brief, 6-Channel Push & Atom RSS"]
+  L3 --> OUT["Printable HTML Brief & 1-Line 12-Channel Push (NOTIFY_URLS)"]
   RK --> AUD["Immutable track-record Branch & next_open T+N Evaluation"]
 ```
 
@@ -82,9 +80,9 @@ flowchart LR
 | **Zero-Key Deterministic Engine** | L1 hard filters, multi-factor curves, risk overlay, and 8-bucket sector diversity (`portfolio_profile.mode: hard_cap`) execute deterministically with zero external LLM keys required. |
 | **Orthogonalized 10-CN Strategies** | All 10 CN strategies separate cleanly by market cap (`blue_chip_income` ≥ ¥50B vs `dual_low` ¥5B–¥60B), style, and sector cap (`max_same_bucket: 1`). Across 3 local pack dates (`2026-09-21`, `10-20`, `11-20`), mean pairwise overlap fell from **8.0%–24.9% → 0.9%–1.8%** (`max` **100% → 20%**) and bank concentration dropped from **22%–31.1% → 4.0%–9.1%**. |
 | **Empirically Audited Pattern Radar** | Stateless technical patterns are gated via 250-day `next_open` replay (`N ≥ 200` and positive T+5 excess vs CSI 300). Only 2 verified patterns are `active`; 5 classic patterns remain muted `experimental`. |
-| **Dual-Track Rules vs AI Attribution** | Configure `GEMINI_API_KEY` (defaults to `gemini/gemini-3.8-flash` with automatic `gemini/gemini-4-hydrogen` fallback), `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`, or Ollama to run paired `rules` vs `ai` tracks on the same dates and compare added/dropped stock alpha. |
-| **Self-Healing Sources & Private Pack** | Health-ordered CN snapshot chain (`em_datacenter → sina → efinance → akshare_em`, or `tushare` first with token) with timeouts and stale fallback. Raw `daily.npz` / `meta.csv.gz` matrices stay local or inside private GitHub `actions/cache` and are never redistributed publicly. |
-| **6-Channel Idempotent Push + Atom RSS** | Dispatches `<1,200`-char alert-first briefs to WeCom, Feishu (HMAC-SHA256), DingTalk (HMAC-SHA256), Telegram, Discord, and Custom Webhook (per `(trade_date, channel)` file lock), plus zero-config `site/feed.xml` Atom RSS. |
+| **Intelligence-First AI Track** | Configure `GEMINI_API_KEY` (defaults to `gemini/gemini-3.8-flash` with `gemini/gemini-4-hydrogen` fallback), `DEEPSEEK_API_KEY`, or `OPENAI_API_KEY`. The CN AI track automatically enables `LLM_CANDIDATE_CONTEXT_ENABLED=true` to inject Top-12 filings/news/fund-flow context, caps unresolved adverse filings (`llm_score <= 35`), bans brand/familiarity bias, and tracks paired `rules` vs `ai` alpha. |
+| **Self-Healing Sources & Fork Guard** | Health-ordered CN snapshot chain (`em_datacenter → sina → efinance → akshare_em`, or `tushare` first with token). Raw daily packs stay strictly private (`actions/cache`). **Plan A Fork Guard:** forked repos run screening & push notifications while skipping duplicate GitHub Pages builds unless `ALPHASIFT_ENABLE_PAGES=true`. |
+| **1-Line 12-Channel Push (`NOTIFY_URLS`)** | Auto-sniffs URI/URLs for **PushPlus, Server酱/³, Bark, Email (SMTP), WeCom, Feishu, DingTalk, Telegram, Discord, Slack, ntfy, Custom JSON** (zero extra deps, optional `apprise` fallback) with `(trade_date, channel)` idempotency locks, plus low-profile `site/feed.xml` Atom RSS. |
 
 ---
 
@@ -137,19 +135,31 @@ alphasift serve --host 127.0.0.1 --port 8000   # Read-only JSON API for AI agent
 
 ---
 
-## Notifications & RSS Subscriptions
+## Notifications & 1-Line 12-Channel Push
 
-| Channel | Configuration Env Vars | Features & Guardrails |
-|---|---|---|
-| **Atom 1.0 RSS Feed** | Zero config (`site/feed.xml`) | Published automatically to GitHub Pages on every `track-record` build |
-| **WeCom** (`wecom`) | `WECOM_WEBHOOK_URL` | Alert-first `<1,200`-char Markdown card |
-| **Feishu** (`feishu`) | `FEISHU_WEBHOOK_URL`, `FEISHU_WEBHOOK_SECRET` | Interactive blue card with optional HMAC-SHA256 signature |
-| **DingTalk** (`dingtalk`) | `DINGTALK_WEBHOOK_URL`, `DINGTALK_WEBHOOK_SECRET` | Markdown payload with optional URL query HMAC-SHA256 signature |
-| **Telegram** (`telegram`) | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Compact alert summary via Bot API (`disable_web_page_preview=true`) |
-| **Discord** (`discord`) | `DISCORD_WEBHOOK_URL` | Rich Embed card linking straight to the live dashboard |
-| **Custom Webhook** (`custom`) | `CUSTOM_WEBHOOK_URL`, `CUSTOM_WEBHOOK_TOKEN` | Structured JSON (`event`, `trade_date`, `markdown`, `summary`) + optional Bearer auth |
+Configure **one comma/newline-separated `NOTIFY_URLS` variable** (or individual channel env vars) — zero extra notification dependencies required:
 
-> Every channel uses an `flock`-protected idempotency ledger keyed by `(trade_date, channel)` and skips automatically on stale packs unless `--force-push` is passed. Secrets are never echoed in errors or logs.
+```bash
+NOTIFY_URLS="pushplus://YOUR_TOKEN,sct://YOUR_SENDKEY,bark://api.day.app/YOUR_KEY,mailto://sender@qq.com:auth_code@qq.com?to=me@qq.com,https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
+```
+
+| Channel | 1-Line `NOTIFY_URLS` URI / URL | Standalone Env Vars | Notes |
+|---|---|---|---|
+| **PushPlus** (`pushplus`) | `pushplus://TOKEN[/TOPIC]` | `PUSHPLUS_TOKEN`, `PUSHPLUS_TOPIC` | Direct WeChat push via PushPlus API |
+| **Server酱 / ³** (`serverchan`) | `sct://SENDKEY` (supports `SCT...` & `sctp123t...`) | `SERVERCHAN_SENDKEY` | Auto-routes `sctp{num}t...` to Server酱³ endpoint |
+| **Bark** (`bark`) | `bark://KEY` or `bark://host/KEY` | `BARK_URL` | iOS push via APNs |
+| **Email SMTP** (`email`) | `mailto://user:pass@host[:port]?to=a,b` | `EMAIL_SENDER`, `EMAIL_PASSWORD`, `EMAIL_RECEIVERS` | Zero-dep stdlib `smtplib`; auto-infers QQ/163/Gmail/Outlook SSL/TLS |
+| **WeCom** (`wecom`) | `wecom://KEY` or full webhook URL | `WECOM_WEBHOOK_URL` | `<1,200`-char alert-first Markdown card |
+| **Feishu** (`feishu`) | `feishu://TOKEN[#secret=SEC]` or full URL | `FEISHU_WEBHOOK_URL`, `FEISHU_WEBHOOK_SECRET` | Interactive blue card with optional HMAC-SHA256 |
+| **DingTalk** (`dingtalk`) | `dingtalk://TOKEN[#secret=SEC]` or full URL | `DINGTALK_WEBHOOK_URL`, `DINGTALK_WEBHOOK_SECRET` | Markdown payload with optional HMAC-SHA256 |
+| **Telegram** (`telegram`) | `tgram://BOT_TOKEN/CHAT_ID` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Bot API (`disable_web_page_preview=true`) |
+| **Discord** (`discord`) | `discord://ID/TOKEN` or webhook URL | `DISCORD_WEBHOOK_URL` | Rich Embed linking to dashboard |
+| **Slack** (`slack`) | `slack://T.../B.../...` or `https://hooks.slack.com/...` | `SLACK_WEBHOOK_URL` | Block Kit / text alert |
+| **ntfy** (`ntfy`) | `ntfy://topic` or `https://ntfy.sh/topic` | `NTFY_URL` | Self-hostable pub-sub push |
+| **Custom JSON** (`custom`) | `custom://https://...` or unknown HTTPS URL | `CUSTOM_WEBHOOK_URL`, `CUSTOM_WEBHOOK_TOKEN` | JSON (`event`, `trade_date`, `markdown`, `summary`) + Bearer auth |
+| **Apprise (optional)** | Any Apprise scheme when `apprise` is installed | `NOTIFY_URLS` | Automatic fallback to 90+ community services |
+
+> Every channel shares an `flock`-protected idempotency ledger keyed by `(trade_date, channel)` and skips stale packs unless `--force-push` is passed. Secrets and tokens in `NOTIFY_URLS` are scrubbed from all errors/logs. A low-profile Atom 1.0 RSS feed is also emitted at [`site/feed.xml`](https://zhulinsen.github.io/alphasift/site/feed.xml).
 
 ---
 
@@ -203,7 +213,7 @@ alphasift serve --host 127.0.0.1 --port 8000   # Read-only JSON API for AI agent
 | `us`, `hk`, `jp`, `tw`, `in` | Yahoo Finance screener + `yfinance` | Large/mid-cap floor (`≥ ~$1B` / `HK$8B` / `¥150B`), single unofficial endpoint |
 | `kr` | Yahoo Finance screener + Naver Finance mobile API | Naver supplies PE/PB (`ALPHASIFT_KR_VALUATION=0` disables); `~10s` extra |
 
-Key env vars (`ALPHASIFT_*` or standard names — see [docs/configuration.md](docs/configuration.md)): `LITELLM_MODEL` (default `gemini/gemini-3.8-flash`), `LITELLM_FALLBACK_MODELS` (`gemini/gemini-4-hydrogen`), `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`, `TUSHARE_TOKEN`, `ALPHASIFT_PACK_DIR`, `DSA_API_URL`, plus the 6 push webhook variables in [.env.example](.env.example).
+Key env vars (`ALPHASIFT_*` or standard names — see [docs/configuration.md](docs/configuration.md) and [.env.example](.env.example)): `LITELLM_MODEL` (default `gemini/gemini-3.8-flash`), `LITELLM_FALLBACK_MODELS` (`gemini/gemini-4-hydrogen`), `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`, `LLM_CANDIDATE_CONTEXT_ENABLED=true`, `NOTIFY_URLS` (1-line 12-channel push), `ALPHASIFT_ENABLE_PAGES=true` (required on forks to publish GitHub Pages), `TUSHARE_TOKEN`, `ALPHASIFT_PACK_DIR`, and `DSA_API_URL`.
 
 **Known limitations:** AlphaSift is a screening & post-trade audit engine, not an execution broker or full dividend-adjusted portfolio simulator. Prior to `ALPHASIFT_NEXT_OPEN_SWITCH_DATE` (`2026-11-21`), historical `track-record` runs used `close` entry (untradable share marked unassessed); from `2026-11-21` onward, CN track-record uses `next_open` with raw limit-up block accounting.
 

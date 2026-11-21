@@ -172,18 +172,24 @@ TickPlus `updatedaykline` 约提供最近一周的不复权日线，接口使用
 
 ### 通知推送与订阅
 
-`alphasift daily-report --push` 支持 6 种通知通道（按 `trade_date` + `channel` 幂等锁防重复发送，未配置时静默跳过）：
+`alphasift daily-report --push` 支持 **1 行 `NOTIFY_URLS` 自动协议嗅探**（也兼容分渠道独立变量），内置 **12 种零额外依赖原生通道** + 可选 `apprise` 兜底，按 `trade_date` + `target` 幂等去重；未配置时静默跳过：
 
-| 环境变量 | 渠道 | 说明 |
-|----------|------|------|
-| `WECOM_WEBHOOK_URL`（或 `ALPHASIFT_WECOM_WEBHOOK_URL`） | 企业微信 | Markdown 群机器人卡片（严格控制在 `< 1200` 字符内） |
-| `FEISHU_WEBHOOK_URL` / `FEISHU_WEBHOOK_SECRET` | 飞书 | 交互式蓝色标题卡片，配置 secret 时自动附带 HMAC-SHA256 签名 |
-| `DINGTALK_WEBHOOK_URL` / `DINGTALK_WEBHOOK_SECRET` | 钉钉 | Markdown 消息，配置 secret 时自动生成 URL query 签名 |
-| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Telegram | 通过 Bot API 发送精简文本简报（关闭网页预览） |
-| `DISCORD_WEBHOOK_URL` | Discord | Embed 富文本卡片，附带看板详情跳转链接 |
+| 环境变量 / 协议格式 | 渠道 | 说明 |
+|---|---|---|
+| `NOTIFY_URLS`（最简 1 行） | 全渠道通配 | 逗号/换行分隔，自动识别：`qyapi.weixin.qq.com`（企微）、`open.feishu.cn`（飞书，支持 `#secret=`）、`oapi.dingtalk.com`（钉钉，支持 `#secret=`）、`pushplus://<token>[/<topic>]`（PushPlus 个人微信）、`sct://<sendkey>`（Server酱 / Server酱³）、`bark://<key>` 或 `api.day.app/<key>`（iOS Bark）、`mailto://user:pass@qq.com?to=a@b.com`（SMTP 邮件，自动识别 QQ/163/Gmail/Outlook/iCloud/Aliyun）、`tgram://<token>/<chat_id>`（Telegram）、`discord.com/api/webhooks/...`、`hooks.slack.com/services/...`、`ntfy://<topic>`、任意 HTTP(S)（Custom JSON，支持 `#token=`）及其他 URI（若安装 `apprise` 则自动接管 90+ 长尾平台） |
+| `WECOM_WEBHOOK_URL` | 企业微信 | `< 1200` 字符预警优先 Markdown 群机器人卡片 |
+| `FEISHU_WEBHOOK_URL` / `FEISHU_WEBHOOK_SECRET` | 飞书 | 交互式蓝色标题卡片，支持 HMAC-SHA256 签名 |
+| `DINGTALK_WEBHOOK_URL` / `DINGTALK_WEBHOOK_SECRET` | 钉钉 | Markdown 消息，支持 URL query HMAC-SHA256 签名 |
+| `PUSHPLUS_TOKEN` / `PUSHPLUS_TOPIC` | PushPlus | 个人微信一对一/群发推送 |
+| `SERVERCHAN_SENDKEY` | Server酱 / ³ | 免建群个人微信推送（自动识别经典 `SCT` 与 Turbo³ `sctp<uid>t`） |
+| `BARK_URL` | Bark (iOS) | 直接弹窗送达 iPhone（`api.day.app/<key>` 或自建地址） |
+| `EMAIL_SENDER` / `EMAIL_PASSWORD` / `EMAIL_RECEIVERS` | 邮件 | 纯标准库 SMTP/SSL 推送（自动匹配常见邮箱 SMTP，或设 `EMAIL_SMTP_HOST`/`PORT`） |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Telegram | Bot API 精简推送 |
+| `DISCORD_WEBHOOK_URL` / `SLACK_WEBHOOK_URL` / `NTFY_URL` | Discord/Slack/ntfy | Embed 卡片 / Slack Markdown / ntfy 推送 |
 | `CUSTOM_WEBHOOK_URL` / `CUSTOM_WEBHOOK_TOKEN` | 自定义 Webhook | POST 结构化 JSON（含 `trade_date`、`markdown`、`summary`），可选 Bearer Token |
 | `ALPHASIFT_NOTIFY_STATE_PATH` / `ALPHASIFT_NOTIFY_TIMEOUT_SEC` | 账本与超时 | 默认 `<data_dir>/notify_state.json`，超时 `10s` |
-| `ALPHASIFT_DASHBOARD_URL` | 卡片跳转基址 | 覆盖 IM 卡片与 Atom RSS 中的看板 URL（默认 `https://zhulinsen.github.io/alphasift/`） |
+| `ALPHASIFT_CANDIDATE_CONTEXT_CACHE_DIR` | 情报缓存目录 | 覆盖 L2 新闻/公告上下文缓存目录（CI 中指向临时 `state/`） |
+| `ALPHASIFT_DASHBOARD_URL` | 卡片跳转基址 | 覆盖推送消息中的看板 URL（默认 `https://zhulinsen.github.io/alphasift/`） |
 
 可用 `alphasift notify status` 检查已就绪渠道（不打印任何密钥），用 `alphasift notify test` 验证连通性。公开看板同时在 `site/feed.xml` 提供零配置 Atom 1.0 RSS 订阅源。
 

@@ -2,6 +2,7 @@
 """Configuration."""
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -175,6 +176,7 @@ class Config:
     llm_candidate_context_announcement_limit: int = 3
     llm_candidate_context_cache_enabled: bool = True
     llm_candidate_context_cache_ttl_hours: int = 24
+    llm_candidate_context_cache_dir: Path | None = None
     llm_temperature: float = 0.2
     llm_json_mode: bool = True
     llm_silent: bool = True
@@ -259,15 +261,27 @@ class Config:
     # Data directory
     data_dir: Path = _PROJECT_ROOT / "data"
 
-    # Optional IM notification webhooks (idle unless explicitly configured).
+    # Optional notification webhooks / 1-line NOTIFY_URLS (idle unless explicitly configured).
+    notify_urls: list[str] = field(default_factory=list)
     wecom_webhook_url: str = ""
     feishu_webhook_url: str = ""
     feishu_webhook_secret: str = ""
     dingtalk_webhook_url: str = ""
     dingtalk_webhook_secret: str = ""
+    pushplus_token: str = ""
+    pushplus_topic: str = ""
+    serverchan_sendkey: str = ""
+    bark_url: str = ""
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
     discord_webhook_url: str = ""
+    slack_webhook_url: str = ""
+    ntfy_url: str = ""
+    email_sender: str = ""
+    email_password: str = ""
+    email_receivers: str = ""
+    email_smtp_host: str = ""
+    email_smtp_port: int = 0
     custom_webhook_url: str = ""
     custom_webhook_token: str = ""
     notify_state_path: Path = _PROJECT_ROOT / "data" / "notify_state.json"
@@ -330,6 +344,10 @@ class Config:
             llm_candidate_context_cache_ttl_hours=max(
                 0,
                 int(os.getenv("LLM_CANDIDATE_CONTEXT_CACHE_TTL_HOURS", "24")),
+            ),
+            llm_candidate_context_cache_dir=(
+                _parse_optional_path_env("ALPHASIFT_CANDIDATE_CONTEXT_CACHE_DIR")
+                or _parse_optional_path_env("LLM_CANDIDATE_CONTEXT_CACHE_DIR")
             ),
             llm_temperature=_parse_float_env("LLM_TEMPERATURE", 0.2),
             llm_json_mode=_parse_bool_env("LLM_JSON_MODE", True),
@@ -415,6 +433,7 @@ class Config:
                 int(os.getenv("EVALUATION_PRICE_PATH_LOOKBACK_DAYS", "90")),
             ),
             data_dir=data_dir,
+            notify_urls=_parse_notify_urls_env(),
             wecom_webhook_url=(
                 os.getenv("ALPHASIFT_WECOM_WEBHOOK_URL") or os.getenv("WECOM_WEBHOOK_URL", "")
             ).strip(),
@@ -430,6 +449,20 @@ class Config:
             dingtalk_webhook_secret=(
                 os.getenv("ALPHASIFT_DINGTALK_WEBHOOK_SECRET") or os.getenv("DINGTALK_WEBHOOK_SECRET", "")
             ).strip(),
+            pushplus_token=(
+                os.getenv("ALPHASIFT_PUSHPLUS_TOKEN") or os.getenv("PUSHPLUS_TOKEN", "")
+            ).strip(),
+            pushplus_topic=(
+                os.getenv("ALPHASIFT_PUSHPLUS_TOPIC") or os.getenv("PUSHPLUS_TOPIC", "")
+            ).strip(),
+            serverchan_sendkey=(
+                os.getenv("ALPHASIFT_SERVERCHAN_SENDKEY")
+                or os.getenv("SERVERCHAN_SENDKEY")
+                or os.getenv("SERVERCHAN3_SENDKEY", "")
+            ).strip(),
+            bark_url=(
+                os.getenv("ALPHASIFT_BARK_URL") or os.getenv("BARK_URL", "")
+            ).strip(),
             telegram_bot_token=(
                 os.getenv("ALPHASIFT_TELEGRAM_BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN", "")
             ).strip(),
@@ -439,6 +472,28 @@ class Config:
             discord_webhook_url=(
                 os.getenv("ALPHASIFT_DISCORD_WEBHOOK_URL") or os.getenv("DISCORD_WEBHOOK_URL", "")
             ).strip(),
+            slack_webhook_url=(
+                os.getenv("ALPHASIFT_SLACK_WEBHOOK_URL") or os.getenv("SLACK_WEBHOOK_URL", "")
+            ).strip(),
+            ntfy_url=(
+                os.getenv("ALPHASIFT_NTFY_URL") or os.getenv("NTFY_URL", "")
+            ).strip(),
+            email_sender=(
+                os.getenv("ALPHASIFT_EMAIL_SENDER") or os.getenv("EMAIL_SENDER", "")
+            ).strip(),
+            email_password=(
+                os.getenv("ALPHASIFT_EMAIL_PASSWORD") or os.getenv("EMAIL_PASSWORD", "")
+            ).strip(),
+            email_receivers=(
+                os.getenv("ALPHASIFT_EMAIL_RECEIVERS") or os.getenv("EMAIL_RECEIVERS", "")
+            ).strip(),
+            email_smtp_host=(
+                os.getenv("ALPHASIFT_EMAIL_SMTP_HOST") or os.getenv("EMAIL_SMTP_HOST", "")
+            ).strip(),
+            email_smtp_port=max(
+                0,
+                int(os.getenv("ALPHASIFT_EMAIL_SMTP_PORT") or os.getenv("EMAIL_SMTP_PORT", "0") or "0"),
+            ),
             custom_webhook_url=(
                 os.getenv("ALPHASIFT_CUSTOM_WEBHOOK_URL") or os.getenv("CUSTOM_WEBHOOK_URL", "")
             ).strip(),
@@ -462,6 +517,20 @@ def _parse_float_env(name: str, default: float) -> float:
     if value is None or value == "":
         return default
     return float(value)
+
+
+def _parse_notify_urls_env() -> list[str]:
+    raw = (os.getenv("ALPHASIFT_NOTIFY_URLS") or os.getenv("NOTIFY_URLS") or "").strip()
+    if not raw:
+        return []
+    urls: list[str] = []
+    # Split on newlines/semicolons, or commas before another scheme:// (preserves mailto://...?to=a,b).
+    for block in re.split(r"[\r\n;]+", raw):
+        for chunk in re.split(r"(?:\s*,\s*)+(?=[A-Za-z][A-Za-z0-9+.-]*://)", block):
+            cleaned = chunk.strip().strip(",").strip()
+            if cleaned and cleaned not in urls:
+                urls.append(cleaned)
+    return urls
 
 
 def _parse_optional_float_env(name: str) -> float | None:

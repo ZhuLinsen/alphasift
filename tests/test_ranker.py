@@ -396,3 +396,12 @@ def test_ranking_prompt_is_bounded_and_keeps_required_fields():
     assert "prompt_trimmed" in prompt
     assert degradation
     assert degradation[0].startswith("LLM ranking prompt truncated:")
+
+
+def test_ranking_prompt_includes_red_flag_and_anti_familiarity_rules() -> None:
+    picks = [
+        Pick(rank=1, code="000001", name="示例公司", final_score=92.0, screen_score=92.0),
+    ]
+    prompt = _build_ranking_prompt(picks, hints="")
+    assert "<= 35" in prompt
+    assert "禁止品牌/名气偏见" in prompt
