@@ -175,6 +175,14 @@ def test_scorecard_untradable_share_and_pattern_board_replay_klines(tmp_path: Pa
     assert box_hits and len(box_hits[0]["kline"]) == 20
     assert site_patterns["replay"]["patterns"][0]["pattern"] == "box_breakout"
 
+    # 3) Valid Atom 1.0 RSS feed written alongside summary.json
+    import xml.etree.ElementTree as ET
+    feed_path = tmp_path / "site" / "feed.xml"
+    assert feed_path.is_file()
+    feed_root = ET.fromstring(feed_path.read_text(encoding="utf-8"))
+    assert feed_root.tag == "{http://www.w3.org/2005/Atom}feed"
+    assert feed_root.find("{http://www.w3.org/2005/Atom}title") is not None
+
 
 def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
     html_path = Path(__file__).resolve().parents[1] / "scripts" / "track_record_page.html"
@@ -202,6 +210,10 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
         "muted-cell",
         "site/patterns.json",
         "site/report.json",
+        "site/feed.xml",
+        "lang-switch",
+        "SUPPORTED_LANGS",
+        "Quantitative Discovery",
     ):
         assert marker in html
 

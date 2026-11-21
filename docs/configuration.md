@@ -170,6 +170,23 @@ tushare -> sina -> efinance -> akshare_em -> em_datacenter
 
 TickPlus `updatedaykline` 约提供最近一周的不复权日线，接口使用 HTTP 并在查询串传递密钥。本次仅用按文档字段构造的离线样例验证，尚未进行实盘接口验证。名称、行业、估值和市值等元数据来自构建或更新时的最新可用快照，源缺失的可选字段可省略。
 
+### 通知推送与订阅
+
+`alphasift daily-report --push` 支持 6 种通知通道（按 `trade_date` + `channel` 幂等锁防重复发送，未配置时静默跳过）：
+
+| 环境变量 | 渠道 | 说明 |
+|----------|------|------|
+| `WECOM_WEBHOOK_URL`（或 `ALPHASIFT_WECOM_WEBHOOK_URL`） | 企业微信 | Markdown 群机器人卡片（严格控制在 `< 1200` 字符内） |
+| `FEISHU_WEBHOOK_URL` / `FEISHU_WEBHOOK_SECRET` | 飞书 | 交互式蓝色标题卡片，配置 secret 时自动附带 HMAC-SHA256 签名 |
+| `DINGTALK_WEBHOOK_URL` / `DINGTALK_WEBHOOK_SECRET` | 钉钉 | Markdown 消息，配置 secret 时自动生成 URL query 签名 |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Telegram | 通过 Bot API 发送精简文本简报（关闭网页预览） |
+| `DISCORD_WEBHOOK_URL` | Discord | Embed 富文本卡片，附带看板详情跳转链接 |
+| `CUSTOM_WEBHOOK_URL` / `CUSTOM_WEBHOOK_TOKEN` | 自定义 Webhook | POST 结构化 JSON（含 `trade_date`、`markdown`、`summary`），可选 Bearer Token |
+| `ALPHASIFT_NOTIFY_STATE_PATH` / `ALPHASIFT_NOTIFY_TIMEOUT_SEC` | 账本与超时 | 默认 `<data_dir>/notify_state.json`，超时 `10s` |
+| `ALPHASIFT_DASHBOARD_URL` | 卡片跳转基址 | 覆盖 IM 卡片与 Atom RSS 中的看板 URL（默认 `https://zhulinsen.github.io/alphasift/`） |
+
+可用 `alphasift notify status` 检查已就绪渠道（不打印任何密钥），用 `alphasift notify test` 验证连通性。公开看板同时在 `site/feed.xml` 提供零配置 Atom 1.0 RSS 订阅源。
+
 ## L3 后置分析器
 
 默认启用本地 `scorecard`，即使不配置外部系统，也会有一层稳定、低成本的候选复核评分。

@@ -458,12 +458,22 @@ def main():
     drpt.add_argument("--output-json", default=None, help="写出 DailyReport report.json 路径")
     drpt.add_argument("--output-card", default=None, help="额外写出 <1200 字 IM Markdown 卡片路径")
     drpt.add_argument("--output-html", default=None, help="额外写出可打印独立 HTML 研报路径")
-    drpt.add_argument("--push", action="store_true", help="按已配置渠道幂等推送到企微/飞书/Telegram（无配置静默跳过）")
-    drpt.add_argument("--channel", action="append", default=None, help="仅推送指定渠道（wecom/feishu/telegram），可重复")
+    drpt.add_argument("--push", action="store_true", help="按已配置渠道幂等推送到企微/飞书/钉钉/Telegram/Discord/Webhook（无配置静默跳过）")
+    drpt.add_argument("--channel", action="append", default=None, help="仅推送指定渠道（wecom/feishu/dingtalk/telegram/discord/custom），可重复")
     drpt.add_argument("--force-push", action="store_true", help="忽略同交易日幂等锁强制重发")
     drpt.add_argument("--dry-run-push", action="store_true", help="演练推送流程，不实际发送请求也不写状态")
     drpt.add_argument("--json", action="store_true", help="以 JSON 输出")
     drpt.add_argument("--explain", action="store_true", help="输出紧凑摘要与 IM 卡片预览")
+
+    # notify (channel readiness & connectivity test)
+    ntfy = sub.add_parser("notify", help="检查推送渠道配置或发送连通性测试消息")
+    ntfy_sub = ntfy.add_subparsers(dest="notify_action", required=True)
+    ntfy_status = ntfy_sub.add_parser("status", help="查看已配置推送渠道与幂等账本路径（不输出任何密钥）")
+    ntfy_status.add_argument("--json", action="store_true", help="以 JSON 输出")
+    ntfy_test = ntfy_sub.add_parser("test", help="向已配置渠道发送一次非持久化测试消息（不污染日报幂等锁）")
+    ntfy_test.add_argument("--channel", action="append", default=None, help="仅测试指定渠道（wecom/feishu/dingtalk/telegram/discord/custom），可重复")
+    ntfy_test.add_argument("--dry-run", action="store_true", help="演练流程，不发送实际 HTTP 请求")
+    ntfy_test.add_argument("--json", action="store_true", help="以 JSON 输出")
 
     args = parser.parse_args()
     _apply_env_file_args(args.env_file)
@@ -1155,6 +1165,39 @@ def main():
             print(_format_daily_report_explain(report))
         else:
             print(json.dumps(report, ensure_ascii=False, indent=2))
+
+    elif args.command == "notify":
+        from alphasift.notify import notify_readiness, send_test_notification
+
+        config = Config.from_env()
+        if args.notify_action == "status":
+            info = notify_readiness(config)
+            if args.json:
+                print(json.dumps(info, ensure_ascii=False, indent=2))
+            else:
+                chans = ", ".join(info["configured_channels"]) or "none"
+                print(f"Configured channels: {chans}")
+                print(f"Supported channels: {', '.join(info['supported_channels'])}")
+                print(f"Idempotency ledger: {info['state_path']}")
+        elif args.notify_action == "test":
+            try:
+                res = send_test_notification(
+                    config=config,
+                    channels=args.channel,
+                    dry_run=args.dry_run,
+                )
+            except ValueError as exc:
+                parser.error(str(exc))
+            if args.json:
+                print(json.dumps(res, ensure_ascii=False, indent=2))
+            else:
+                print(
+                    f"notify_test status={res['status']} "
+                    f"sent={','.join(res['sent']) or 'none'} "
+                    f"skipped={len(res['skipped'])} errors={len(res['errors'])}"
+                )
+                for err in res["errors"]:
+                    print(f"  error [{err['channel']}]: {err['error']}")
 
     else:
         parser.print_help()

@@ -1,177 +1,220 @@
-# AlphaSift
+<div align="center">
 
-**为 AI Agent 设计的全市场选股引擎。** AlphaSift 扫描全部 A 股（其他六个市场为市值较大的上市股票），用可审计的 YAML 策略筛选打分，可选地让 LLM 对入围候选做横向排序，让最终结果在行业上尽量分散，并保存每次运行，方便事后检验选得准不准。
+<a href="https://zhulinsen.github.io/alphasift/?lang=zh">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner-light.svg">
+    <img alt="AlphaSift — 开源全市场量化选股与回测基准引擎" src="docs/assets/banner-dark.svg" width="100%">
+  </picture>
+</a>
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
-![Markets](https://img.shields.io/badge/markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-orange)
-[![Live Dashboard](https://img.shields.io/badge/dashboard-live-22c55e.svg)](https://zhulinsen.github.io/alphasift/)
+<h3>为 AI Agent 设计的全市场选股与后验验证引擎 —— 确定性 YAML 策略、250 日实证形态雷达、策略 + AI 双轨归因与可审计 T+N 公开账本</h3>
 
-[English](README.md) | 中文 | [日本語](README.ja.md)
+<p>
+  <a href="https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml"><img src="https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
+  <a href="https://zhulinsen.github.io/alphasift/?lang=zh"><img src="https://img.shields.io/badge/dashboard-live%20(中%20%7C%20EN%20%7C%20日)-22c55e.svg" alt="在线看板"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-3b82f6.svg" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-10b981.svg" alt="Apache 2.0"></a>
+  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><img src="https://img.shields.io/badge/RSS-Atom%201.0-f59e0b.svg" alt="Atom RSS"></a>
+</p>
 
-**公开记录：** 每个交易日收盘后自动运行全部内置策略并保存选股，之后按 T+5 / T+10 / T+20 和所在市场的基准指数比较——见[在线看板](https://zhulinsen.github.io/alphasift/)、[每日研报](https://zhulinsen.github.io/alphasift/site/daily_report.html)，原始数据在 [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) 分支。
+<p>
+  <a href="https://zhulinsen.github.io/alphasift/?lang=zh"><strong>在线看板</strong></a> ·
+  <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=zh"><strong>今日盘后研报</strong></a> ·
+  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><strong>Atom RSS 订阅</strong></a> ·
+  <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record"><strong>track-record 原始账本</strong></a> ·
+  <a href="SKILL.md"><strong>Agent Skill</strong></a>
+</p>
 
-[![AlphaSift 在线战绩看板](docs/assets/dashboard-dark.png)](https://zhulinsen.github.io/alphasift/)
+<p>
+  <a href="README.md">English</a> · <strong>简体中文</strong> · <a href="README.ja.md">日本語</a>
+</p>
 
-```text
-全市场 ──► L1 硬筛 + 因子打分 ──► L2 LLM 横向排序（可选）
-(5000+ 只)   (YAML 策略，无需 API key)    (候选池内跨股票比较)
-                                               │
-保存运行 ◄── L3 后置分析 ◄── 风险层 + 行业分散上限
-   │        (scorecard / DSA / HTTP)
-   └──► T+N 评估：收益、胜率、失败样本复盘
+</div>
+
+---
+
+## 多语言在线终端与盘后研报
+
+每个交易日收盘后自动运行全市场内置策略，在 **`T+5 / T+10 / T+20`** 对照所属市场基准指数客观验收收益（A 股切换日起按 `next_open` 入场并扣除一字涨停不可成交样本），看板与独立 HTML 研报原生支持 **中文 · English · 日本語** 与 **Obsidian Dark · Editorial Light** 双主题切换。
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <a href="https://zhulinsen.github.io/alphasift/?lang=zh&theme=dark">
+        <img src="docs/assets/dashboard-zh.png" alt="AlphaSift 在线看板（暗色 · 中文）" width="100%">
+      </a>
+      <br><sub><b>Obsidian Dark 终端</b> — 跨策略共识精选、A 股 7 档涨跌分布、连板梯队与 7 市场排行榜</sub>
+    </td>
+    <td width="50%" align="center">
+      <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=light">
+        <img src="docs/assets/dashboard-light.png" alt="AlphaSift 在线看板（亮色 · 英文多语言适配）" width="100%">
+      </a>
+      <br><sub><b>Editorial Paper Light + 三语切换</b> — 顶部一键切换 <code>中 | EN | 日</code>、明暗主题与 Atom RSS</sub>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=zh&theme=dark">
+        <img src="docs/assets/daily-report.png" alt="AlphaSift 独立可打印盘后投研日报" width="88%">
+      </a>
+      <br><sub><b>可打印独立盘后投研日报</b>（<code>alphasift daily-report --output-html</code>）— 盘后要点综述、盘面微观全景、公告排雷与 20 日迷你 K 线</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 系统架构与核心能力
+
+```mermaid
+flowchart LR
+  M["7市场全市场快照 + 私有日线包 DailyPack"] --> L1["L1 YAML 硬筛选与多因子评分"]
+  L1 --> L2["L2 可选 LLM 横向重排 (Gemini 3.8 Flash / DeepSeek / OpenAI)"]
+  L2 --> RK["风险过滤 + 8 行业桶硬上限分散"]
+  RK --> L3["L3 后置分析 (scorecard / DSA / HTTP) + 公告排雷"]
+  L3 --> OUT["可打印 HTML 日报 + 6 通道幂等推送 + Atom RSS"]
+  RK --> AUD["不可篡改 track-record 账本 + next_open T+N 后验评估"]
 ```
 
-## 为什么用 AlphaSift
+| 核心能力 | 工程实现 |
+|---|---|
+| **零 Key 确定性选股底座** | L1 硬筛条件、因子评分曲线、风险惩罚与 8 行业分散上限完全确定性运行，不配置任何 LLM API Key 即可跑全链路。 |
+| **10 组 A 股策略正交化去重合** | 统一启用 8 行业桶 `portfolio_profile.mode: hard_cap`（`max_same_bucket: 1`），并按市值梯度、红利/GARP/动量/反转风格正交错位。经本地 250 日数据包在 `2026-09-21`、`10-20`、`11-20` 三日回测，策略两两平均重合度由 **8.0%–24.9% 降至 0.9%–1.8%**（最大单对 **100% → 20%**），银行占比由 **22%–31.1% 降至 4.0%–9.1%**。 |
+| **250 日实盘口径形态雷达** | 所有无状态形态需通过 `next_open` 回放门槛（`T+5 基准匹配样本 ≥ 200` 且相对沪深 300 超额 `> 0%`）才升级 `active`，其余保持 `experimental` 置灰观察，不混水摸鱼。 |
+| **策略 + AI 双赛道配对归因** | 默认主模型已升级为 **`gemini/gemini-3.8-flash`**（自动挂载 `gemini/gemini-4-hydrogen` 回退），同步兼容 DeepSeek、OpenAI 与 Ollama；支持同日运行 `rules` 与 `ai` 双赛道并归因“AI 独选 / AI 剔除”收益贡献。 |
+| **数据源自愈与严格私有化日线包** | A 股快照链（`em_datacenter → sina → efinance → akshare_em`，配置 `TUSHARE_TOKEN` 时 Tushare 优先）支持熔断避障与超时预算；原始日线包（`daily.npz` / `meta.csv.gz`）**仅留存本地或 GitHub Actions 私有缓存**，绝不通过公开 Release 二次分发。 |
+| **6 通道幂等推送 + 零配置 RSS** | 支持 **企业微信、飞书（HMAC 签名）、钉钉（HMAC 签名）、Telegram、Discord、自定义 Webhook（JSON + Bearer 鉴权）** 与公开看板 **`site/feed.xml` Atom 1.0 RSS**；按 `(trade_date, channel)` 文件锁严格去重，旧包默认拦截推送。 |
 
-- **以 A 股为主，另有六个市场（测试阶段）**：A 股走专门的多数据源链路；美股、港股、日本、韩国、台湾、印度走 Yahoo Finance 筛选器，海外服务器和 CI 上也能用，但只有一个非官方数据源、字段也更少（见“已知限制”）。
-- **不配 API key 也能跑**：L1 筛选、打分、风险和行业分散都是确定性的；配置了 LLM 才会对入围候选做重排。
-- **策略是 YAML，不是代码**：硬筛条件、因子权重、评分曲线、风险阈值、行业桶都写在可读、可 diff、可审查的文件里。
-- **不会一股脑全选同一个行业**：每只候选都带行业/板块标签，`portfolio_profile.mode: hard_cap` 保证 Top N 中同一行业不超过 N 只。
-- **数据源自愈**：各数据源的成败跨运行保存，坏掉的源自动排到最后；每个源都有时间预算；所有实时源都失败时使用上次成功的快照，并明确标记为过期数据。
-- **每次运行都能检验**：保存运行结果，之后按 T+N 评估收益、胜率、交易成本和失败样本，可选抓取日 K 路径计算最大回撤和最大浮盈。
-- **为 Agent 设计**：[SKILL.md](SKILL.md) 描述可调用接口；`alphasift serve` 提供只读 JSON API，供面板和编排层使用。
+---
 
-- **盘后投研日报与策略 + AI 双赛道对照**：配置任意 LLM Key（`DEEPSEEK_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`）后，`track-record` 自动在同一交易日并跑规则赛道（`rules`）与 AI 重排赛道（`ai`），输出同日配对超额归因、公告排雷、多策略共识榜及可打印独立 HTML 研报（`alphasift daily-report --output-html`）。
-- **私有化日线包设计**：全市场离线日线包仅在本地工作区（`ALPHASIFT_PACK_DIR`）或 GitHub Actions 私有缓存（`actions/cache`）中自建自用，绝不向公开 Release 上传二次分发原始行情。
+## 形态雷达 250 日实证基准（`next_open` vs 沪深 300）
 
-![AlphaSift 盘后量化投研日报](docs/assets/daily-report.png)
+基于本地 250 日数据包（评估区间 **`2026-02-05 .. 2026-11-06`**，180 交易日、5,218 只 A 股，`next_open` 入场并剔除一字涨停不可成交）：
 
-## 快速开始
+| 形态 | 谱系 / 模式 | 总信号 | T+5 匹配样本 | T+5 超额 | T+5 超额胜率 | T+10 超额 | 毕业判定 |
+|---|---|---:|---:|---:|---:|---:|---|
+| **20日线低波缩量回踩** (`ma20_shrink_pullback` v2.0) | `trend_continuation · direct` | 2,295 | 2,293 | **+0.158%** | 46.45% | **+0.905%** | **`active`** |
+| **低波趋势稳健突破** (`steady_trend_breakout` v1.0) | `breakout · direct` | 460 | 460 | **+0.271%** | 48.70% | **+0.560%** | **`active`** |
+| `single_yang_hold` / `box_breakout` / `bottom_volume_yang` / `double_bottom_breakout` / `shooting_star_confirm` | 混合谱系 | 992–9,233 | 988–9,221 | -1.185% .. -0.175% | 38.26%–45.47% | -1.207% .. -0.619% | `experimental` |
+
+---
+
+## 30 秒快速开始
 
 ```bash
 pip install -e .
 
-# A 股，无需 API key
+# 1. 无 API Key 体验全市场筛选
+alphasift quickstart
 alphasift screen dual_low --no-llm
-
-# 其他市场：us、hk、jp、kr、tw、in
 alphasift screen global_value --market hk --no-llm
 
-# 启用 LLM 排序：先在 .env 中配置 GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY
-# （或 LITELLM_MODEL / LLM_CHANNELS）
-cp .env.example .env
-alphasift screen dual_low
+# 2. 开启 LLM AI 重排（默认 gemini/gemini-3.8-flash + gemini-4-hydrogen 自动回退）
+cp .env.example .env   # 填入 GEMINI_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY
+alphasift screen dual_low --save-run
 
-# 保存运行，几天后评估效果
-alphasift screen dual_low --no-llm --save-run
-alphasift evaluate <run_id> --with-price-path --explain
+# 3. 250 日形态回放、独立 HTML 日报、与 6 通道推送校验
+alphasift patterns replay --pack-dir ./data/pack/cn --output-md replay.md
+alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html --push
+alphasift notify status
+alphasift notify test --dry-run
 ```
 
-`alphasift quickstart` 是无需 key 的引导演示，`alphasift strategies` 列出全部策略。
+**Python 调用与只读 Agent HTTP 服务：**
 
-## 输出示例
+```python
+from alphasift import screen, evaluate_saved_run
 
-以下是 2026-11-03 使用 `--no-llm` 的真实运行结果。**只用于展示引擎输出，不构成任何推荐。**
+res = screen("dual_low", market="cn", use_llm=False)
+for pick in res.picks:
+    print(pick.rank, pick.code, pick.name, pick.industry, pick.final_score)
+```
 
-**A 股**（`dual_low`）：全市场 5218 只，硬筛后 284 只，Top 5 每个行业最多 2 只
+```bash
+alphasift serve --host 127.0.0.1 --port 8000
+```
+
+---
+
+## 通知推送与订阅矩阵
+
+| 通道 | 环境变量 | 能力说明 |
+|---|---|---|
+| **Atom 1.0 RSS** | 零配置（`site/feed.xml`） | 每次发布 GitHub Pages 自动更新，任意 RSS 阅读器免密钥订阅 |
+| **企业微信** (`wecom`) | `WECOM_WEBHOOK_URL` | `<1200` 字公告预警优先 Markdown 群机器人卡片 |
+| **飞书** (`feishu`) | `FEISHU_WEBHOOK_URL` / `FEISHU_WEBHOOK_SECRET` | 交互式蓝色标题卡片，配 secret 时自动生成 HMAC-SHA256 签名 |
+| **钉钉** (`dingtalk`) | `DINGTALK_WEBHOOK_URL` / `DINGTALK_WEBHOOK_SECRET` | Markdown 消息，配 secret 时自动生成 URL query timestamp+sign 签名 |
+| **Telegram** (`telegram`) | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Bot API 紧凑简报（关闭网页预览） |
+| **Discord** (`discord`) | `DISCORD_WEBHOOK_URL` | 富文本 Embed 卡片，点击标题直达在线看板 |
+| **自定义 Webhook** (`custom`) | `CUSTOM_WEBHOOK_URL` / `CUSTOM_WEBHOOK_TOKEN` | POST 结构化 JSON（`event`、`trade_date`、`markdown`、`summary`），支持 Bearer Token |
+
+> 所有通知通道共用进程/文件双锁幂等账本（按 `trade_date + channel`），旧包自动跳过不骚扰群聊，错误日志自动脱敏绝不泄露密钥或 Webhook token。
+
+---
+
+<details>
+<summary><strong>内置 YAML 策略清单（12 组策略覆盖 7 大市场）</strong></summary>
+
+| 策略名 | 适用市场 | 类型 | 核心思路 |
+|---|---|---|---|
+| `dual_low` | `cn` | 价值 | 中小盘双低（50–600 亿市值，低 PE + 低 PB），行业桶硬上限 `1` |
+| `blue_chip_income` | `cn` | 红利 | 超大盘高流动性高股息蓝筹（≥ 500 亿市值） |
+| `quality_value` | `cn` | GARP 成长 | 中盘稳健估值 + 波动/回撤约束（150–2000 亿） |
+| `low_volatility_quality` | `cn` | 质量防御 | 基于日 K 20 日波动率、最大回撤与 ATR 的低波防线 |
+| `balanced_alpha` | `cn` | 均衡框架 | 跨因子综合发现，强制行业正交分散 |
+| `momentum_quality` | `cn` | 趋势质量 | 60 日中期趋势确认 + 基本面质量硬过滤 |
+| `shrink_pullback` | `cn` | 回踩趋势 | 上升趋势中缩量回踩支撑位（需日 K） |
+| `capital_heat` | `cn` | 资金动量 | 换手与量比活跃但剔除短期过热追高 |
+| `oversold_reversal` | `cn` | 超跌修复 | 短期超跌 + 回撤受控的均值回复候选 |
+| `volume_breakout` | `cn` | 放量突破 | 成交量显著放大并突破关键压力区间 |
+| `global_value` | `us, hk, jp, kr, tw, in` | 多市场价值 | 去除币种绝对阈值的 `dual_low` 跨市场版本 |
+| `us_momentum_quality` | `us` | 美股趋势 | 美股十亿美元以上大盘动量 + 质量精选 |
+
+</details>
+
+<details>
+<summary><strong>真实运行示例（2026-11-20 截面，<code>--no-llm</code> 纯规则模式）</strong></summary>
+
+**A 股（`dual_low` on 2026-11-20 pack）：** 5,215 只 → 205 只入围 → Top 5 来自 5 个互不重复行业（`hard_cap: 1`）：
 
 | # | 代码 | 名称 | 行业 | PE | PB |
 |---:|---|---|---|---:|---:|
-| 1 | 601169 | 北京银行 | 银行 | 5.8 | 0.43 |
-| 2 | 600016 | 民生银行 | 银行 | 5.7 | 0.26 |
-| 3 | 601668 | 中国建筑 | 建筑施工 | 6.6 | 0.39 |
-| 4 | 601186 | 中国铁建 | 基础建设 | 6.3 | 0.29 |
-| 5 | 601919 | 中远海控 | 港口航运 | 7.9 | 1.12 |
+| 1 | `601997` | 贵阳银行 | 银行 | 4.4 | 0.32 |
+| 2 | `601117` | 中国化学 | 建筑施工 | 6.6 | 0.61 |
+| 3 | `600741` | 华域汽车 | 汽车 | 7.7 | 0.77 |
+| 4 | `603799` | 华友钴业 | 稀有金属 | 8.7 | 1.07 |
+| 5 | `601233` | 桐昆股份 | 合成纤维及树脂 | 6.8 | 1.11 |
 
-**港股**（`global_value --market hk`）：581 只，硬筛后 275 只
+**港股（`global_value --market hk`，2026-11-20）：** 567 只 → 236 只入围：`0267.HK` 中信股份 · `0001.HK` 长和 · `1339.HK` 中国人保 · `1398.HK` 工商银行 · `0358.HK` 江西铜业。
 
-| # | 代码 | 名称 | 板块 | PE | PB |
-|---:|---|---|---|---:|---:|
-| 1 | 0998.HK | 中信银行 | Financial Services | 5.8 | 0.43 |
-| 2 | 0267.HK | 中信股份 | Industrials | 5.3 | 0.38 |
-| 3 | 1398.HK | 工商银行 | Financial Services | 6.5 | 0.59 |
-| 4 | 0001.HK | 长和 | Industrials | 6.9 | 0.45 |
-| 5 | 0358.HK | 江西铜业 | Basic Materials | 5.7 | 0.77 |
+**日股（`global_value --market jp`，2026-11-20）：** 748 只 → 311 只入围：`9501.T` 东京电力 · `5401.T` 新日铁 · `1605.T` INPEX · `9104.T` 商船三井 · `9022.T` JR东海。
 
-**日本**（`global_value --market jp`）：773 只，硬筛后 408 只
+*仅作引擎输出展示，不构成任何投资建议。*
 
-| # | 代码 | 名称 | 板块 | PE | PB |
-|---:|---|---|---|---:|---:|
-| 1 | 9501.T | 东京电力 | Utilities | 2.6 | 0.21 |
-| 2 | 9022.T | JR 东海 | Industrials | 7.2 | 0.71 |
-| 3 | 9502.T | 中部电力 | Utilities | 10.6 | 0.66 |
-| 4 | 1911.T | 住友林业 | Consumer Cyclical | 9.0 | 0.70 |
-| 5 | 7203.T | 丰田汽车 | Consumer Cyclical | 8.7 | 0.97 |
+</details>
 
-在海外服务器上，数据源健康记录生效后 A 股一次选股约 10 秒；Yahoo 市场每次 2–10 秒。
+<details>
+<summary><strong>支持市场、关键环境变量与已知限制</strong></summary>
 
-## 支持的市场
-
-| `--market` | 市场 | 快照数据源 | 说明 |
-|---|---|---|---|
-| `cn` | A 股 | em_datacenter → sina → efinance → akshare_em（配置 token 时 Tushare 优先） | 按健康度排序数据源；缺行业时用东财行业映射补全 |
-| `us` | 美股 | Yahoo 筛选器（NYSE / Nasdaq 上市、市值 ≥ 10 亿美元，含 ADR） | 设置 `ALPHASIFT_US_TICKERS` 时改用指定的股票列表 |
-| `hk` | 港股 | Yahoo 筛选器 | 股票池市值下限约 80 亿港元 |
-| `jp` | 日本 | Yahoo 筛选器 | 股票池市值下限约 1500 亿日元 |
-| `kr` | 韩国 | Yahoo 筛选器 + Naver Finance | Yahoo 不提供韩股 PE/PB，改从 Naver 移动端接口（非官方）补全，约多 10 秒；`ALPHASIFT_KR_VALUATION=0` 可关闭 |
-| `tw` | 台湾 | Yahoo 筛选器 | 含上市（TWSE）和上柜（TPEx） |
-| `in` | 印度 | Yahoo 筛选器 | 含 NSE 和 BSE |
-
-非 A 股代码使用 Yahoo 代码（`AAPL`、`0700.HK`、`7203.T`、`005930.KS`）。这些市场的日 K 增强和 T+N 评估使用 yfinance；候选级新闻、公告、资金流上下文目前只支持 A 股。
-
-## 内置策略
-
-| 策略 | 市场 | 类型 | 思路 |
-|---|---|---|---|
-| `dual_low` | cn | 价值 | 低 PE + 低 PB，叠加活跃度与稳定性确认，按行业硬性分散 |
-| `quality_value` | cn | 价值 | 合理估值，兼顾流动性和波动控制 |
-| `blue_chip_income` | cn | 红利 | 高流动性蓝筹与分红质量 |
-| `low_volatility_quality` | cn | 质量 | 基于日 K 波动、回撤、ATR 的防御型筛选 |
-| `volume_breakout` | cn | 趋势 | 放量突破压力位 |
-| `shrink_pullback` | cn | 趋势 | 上升趋势中缩量回踩支撑（需日 K） |
-| `capital_heat` | cn | 动量 | 资金活跃但不过热 |
-| `oversold_reversal` | cn | 反转 | 回撤可控的修复候选 |
-| `balanced_alpha` | cn | 框架 | 通用多因子发现 |
-| `momentum_quality` | cn | 框架 | 趋势确认 + 质量过滤 |
-| `global_value` | us, hk, jp, kr, tw, in | 价值 | `dual_low` 的多市场版本，不使用与币种相关的绝对阈值 |
-| `us_momentum_quality` | us | 趋势 | 美股大盘股动量 + 质量 |
-
-自定义策略放在 `strategies/` 下，写法见[策略编写指南](docs/strategy-guide.md)。
-
-## 配置
-
-复制 `.env.example` 为 `.env`。AlphaSift 兼容 LiteLLM 风格配置，可以直接复用 [daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis) 的配置。常用项：
-
-| 变量 | 作用 | 默认值 |
+| 市场 ID | 数据源链路 | 说明 |
 |---|---|---|
-| `LITELLM_MODEL` | 主模型，格式 `provider/model` | `gemini/gemini-3.8-flash` |
-| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM 排序所用的供应商 key | - |
-| `LLM_CHANNELS` / `LITELLM_CONFIG` | 多渠道或 LiteLLM Router 配置 | - |
-| `TUSHARE_TOKEN` | A 股数据源链路中 Tushare 优先 | - |
-| `SNAPSHOT_SOURCE_PRIORITY` | 手动指定 A 股数据源顺序 | 取决于是否配置 token |
-| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | 单个快照源的时间预算 | `60` |
-| `INDUSTRY_AUTO_BACKFILL` | 自动补全缺失的 A 股行业标签 | `true` |
-| `ALPHASIFT_DATA_DIR` | 运行记录、缓存、数据源健康记录目录 | `./data` |
-| `DSA_API_URL` | 启用可选的 DSA 单股深度分析 | - |
+| `cn` | `em_datacenter → sina → efinance → akshare_em`（配置 `TUSHARE_TOKEN` 时优先 `tushare`） | A 股全市场 + 东财行业补全 + 公告排雷 + 私有离线包 |
+| `us, hk, jp, tw, in` | Yahoo Finance 筛选器 + `yfinance` | 海外服务器直连可用，仅依赖单一非官方接口 |
+| `kr` | Yahoo Finance + Naver Finance | 从 Naver 补充韩股 PE/PB（`ALPHASIFT_KR_VALUATION=0` 可关闭） |
 
-完整列表见 [docs/configuration.md](docs/configuration.md)。
+详细环境变量见 [docs/configuration.md](docs/configuration.md)、[.env.example](.env.example) 与 [部署指南](docs/deployment.md)。
 
-## 更多功能
+**已知限制：** AlphaSift 定位为候选发现与后验审计引擎，并非自动交易或全复权分红组合回测器；公开账本在切换日（默认 `2026-11-21`）前为历史 `close` 口径（不可成交率标「未评估」），切换日起按 `next_open` 并严控开盘一字涨停不可成交口径。
 
-- **Python API**：`from alphasift import screen, evaluate_saved_run`，然后 `screen("dual_low", use_llm=False, market="cn")`。
-- **LLM 上下文**：`--context "..."` 追加市场判断，`--candidate-context-file` 追加逐只候选的研究摘要。
-- **L3 后置分析**：默认运行本地 `scorecard`；`--post-analyzer dsa` 会把最终名单交给 [daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis) 做单股深度分析。
-- **热点发现**：`alphasift hotspots` 和 `alphasift hotspot "<主题>"` 对 A 股题材做热度排序，并解析龙头股，附带缓存和降级元数据。
-- **Agent / UI 接口**：`alphasift overview --json`、`alphasift serve`、`alphasift doctor data-sources --all-strategies --explain`，端点列表见[使用指南](docs/usage.md)。
+</details>
 
-## 已知限制
+---
 
-- AlphaSift 是候选发现与排序引擎，不是回测或交易执行系统。T+N 评估比较的是保存时价格与之后的价格，不处理分红、停牌和持仓约束。
-- `evaluate-strategies --window 5,10,20` 计算真正的 T+N：按入场后第 N 个交易日的收盘价算收益，并和所在市场基准指数（沪深 300、标普 500、恒生、日经 225、KOSPI、台湾加权、Nifty 50）同期收益对比，输出超额收益和跑赢基准比例；未满 N 个交易日的记为 pending，不计入平均。不带窗口的 `evaluate` / `evaluate-batch` 仍按最新价计算至今收益。
-- 入场时点按交易所时间判断：开盘前保存的运行以前一日收盘入场；盘中或收盘后保存的运行，当天 K 线不计入最大浮盈和最大回撤。
-- Yahoo 筛选器市场并不是全市场：股票池是市值约 10 亿美元以上、按 Yahoo 板块逐个查询的上市股票，最多 4000 行；只依赖一个非官方接口；成交额按 价格 × 成交量 估算，流通市值用总市值代替；韩国 PE/PB 来自 Naver Finance（同样是非官方接口），亏损公司没有 PE；只有交易币种和财报币种一致时才用每股收益、每股净资产推算 PE/PB。
-- 依赖日 K 的策略只对 L1 入围候选做增强，不覆盖全市场。
-- `strategies/` 与 `alphasift/strategies/` 是开发态和安装态的两份镜像，内置策略需保持一致。
+## 免责声明、文档与开源协议
 
-## 免责声明
+> 本项目仅用于量化研究、开源工程验证与个人学习，不构成任何投资建议、收益承诺或买卖指令。
 
-本项目仅用于学习、研究和工程实验，不构成任何投资建议、收益承诺或买卖指引。行情数据、LLM 输出和策略参数都可能延迟、缺失或出错。使用者需自行研究、判断合规性和交易成本，并对自己的决策负责。
+[使用指南](docs/usage.md) · [配置参考](docs/configuration.md) · [部署与镜像](docs/deployment.md) · [策略编写指南](docs/strategy-guide.md) · [评分体系](docs/scoring.md) · [设计原则](docs/design.md) · [项目定位](docs/positioning.md) · [横向比较](docs/comparison.md) · [参考资料](docs/reference.md) · [更新记录](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
-## 文档
-
-[使用指南](docs/usage.md) · [配置参考](docs/configuration.md) · [策略编写指南](docs/strategy-guide.md) · [评分体系](docs/scoring.md) · [设计原则](docs/design.md) · [项目定位](docs/positioning.md) · [横向比较](docs/comparison.md) · [参考资料](docs/reference.md) · [更新记录](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
-
-## License
-
-[Apache License 2.0](LICENSE)
+基于 [Apache License 2.0](LICENSE) 开源。

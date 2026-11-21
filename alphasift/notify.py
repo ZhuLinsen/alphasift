@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Idempotent IM notifications (WeCom, Feishu, Telegram) for CN daily reports."""
+"""Idempotent notifications (WeCom, Feishu, DingTalk, Telegram, Discord, custom webhook)."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from pathlib import Path
 import threading
 import time
 from typing import Any
+from urllib.parse import quote_plus
 
 import requests
 
@@ -23,7 +24,14 @@ from alphasift.config import Config
 from alphasift.daily_report import IM_CARD_MAX_CHARS, ensure_im_card_length, render_daily_im_card
 from alphasift.timeutil import parse_timestamp
 
-SUPPORTED_CHANNELS: tuple[str, ...] = ("wecom", "feishu", "telegram")
+SUPPORTED_CHANNELS: tuple[str, ...] = (
+    "wecom",
+    "feishu",
+    "dingtalk",
+    "telegram",
+    "discord",
+    "custom",
+)
 _PROCESS_LOCK = threading.Lock()
 _PENDING_LEASE_SEC = 120.0
 
@@ -35,8 +43,14 @@ def configured_channels(config: Config) -> list[str]:
         channels.append("wecom")
     if config.feishu_webhook_url:
         channels.append("feishu")
+    if config.dingtalk_webhook_url:
+        channels.append("dingtalk")
     if config.telegram_bot_token and config.telegram_chat_id:
         channels.append("telegram")
+    if config.discord_webhook_url:
+        channels.append("discord")
+    if config.custom_webhook_url:
+        channels.append("custom")
     return channels
 
 
@@ -44,12 +58,18 @@ def notify_readiness(config: Config) -> dict[str, Any]:
     """Return non-secret notification channel readiness metadata."""
     channels = configured_channels(config)
     return {
+        "supported_channels": list(SUPPORTED_CHANNELS),
         "configured_channels": channels,
         "any_configured": bool(channels),
         "wecom_configured": "wecom" in channels,
         "feishu_configured": "feishu" in channels,
         "feishu_signed": bool(config.feishu_webhook_url and config.feishu_webhook_secret),
+        "dingtalk_configured": "dingtalk" in channels,
+        "dingtalk_signed": bool(config.dingtalk_webhook_url and config.dingtalk_webhook_secret),
         "telegram_configured": "telegram" in channels,
+        "discord_configured": "discord" in channels,
+        "custom_configured": "custom" in channels,
+        "custom_authenticated": bool(config.custom_webhook_url and config.custom_webhook_token),
         "state_path": str(config.notify_state_path),
     }
 
@@ -64,14 +84,29 @@ def _feishu_sign(timestamp: int, secret: str) -> str:
     return base64.b64encode(digest).decode("utf-8")
 
 
+def _dingtalk_sign(timestamp_ms: int, secret: str) -> str:
+    string_to_sign = f"{timestamp_ms}\n{secret}"
+    digest = hmac.new(
+        secret.encode("utf-8"),
+        string_to_sign.encode("utf-8"),
+        digestmod=hashlib.sha256,
+    ).digest()
+    return quote_plus(base64.b64encode(digest))
+
+
 def _redact_error(exc: Exception, config: Config) -> str:
     text = f"{type(exc).__name__}: {exc}"
     for secret in (
         config.wecom_webhook_url,
         config.feishu_webhook_url,
         config.feishu_webhook_secret,
+        config.dingtalk_webhook_url,
+        config.dingtalk_webhook_secret,
         config.telegram_bot_token,
         config.telegram_chat_id,
+        config.discord_webhook_url,
+        config.custom_webhook_url,
+        config.custom_webhook_token,
     ):
         if secret:
             text = text.replace(secret, "***")
@@ -158,6 +193,31 @@ def _send_feishu(
         raise RuntimeError(f"feishu code={code} msg={payload.get('msg', payload.get('StatusMessage', ''))}")
 
 
+def _send_dingtalk(
+    webhook_url: str,
+    content: str,
+    *,
+    title: str,
+    secret: str = "",
+    timeout_sec: float,
+    post_fn=requests.post,
+) -> None:
+    target = webhook_url
+    if secret:
+        ts_ms = int(time.time() * 1000)
+        sep = "&" if "?" in webhook_url else "?"
+        target = f"{webhook_url}{sep}timestamp={ts_ms}&sign={_dingtalk_sign(ts_ms, secret)}"
+    resp = post_fn(
+        target,
+        json={"msgtype": "markdown", "markdown": {"title": title, "text": content}},
+        timeout=timeout_sec,
+    )
+    resp.raise_for_status()
+    payload = resp.json()
+    if int(payload.get("errcode", -1)) != 0:
+        raise RuntimeError(f"dingtalk errcode={payload.get('errcode')} errmsg={payload.get('errmsg', '')}")
+
+
 def _send_telegram(
     bot_token: str,
     chat_id: str,
@@ -178,6 +238,213 @@ def _send_telegram(
         raise RuntimeError(f"telegram error={payload.get('description', 'unknown')}")
 
 
+def _send_discord(
+    webhook_url: str,
+    content: str,
+    *,
+    title: str,
+    detail_url: str = "",
+    timeout_sec: float,
+    post_fn=requests.post,
+) -> None:
+    embed: dict[str, Any] = {
+        "title": title[:256],
+        "description": content[:4096],
+        "color": 3899638,
+    }
+    if detail_url:
+        embed["url"] = detail_url
+    resp = post_fn(
+        webhook_url,
+        json={"content": "", "embeds": [embed]},
+        timeout=timeout_sec,
+    )
+    resp.raise_for_status()
+
+
+def _send_custom_webhook(
+    webhook_url: str,
+    *,
+    report: dict[str, Any],
+    content: str,
+    title: str,
+    token: str = "",
+    timeout_sec: float,
+    post_fn=requests.post,
+) -> None:
+    syn = report.get("cross_strategy_synthesis") or {}
+    ann = report.get("announcement_risks") or {}
+    payload: dict[str, Any] = {
+        "event": str(report.get("event") or "alphasift.daily_report"),
+        "trade_date": report.get("trade_date"),
+        "title": title,
+        "markdown": content,
+        "dashboard_url": str(report.get("detail_url") or ""),
+        "pack_is_stale": bool(report.get("pack_is_stale")),
+        "summary": {
+            "consensus_count": len(syn.get("consensus_picks") or []),
+            "flagged_announcements": int(ann.get("flagged_count") or 0),
+        },
+    }
+    kwargs: dict[str, Any] = {"json": payload, "timeout": timeout_sec}
+    if token:
+        kwargs["headers"] = {"Authorization": f"Bearer {token}"}
+    resp = post_fn(webhook_url, **kwargs)
+    resp.raise_for_status()
+
+
+def _resolve_target_channels(
+    cfg: Config,
+    channels: Sequence[str] | None,
+) -> tuple[list[str], list[str]]:
+    available = configured_channels(cfg)
+    if channels is None:
+        return available, available
+    requested = [c.strip().lower() for c in channels if c.strip()]
+    invalid = [c for c in requested if c not in SUPPORTED_CHANNELS]
+    if invalid:
+        raise ValueError(f"Unsupported IM channels: {', '.join(invalid)}")
+    return available, [c for c in requested if c in available]
+
+
+def _dispatch_channel(
+    channel: str,
+    cfg: Config,
+    *,
+    report: dict[str, Any],
+    content: str,
+    title: str,
+    post_fn=requests.post,
+) -> None:
+    if channel == "wecom":
+        _send_wecom(
+            cfg.wecom_webhook_url,
+            content,
+            timeout_sec=cfg.notify_timeout_sec,
+            post_fn=post_fn,
+        )
+    elif channel == "feishu":
+        _send_feishu(
+            cfg.feishu_webhook_url,
+            content,
+            title=title,
+            secret=cfg.feishu_webhook_secret,
+            timeout_sec=cfg.notify_timeout_sec,
+            post_fn=post_fn,
+        )
+    elif channel == "dingtalk":
+        _send_dingtalk(
+            cfg.dingtalk_webhook_url,
+            content,
+            title=title,
+            secret=cfg.dingtalk_webhook_secret,
+            timeout_sec=cfg.notify_timeout_sec,
+            post_fn=post_fn,
+        )
+    elif channel == "telegram":
+        _send_telegram(
+            cfg.telegram_bot_token,
+            cfg.telegram_chat_id,
+            content,
+            timeout_sec=cfg.notify_timeout_sec,
+            post_fn=post_fn,
+        )
+    elif channel == "discord":
+        _send_discord(
+            cfg.discord_webhook_url,
+            content,
+            title=title,
+            detail_url=str(report.get("detail_url") or ""),
+            timeout_sec=cfg.notify_timeout_sec,
+            post_fn=post_fn,
+        )
+    elif channel == "custom":
+        _send_custom_webhook(
+            cfg.custom_webhook_url,
+            report=report,
+            content=content,
+            title=title,
+            token=cfg.custom_webhook_token,
+            timeout_sec=cfg.notify_timeout_sec,
+            post_fn=post_fn,
+        )
+
+
+def send_test_notification(
+    *,
+    config: Config | None = None,
+    channels: Sequence[str] | None = None,
+    dry_run: bool = False,
+    post_fn=requests.post,
+) -> dict[str, Any]:
+    """Dispatch a non-persistent connectivity test message to configured channels."""
+    cfg = config or Config.from_env()
+    available, target_channels = _resolve_target_channels(cfg, channels)
+    if not target_channels:
+        return {
+            "status": "skipped_no_channels",
+            "configured_channels": available,
+            "target_channels": [],
+            "sent": [],
+            "skipped": [],
+            "errors": [],
+        }
+
+    title = "AlphaSift Push Connectivity Test"
+    content = (
+        f"**{title}**\n"
+        f"> Channel connectivity verification from AlphaSift CLI (`dry_run={dry_run}`). "
+        "This test does not write to the daily idempotency ledger.\n"
+        f"🔗 {cfg.dashboard_url}"
+    )
+    test_report: dict[str, Any] = {
+        "event": "alphasift.notify_test",
+        "trade_date": "TEST",
+        "detail_url": cfg.dashboard_url,
+        "pack_is_stale": False,
+        "cross_strategy_synthesis": {"consensus_picks": []},
+        "announcement_risks": {"flagged_count": 0},
+    }
+
+    sent: list[str] = []
+    skipped: list[dict[str, str]] = []
+    errors: list[dict[str, str]] = []
+    for channel in target_channels:
+        if dry_run:
+            skipped.append({"channel": channel, "reason": "dry_run"})
+            continue
+        try:
+            _dispatch_channel(
+                channel,
+                cfg,
+                report=test_report,
+                content=content,
+                title=title,
+                post_fn=post_fn,
+            )
+            sent.append(channel)
+        except Exception as exc:  # noqa: BLE001
+            errors.append({"channel": channel, "error": _redact_error(exc, cfg)})
+
+    if errors and sent:
+        status = "partial"
+    elif errors and not sent:
+        status = "error"
+    elif sent:
+        status = "ok"
+    else:
+        status = "dry_run"
+
+    return {
+        "status": status,
+        "configured_channels": available,
+        "target_channels": target_channels,
+        "sent": sent,
+        "skipped": skipped,
+        "errors": errors,
+    }
+
+
 def push_daily_report(
     report: dict[str, Any],
     *,
@@ -188,7 +455,7 @@ def push_daily_report(
     dry_run: bool = False,
     post_fn=requests.post,
 ) -> dict[str, Any]:
-    """Push rendered <1200-char card to configured IM webhooks idempotently by (trade_date, channel)."""
+    """Push rendered <1200-char card to configured webhooks idempotently by (trade_date, channel)."""
     cfg = config or Config.from_env()
     trade_date = str(report.get("trade_date") or "").strip()
     if not trade_date:
@@ -198,15 +465,7 @@ def push_daily_report(
         str(report.get("im_card_markdown") or render_daily_im_card(report)),
         max_chars=IM_CARD_MAX_CHARS,
     )
-    available = configured_channels(cfg)
-    if channels is not None:
-        requested = [c.strip().lower() for c in channels if c.strip()]
-        invalid = [c for c in requested if c not in SUPPORTED_CHANNELS]
-        if invalid:
-            raise ValueError(f"Unsupported IM channels: {', '.join(invalid)}")
-        target_channels = [c for c in requested if c in available]
-    else:
-        target_channels = available
+    _, target_channels = _resolve_target_channels(cfg, channels)
 
     if not target_channels:
         return {
@@ -279,30 +538,14 @@ def push_daily_report(
 
         send_error: str | None = None
         try:
-            if channel == "wecom":
-                _send_wecom(
-                    cfg.wecom_webhook_url,
-                    card,
-                    timeout_sec=cfg.notify_timeout_sec,
-                    post_fn=post_fn,
-                )
-            elif channel == "feishu":
-                _send_feishu(
-                    cfg.feishu_webhook_url,
-                    card,
-                    title=title,
-                    secret=cfg.feishu_webhook_secret,
-                    timeout_sec=cfg.notify_timeout_sec,
-                    post_fn=post_fn,
-                )
-            elif channel == "telegram":
-                _send_telegram(
-                    cfg.telegram_bot_token,
-                    cfg.telegram_chat_id,
-                    card,
-                    timeout_sec=cfg.notify_timeout_sec,
-                    post_fn=post_fn,
-                )
+            _dispatch_channel(
+                channel,
+                cfg,
+                report=report,
+                content=card,
+                title=title,
+                post_fn=post_fn,
+            )
         except Exception as exc:  # noqa: BLE001
             send_error = _redact_error(exc, cfg)
 

@@ -30,6 +30,7 @@ from collections.abc import Sequence
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
+from xml.sax.saxutils import escape as _xml_escape
 from zoneinfo import ZoneInfo
 
 # Ensure direct script execution (`python scripts/track_record.py`) can import
@@ -1043,6 +1044,7 @@ def build_site(track: Path) -> dict[str, Any]:
         "run_count": len(runs),
     }
     (site / "summary.json").write_text(json.dumps(summary, ensure_ascii=False), encoding="utf-8")
+    (site / "feed.xml").write_text(render_atom_feed(summary), encoding="utf-8")
     (track / "README.md").write_text(render_readme(summary), encoding="utf-8")
     return summary
 
@@ -1478,6 +1480,124 @@ def render_readme(summary: dict[str, Any]) -> str:
             lines.append(f"  - {failure['market']} {failure['strategy']}: {failure['status']} {failure.get('error', '')}")
     lines += ["", "Raw runs: [`data/runs/`](data/runs) · derived site data: [`site/`](site)", ""]
     return "\n".join(lines)
+
+
+def _atom_escape_attr(value: str) -> str:
+    return _xml_escape(value, {'"': "&quot;"})
+
+
+def render_atom_feed(
+    summary: dict[str, Any],
+    *,
+    dashboard_url: str | None = None,
+    max_entries: int = 14,
+) -> str:
+    """Render an Atom 1.0 RSS feed (zero external dependencies) for static Pages subscriptions."""
+    base = (
+        str(dashboard_url or os.getenv("ALPHASIFT_DASHBOARD_URL") or "https://zhulinsen.github.io/alphasift/").strip()
+        or "https://zhulinsen.github.io/alphasift/"
+    )
+    if not base.endswith("/"):
+        base += "/"
+    feed_url = f"{base}site/feed.xml"
+    report_url = f"{base}site/daily_report.html"
+    updated = str(summary.get("generated_at") or _now())
+
+    sc = summary.get("scorecard") or []
+    t5_leaders = [
+        r
+        for r in sc
+        if ((r.get("windows") or {}).get("5") or {}).get("average_excess_return_pct") is not None
+    ]
+    t5_leaders.sort(
+        key=lambda r: float(((r.get("windows") or {}).get("5") or {})["average_excess_return_pct"]),
+        reverse=True,
+    )
+    leader_line = ""
+    if t5_leaders:
+        top = t5_leaders[0]
+        w5 = top["windows"]["5"]
+        s_name = (summary.get("strategy_names") or {}).get(top.get("strategy"), top.get("strategy"))
+        ex = float(w5["average_excess_return_pct"])
+        beat = w5.get("beat_rate")
+        beat_txt = f", beat {round(float(beat) * 100)}%" if beat is not None else ""
+        leader_line = (
+            f"T+5 leader ({top.get('market', '').upper()}): "
+            f"{s_name} ({ex:+.2f}% excess, n={w5.get('evaluated', 0)}{beat_txt})."
+        )
+
+    latest_rep = summary.get("latest_report") or {}
+    brief_headline = str(((latest_rep.get("ai_brief") or {}).get("headline") or "")).strip()
+    rep_date = str(latest_rep.get("trade_date") or "").strip()
+
+    days = (summary.get("days") or [])[: max(1, int(max_entries))]
+    entries_xml: list[str] = []
+    latest_by_mkt = summary.get("latest") or {}
+    for idx, day_info in enumerate(days):
+        day = str(day_info.get("date") or "").strip()
+        if not day:
+            continue
+        run_cnt = int(day_info.get("runs") or 0)
+        entry_updated = updated if idx == 0 else f"{day}T18:30:00+08:00"
+        title_bits = [f"AlphaSift · {day}", f"{run_cnt} runs"]
+        summary_bits = [f"{run_cnt} strategy runs recorded on {day}."]
+        if idx == 0 and leader_line:
+            summary_bits.append(leader_line)
+        if rep_date == day and brief_headline:
+            summary_bits.append(f"CN brief: {brief_headline}")
+        mkt_highlights: list[str] = []
+        if idx == 0 and isinstance(latest_by_mkt, dict):
+            for mkt, m_runs in latest_by_mkt.items():
+                if not m_runs:
+                    continue
+                first_run = m_runs[0]
+                if first_run.get("date") == day:
+                    picks = ", ".join(
+                        f"{p.get('code')} {p.get('name')}"
+                        for p in (first_run.get("picks") or [])[:3]
+                    )
+                    if picks:
+                        s_lbl = (summary.get("strategy_names") or {}).get(
+                            first_run.get("strategy"),
+                            first_run.get("strategy"),
+                        )
+                        mkt_highlights.append(f"<li><b>{_xml_escape(str(mkt).upper())}</b> ({_xml_escape(str(s_lbl))}): {_xml_escape(picks)}</li>")
+
+        entry_summary = " ".join(summary_bits)
+        content_html = f"<p>{_xml_escape(entry_summary)}</p>"
+        if mkt_highlights:
+            content_html += f"<ul>{''.join(mkt_highlights)}</ul>"
+        content_html += (
+            f'<p><a href="{_atom_escape_attr(base)}">Live Dashboard</a> · '
+            f'<a href="{_atom_escape_attr(report_url)}">CN Daily Report</a></p>'
+        )
+        entries_xml.append(
+            "\n".join([
+                "  <entry>",
+                f"    <id>{_xml_escape(f'{base}#day-{day}')}</id>",
+                f"    <title>{_xml_escape(' · '.join(title_bits))}</title>",
+                f'    <link href="{_atom_escape_attr(base)}" rel="alternate" type="text/html"/>',
+                f"    <updated>{_xml_escape(entry_updated)}</updated>",
+                f"    <summary>{_xml_escape(entry_summary)}</summary>",
+                f'    <content type="html">{_xml_escape(content_html)}</content>',
+                "  </entry>",
+            ])
+        )
+
+    return "\n".join([
+        '<?xml version="1.0" encoding="utf-8"?>',
+        '<feed xmlns="http://www.w3.org/2005/Atom">',
+        "  <title>AlphaSift · Quantitative Discovery &amp; Track Record</title>",
+        "  <subtitle>Multi-market YAML screening, empirical pattern radar, and T+5/T+10/T+20 audited excess returns.</subtitle>",
+        f"  <id>{_xml_escape(base)}</id>",
+        f'  <link href="{_atom_escape_attr(base)}" rel="alternate" type="text/html"/>',
+        f'  <link href="{_atom_escape_attr(feed_url)}" rel="self" type="application/atom+xml"/>',
+        f"  <updated>{_xml_escape(updated)}</updated>",
+        "  <author><name>AlphaSift</name></author>",
+        *entries_xml,
+        "</feed>",
+        "",
+    ])
 
 
 # --------------------------------------------------------------------------- helpers

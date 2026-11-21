@@ -263,8 +263,13 @@ class Config:
     wecom_webhook_url: str = ""
     feishu_webhook_url: str = ""
     feishu_webhook_secret: str = ""
+    dingtalk_webhook_url: str = ""
+    dingtalk_webhook_secret: str = ""
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
+    discord_webhook_url: str = ""
+    custom_webhook_url: str = ""
+    custom_webhook_token: str = ""
     notify_state_path: Path = _PROJECT_ROOT / "data" / "notify_state.json"
     notify_timeout_sec: float = 10.0
     dashboard_url: str = "https://zhulinsen.github.io/alphasift/"
@@ -419,11 +424,26 @@ class Config:
             feishu_webhook_secret=(
                 os.getenv("ALPHASIFT_FEISHU_WEBHOOK_SECRET") or os.getenv("FEISHU_WEBHOOK_SECRET", "")
             ).strip(),
+            dingtalk_webhook_url=(
+                os.getenv("ALPHASIFT_DINGTALK_WEBHOOK_URL") or os.getenv("DINGTALK_WEBHOOK_URL", "")
+            ).strip(),
+            dingtalk_webhook_secret=(
+                os.getenv("ALPHASIFT_DINGTALK_WEBHOOK_SECRET") or os.getenv("DINGTALK_WEBHOOK_SECRET", "")
+            ).strip(),
             telegram_bot_token=(
                 os.getenv("ALPHASIFT_TELEGRAM_BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN", "")
             ).strip(),
             telegram_chat_id=(
                 os.getenv("ALPHASIFT_TELEGRAM_CHAT_ID") or os.getenv("TELEGRAM_CHAT_ID", "")
+            ).strip(),
+            discord_webhook_url=(
+                os.getenv("ALPHASIFT_DISCORD_WEBHOOK_URL") or os.getenv("DISCORD_WEBHOOK_URL", "")
+            ).strip(),
+            custom_webhook_url=(
+                os.getenv("ALPHASIFT_CUSTOM_WEBHOOK_URL") or os.getenv("CUSTOM_WEBHOOK_URL", "")
+            ).strip(),
+            custom_webhook_token=(
+                os.getenv("ALPHASIFT_CUSTOM_WEBHOOK_TOKEN") or os.getenv("CUSTOM_WEBHOOK_TOKEN", "")
             ).strip(),
             notify_state_path=(
                 _parse_optional_path_env("ALPHASIFT_NOTIFY_STATE_PATH")

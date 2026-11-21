@@ -506,3 +506,89 @@ def test_notify_concurrent_dedup_and_failure_recovery(tmp_path: Path) -> None:
         post_fn=lambda *a, **kw: (_ for _ in ()).throw(AssertionError("already sent must skip")),
     )
     assert res_dup["status"] == "skipped_duplicate"
+
+
+def test_notify_dingtalk_discord_custom_redaction_and_cli_test(tmp_path: Path, monkeypatch, capsys) -> None:
+    from urllib.parse import quote_plus
+    from alphasift.notify import notify_readiness, send_test_notification
+
+    pack = _make_pack()
+    report = build_daily_report(pack, include_announcements=False)
+    monkeypatch.setattr("alphasift.notify.time.time", lambda: 1763632800.0)
+
+    calls: list[tuple[str, dict, dict]] = []
+
+    def mock_post(url: str, *, json: dict, timeout: float, headers: dict | None = None):
+        calls.append((url, json, headers or {}))
+        if "oapi.dingtalk.com" in url:
+            return _DummyResponse(200, {"errcode": 0, "errmsg": "ok"})
+        return _DummyResponse(200, {"ok": True})
+
+    cfg = Config(
+        dingtalk_webhook_url="https://oapi.dingtalk.com/robot/send?access_token=SECRET_DT",
+        dingtalk_webhook_secret="DT_SECRET",
+        discord_webhook_url="https://discord.com/api/webhooks/123/SECRET_DISCORD",
+        custom_webhook_url="https://hooks.example.com/alphasift",
+        custom_webhook_token="CUSTOM_BEARER_SECRET",
+        notify_state_path=tmp_path / "notify_6ch.json",
+    )
+    info = notify_readiness(cfg)
+    assert info["configured_channels"] == ["dingtalk", "discord", "custom"]
+    assert info["dingtalk_signed"] is True
+    assert info["discord_configured"] is True
+    assert info["custom_authenticated"] is True
+
+    res = push_daily_report(report, config=cfg, post_fn=mock_post)
+    assert res["status"] == "ok"
+    assert res["sent"] == ["dingtalk", "discord", "custom"]
+    assert len(calls) == 3
+
+    # Verify DingTalk timestamp + signed query parameter.
+    dt_url, dt_body, _ = calls[0]
+    expected_dt_sign = quote_plus(
+        base64.b64encode(hmac.new(b"DT_SECRET", b"1763632800000\nDT_SECRET", digestmod=hashlib.sha256).digest())
+    )
+    assert "timestamp=1763632800000" in dt_url
+    assert f"sign={expected_dt_sign}" in dt_url
+    assert dt_body["msgtype"] == "markdown"
+
+    # Verify Discord embed payload & custom webhook JSON + Bearer auth.
+    dc_url, dc_body, _ = calls[1]
+    assert "discord.com" in dc_url
+    assert dc_body["embeds"][0]["url"] == DEFAULT_DASHBOARD_URL
+
+    cu_url, cu_body, cu_hdrs = calls[2]
+    assert cu_url == "https://hooks.example.com/alphasift"
+    assert cu_body["event"] == "alphasift.daily_report"
+    assert cu_hdrs["Authorization"] == "Bearer CUSTOM_BEARER_SECRET"
+
+    # Error redaction across new secrets.
+    def broken_post(url: str, *, json: dict, timeout: float, headers: dict | None = None):
+        raise RuntimeError(f"post {url} DT_SECRET CUSTOM_BEARER_SECRET failed")
+
+    res_err = push_daily_report(report, config=cfg, force=True, post_fn=broken_post)
+    assert res_err["status"] == "error"
+    for entry in res_err["errors"]:
+        assert "SECRET_DT" not in entry["error"]
+        assert "DT_SECRET" not in entry["error"]
+        assert "SECRET_DISCORD" not in entry["error"]
+        assert "CUSTOM_BEARER_SECRET" not in entry["error"]
+
+    # Non-persistent connectivity test + CLI `notify status` & `notify test --dry-run`.
+    calls.clear()
+    test_res = send_test_notification(config=cfg, channels=["discord", "custom"], post_fn=mock_post)
+    assert test_res["status"] == "ok"
+    assert test_res["sent"] == ["discord", "custom"]
+    assert calls[1][1]["event"] == "alphasift.notify_test"
+
+    monkeypatch.setenv("ALPHASIFT_DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1/XYZ")
+    monkeypatch.setattr(sys, "argv", ["alphasift", "notify", "status", "--json"])
+    cli_main()
+    status_out = json.loads(capsys.readouterr().out)
+    assert "discord" in status_out["configured_channels"]
+
+    monkeypatch.setattr(sys, "argv", ["alphasift", "notify", "test", "--channel", "discord", "--dry-run", "--json"])
+    cli_main()
+    dry_out = json.loads(capsys.readouterr().out)
+    assert dry_out["status"] == "dry_run"
+    assert dry_out["skipped"] == [{"channel": "discord", "reason": "dry_run"}]

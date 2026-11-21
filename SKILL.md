@@ -21,7 +21,7 @@ description: "全市场选股 Skill。Use when: 用户要按策略筛选 A 股�
 
 - 默认 `market="cn"`；`market` 也可以是 `us` / `hk` / `jp` / `kr` / `tw` / `in`（Yahoo 筛选器快照 + yfinance 日 K，代码为 Yahoo 代码如 `0700.HK`；无 hotspot/board_heat/tushare/候选级新闻等 A 股专属数据），需使用 `market_scope` 包含该市场的策略：`global_value`（us/hk/jp/kr/tw/in）或 `us_momentum_quality`（us）。韩国 PE/PB 来自 Naver Finance
 - 需要先在仓库根目录安装包：`pip install -e .`
-- 如需 LLM 排序，可设置 `LITELLM_MODEL`、`LLM_CHANNELS`、`LITELLM_CONFIG` 或旧变量 `LLM_API_KEY/LLM_MODEL/LLM_BASE_URL`
+- 如需 LLM 排序，可设置 `GEMINI_API_KEY`（默认主模型 `gemini/gemini-3.8-flash`，未覆盖时自动挂载 `gemini/gemini-4-hydrogen` 备选）、`OPENAI_API_KEY`、`DEEPSEEK_API_KEY`、`LITELLM_MODEL`、`LLM_CHANNELS`、`LITELLM_CONFIG` 或旧变量 `LLM_API_KEY/LLM_MODEL/LLM_BASE_URL`
 - 可直接复用 `daily_stock_analysis` 的 LiteLLM 配置字段，包括 `OPENAI_*`、`GEMINI_*`、`DEEPSEEK_API_KEY`、`OLLAMA_API_BASE`
 - 策略 YAML 可通过 `scoring_profile`、`risk_profile`、`portfolio_profile`、`scorecard_profile` 覆盖默认规则
 - 策略 YAML 可通过 `event_profile` 配置偏好/规避事件、公告类别和候选上下文来源权重
@@ -67,6 +67,12 @@ alphasift runs
 alphasift evaluate <run_id> --explain
 alphasift evaluate-batch --limit 20 --explain
 alphasift evaluate <run_id> --with-price-path --explain
+alphasift patterns list --all
+alphasift patterns scan --pack-dir data/pack/cn
+alphasift patterns replay --pack-dir data/pack/cn --output-md replay.md
+alphasift daily-report --pack-dir data/pack/cn --output-html report.html --push
+alphasift notify status
+alphasift notify test --dry-run
 ```
 
 ### 3. Python 调用

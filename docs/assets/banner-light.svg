@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" fill="none">
+  <defs>
+    <radialGradient id="glowBlueLight" cx="22%" cy="18%" r="58%">
+      <stop offset="0%" stop-color="#2563eb" stop-opacity="0.11"/>
+      <stop offset="100%" stop-color="#fafafa" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowGreenLight" cx="84%" cy="82%" r="48%">
+      <stop offset="0%" stop-color="#059669" stop-opacity="0.09"/>
+      <stop offset="100%" stop-color="#fafafa" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="curveGradLight" x1="760" y1="220" x2="1140" y2="75" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <pattern id="dotGridLight" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="12" r="1" fill="#09090b" fill-opacity="0.075"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="300" rx="18" fill="#fafafa"/>
+  <rect width="1200" height="300" rx="18" fill="url(#dotGridLight)"/>
+  <rect width="1200" height="300" rx="18" fill="url(#glowBlueLight)"/>
+  <rect width="1200" height="300" rx="18" fill="url(#glowGreenLight)"/>
+  <rect x="0.75" y="0.75" width="1198.5" height="298.5" rx="17.25" stroke="#09090b" stroke-opacity="0.12" stroke-width="1.5"/>
+
+  <g transform="translate(56, 48)">
+    <rect x="0" y="2" width="54" height="54" rx="13" fill="#ffffff" stroke="#09090b" stroke-opacity="0.14" stroke-width="1.5"/>
+    <path d="M13 15h28l-10.5 12.2v10.5l-7 3.5V27.2L13 15z" stroke="#2563eb" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="#2563eb" fill-opacity="0.12"/>
+
+    <text x="72" y="26" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11.5" font-weight="600" letter-spacing="2.2" fill="#1d4ed8">OPEN-SOURCE QUANTITATIVE DISCOVERY &amp; T+N BENCHMARK</text>
+    <text x="70" y="61" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="38" font-weight="800" letter-spacing="-1.2" fill="#09090b">AlphaSift</text>
+
+    <text x="2" y="106" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="17" font-weight="500" fill="#52525b">Deterministic 7-market YAML screening, empirical 250-day pattern radar,</text>
+    <text x="2" y="131" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, sans-serif" font-size="17" font-weight="500" fill="#52525b">optional Gemini 3.8 / LLM re-ranking, and immutable next_open T+N verification.</text>
+
+    <g transform="translate(0, 160)" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11.5" font-weight="600">
+      <rect x="0" y="0" width="96" height="28" rx="7" fill="#ffffff" stroke="#09090b" stroke-opacity="0.12"/>
+      <circle cx="14" cy="14" r="3.5" fill="#059669"/>
+      <text x="56" y="18" text-anchor="middle" fill="#18181b">7 Markets</text>
+
+      <rect x="106" y="0" width="150" height="28" rx="7" fill="#ffffff" stroke="#09090b" stroke-opacity="0.12"/>
+      <text x="181" y="18" text-anchor="middle" fill="#18181b">12 YAML Strategies</text>
+
+      <rect x="266" y="0" width="144" height="28" rx="7" fill="#ffffff" stroke="#09090b" stroke-opacity="0.12"/>
+      <text x="338" y="18" text-anchor="middle" fill="#1d4ed8">2 Active Patterns</text>
+
+      <rect x="420" y="0" width="132" height="28" rx="7" fill="#ffffff" stroke="#09090b" stroke-opacity="0.12"/>
+      <text x="486" y="18" text-anchor="middle" fill="#18181b">6-Channel + RSS</text>
+
+      <rect x="562" y="0" width="110" height="28" rx="7" fill="#ffffff" stroke="#09090b" stroke-opacity="0.12"/>
+      <text x="617" y="18" text-anchor="middle" fill="#059669">Private Pack</text>
+    </g>
+  </g>
+
+  <g transform="translate(758, 42)">
+    <rect x="0" y="0" width="388" height="216" rx="14" fill="#ffffff" stroke="#09090b" stroke-opacity="0.12" stroke-width="1.2"/>
+    <text x="20" y="28" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#52525b">250D REPLAY · NEXT_OPEN VS CSI 300</text>
+    <circle cx="358" cy="24" r="4" fill="#059669"/>
+
+    <line x1="20" y1="62" x2="368" y2="62" stroke="#09090b" stroke-opacity="0.06" stroke-dasharray="3 4"/>
+    <line x1="20" y1="104" x2="368" y2="104" stroke="#09090b" stroke-opacity="0.06" stroke-dasharray="3 4"/>
+    <line x1="20" y1="146" x2="368" y2="146" stroke="#09090b" stroke-opacity="0.1"/>
+
+    <g stroke-width="1.5">
+      <line x1="38" y1="120" x2="38" y2="142" stroke="#059669"/><rect x="33" y="125" width="10" height="12" rx="1.5" fill="#059669" fill-opacity="0.75"/>
+      <line x1="72" y1="114" x2="72" y2="138" stroke="#dc2626"/><rect x="67" y="119" width="10" height="14" rx="1.5" fill="#dc2626" fill-opacity="0.75"/>
+      <line x1="106" y1="102" x2="106" y2="130" stroke="#dc2626"/><rect x="101" y="106" width="10" height="18" rx="1.5" fill="#dc2626" fill-opacity="0.75"/>
+      <line x1="140" y1="98" x2="140" y2="122" stroke="#059669"/><rect x="135" y="104" width="10" height="11" rx="1.5" fill="#059669" fill-opacity="0.75"/>
+      <line x1="174" y1="88" x2="174" y2="115" stroke="#dc2626"/><rect x="169" y="92" width="10" height="16" rx="1.5" fill="#dc2626" fill-opacity="0.8"/>
+      <line x1="208" y1="76" x2="208" y2="108" stroke="#dc2626"/><rect x="203" y="81" width="10" height="19" rx="1.5" fill="#dc2626" fill-opacity="0.85"/>
+      <line x1="242" y1="74" x2="242" y2="96" stroke="#059669"/><rect x="237" y="79" width="10" height="11" rx="1.5" fill="#059669" fill-opacity="0.75"/>
+      <line x1="276" y1="64" x2="276" y2="92" stroke="#dc2626"/><rect x="271" y="69" width="10" height="17" rx="1.5" fill="#dc2626" fill-opacity="0.85"/>
+      <line x1="310" y1="56" x2="310" y2="84" stroke="#dc2626"/><rect x="305" y="61" width="10" height="16" rx="1.5" fill="#dc2626" fill-opacity="0.9"/>
+      <line x1="344" y1="46" x2="344" y2="74" stroke="#059669"/><rect x="339" y="51" width="10" height="15" rx="1.5" fill="#059669" fill-opacity="0.9"/>
+    </g>
+    <path d="M38 134 C95 125, 130 112, 174 96 C220 82, 268 78, 344 54" stroke="url(#curveGradLight)" stroke-width="2.5" stroke-linecap="round"/>
+
+    <g transform="translate(20, 166)" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+      <text x="0" y="12" font-size="10.5" fill="#52525b">MA20 PULLBACK</text>
+      <text x="0" y="30" font-size="13.5" font-weight="700" fill="#059669">+0.91% T+10</text>
+
+      <text x="134" y="12" font-size="10.5" fill="#52525b">STEADY BREAKOUT</text>
+      <text x="134" y="30" font-size="13.5" font-weight="700" fill="#1d4ed8">+0.27% T+5</text>
+
+      <text x="276" y="12" font-size="10.5" fill="#52525b">OVERLAP</text>
+      <text x="276" y="30" font-size="13.5" font-weight="700" fill="#09090b">0.9%</text>
+    </g>
+  </g>
+</svg>

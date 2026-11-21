@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Web 多语言国际化（`zh`/`en`/`ja`）、6 通道推送 + Atom RSS 与旗舰文档重构**：
+  - `scripts/track_record_page.html` 与 `alphasift/daily_report_html.py` 全面接入中/英/日三语切换（`?lang=zh|en|ja` + `localStorage` 持久化 + 浏览器语言检测），覆盖导航、KPI、策略/形态/市场阶段标签、排行榜、图表提示、历史回看及打印版日报。
+  - `alphasift/notify.py`、`alphasift/config.py` 与 `track-record.yml` 新增 **钉钉（HMAC-SHA256 签名）**、**Discord（Embed 卡片）** 与 **自定义 Webhook（结构化 JSON +可选 Bearer 鉴权）**，形成 6 通道幂等推送矩阵；新增 `alphasift notify status` / `alphasift notify test` CLI。
+  - `scripts/track_record.py` 在 `build_site` 中零依赖生成公开 **Atom 1.0 RSS 订阅源**（`site/feed.xml`），并在看板导航与页脚提供一键订阅入口。
+  - 新增深/浅双主题矢量 Hero Banner（`docs/assets/banner-{dark,light}.svg`）与 2× 高清多语言截图，重构 `README.md`、`README.zh-CN.md`、`README.ja.md` 并补全 `.env.example`、`docs/configuration.md`、`docs/deployment.md`、`SKILL.md`。
+
 - **模型默认升级、策略正交化、形态毕业与私有化 CI**：
   - `alphasift/config.py` 默认主模型升级为 `gemini/gemini-3.8-flash`，未显式覆盖 `LITELLM_FALLBACK_MODELS` 时自动挂载 `gemini/gemini-4-hydrogen` 备选链路。
   - 重构 10 组 A 股内置策略（统一 8 行业硬上限 `mode: hard_cap` + `max_same_bucket: 1`），拉平超大盘红利（`blue_chip_income`）、中小盘双低（`dual_low`）、中盘 GARP 成长（`quality_value`）、中期多头趋势（`momentum_quality`）与均衡多因子（`balanced_alpha`）的风格正交性，大幅降低同质重合与银行单板块集中。

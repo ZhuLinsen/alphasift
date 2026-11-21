@@ -1,177 +1,159 @@
-# AlphaSift
+<div align="center">
 
-**AI エージェントのための、市場全体からの銘柄発掘。** AlphaSift は、すべての A 株（またはほかの 6 つの市場の主要な上場銘柄）を走査し、監査できる YAML の戦略でふるいにかけ、必要に応じて LLM に候補を順位付けさせ、最終的な選定銘柄をセクター間に分散させ、すべての実行を保存して、あとで選定が当たったかを確認できるようにします。
+<a href="https://zhulinsen.github.io/alphasift/?lang=ja">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner-light.svg">
+    <img alt="AlphaSift — AI エージェント向けクオンツ銘柄発掘・T+N検証ベンチマーク" src="docs/assets/banner-dark.svg" width="100%">
+  </picture>
+</a>
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
-![Markets](https://img.shields.io/badge/markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-orange)
-[![Live Dashboard](https://img.shields.io/badge/dashboard-live-22c55e.svg)](https://zhulinsen.github.io/alphasift/)
+<h3>AI エージェントのための全市場銘柄発掘＆事後検証エンジン — 監査可能な YAML 戦略、250日実証パターン検出、任意の AI デュアルトラック帰属分析、検証済み T+N トラックレコード</h3>
 
-[English](README.md) | [中文](README.zh-CN.md) | 日本語
+<p>
+  <a href="https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml"><img src="https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
+  <a href="https://zhulinsen.github.io/alphasift/?lang=ja"><img src="https://img.shields.io/badge/dashboard-live%20(日%20%7C%20中%20%7C%20EN)-22c55e.svg" alt="ライブダッシュボード"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-3b82f6.svg" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-10b981.svg" alt="Apache 2.0"></a>
+  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><img src="https://img.shields.io/badge/RSS-Atom%201.0-f59e0b.svg" alt="Atom RSS"></a>
+</p>
 
-**公開トラックレコード：** 毎営業日の引け後に全内蔵戦略を自動実行して結果を保存し、T+5 / T+10 / T+20 で各市場のベンチマークに対する超過リターンを比較しています — [ライブダッシュボード](https://zhulinsen.github.io/alphasift/)、[日次レポート](https://zhulinsen.github.io/alphasift/site/daily_report.html)および生ログは [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) ブランチをご覧ください。
+<p>
+  <a href="https://zhulinsen.github.io/alphasift/?lang=ja"><strong>ライブダッシュボード</strong></a> ·
+  <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=ja"><strong>日次レポート</strong></a> ·
+  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><strong>Atom RSS 購読</strong></a> ·
+  <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record"><strong>track-record 生ログ</strong></a> ·
+  <a href="SKILL.md"><strong>Agent Skill</strong></a>
+</p>
 
-[![AlphaSift ライブダッシュボード](docs/assets/dashboard-dark.png)](https://zhulinsen.github.io/alphasift/)
+<p>
+  <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <strong>日本語</strong>
+</p>
 
-```text
-full market ──► L1 hard filters + factor scores ──► L2 LLM ranking (optional)
-  (5,000+ names)    (YAML strategy, no API key)        (cross-candidate reasoning)
-                                                              │
-saved run ◄── L3 post-analysis ◄── risk overlay + sector diversity cap
-   │          (scorecard / DSA / HTTP)
-   └──► T+N evaluation: returns, win rate, failure review
+</div>
+
+---
+
+## 多言語ライブターミナル＆日次リサーチレポート
+
+毎営業日の引け後に全内蔵戦略を自動実行し、**`T+5 / T+10 / T+20`** で各市場のベンチマークに対する超過リターンを公開計測しています（寄付ストップ高による取引不可判定も集計）。Web ダッシュボードおよび印刷対応 HTML レポートは **日本語・中文・English** と **Obsidian Dark・Editorial Light** に標準対応しています。
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <a href="https://zhulinsen.github.io/alphasift/?lang=ja&theme=dark">
+        <img src="docs/assets/dashboard-ja.png" alt="AlphaSift ライブダッシュボード（ダーク・日本語）" width="100%">
+      </a>
+      <br><sub><b>Obsidian Dark ターミナル（日本語）</b> — 複数戦略コンセンサス、A 株7段階騰落分布、7市場ランキング</sub>
+    </td>
+    <td width="50%" align="center">
+      <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=light">
+        <img src="docs/assets/dashboard-light.png" alt="AlphaSift ライブダッシュボード（ライト・多言語切替）" width="100%">
+      </a>
+      <br><sub><b>Editorial Paper Light</b> — ヘッダーの <code>中 | EN | 日</code> で即座に言語切替、Atom RSS 対応</sub>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=ja&theme=dark">
+        <img src="docs/assets/daily-report.png" alt="AlphaSift 日次リサーチレポート" width="88%">
+      </a>
+      <br><sub><b>印刷対応スタンドアロン日次レポート</b>（<code>alphasift daily-report --output-html</code>）— 引け後要約、適時開示チェック、20日ローソク足検出</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## アーキテクチャと主な特長
+
+```mermaid
+flowchart LR
+  M["7市場スナップショット + 非公開日足パック DailyPack"] --> L1["L1 YAML ハードフィルタ + マルチファクター採点"]
+  L1 --> L2["L2 任意 LLM 再ランク (Gemini 3.8 Flash / DeepSeek / OpenAI)"]
+  L2 --> RK["リスク層 + 8業種バケット上限分散 (hard_cap)"]
+  RK --> L3["L3 事後分析 (scorecard / DSA / HTTP) + 開示リスク検査"]
+  L3 --> OUT["印刷対応 HTML レポート + 6チャネル冪等通知 + Atom RSS"]
+  RK --> AUD["track-record 履歴保存 + next_open T+N 超過リターン検証"]
 ```
 
-## AlphaSift を使う理由
+| 主な特長 | 設計・実測結果 |
+|---|---|
+| **API キー不要の決定的エンジン** | L1 スクリーニング、マルチファクター評価、リスク制御、8 業種分散（`portfolio_profile.mode: hard_cap`）はすべて API キーなしで決定的に動作します。 |
+| **A 株 10 戦略の直交化** | 時価総額・スタイル別（超大型高配当 `blue_chip_income` ≥ 500 億元 vs 中小型 `dual_low` 50–600 億元等）＋ `max_same_bucket: 1` により重複を解消。250 日パックの 3 時点検証（`2026-09-21` / `10-20` / `11-20`）で戦略間の平均重複率は **8.0%–24.9% → 0.9%–1.8%**（最大 **100% → 20%**）、銀行セクター集中度は **22%–31.1% → 4.0%–9.1%** へ低減しました。 |
+| **250日 `next_open` 実証パターン検出** | 過去 180 営業日・5,218 銘柄の実証リプレイで `T+5 一致 ≥ 200` かつ `対 CSI 300 超過 > 0%` のパターンのみ `active` 認定。基準を満たした 2 パターンが卒業し、5 パターンは `experimental` として分離表示されます。 |
+| **Rules vs AI デュアルトラック** | `GEMINI_API_KEY`（デフォルト `gemini/gemini-3.8-flash` ＋ `gemini/gemini-4-hydrogen` 自動フォールバック）、`DEEPSEEK_API_KEY`、`OPENAI_API_KEY` 等を設定すると同日に `rules` と `ai` を並行実行し、AI 追加／除外銘柄の超過寄与を追跡します。 |
+| **自己修復データチェーンと非公開運用** | 中国 A 株チェーン（`em_datacenter → sina → efinance → akshare_em`、トークン設定時は Tushare 優先）は健全性に応じて自動並べ替え。日足生データはローカル／GitHub Actions 非公開キャッシュに限定し、公開リリースで再配布しません。 |
+| **6 チャネル冪等通知 ＋ Atom RSS** | **WeCom・Feishu（HMAC 署名）・DingTalk（HMAC 署名）・Telegram・Discord・カスタム Webhook（JSON + Bearer 認証）** とゼロ設定 **`site/feed.xml` Atom 1.0 RSS** に対応。`(trade_date, channel)` のファイルロックで重複送信を防ぎます。 |
 
-- **A 株が第一で、ほかの 6 つの市場はベータ版です。** 中国の A 株は、専用の複数ソースの連鎖を通ります。アメリカ、香港、日本、韓国、台湾、インドは Yahoo Finance のスクリーナーを通ります。これは海外のサーバーや CI のランナーからでも使えます。これらの市場はデータソースが非公式なもの 1 つだけで、フィールドも少なめです（既知の制限を参照）。
-- **API キーなしで動きます。** L1 のスクリーニング、スコアリング、リスクと分散の制御は決定的です。LLM は、設定した場合にだけ候補を並べ替えます。
-- **戦略はコードではなく YAML です。** フィルター、ファクターの重み、スコアリングの曲線、リスクのしきい値、セクターの区分は、差分を取ってレビューできる読みやすいファイルにあります。
-- **選定銘柄が 1 つのセクターに偏りません。** すべての行に業種またはセクターのラベルが付きます。`portfolio_profile.mode: hard_cap` で、Top N の中のセクターごとの銘柄数を最大 N に抑えます。
-- **データソースは自己修復します。** ソースの結果は実行をまたいで保存されるので、使えないソースは最後に試されます。各ソースには時間の予算があります。生きているソースがすべて失敗したときは、最後に正常だったスナップショットを、古いものとして印を付けて使います。
-- **すべての実行を検証できます。** 実行を保存しておき、あとで取引コスト、勝率、失敗したサンプル、任意で価格の推移（最大ドローダウン／最大上昇）とともに評価します。
-- **エージェントのために作られています。** [SKILL.md](SKILL.md) に呼び出せるインターフェースを書いています。`alphasift serve` は、ダッシュボードやオーケストレーター向けに読み取り専用の JSON API を公開します。
+---
 
-- **日次リサーチレポートと AI デュアルトラック：** LLM キー（`DEEPSEEK_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`）を設定すると、確定的な `rules` トラックに加えて `ai` 再ランク付けトラックを同日に並行実行し、同日ペアの超過リターン比較・開示リスク警告・複数戦略コンセンサス銘柄を含む印刷対応のスタンドアロン HTML レポート（`alphasift daily-report --output-html`）を生成します。
-- **日次データパックのプライベート運用：** 全市場の日次データパックはローカル環境（`ALPHASIFT_PACK_DIR`）または GitHub Actions のプライベートキャッシュ（`actions/cache`）内のみで管理され、公開リリースでの再配布は行いません。
+## 実証パターン 250 日リプレイ結果（`next_open` 対 CSI 300）
 
-![AlphaSift 日次クオンツリサーチレポート](docs/assets/daily-report.png)
+検証期間 **`2026-02-05 .. 2026-11-06`**（180 営業日、対象 5,218 銘柄、寄付きストップ高除外）：
+
+| パターン | 系統 / モード | 総シグナル | T+5 一致 | T+5 超過 | T+5 超過勝率 | T+10 超過 | 判定 |
+|---|---|---:|---:|---:|---:|---:|---|
+| **20日線低ボラ縮小押し目** (`ma20_shrink_pullback` v2.0) | `trend_continuation · direct` | 2,295 | 2,293 | **+0.158%** | 46.45% | **+0.905%** | **`active`** |
+| **低ボラ堅調トレンド突破** (`steady_trend_breakout` v1.0) | `breakout · direct` | 460 | 460 | **+0.271%** | 48.70% | **+0.560%** | **`active`** |
+| その他 5 パターン (`single_yang_hold` 等) | mixed | 992–9,233 | 988–9,221 | -1.185% .. -0.175% | 38.26%–45.47% | -1.207% .. -0.619% | `experimental` |
+
+---
 
 ## クイックスタート
 
 ```bash
 pip install -e .
 
-# A-shares, no API key needed
+# 1. API キー不要で全市場スキャン
+alphasift quickstart
 alphasift screen dual_low --no-llm
+alphasift screen global_value --market jp --no-llm
 
-# Other markets: us, hk, jp, kr, tw, in
-alphasift screen global_value --market hk --no-llm
-
-# Add LLM ranking: set GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY
-# (or LITELLM_MODEL / LLM_CHANNELS) in .env first
+# 2. LLM 再ランク有効化（gemini/gemini-3.8-flash ＋ gemini-4-hydrogen フォールバック）
 cp .env.example .env
-alphasift screen dual_low
+alphasift screen dual_low --save-run
 
-# Save a run, then evaluate it a few days later
-alphasift screen dual_low --no-llm --save-run
-alphasift evaluate <run_id> --with-price-path --explain
+# 3. パターンリプレイ・日次レポート HTML・通知テスト
+alphasift patterns replay --pack-dir ./data/pack/cn --output-md replay.md
+alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html --push
+alphasift notify status
+alphasift notify test --dry-run
 ```
 
-`alphasift quickstart` でキー不要のガイド付きのデモを、`alphasift strategies` で戦略の一覧を表示します。
+---
 
-## 出力の例
+## 通知チャネル・RSS 購読一覧
 
-`--no-llm` を付けた 2026-11-03 の実際の実行です。**エンジンが何を出力するかを示すもので、推奨ではありません。**
-
-**中国 A 株**（`dual_low`）：5,218 銘柄、フィルター後 284 銘柄、Top 5 はセクターごとに最大 2 銘柄
-
-| # | コード | 銘柄名 | 業種 | PE | PB |
-|---:|---|---|---|---:|---:|
-| 1 | 601169 | 北京银行 | 銀行 | 5.8 | 0.43 |
-| 2 | 600016 | 民生银行 | 銀行 | 5.7 | 0.26 |
-| 3 | 601668 | 中国建筑 | 建設 | 6.6 | 0.39 |
-| 4 | 601186 | 中国铁建 | インフラ | 6.3 | 0.29 |
-| 5 | 601919 | 中远海控 | 海運 | 7.9 | 1.12 |
-
-**香港**（`global_value --market hk`）：581 銘柄、フィルター後 275 銘柄
-
-| # | コード | 銘柄名 | セクター | PE | PB |
-|---:|---|---|---|---:|---:|
-| 1 | 0998.HK | China CITIC Bank | 金融サービス | 5.8 | 0.43 |
-| 2 | 0267.HK | CITIC Limited | 資本財 | 5.3 | 0.38 |
-| 3 | 1398.HK | ICBC | 金融サービス | 6.5 | 0.59 |
-| 4 | 0001.HK | CK Hutchison | 資本財 | 6.9 | 0.45 |
-| 5 | 0358.HK | Jiangxi Copper | 素材 | 5.7 | 0.77 |
-
-**日本**（`global_value --market jp`）：773 銘柄、フィルター後 408 銘柄
-
-| # | コード | 銘柄名 | セクター | PE | PB |
-|---:|---|---|---|---:|---:|
-| 1 | 9501.T | Tokyo Electric Power | 公益事業 | 2.6 | 0.21 |
-| 2 | 9022.T | Central Japan Railway | 資本財 | 7.2 | 0.71 |
-| 3 | 9502.T | Chubu Electric Power | 公益事業 | 10.6 | 0.66 |
-| 4 | 1911.T | Sumitomo Forestry | 一般消費財 | 9.0 | 0.70 |
-| 5 | 7203.T | Toyota Motor | 一般消費財 | 8.7 | 0.97 |
-
-海外のサーバーでは、ソースの健全性の情報がたまっていれば、A 株の実行は約 10 秒で終わります。Yahoo の各市場は 2〜10 秒です。
-
-## 対応している市場
-
-| `--market` | 市場 | スナップショットのソース | 備考 |
-|---|---|---|---|
-| `cn` | 中国 A 株 | em_datacenter → sina → efinance → akshare_em（トークンを設定すると Tushare が先頭） | 健全性に応じた順序。EastMoney による業種の補完 |
-| `us` | アメリカ | Yahoo のスクリーナー（NYSE / Nasdaq の時価総額 10 億ドル以上の上場銘柄、ADR を含む） | `ALPHASIFT_US_TICKERS` を使うと、代わりに明示的なティッカーの一覧を使います |
-| `hk` | 香港 | Yahoo のスクリーナー | 対象の下限は約 80 億香港ドル |
-| `jp` | 日本 | Yahoo のスクリーナー | 対象の下限は約 1,500 億円 |
-| `kr` | 韓国 | Yahoo のスクリーナー ＋ Naver Finance | Yahoo には韓国の PE/PB がないため、Naver の（非公式の）モバイル API から取得し、約 10 秒余分にかかります。`ALPHASIFT_KR_VALUATION=0` で無効にできます |
-| `tw` | 台湾 | Yahoo のスクリーナー | TWSE と TPEx の上場銘柄 |
-| `in` | インド | Yahoo のスクリーナー | NSE と BSE の上場銘柄 |
-
-中国以外のコードは Yahoo のシンボルです（`AAPL`、`0700.HK`、`7203.T`、`005930.KS`）。これらの市場では、日足の K 線による情報の追加と T+N の評価に yfinance を使います。候補ごとのニュース、開示、資金の流れの情報は A 株のみです。
-
-## 組み込みの戦略
-
-| 戦略 | 市場 | 種類 | 考え方 |
-|---|---|---|---|
-| `dual_low` | cn | バリュー | 低 PE ＋ 低 PB、売買の活発さと安定性の確認、セクターごとの上限 |
-| `quality_value` | cn | バリュー | 流動性があり、ボラティリティが抑えられた、妥当なバリュエーション |
-| `blue_chip_income` | cn | インカム | 配当の質が高い、流動性のある優良株 |
-| `low_volatility_quality` | cn | クオリティ | 日次のボラティリティ、ドローダウン、ATR を使った守りのスクリーニング |
-| `volume_breakout` | cn | トレンド | 出来高の増加を伴う抵抗線の突破 |
-| `shrink_pullback` | cn | トレンド | 上昇トレンドの中での支持線までの押し目（日足の K 線） |
-| `capital_heat` | cn | モメンタム | 極端な過熱のない、活発な資金の流れ |
-| `oversold_reversal` | cn | リバーサル | ドローダウンが抑えられた、回復の候補 |
-| `balanced_alpha` | cn | フレームワーク | 汎用的なマルチファクターによる発掘 |
-| `momentum_quality` | cn | フレームワーク | トレンドの確認 ＋ クオリティのフィルター |
-| `global_value` | us, hk, jp, kr, tw, in | バリュー | ほかの市場向けの `dual_low` で、通貨に依存するしきい値はありません |
-| `us_momentum_quality` | us | トレンド | アメリカの大型株のモメンタムとクオリティ |
-
-`strategies/` に自分の戦略を書けます。[戦略のガイド](docs/strategy-guide.md)を参照してください。
-
-## 設定
-
-`.env.example` を `.env` にコピーします。AlphaSift は LiteLLM 形式の設定を読むので、[daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis) の設定を使い回せます。よく使う設定：
-
-| 変数 | 用途 | デフォルト |
+| チャネル | 設定環境変数 | 仕様 |
 |---|---|---|
-| `LITELLM_MODEL` | メインのモデル。`provider/model` の形式 | `gemini/gemini-3.8-flash` |
-| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM による順位付けのためのプロバイダーのキー | - |
-| `LLM_CHANNELS` / `LITELLM_CONFIG` | マルチチャンネルまたは LiteLLM Router の設定 | - |
-| `TUSHARE_TOKEN` | A 株の連鎖で Tushare を先頭にします | - |
-| `SNAPSHOT_SOURCE_PRIORITY` | A 株のソースの順序を上書きします | トークンによる |
-| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | スナップショットのソースごとの時間の予算 | `60` |
-| `INDUSTRY_AUTO_BACKFILL` | A 株の欠けている業種のラベルを補います | `true` |
-| `ALPHASIFT_DATA_DIR` | 実行、キャッシュ、ソースの健全性 | `./data` |
-| `DSA_API_URL` | 任意の DSA による詳細な分析の段階を有効にします | - |
+| **Atom 1.0 RSS** | 設定不要（`site/feed.xml`） | GitHub Pages 更新時に自動配信される標準フィード |
+| **WeCom** (`wecom`) | `WECOM_WEBHOOK_URL` | `<1200` 文字の Markdown 通知カード |
+| **Feishu** (`feishu`) | `FEISHU_WEBHOOK_URL` / `FEISHU_WEBHOOK_SECRET` | インタラクティブカード（シークレット設定時は HMAC-SHA256 署名付き） |
+| **DingTalk** (`dingtalk`) | `DINGTALK_WEBHOOK_URL` / `DINGTALK_WEBHOOK_SECRET` | Markdown 通知（シークレット設定時は URL クエリ署名付き） |
+| **Telegram** (`telegram`) | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Bot API 経由のコンパクトサマリー |
+| **Discord** (`discord`) | `DISCORD_WEBHOOK_URL` | ダッシュボードリンク付き Embed カード |
+| **Custom Webhook** (`custom`) | `CUSTOM_WEBHOOK_URL` / `CUSTOM_WEBHOOK_TOKEN` | 構造化 JSON（`event`, `trade_date`, `markdown`, `summary`）＋ Bearer 認証対応 |
 
-すべての一覧は [docs/configuration.md](docs/configuration.md) にあります。
+---
 
-## その他の機能
+<details>
+<summary><strong>対応市場・内蔵 12 戦略・2026-11-20 実行例・制限事項</strong></summary>
 
-- **Python API**：`from alphasift import screen, evaluate_saved_run` のあと、`screen("dual_low", use_llm=False, market="cn")`。
-- **LLM のコンテキスト**：`--context "..."` で市場についてのメモを、`--candidate-context-file` で銘柄ごとの調査を追加します。
-- **事後分析（L3）**：ローカルの `scorecard` がデフォルトで動きます。`--post-analyzer dsa` を付けると、最終的な候補を [daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis) に送り、個別銘柄の詳細な分析を行います。
-- **注目テーマ**：`alphasift hotspots` と `alphasift hotspot "<topic>"` は、A 株のテーマを順位付けし、キャッシュとフォールバックのメタデータを使って主導銘柄を特定します。
-- **エージェントと UI 向けのペイロード**：`alphasift overview --json`、`alphasift serve`、`alphasift doctor data-sources --all-strategies --explain`。エンドポイントは[使い方のガイド](docs/usage.md)に一覧があります。
+- **対応市場（7 市場）**：`cn`（中国 A 株）、`us`（米国株 ≥ $1B）、`hk`（香港株）、`jp`（日本株 ≥ ¥1,500 億）、`kr`（韓国株、Yahoo + Naver Finance）、`tw`（台湾株）、`in`（インド株）。
+- **2026-11-20 実測出力例**：
+  - 中国 A 株 `dual_low`：5,215 銘柄 → 205 銘柄 → 5 業種分散 Top 5（`601997` 貴陽銀行、`601117` 中国化学、`600741` 華域汽車、`603799` 華友鈷業、`601233` 桐昆股份）。
+  - 日本株 `global_value --market jp`：748 銘柄 → 311 銘柄（`9501.T` 東京電力HD、`5401.T` 日本製鉄、`1605.T` INPEX、`9104.T` 商船三井、`9022.T` JR東海）。
+- **既知の制限**：AlphaSift は銘柄発掘・事後検証エンジンであり、自動売買執行システムではありません（配当・休場調整除く）。詳細は [docs/configuration.md](docs/configuration.md) および [docs/deployment.md](docs/deployment.md) をご参照ください。
 
-## 既知の制限
+</details>
 
-- AlphaSift は発掘と順位付けのエンジンで、バックテストのツールや売買の執行システムではありません。T+N の評価は、保存した価格とその後の価格を比べるもので、配当、売買停止、ポジションの制約はモデル化していません。
-- `evaluate-strategies --window 5,10,20` は本当の T+N を測ります：各選定銘柄の、エントリー後 N 本目の取引日の終値でのリターンを、同じ期間の市場のベンチマーク（CSI 300、S&P 500、ハンセン指数、日経 225、KOSPI、TAIEX、Nifty 50）と比べます。期間がまだ過ぎていない選定銘柄は保留として報告します。期間を指定しない `evaluate` と `evaluate-batch` は、引き続き最新の価格までのリターンを測ります。
-- エントリーは取引所の時刻で決まります：取引開始前に保存した実行は前日の終値でエントリーし、取引中または取引後に保存した実行は、その日の足を上昇幅やドローダウンに含めません。取引所の休日は、データソースが返す足以上にはモデル化していません。
-- Yahoo のスクリーナーの市場は、市場全体ではありません：対象は時価総額の下限（約 10 億米ドル）を上回る上場銘柄で、Yahoo のセクターごとに 1 回ずつ問い合わせ、4000 行が上限です。非公式のエンドポイント 1 つに依存し、売買代金を価格 × 出来高で推定し、時価総額の合計を浮動株の時価総額として使います。韓国の PE/PB は Naver Finance（もう 1 つの非公式のエンドポイント）から取得し、赤字の企業には PE がありません。PE/PB を EPS と純資産から導くのは、取引の通貨と報告の通貨が一致する場合だけです。
-- 日足の K 線を使う戦略は、市場全体ではなく、L1 の候補だけに情報を追加します。
-- `strategies/` と `alphasift/strategies/` は互いの写し（開発用とインストールされるパッケージ）で、同期させておく必要があります。
+---
 
-## 免責事項
+## 免責事項・ドキュメント・ライセンス
 
-このプロジェクトは、学習、研究、エンジニアリングの実験のためのものです。投資の助言、リターンの保証、売買の指示ではありません。マーケットデータ、LLM の出力、戦略のパラメーターは、遅れていたり、不完全だったり、誤っていたりすることがあります。自分自身の調査、法令の遵守、コスト、判断には、あなた自身が責任を持ってください。
+> 本プロジェクトは学習・調査・エンジニアリング検証を目的としており、投資助言や売買推奨を行うものではありません。
 
-## ドキュメント
+[使い方](docs/usage.md) · [設定](docs/configuration.md) · [デプロイガイド](docs/deployment.md) · [戦略ガイド](docs/strategy-guide.md) · [スコアリング](docs/scoring.md) · [設計](docs/design.md) · [位置付け](docs/positioning.md) · [比較](docs/comparison.md) · [リファレンス](docs/reference.md) · [変更履歴](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
-[使い方](docs/usage.md) · [設定](docs/configuration.md) · [戦略のガイド](docs/strategy-guide.md) · [スコアリング](docs/scoring.md) · [設計](docs/design.md) · [位置付け](docs/positioning.md) · [比較](docs/comparison.md) · [リファレンス](docs/reference.md) · [変更履歴](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
-
-## ライセンス
-
-[Apache License 2.0](LICENSE)
+[Apache License 2.0](LICENSE) の下で公開されています。

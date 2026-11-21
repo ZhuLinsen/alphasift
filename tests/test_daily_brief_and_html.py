@@ -244,6 +244,20 @@ def test_render_and_write_daily_report_html_and_cli(tmp_path: Path, monkeypatch,
     assert "<script>alert(1)</script>" not in html_text
     assert 'class="kline"' in html_text
     assert 'class="dist-svg"' in html_text
+    assert 'id="lang-switch"' in html_text
+    assert "data-i18n=" in html_text
+
+    import re
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if node is not None:
+        match = re.search(r"<script>(.*)</script>", html_text, flags=re.DOTALL)
+        assert match is not None
+        js_file = tmp_path / "daily_report.js"
+        js_file.write_text(match.group(1), encoding="utf-8")
+        proc = subprocess.run([node, "--check", str(js_file)], capture_output=True, text=True, check=False)
+        assert proc.returncode == 0, proc.stderr
 
     # CLI --output-html and --ai-brief off smoke
     cli_html = tmp_path / "cli_report.html"

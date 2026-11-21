@@ -1,177 +1,220 @@
-# AlphaSift
+<div align="center">
 
-**Full-market stock discovery for AI agents.** AlphaSift scans every A-share (or the larger listings of six other markets), screens them with auditable YAML strategies, optionally lets an LLM rank the shortlist, keeps the final picks diversified across sectors, and saves every run so you can check later whether the picks worked.
+<a href="https://zhulinsen.github.io/alphasift/?lang=en">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner-light.svg">
+    <img alt="AlphaSift — Full-Market Quantitative Discovery & T+N Benchmark" src="docs/assets/banner-dark.svg" width="100%">
+  </picture>
+</a>
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
-![Markets](https://img.shields.io/badge/markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-orange)
-[![Live Dashboard](https://img.shields.io/badge/dashboard-live-22c55e.svg)](https://zhulinsen.github.io/alphasift/)
+<h3>Full-market stock discovery for AI agents — deterministic YAML strategies, empirical 250-day pattern radar, optional dual-track LLM re-ranking, and audited T+N track record.</h3>
 
-English | [中文](README.zh-CN.md) | [日本語](README.ja.md)
+<p>
+  <a href="https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml"><img src="https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
+  <a href="https://zhulinsen.github.io/alphasift/?lang=en"><img src="https://img.shields.io/badge/dashboard-live%20(ZH%20%7C%20EN%20%7C%20JA)-22c55e.svg" alt="Live Dashboard"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-3b82f6.svg" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-10b981.svg" alt="Apache 2.0"></a>
+  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><img src="https://img.shields.io/badge/RSS-Atom%201.0-f59e0b.svg" alt="Atom RSS"></a>
+</p>
 
-**Track record:** every built-in strategy runs after each close and its picks are measured at T+5 / T+10 / T+20 against the market benchmark — see the [live dashboard](https://zhulinsen.github.io/alphasift/), the [daily report](https://zhulinsen.github.io/alphasift/site/daily_report.html) and the raw runs on the [`track-record`](https://github.com/ZhuLinsen/alphasift/tree/track-record) branch.
+<p>
+  <a href="https://zhulinsen.github.io/alphasift/?lang=en"><strong>Live Dashboard</strong></a> ·
+  <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=en"><strong>Daily Research Brief</strong></a> ·
+  <a href="https://zhulinsen.github.io/alphasift/site/feed.xml"><strong>Atom RSS Feed</strong></a> ·
+  <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record"><strong>track-record Ledger</strong></a> ·
+  <a href="SKILL.md"><strong>Agent Skill</strong></a>
+</p>
 
-[![AlphaSift Live Dashboard](docs/assets/dashboard-dark.png)](https://zhulinsen.github.io/alphasift/)
+<p>
+  <strong>English</strong> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a>
+</p>
 
-```text
-full market ──► L1 hard filters + factor scores ──► L2 LLM ranking (optional)
-  (5,000+ names)    (YAML strategy, no API key)        (cross-candidate reasoning)
-                                                              │
-saved run ◄── L3 post-analysis ◄── risk overlay + sector diversity cap
-   │          (scorecard / DSA / HTTP)
-   └──► T+N evaluation: returns, win rate, failure review
+</div>
+
+---
+
+## Live Multilingual Terminal & Research Brief
+
+Every trading session runs all built-in strategies automatically, evaluates prior picks at **`T+5 / T+10 / T+20`** against each market's benchmark (`next_open` entry accounting for untradable limit-up blocks), and publishes an interactive dashboard supporting **English · 中文 · 日本語** and **Obsidian Dark · Editorial Light** themes.
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=dark">
+        <img src="docs/assets/dashboard-dark.png" alt="AlphaSift Live Dashboard (Dark · English)" width="100%">
+      </a>
+      <br><sub><b>Obsidian Dark Terminal</b> — Cross-Strategy Consensus, CN Microstructure Breadth &amp; 7-Market T+N Leaders</sub>
+    </td>
+    <td width="50%" align="center">
+      <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=light">
+        <img src="docs/assets/dashboard-light.png" alt="AlphaSift Live Dashboard (Light · English)" width="100%">
+      </a>
+      <br><sub><b>Editorial Paper Light</b> — Multilingual UI Switcher (<code>中 | EN | 日</code>), Atom RSS &amp; Audited Track Record</sub>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=en&theme=dark">
+        <img src="docs/assets/daily-report.png" alt="AlphaSift Standalone Post-Close Research Brief" width="88%">
+      </a>
+      <br><sub><b>Standalone Printable Research Brief</b> (<code>alphasift daily-report --output-html</code>) — Executive Summary, 7-Bucket Return Histogram, Announcement Risk Screening &amp; 20D K-Line Hits</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## Core Architecture & Design
+
+```mermaid
+flowchart LR
+  M["7 Markets Snapshot & Private DailyPack"] --> L1["L1 YAML Hard Filters & Factor Scoring"]
+  L1 --> L2["L2 Optional LLM Re-Ranking (Gemini 3.8 Flash / DeepSeek / OpenAI)"]
+  L2 --> RK["Risk Overlay & 8-Bucket Hard Sector Cap"]
+  RK --> L3["L3 Post-Analysis (scorecard / DSA / HTTP) & Filing Check"]
+  L3 --> OUT["Printable HTML Brief, 6-Channel Push & Atom RSS"]
+  RK --> AUD["Immutable track-record Branch & next_open T+N Evaluation"]
 ```
 
-## Why AlphaSift
+| Capability | Engineering Design |
+|---|---|
+| **Zero-Key Deterministic Engine** | L1 hard filters, multi-factor curves, risk overlay, and 8-bucket sector diversity (`portfolio_profile.mode: hard_cap`) execute deterministically with zero external LLM keys required. |
+| **Orthogonalized 10-CN Strategies** | All 10 CN strategies separate cleanly by market cap (`blue_chip_income` ≥ ¥50B vs `dual_low` ¥5B–¥60B), style, and sector cap (`max_same_bucket: 1`). Across 3 local pack dates (`2026-09-21`, `10-20`, `11-20`), mean pairwise overlap fell from **8.0%–24.9% → 0.9%–1.8%** (`max` **100% → 20%**) and bank concentration dropped from **22%–31.1% → 4.0%–9.1%**. |
+| **Empirically Audited Pattern Radar** | Stateless technical patterns are gated via 250-day `next_open` replay (`N ≥ 200` and positive T+5 excess vs CSI 300). Only 2 verified patterns are `active`; 5 classic patterns remain muted `experimental`. |
+| **Dual-Track Rules vs AI Attribution** | Configure `GEMINI_API_KEY` (defaults to `gemini/gemini-3.8-flash` with automatic `gemini/gemini-4-hydrogen` fallback), `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`, or Ollama to run paired `rules` vs `ai` tracks on the same dates and compare added/dropped stock alpha. |
+| **Self-Healing Sources & Private Pack** | Health-ordered CN snapshot chain (`em_datacenter → sina → efinance → akshare_em`, or `tushare` first with token) with timeouts and stale fallback. Raw `daily.npz` / `meta.csv.gz` matrices stay local or inside private GitHub `actions/cache` and are never redistributed publicly. |
+| **6-Channel Idempotent Push + Atom RSS** | Dispatches `<1,200`-char alert-first briefs to WeCom, Feishu (HMAC-SHA256), DingTalk (HMAC-SHA256), Telegram, Discord, and Custom Webhook (per `(trade_date, channel)` file lock), plus zero-config `site/feed.xml` Atom RSS. |
 
-- **A-shares first, six more markets in beta.** China A-shares go through a dedicated multi-source chain. US, Hong Kong, Japan, South Korea, Taiwan and India go through the Yahoo Finance screener, which also works from overseas servers and CI runners; they have one unofficial data source and fewer fields (see Known limitations).
-- **Runs without an API key.** L1 screening, scoring, risk and diversity control are deterministic. An LLM only re-ranks the shortlist when you configure one.
-- **Strategies are YAML, not code.** Filters, factor weights, scoring curves, risk thresholds and sector buckets live in readable files that you can diff and review.
-- **Picks don't all come from one sector.** Every row carries an industry or sector label. `portfolio_profile.mode: hard_cap` keeps at most N picks per sector in the Top N.
-- **Data sources heal themselves.** Source outcomes persist across runs, so dead sources are tried last. Each source has a time budget. A last-good snapshot is used, marked as stale, when every live source fails.
-- **Every run is checkable.** Save runs and evaluate them later with transaction costs, win rates, failure samples and optional price paths (max drawdown / run-up).
-- **Built for agents.** [SKILL.md](SKILL.md) describes the callable interface. `alphasift serve` exposes a read-only JSON API for dashboards and orchestrators.
+---
 
-- **Daily research report & optional AI dual-track:** when an LLM key (`DEEPSEEK_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`) is configured, AlphaSift runs both the deterministic `rules` track and the `ai` re-ranking track on the same trading days (`--ai-track auto`), tracking paired excess attribution, announcement risk flags, cross-strategy consensus picks, and a printable standalone report (`alphasift daily-report --output-html`).
-- **Private offline data pack:** raw historical CN daily matrices stay in your local workspace (`ALPHASIFT_PACK_DIR`) or inside private GitHub Actions cache (`actions/cache`) and are never redistributed publicly.
+## Verified Pattern Radar Benchmark (`250d next_open` vs CSI 300)
 
-![AlphaSift Daily Research Report](docs/assets/daily-report.png)
+Evaluated locally over **`2026-02-05 .. 2026-11-06`** (`180` trading sessions, `5,218` A-share stocks, `next_open` entry excluding one-price limit-ups, benchmark `sh000300`):
 
-## Quick start
+| Pattern | Family · Mode | Signals | T+5 Matched | T+5 Excess | T+5 Excess Win | T+10 Excess | Status |
+|---|---|---:|---:|---:|---:|---:|---|
+| **20D Low-Vol Shrink Pullback** (`ma20_shrink_pullback` v2.0) | `trend_continuation · direct` | 2,295 | 2,293 | **+0.158%** | 46.45% | **+0.905%** | `active` |
+| **Steady Trend Breakout** (`steady_trend_breakout` v1.0) | `breakout · direct` | 460 | 460 | **+0.271%** | 48.70% | **+0.560%** | `active` |
+| `single_yang_hold` / `box_breakout` / `bottom_volume_yang` / `double_bottom_breakout` / `shooting_star_confirm` | mixed | 992–9,233 | 988–9,221 | -1.185% .. -0.175% | 38.26%–45.47% | -1.207% .. -0.619% | `experimental` |
+
+---
+
+## Quick Start (30 Seconds)
 
 ```bash
 pip install -e .
 
-# A-shares, no API key needed
+# 1. Zero-key A-share & global discovery
+alphasift quickstart
 alphasift screen dual_low --no-llm
-
-# Other markets: us, hk, jp, kr, tw, in
 alphasift screen global_value --market hk --no-llm
 
-# Add LLM ranking: set GEMINI_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY
-# (or LITELLM_MODEL / LLM_CHANNELS) in .env first
-cp .env.example .env
-alphasift screen dual_low
+# 2. Optional AI dual-track ranking (defaults to gemini/gemini-3.8-flash + gemini-4-hydrogen fallback)
+cp .env.example .env   # set GEMINI_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY
+alphasift screen dual_low --save-run
 
-# Save a run, then evaluate it a few days later
-alphasift screen dual_low --no-llm --save-run
-alphasift evaluate <run_id> --with-price-path --explain
+# 3. Pattern radar replay, standalone HTML brief & push connectivity check
+alphasift patterns replay --pack-dir ./data/pack/cn --output-md replay.md
+alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html --push
+alphasift notify status
+alphasift notify test --dry-run
 ```
 
-Run `alphasift quickstart` for a guided no-key demo, and `alphasift strategies` to list the strategies.
+**Python API & HTTP Agent Server:**
 
-## Example output
+```python
+from alphasift import screen, evaluate_saved_run
 
-Real runs on 2026-11-03 with `--no-llm`. **They show what the engine outputs; they are not recommendations.**
+res = screen("dual_low", market="cn", use_llm=False)
+for pick in res.picks:
+    print(pick.rank, pick.code, pick.name, pick.industry, pick.final_score)
+```
 
-**China A-shares** (`dual_low`): 5,218 stocks, 284 after filters, Top 5 capped at 2 per sector
+```bash
+alphasift serve --host 127.0.0.1 --port 8000   # Read-only JSON API for AI agents & orchestrators
+```
+
+---
+
+## Notifications & RSS Subscriptions
+
+| Channel | Configuration Env Vars | Features & Guardrails |
+|---|---|---|
+| **Atom 1.0 RSS Feed** | Zero config (`site/feed.xml`) | Published automatically to GitHub Pages on every `track-record` build |
+| **WeCom** (`wecom`) | `WECOM_WEBHOOK_URL` | Alert-first `<1,200`-char Markdown card |
+| **Feishu** (`feishu`) | `FEISHU_WEBHOOK_URL`, `FEISHU_WEBHOOK_SECRET` | Interactive blue card with optional HMAC-SHA256 signature |
+| **DingTalk** (`dingtalk`) | `DINGTALK_WEBHOOK_URL`, `DINGTALK_WEBHOOK_SECRET` | Markdown payload with optional URL query HMAC-SHA256 signature |
+| **Telegram** (`telegram`) | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Compact alert summary via Bot API (`disable_web_page_preview=true`) |
+| **Discord** (`discord`) | `DISCORD_WEBHOOK_URL` | Rich Embed card linking straight to the live dashboard |
+| **Custom Webhook** (`custom`) | `CUSTOM_WEBHOOK_URL`, `CUSTOM_WEBHOOK_TOKEN` | Structured JSON (`event`, `trade_date`, `markdown`, `summary`) + optional Bearer auth |
+
+> Every channel uses an `flock`-protected idempotency ledger keyed by `(trade_date, channel)` and skips automatically on stale packs unless `--force-push` is passed. Secrets are never echoed in errors or logs.
+
+---
+
+<details>
+<summary><strong>Built-in YAML Strategies (12 Strategies Across 7 Markets)</strong></summary>
+
+| Strategy | Markets | Style | Core Focus |
+|---|---|---|---|
+| `dual_low` | `cn` | Value | Mid-cap low PE/PB (`¥5B–¥60B`), `hard_cap: 1` per industry bucket |
+| `blue_chip_income` | `cn` | Income | Mega-cap liquid dividend leaders (`≥ ¥50B`) |
+| `quality_value` | `cn` | GARP | Mid-cap growth valuation stability (`¥15B–¥200B`) |
+| `low_volatility_quality` | `cn` | Defensive | Low 20D volatility, controlled drawdown & ATR (daily K-line) |
+| `balanced_alpha` | `cn` | Multi-Factor | Broad balanced factor discovery with sector hard cap |
+| `momentum_quality` | `cn` | Trend Quality | 60D trend confirmation + quality gates |
+| `shrink_pullback` | `cn` | Pullback | Shrink-volume pullback to MA20 support within uptrend (daily K-line) |
+| `capital_heat` | `cn` | Momentum | Active turnover & capital flow without extreme overheating |
+| `oversold_reversal` | `cn` | Reversal | Controlled-drawdown mean-reversion candidates |
+| `volume_breakout` | `cn` | Breakout | Volume expansion breaking 20D resistance |
+| `global_value` | `us, hk, jp, kr, tw, in` | Value | Currency-neutral low PE/PB screener for global markets |
+| `us_momentum_quality` | `us` | Trend | US large-cap (`≥ $1B`) momentum + quality |
+
+</details>
+
+<details>
+<summary><strong>Real Sample Output (2026-11-20 Snapshot, Deterministic <code>--no-llm</code>)</strong></summary>
+
+**China A-Shares (`dual_low` on 2026-11-20 pack snapshot):** 5,215 stocks → 205 filtered → Top 5 across 5 distinct industries (`hard_cap: 1`):
 
 | # | Code | Name | Industry | PE | PB |
 |---:|---|---|---|---:|---:|
-| 1 | 601169 | 北京银行 | Banks | 5.8 | 0.43 |
-| 2 | 600016 | 民生银行 | Banks | 5.7 | 0.26 |
-| 3 | 601668 | 中国建筑 | Construction | 6.6 | 0.39 |
-| 4 | 601186 | 中国铁建 | Infrastructure | 6.3 | 0.29 |
-| 5 | 601919 | 中远海控 | Shipping | 7.9 | 1.12 |
+| 1 | `601997` | 贵阳银行 | Banks | 4.4 | 0.32 |
+| 2 | `601117` | 中国化学 | Construction | 6.6 | 0.61 |
+| 3 | `600741` | 华域汽车 | Auto Parts | 7.7 | 0.77 |
+| 4 | `603799` | 华友钴业 | Rare Metals | 8.7 | 1.07 |
+| 5 | `601233` | 桐昆股份 | Chemical Fibers | 6.8 | 1.11 |
 
-**Hong Kong** (`global_value --market hk`): 581 stocks, 275 after filters
+**Hong Kong (`global_value --market hk` on 2026-11-20):** 567 stocks → 236 filtered: `0267.HK` CITIC Limited · `0001.HK` CK Hutchison · `1339.HK` PICC Group · `1398.HK` ICBC · `0358.HK` Jiangxi Copper.
 
-| # | Code | Name | Sector | PE | PB |
-|---:|---|---|---|---:|---:|
-| 1 | 0998.HK | China CITIC Bank | Financial Services | 5.8 | 0.43 |
-| 2 | 0267.HK | CITIC Limited | Industrials | 5.3 | 0.38 |
-| 3 | 1398.HK | ICBC | Financial Services | 6.5 | 0.59 |
-| 4 | 0001.HK | CK Hutchison | Industrials | 6.9 | 0.45 |
-| 5 | 0358.HK | Jiangxi Copper | Basic Materials | 5.7 | 0.77 |
+**Japan (`global_value --market jp` on 2026-11-20):** 748 stocks → 311 filtered: `9501.T` TEPCO · `5401.T` Nippon Steel · `1605.T` INPEX · `9104.T` Mitsui O.S.K. Lines · `9022.T` Central Japan Railway.
 
-**Japan** (`global_value --market jp`): 773 stocks, 408 after filters
+*Research examples only — never investment advice.*
 
-| # | Code | Name | Sector | PE | PB |
-|---:|---|---|---|---:|---:|
-| 1 | 9501.T | Tokyo Electric Power | Utilities | 2.6 | 0.21 |
-| 2 | 9022.T | Central Japan Railway | Industrials | 7.2 | 0.71 |
-| 3 | 9502.T | Chubu Electric Power | Utilities | 10.6 | 0.66 |
-| 4 | 1911.T | Sumitomo Forestry | Consumer Cyclical | 9.0 | 0.70 |
-| 5 | 7203.T | Toyota Motor | Consumer Cyclical | 8.7 | 0.97 |
+</details>
 
-On an overseas server, the A-share run takes about 10 seconds once source health is warm. Each Yahoo market takes 2–10 seconds.
+<details>
+<summary><strong>Supported Markets, Configuration & Known Limitations</strong></summary>
 
-## Supported markets
-
-| `--market` | Market | Snapshot source | Notes |
-|---|---|---|---|
-| `cn` | China A-shares | em_datacenter → sina → efinance → akshare_em (Tushare first when a token is set) | Health-aware ordering; EastMoney industry backfill |
-| `us` | United States | Yahoo screener (NYSE / Nasdaq listings ≥ $1B, including ADRs) | `ALPHASIFT_US_TICKERS` uses an explicit ticker list instead |
-| `hk` | Hong Kong | Yahoo screener | Universe floor ≈ HK$8B |
-| `jp` | Japan | Yahoo screener | Universe floor ≈ ¥150B |
-| `kr` | South Korea | Yahoo screener + Naver Finance | Yahoo has no KR PE/PB; they come from Naver's (unofficial) mobile API, about 10s extra. `ALPHASIFT_KR_VALUATION=0` turns it off |
-| `tw` | Taiwan | Yahoo screener | TWSE and TPEx listings |
-| `in` | India | Yahoo screener | NSE and BSE listings |
-
-Non-CN codes are Yahoo symbols (`AAPL`, `0700.HK`, `7203.T`, `005930.KS`). Daily K-line enrichment and T+N evaluation use yfinance for these markets. Candidate-level news, announcement and fund-flow context is A-share only.
-
-## Built-in strategies
-
-| Strategy | Markets | Type | Idea |
-|---|---|---|---|
-| `dual_low` | cn | Value | Low PE + low PB, activity and stability confirmation, hard cap per sector |
-| `quality_value` | cn | Value | Reasonable valuation with liquidity and controlled volatility |
-| `blue_chip_income` | cn | Income | Liquid blue chips with dividend quality |
-| `low_volatility_quality` | cn | Quality | Defensive screen using daily volatility, drawdown and ATR |
-| `volume_breakout` | cn | Trend | Volume expansion through resistance |
-| `shrink_pullback` | cn | Trend | Pullback into support within an uptrend (daily K-line) |
-| `capital_heat` | cn | Momentum | Active capital flow without extreme overheating |
-| `oversold_reversal` | cn | Reversal | Repair candidates with controlled drawdown |
-| `balanced_alpha` | cn | Framework | General multi-factor discovery |
-| `momentum_quality` | cn | Framework | Trend confirmation plus quality filters |
-| `global_value` | us, hk, jp, kr, tw, in | Value | `dual_low` for other markets, with no currency-dependent thresholds |
-| `us_momentum_quality` | us | Trend | Momentum and quality for US large caps |
-
-Write your own in `strategies/`. See the [strategy guide](docs/strategy-guide.md).
-
-## Configuration
-
-Copy `.env.example` to `.env`. AlphaSift reads LiteLLM-style settings, so it can reuse the configuration of [daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis). The most common settings:
-
-| Variable | Purpose | Default |
+| Market | Snapshot & Daily Source | Scope Notes |
 |---|---|---|
-| `LITELLM_MODEL` | Main model, `provider/model` | `gemini/gemini-3.8-flash` |
-| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | Provider key for LLM ranking | - |
-| `LLM_CHANNELS` / `LITELLM_CONFIG` | Multi-channel or LiteLLM Router config | - |
-| `TUSHARE_TOKEN` | Puts Tushare first in the A-share chain | - |
-| `SNAPSHOT_SOURCE_PRIORITY` | Override the A-share source order | depends on token |
-| `ALPHASIFT_SNAPSHOT_CALL_TIMEOUT_SEC` | Time budget per snapshot source | `60` |
-| `INDUSTRY_AUTO_BACKFILL` | Fill missing A-share industry labels | `true` |
-| `ALPHASIFT_DATA_DIR` | Runs, caches and source health | `./data` |
-| `DSA_API_URL` | Enable the optional DSA deep-analysis step | - |
+| `cn` | `em_datacenter → sina → efinance → akshare_em` (`tushare` first with token); private `DailyPack` / `tencent` / `sina` / `akshare` / `baostock` | Full A-share universe, EastMoney sector backfill, optional announcements & hotspots |
+| `us`, `hk`, `jp`, `tw`, `in` | Yahoo Finance screener + `yfinance` | Large/mid-cap floor (`≥ ~$1B` / `HK$8B` / `¥150B`), single unofficial endpoint |
+| `kr` | Yahoo Finance screener + Naver Finance mobile API | Naver supplies PE/PB (`ALPHASIFT_KR_VALUATION=0` disables); `~10s` extra |
 
-The full list is in [docs/configuration.md](docs/configuration.md).
+Key env vars (`ALPHASIFT_*` or standard names — see [docs/configuration.md](docs/configuration.md)): `LITELLM_MODEL` (default `gemini/gemini-3.8-flash`), `LITELLM_FALLBACK_MODELS` (`gemini/gemini-4-hydrogen`), `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`, `TUSHARE_TOKEN`, `ALPHASIFT_PACK_DIR`, `DSA_API_URL`, plus the 6 push webhook variables in [.env.example](.env.example).
 
-## More features
+**Known limitations:** AlphaSift is a screening & post-trade audit engine, not an execution broker or full dividend-adjusted portfolio simulator. Prior to `ALPHASIFT_NEXT_OPEN_SWITCH_DATE` (`2026-11-21`), historical `track-record` runs used `close` entry (untradable share marked unassessed); from `2026-11-21` onward, CN track-record uses `next_open` with raw limit-up block accounting.
 
-- **Python API**: `from alphasift import screen, evaluate_saved_run`, then `screen("dual_low", use_llm=False, market="cn")`.
-- **LLM context**: `--context "..."` adds market notes, and `--candidate-context-file` adds per-stock research.
-- **Post-analysis (L3)**: the local `scorecard` runs by default. `--post-analyzer dsa` sends the final shortlist to [daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis) for single-stock deep analysis.
-- **Hotspots**: `alphasift hotspots` and `alphasift hotspot "<topic>"` rank A-share themes and resolve leader stocks with cache and fallback metadata.
-- **Agent and UI payloads**: `alphasift overview --json`, `alphasift serve`, and `alphasift doctor data-sources --all-strategies --explain`. Endpoints are listed in the [usage guide](docs/usage.md).
+</details>
 
-## Known limitations
+---
 
-- AlphaSift is a discovery and ranking engine, not a backtester or an execution system. T+N evaluation compares saved prices with later prices and does not model dividends, suspensions or position constraints.
-- `evaluate-strategies --window 5,10,20` measures true T+N: each pick's return at the close of the Nth trading bar after entry, against the market benchmark (CSI 300, S&P 500, Hang Seng, Nikkei 225, KOSPI, TAIEX, Nifty 50) over the same bars. Picks whose window has not elapsed are reported as pending. `evaluate` and `evaluate-batch` without a window still measure return to the latest price.
-- Entry is placed in exchange time: a run saved before the session open enters at the previous close; a run saved during or after the session does not count that day's bar toward run-up or drawdown. Exchange holidays are not modeled beyond the bars the data source returns.
-- Yahoo-screener markets are not the whole market: the universe is listings above a market-cap floor (about USD 1B), one query per Yahoo sector, capped at 4000 rows. They depend on a single unofficial endpoint, estimate traded value as price × volume, and use total market cap as float cap. Korean PE/PB come from Naver Finance (another unofficial endpoint); loss-making companies have no PE. PE/PB are only derived from EPS and book value when the trading and reporting currencies match.
-- Daily K-line strategies enrich only the L1 shortlist, not the whole market.
-- `strategies/` and `alphasift/strategies/` mirror each other (development vs installed package) and must stay in sync.
+## Disclaimer, Docs & License
 
-## Disclaimer
+> This repository is built purely for research, engineering verification, and educational experiments — never investment advice or buy/sell recommendations. Market data, LLM rankings, and pattern signals can be incomplete or delayed.
 
-This project is for learning, research and engineering experiments. It is not investment advice, a return guarantee or a buy/sell instruction. Market data, LLM output and strategy parameters can be delayed, incomplete or wrong. You are responsible for your own research, compliance, costs and decisions.
+[Usage](docs/usage.md) · [Configuration](docs/configuration.md) · [Deployment & Mirror](docs/deployment.md) · [Strategy Guide](docs/strategy-guide.md) · [Scoring](docs/scoring.md) · [Design](docs/design.md) · [Positioning](docs/positioning.md) · [Comparison](docs/comparison.md) · [Reference](docs/reference.md) · [Changelog](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
-## Documentation
-
-[Usage](docs/usage.md) · [Configuration](docs/configuration.md) · [Strategy guide](docs/strategy-guide.md) · [Scoring](docs/scoring.md) · [Design](docs/design.md) · [Positioning](docs/positioning.md) · [Comparison](docs/comparison.md) · [Reference](docs/reference.md) · [Changelog](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
-
-## License
-
-[Apache License 2.0](LICENSE)
+Licensed under the [Apache License 2.0](LICENSE).
