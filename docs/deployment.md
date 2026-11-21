@@ -9,9 +9,10 @@ AlphaSift 当前看板定位为**量化形态观测与回测基准**，仅供研
 1. **启用 GitHub Actions**：进入 Fork 仓库的 **Actions** 页签，点击允许运行工作流（特别是 `track-record.yml`）。如需在自动筛选中开启 **AI 赛道** 或 **IM 推送**，在 *Settings → Secrets and variables → Actions* 按需配置可选 Secrets：
    - 可选 AI：`DEEPSEEK_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`（未配置时自动仅跑纯规则赛道，不报错）。
    - 可选 IM 推送：`WECOM_WEBHOOK_URL`、`FEISHU_WEBHOOK_URL`（可选 `FEISHU_WEBHOOK_SECRET`）、`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`（未配置时静默跳过）。
-2. **手动开启 GitHub Pages**：进入 *Settings → Pages*，将 Source 设为 `GitHub Actions`（或按需托管 `track-record` 分支静态产物）。
+2. **手动开启 GitHub Pages**：进入 *Settings → Pages*，将 Source 设为 `GitHub Actions`（或按需托管 `track-record` 分支静态产物）。如需覆盖 IM 卡片详情链接，可在 *Settings → Secrets and variables → Actions → Variables* 设置 `ALPHASIFT_DASHBOARD_URL`（以及可选切换日期 `ALPHASIFT_NEXT_OPEN_SWITCH_DATE`）。
 3. **验证环境与手动首发**：
    - 本地可用 `alphasift doctor radar --explain` 一次检查日线包新鲜度、形态目录同步、LLM 与 IM 推送就绪状态（输出不泄露任何密钥）。
+   - `track-record.yml` 亚洲盘会先串行调用 `data-pack.yml` 构建或增量更新 `data-cn` Release，再执行选股、`Daily report`（产出 `site/report.json` 并在包新鲜时幂等推送）与 `Build site data`。若数据包构建超时或落后于目标交易日，下游会标为 `pack_is_stale=True` 做降级网页展示，且自动跳过未强制的 IM 推送。
    - 在 GitHub **Actions → Track record → Run workflow** 手动触发一次 `asia` 或 `rebuild` 确认落盘与页面正常构建。
 
 ## Cloudflare Pages 静态镜像（仅文档方案）

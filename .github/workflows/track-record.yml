@@ -31,7 +31,22 @@ env:
   STATE: ${{ github.workspace }}/state
 
 jobs:
+  pack:
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '30 10 * * 1-5') ||
+      (github.event_name == 'workflow_dispatch' && (inputs.session || 'asia') == 'asia')
+    permissions:
+      contents: write
+    uses: ./.github/workflows/data-pack.yml
+    secrets: inherit
+    with:
+      mode: "update"
+      days: "250"
+      source: "auto"
+
   record:
+    needs: [pack]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 150
     permissions:
@@ -102,23 +117,46 @@ jobs:
             --session "${{ steps.session.outputs.session }}" --markets "${{ steps.session.outputs.markets }}" --pack-dir "$ALPHASIFT_PACK_DIR" \
             || echo "::warning::no strategy saved a run this session"
 
+      - name: Resolve CN target trade date
+        id: cn_date
+        if: steps.session.outputs.session == 'asia'
+        run: |
+          cn_date=$(python3 - <<'PY'
+          import glob, json
+          logs = sorted(glob.glob("track/data/logs/*-asia.json"))
+          val = ""
+          if logs:
+              try:
+                  with open(logs[-1], encoding="utf-8") as fh:
+                      data = json.load(fh)
+                  val = str((data.get("effective_dates") or {}).get("cn") or "").strip()
+              except Exception:
+                  val = ""
+          print(val)
+          PY
+          )
+          if [ -z "$cn_date" ]; then
+            cn_date=$(TZ=Asia/Shanghai date +%F)
+          fi
+          echo "cn_trade_date=$cn_date" >> "$GITHUB_OUTPUT"
+          echo "cn_trade_date=$cn_date"
+
       - name: Record CN pattern board
         if: steps.session.outputs.session == 'asia'
         run: |
           if [ -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
-            python scripts/track_record.py patterns --track track --pack-dir "$ALPHASIFT_PACK_DIR" --with-replay || echo "::warning::CN pattern board skipped"
+            python scripts/track_record.py patterns --track track --pack-dir "$ALPHASIFT_PACK_DIR" \
+              --expected-trade-date "${{ steps.cn_date.outputs.cn_trade_date }}" --allow-stale-pack --with-replay \
+              || echo "::warning::CN pattern board skipped"
           fi
 
       - name: Evaluate T+N
-        run: python scripts/track_record.py evaluate --track track --markets "${{ steps.session.outputs.markets }}"
-      - name: Build site data
-        run: |
-          python scripts/track_record.py build --track track
-          cp scripts/track_record_page.html track/index.html
+        run: python scripts/track_record.py evaluate --track track --markets "${{ steps.session.outputs.markets }}" --pack-dir "$ALPHASIFT_PACK_DIR"
 
       - name: Daily report and optional IM push
         if: steps.session.outputs.session == 'asia'
         env:
+          ALPHASIFT_DASHBOARD_URL: ${{ vars.ALPHASIFT_DASHBOARD_URL }}
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
           FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
@@ -126,8 +164,21 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           if [ -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
-            alphasift daily-report --pack-dir "$ALPHASIFT_PACK_DIR" --runs-dir track/data/runs --output-json track/site/report.json --push --explain || echo "::warning::daily-report skipped"
+            alphasift daily-report \
+              --pack-dir "$ALPHASIFT_PACK_DIR" \
+              --runs-dir track/data/runs \
+              --expected-trade-date "${{ steps.cn_date.outputs.cn_trade_date }}" \
+              --allow-stale-pack \
+              --output-json track/site/report.json \
+              --output-card track/site/daily_card.md \
+              --push \
+              --explain || echo "::warning::daily-report skipped"
           fi
+
+      - name: Build site data
+        run: |
+          python scripts/track_record.py build --track track
+          cp scripts/track_record_page.html track/index.html
 
       - name: Commit to track-record
         working-directory: track
