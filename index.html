@@ -1908,7 +1908,7 @@ function renderMetaAndKpis() {
       ? `<div class="kpi-cell">
            <div class="kpi-label"><span>${esc(t("kpi3_cons_lbl"))}</span><span class="badge accent">${esc(t("kpi3_cons_badge", { n: topConsensus.strategy_count }))}</span></div>
            <div class="kpi-val">${esc(topConsensus.name)} <span class="small dim">${esc(topConsensus.code)}</span></div>
-           <div class="kpi-foot">${esc(t("kpi3_cons_foot", { ind: topConsensus.industry, score: (topConsensus.avg_final_score ?? "–"), price: (topConsensus.price ?? "–") }))}</div>
+           <div class="kpi-foot">${esc(t("kpi3_cons_foot", { ind: topConsensus.industry, score: (topConsensus.avg_final_score != null ? Number(topConsensus.avg_final_score).toFixed(1) : "–"), price: (topConsensus.price != null ? Number(topConsensus.price).toFixed(2) : "–") }))}</div>
          </div>`
       : `<div class="kpi-cell"><div class="kpi-label">${esc(t("kpi3_empty_lbl"))}</div><div class="kpi-val dim">–</div><div class="kpi-foot">${esc(t("kpi3_empty_foot"))}</div></div>`;
 
