@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#070d1a"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#0b1f2e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.03"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <g stroke="#1e293b" stroke-width="1" opacity="0.45">
+    <line x1="0" y1="120" x2="1280" y2="120"/>
+    <line x1="0" y1="240" x2="1280" y2="240"/>
+    <line x1="0" y1="360" x2="1280" y2="360"/>
+    <line x1="0" y1="480" x2="1280" y2="480"/>
+    <line x1="320" y1="0" x2="320" y2="640"/>
+    <line x1="640" y1="0" x2="640" y2="640"/>
+    <line x1="960" y1="0" x2="960" y2="640"/>
+  </g>
+  <!-- Top Eyebrow -->
+  <rect x="64" y="48" width="420" height="32" rx="16" fill="#0f253a" stroke="#38bdf8" stroke-opacity="0.5"/>
+  <text x="84" y="69" fill="#38bdf8" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="13" font-weight="700" letter-spacing="1.2">APACHE-2.0 · AUDITED QUANT DISCOVERY</text>
+
+  <!-- Main Headline -->
+  <text x="64" y="138" fill="#f8fafc" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="52" font-weight="800" letter-spacing="-1">AlphaSift v0.3</text>
+  <text x="64" y="186" fill="#94a3b8" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="24" font-weight="500">Auditable Multi-Market Quantitative Screening &amp; T+N Benchmark</text>
+  <rect x="64" y="206" width="160" height="4" rx="2" fill="url(#accent)"/>
+
+  <!-- 4 Stat Cards -->
+  <g transform="translate(64,244)">
+    <rect x="0" y="0" width="272" height="148" rx="14" fill="#111b2e" stroke="#334155" stroke-width="1.5"/>
+    <text x="22" y="34" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="13" font-weight="600">GLOBAL COVERAGE</text>
+    <text x="22" y="84" fill="#38bdf8" font-family="-apple-system,sans-serif" font-size="38" font-weight="800">7 Markets</text>
+    <text x="22" y="116" fill="#cbd5e1" font-family="ui-monospace,monospace" font-size="12.5">CN·HK·US·JP·KR·TW·IN</text>
+  </g>
+  <g transform="translate(356,244)">
+    <rect x="0" y="0" width="272" height="148" rx="14" fill="#111b2e" stroke="#334155" stroke-width="1.5"/>
+    <text x="22" y="34" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="13" font-weight="600">STRATEGY ENGINE</text>
+    <text x="22" y="84" fill="#10b981" font-family="-apple-system,sans-serif" font-size="38" font-weight="800">12 YAML</text>
+    <text x="22" y="116" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="14">Non-linear quantile scoring</text>
+  </g>
+  <g transform="translate(648,244)">
+    <rect x="0" y="0" width="272" height="148" rx="14" fill="#111b2e" stroke="#334155" stroke-width="1.5"/>
+    <text x="22" y="34" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="13" font-weight="600">VERIFICATION LEDGER</text>
+    <text x="22" y="84" fill="#f59e0b" font-family="-apple-system,sans-serif" font-size="38" font-weight="800">T+5 / 10 / 20</text>
+    <text x="22" y="116" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="14">next_open limit-up audit</text>
+  </g>
+  <g transform="translate(940,244)">
+    <rect x="0" y="0" width="276" height="148" rx="14" fill="#111b2e" stroke="#334155" stroke-width="1.5"/>
+    <text x="22" y="34" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="13" font-weight="600">AGENT &amp; DEV STACK</text>
+    <text x="22" y="84" fill="#a78bfa" font-family="-apple-system,sans-serif" font-size="38" font-weight="800">MCP + UI</text>
+    <text x="22" y="116" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="14">10 MCP tools · Web UI · Docker</text>
+  </g>
+
+  <!-- Architecture Strip -->
+  <g transform="translate(64,424)">
+    <rect x="0" y="0" width="1152" height="118" rx="14" fill="url(#glow)" stroke="#38bdf8" stroke-opacity="0.35"/>
+    <text x="28" y="38" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="15" font-weight="700">L1 HARD WATERFALL  ──▶  L2 QUANTILE SCORE &amp; RISK  ──▶  GUARDED LLM RERANK  ──▶  PUBLIC BENCHMARK</text>
+    <text x="28" y="72" fill="#94a3b8" font-family="-apple-system,sans-serif" font-size="16">Code-enforced red-flag cap (&lt;=35 pts) · Portfolio sector/topic cap · 250D CN Pattern Replay · 12 IM webhooks &amp; RSS</text>
+    <text x="28" y="98" fill="#38bdf8" font-family="ui-monospace,monospace" font-size="14">github.com/ZhuLinsen/alphasift   ·   zhulinsen.github.io/alphasift   ·   pip install alphasift</text>
+  </g>
+
+  <!-- Footer tag -->
+  <text x="64" y="592" fill="#64748b" font-family="ui-monospace,monospace" font-size="13">Built for Claude Code · Cursor · OpenAI Codex · OpenClaw · Python 3.10+</text>
+  <text x="1216" y="592" text-anchor="end" fill="#10b981" font-family="ui-monospace,monospace" font-size="13">alphasift mcp  |  alphasift serve --port 8765</text>
+</svg>

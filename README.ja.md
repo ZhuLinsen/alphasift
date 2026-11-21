@@ -17,6 +17,8 @@
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://zhulinsen.github.io/alphasift/?lang=ja)
 [![7 Markets](https://img.shields.io/badge/Markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-6366f1.svg)](https://zhulinsen.github.io/alphasift/?lang=ja)
 [![Agent Skill](https://img.shields.io/badge/Agent%20Skill-OpenClaw%20%7C%20Claude%20Code-10b981.svg)](SKILL.md)
+[![MCP Ready](https://img.shields.io/badge/MCP-STDIO%20Ready-8b5cf6.svg)](docs/ecosystem.md)
+[![Docker Ready](https://img.shields.io/badge/Docker-Ready-0284c7.svg)](Dockerfile)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ZhuLinsen/alphasift/pulls)
 
 [**ライブダッシュボード**](https://zhulinsen.github.io/alphasift/?lang=ja) · [**AlphaSift の特長**](#-なぜ-alphasift-なのか) · [**4つの始め方**](#-4-つのゼロ摩擦スタート) · [**1行12チャネル通知**](#-1行-notify_urls-通知チャネル一覧12種標準対応) · [**track-record 生ログ**](https://github.com/ZhuLinsen/alphasift/tree/track-record) · [**Agent Skill**](SKILL.md)
@@ -83,17 +85,18 @@ alphasift patterns replay --pack-dir ./data/pack/cn --output-md replay.md
 alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html --push
 ```
 
-### 3. Claude Code・OpenClaw・Cursor・Codex と連携（`SKILL.md` + HTTP API + Python）
-[SKILL.md](SKILL.md) または [agents/openai.yaml](agents/openai.yaml) をエージェントへ読み込み、Python 呼び出しまたはローカル HTTP API で利用できます：
-```python
-from alphasift import screen
-
-res = screen("dual_low", market="cn", use_llm=False)
-for pick in res.picks:
-    print(pick.rank, pick.code, pick.name, pick.industry, pick.final_score)
+### 3. Claude Code・Cursor・Codex・OpenClaw と連携（`alphasift mcp` + Workbench UI + Docker）
+依存なしの STDIO MCP サーバー（`10` ツール + `2` リソース）、ローカル Web Workbench UI（`http://127.0.0.1:8765/ui`）、または Docker で即起動できます：
+```json
+{
+  "mcpServers": {
+    "alphasift": { "command": "alphasift", "args": ["mcp"] }
+  }
+}
 ```
 ```bash
-alphasift serve --host 127.0.0.1 --port 8000   # エージェント向け読み取り専用 JSON API
+alphasift serve --host 127.0.0.1 --port 8765   # ローカル Workbench UI (/ui) & 読み取り専用 API
+docker compose up --build -d                    # 127.0.0.1:8765 でコンテナ起動
 ```
 
 ### 4. GitHub Actions で完全自動実行＆1行通知
@@ -105,13 +108,13 @@ alphasift serve --host 127.0.0.1 --port 8000   # エージェント向け読み�
 
 ## 🧭 既存ツールとの比較
 
-| 比較軸 | 一般スクリーナー (`TradingView` 等) | 個別銘柄 AI 分析 (`daily_stock_analysis`) | マルチエージェント議論 (`TradingAgents`) | **AlphaSift** |
-|---|---|---|---|---|
-| **対象範囲** | 1市場ずつ手動条件絞り込み | 指定済みウォッチリスト深掘り | 単一銘柄のロールプレイ議論 | **7市場全量スクリーニング (CN/US/HK/JP/KR/TW/IN)** |
-| **再現性と業種分散** | ブラックボックス / 手動設定 | プロンプト主導 | 会話合意 | **監査可能 YAML DSL ＋ 8業種 `hard_cap` 直交分散** |
-| **AI ガードレール** | なし | 個別銘柄ナラティブ | 対話コンセンサス | **適時開示/資金フロー注入 ＋ 悪材料 `<= 35` 上限 ＋ 知名度バイアス禁止** |
-| **事後検証** | なし | 手動振り返り | オフライン再生 | **公開 `track-record` 台帳 (`next_open` T+5/10/20＆ストップ高除外)** |
-| **連携性** | 単体 UI | **後段 L3 詳細分析と好相性** | 個別スクリプト | **上流候補発掘 (`DSA_API_URL` 連携) ＋ 1行12チャネル通知** |
+| 比較軸 | 一般スクリーナー (`TradingView` 等) | 個別銘柄 AI (`daily_stock_analysis`) | **AlphaSift** |
+|---|---|---|---|
+| **対象範囲** | 1市場ずつ手動条件絞り込み | 指定済みウォッチリスト深掘り | **7市場全量スクリーニング (`cn/us/hk/jp/kr/tw/in`)** |
+| **再現性と業種分散** | ブラックボックス / 手動設定 | プロンプト主導 | **監査可能 YAML DSL ＋ 8業種 `hard_cap` 直交分散** |
+| **AI ガードレール** | なし | 個別銘柄ナラティブ | **適時開示/資金フロー注入 ＋ 悪材料 `<= 35` 上限 ＋ 知名度バイアス禁止** |
+| **事後検証** | なし | 手動振り返り | **公開 `track-record` 台帳 (`next_open` T+5/10/20＆ストップ高除外)** |
+| **連携性** | 単体 UI | **後段 L3 詳細分析と好相性** | **上流候補発掘 (`alphasift mcp` / `DSA_API_URL`) ＋ 1行12チャネル通知** |
 
 ---
 
@@ -187,15 +190,53 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 ---
 
 <details>
-<summary><strong>対応市場・内蔵 12 戦略・2026-11-20 実行例・Fork Pages 保護</strong></summary>
+<summary><strong>内蔵 12 戦略一覧（A 株 10 戦略 + 米国/グローバル 2 戦略）</strong></summary>
 
-- **対応市場（7 市場）**：`cn`（中国 A 株）、`us`（米国株 >= $1B）、`hk`（香港株）、`jp`（日本株 >= 1,500 億円）、`kr`（韓国株、Yahoo + Naver Finance）、`tw`（台湾株）、`in`（インド株）。
-- **2026-11-20 実測出力例**：
-  - 中国 A 株 `dual_low`：5,215 銘柄 → 205 銘柄 → 5 業種分散 Top 5（`601997` 貴陽銀行、`601117` 中国化学、`600741` 華域汽車、`603799` 華友鈷業、`601233` 桐昆股份）。
-  - 日本株 `global_value --market jp`：748 銘柄 → 311 銘柄（`9501.T` 東京電力HD、`5401.T` 日本製鉄、`1605.T` INPEX、`9104.T` 商船三井、`9022.T` JR東海）。
-- **Plan A Fork Pages 保護 & 制限事項**：Fork リポジトリでは重複サイト公開を防ぐため、Variables に `ALPHASIFT_ENABLE_PAGES=true` を設定しない限り GitHub Pages 構築・デプロイをスキップします（銘柄スキャンと通知は正常動作）。詳細は [docs/configuration.md](docs/configuration.md) と [docs/deployment.md](docs/deployment.md) をご参照ください。
+| 戦略名 | 市場 | スタイル | 主な狙い |
+|---|---|---|---|
+| `dual_low` | `cn` | バリュー | 中型低 PE/PB（時価総額 50–600 億元）、業種上限 `1` |
+| `blue_chip_income` | `cn` | 高配当 | 超大型・高流動性・高配当（>= 500 億元） |
+| `quality_value` | `cn` | GARP | 中型成長×安定収益×ボラ制御 |
+| `low_volatility_quality` | `cn` | 防御 | 20 日ボラティリティ＆ドローダウン制御（要日足） |
+| `balanced_alpha` | `cn` | 多因子 | マルチファクター総合＋業種分散 |
+| `momentum_quality` | `cn` | トレンド品質 | 60 日トレンド確認＋ファンダ基準 |
+| `shrink_pullback` | `cn` | 押し目 | 上昇基調中の出来高縮小 MA20 押し目（要日足） |
+| `capital_heat` | `cn` | モメンタム | 売買代金回転率・資金流入（過熱追随を除外） |
+| `oversold_reversal` | `cn` | リバーサル | 短期売られ過ぎからの自律反発 |
+| `volume_breakout` | `cn` | ブレイクアウト | 出来高伴う 20 日高値ブレイク |
+| `global_value` | `us, hk, jp, kr, tw, in` | グローバル | 通貨中立の割安低 PE/PB スクリーニング |
+| `us_momentum_quality` | `us` | 米国株 | 米国大型株 (>= $1B) モメンタム＋クオリティ |
 
 </details>
+
+<details>
+<summary><strong>対応市場・2026-11-20 実行例・主な環境変数と Fork 保護</strong></summary>
+
+| 市場 | スナップショット＆日足ソース | 補足事項 |
+|---|---|---|
+| `cn` | `em_datacenter -> sina -> efinance -> akshare_em`（`tushare` トークンで最優先） | 全 A 株対応、業種補完、適時開示・テーマ連携 |
+| `us, hk, jp, tw, in` | Yahoo Finance スクリーナー + `yfinance` | 大型・中型流動性フィルター、非公式エンドポイント |
+| `kr` | Yahoo Finance + Naver Finance | Naver で PE/PB 補完（`ALPHASIFT_KR_VALUATION=0` で無効化） |
+
+- **2026-11-20 実測出力例（`--no-llm`）**：
+  - 中国 A 株 `dual_low`：5,215 銘柄 → 205 銘柄 → 5 業種分散 Top 5（`601997` 貴陽銀行、`601117` 中国化学、`600741` 華域汽車、`603799` 華友鈷業、`601233` 桐昆股份）。
+  - 香港株 `global_value --market hk`：567 銘柄 → 236 銘柄（`0267.HK`, `0001.HK`, `1339.HK`, `1398.HK`, `0358.HK`）。
+  - 日本株 `global_value --market jp`：748 銘柄 → 311 銘柄（`9501.T` 東京電力HD、`5401.T` 日本製鉄、`1605.T` INPEX、`9104.T` 商船三井、`9022.T` JR東海）。
+- **主な環境変数**：`LITELLM_MODEL`（既定 `gemini/gemini-3.8-flash`）、`LITELLM_FALLBACK_MODELS`（`gemini/gemini-4-hydrogen`）、`GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`、`NOTIFY_URLS`、`ALPHASIFT_ENABLE_PAGES=true`（Fork で GitHub Pages を公開する場合のみ有効化）、`DSA_API_URL`（[詳細](docs/configuration.md)）。
+
+</details>
+
+---
+
+## 🔗 関連プロジェクト — クオンツ三部作（Quant Trio）
+
+| プロジェクト | 役割 | 連携フロー |
+|---|---|---|
+| **[AlphaEvo](https://github.com/ZhuLinsen/alphaevo)** | 進化的ファクター発掘 | AST/LLM でアルファ遺伝子を探索し AlphaSift YAML へ蒸留 |
+| **[AlphaSift](https://github.com/ZhuLinsen/alphasift)** | **7市場ファネル＆検証台帳** | `5,000+` 銘柄を `3–5` 件へ厳選し `T+5 / 10 / 20` を公開記録 |
+| **[daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis)** | L3 個別銘柄深掘り AI | `DSA_API_URL` / MCP 経由で厳選銘柄の適時開示・投資判断を自動化 |
+
+構成の詳細は [docs/ecosystem.md](docs/ecosystem.md) をご覧ください。
 
 ---
 
@@ -203,6 +244,6 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 
 > 本プロジェクトは学習・調査・エンジニアリング検証を目的としており、投資助言や売買推奨を行うものではありません。
 
-[使い方](docs/usage.md) · [設定](docs/configuration.md) · [デプロイガイド](docs/deployment.md) · [戦略ガイド](docs/strategy-guide.md) · [スコアリング](docs/scoring.md) · [設計](docs/design.md) · [位置付け](docs/positioning.md) · [比較](docs/comparison.md) · [リファレンス](docs/reference.md) · [変更履歴](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
+[使い方](docs/usage.md) · [設定](docs/configuration.md) · [エコシステム＆MCP](docs/ecosystem.md) · [デプロイガイド](docs/deployment.md) · [戦略ガイド](docs/strategy-guide.md) · [スコアリング](docs/scoring.md) · [出力スキーマ](docs/result-schema.md) · [リファレンス](docs/reference.md) · [コントリビュート](CONTRIBUTING.md) · [セキュリティ](SECURITY.md) · [変更履歴](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
 [Apache License 2.0](LICENSE) の下で公開されています。

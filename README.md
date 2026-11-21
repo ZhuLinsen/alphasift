@@ -17,6 +17,8 @@
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://zhulinsen.github.io/alphasift/?lang=en)
 [![7 Markets](https://img.shields.io/badge/Markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-6366f1.svg)](https://zhulinsen.github.io/alphasift/?lang=en)
 [![Agent Skill](https://img.shields.io/badge/Agent%20Skill-OpenClaw%20%7C%20Claude%20Code-10b981.svg)](SKILL.md)
+[![MCP Ready](https://img.shields.io/badge/MCP-STDIO%20Ready-8b5cf6.svg)](docs/ecosystem.md)
+[![Docker Ready](https://img.shields.io/badge/Docker-Ready-0284c7.svg)](Dockerfile)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ZhuLinsen/alphasift/pulls)
 
 [**Live Dashboard**](https://zhulinsen.github.io/alphasift/?lang=en) · [**Why AlphaSift**](#-why-alphasift) · [**4 Ways to Start**](#-4-zero-friction-ways-to-start) · [**12-Channel Push**](#-1-line-12-channel-push-notify_urls) · [**track-record Ledger**](https://github.com/ZhuLinsen/alphasift/tree/track-record) · [**Agent Skill**](SKILL.md)
@@ -83,17 +85,18 @@ alphasift patterns replay --pack-dir ./data/pack/cn --output-md replay.md
 alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html --push
 ```
 
-### 3. Connect to Claude Code, OpenClaw, Cursor, or Codex (`SKILL.md` + HTTP API + Python)
-Drop [SKILL.md](SKILL.md) (or [agents/openai.yaml](agents/openai.yaml)) into your coding or agent workspace, call Python directly, or launch the read-only local HTTP service:
-```python
-from alphasift import screen
-
-res = screen("dual_low", market="cn", use_llm=False)
-for pick in res.picks:
-    print(pick.rank, pick.code, pick.name, pick.industry, pick.final_score)
+### 3. Connect to Claude Code, Cursor, Codex, or OpenClaw (`alphasift mcp` + Workbench UI + Docker)
+Register the zero-dependency STDIO MCP server (`10` tools, `2` resources), launch the local Web Workbench UI (`http://127.0.0.1:8765/ui`), or run with Docker:
+```json
+{
+  "mcpServers": {
+    "alphasift": { "command": "alphasift", "args": ["mcp"] }
+  }
+}
 ```
 ```bash
-alphasift serve --host 127.0.0.1 --port 8000   # Read-only JSON API & local /daily-report.html for agents
+alphasift serve --host 127.0.0.1 --port 8765   # Interactive Workbench UI (/ui) & read-only JSON API
+docker compose up --build -d                    # Containerized Workbench UI on 127.0.0.1:8765
 ```
 
 ### 4. Free Cloud Daily Screening & 1-Line Push via GitHub Actions
@@ -107,13 +110,13 @@ alphasift serve --host 127.0.0.1 --port 8000   # Read-only JSON API & local /dai
 
 ## 🧭 Why AlphaSift vs. Alternatives
 
-| Dimension | Static Screeners (`EastMoney` / `TradingView`) | Single-Stock AI Analyzers (`daily_stock_analysis`) | Multi-Agent Trading Sims (`TradingAgents`) | **AlphaSift** |
-|---|---|---|---|---|
-| **Scope & Universe** | Manual UI filters on 1 market at a time | Deep-dive on a pre-picked watchlist | Episode-based ticker debate | **Full-market discovery across 7 markets (CN/US/HK/JP/KR/TW/IN)** |
-| **Strategy Determinism & Diversity** | Opaque UI presets | Prompt-driven per ticker | Role-play voting | **Auditable YAML DSL + 8-bucket `hard_cap` orthogonality** |
-| **AI Guardrails** | None | Single-ticker sentiment narrative | Chat consensus | **Context-grounded filings/fund-flow check, `<= 35` red-flag cap, anti-fame bias** |
-| **Post-Trade Accountability** | None | Manual review | Offline replay | **Public `track-record` ledger (`next_open` T+5/10/20 vs benchmark + limit-up blocks)** |
-| **Ecosystem Fit** | Standalone UI | **Complementary downstream L3 analyzer** | Standalone scripts | **Upstream discovery engine (native `DSA_API_URL` hook) + `NOTIFY_URLS` 12-channel push** |
+| Dimension | Static Screeners (`EastMoney` / `TradingView`) | Single-Stock AI (`daily_stock_analysis`) | **AlphaSift** |
+|---|---|---|---|
+| **Scope & Universe** | Manual UI filters on 1 market at a time | Deep-dive on a pre-picked watchlist | **Full-market discovery across 7 markets (`cn/us/hk/jp/kr/tw/in`)** |
+| **Determinism & Diversity** | Opaque UI presets | Prompt-driven per ticker | **Auditable YAML DSL + 8-bucket `hard_cap` orthogonality** |
+| **AI Guardrails** | None | Single-ticker sentiment narrative | **Filings/fund-flow context, `<= 35` red-flag cap, anti-fame bias** |
+| **Post-Trade Audit** | None | Manual review | **Public `track-record` ledger (`next_open` T+5/10/20 + limit-up blocks)** |
+| **Ecosystem Fit** | Standalone UI | **Complementary downstream L3 analyzer** | **Upstream discovery (`alphasift mcp` / `DSA_API_URL`) + `NOTIFY_URLS` 12-channel push** |
 
 ---
 
@@ -252,10 +255,22 @@ Key env vars (`ALPHASIFT_*` or standard names — see [docs/configuration.md](do
 
 ---
 
+## 🔗 Related Projects — Quant Trio
+
+| Project | Role in Stack | How It Connects |
+|---|---|---|
+| **[AlphaEvo](https://github.com/ZhuLinsen/alphaevo)** | Research & Factor Mining | Discovers & stress-tests alpha genomes before distilling them into AlphaSift YAML rules |
+| **[AlphaSift](https://github.com/ZhuLinsen/alphasift)** | **Multi-Market Funnel & Benchmark** | Screens `5,000+` symbols → `3–5` picks across 7 markets & verifies `T+5 / 10 / 20` on `track-record` |
+| **[daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis)** | L3 Single-Stock Deep Dive | Consumes shortlisted picks via `DSA_API_URL` or MCP for granular fundamentals, news & action plans |
+
+See [docs/ecosystem.md](docs/ecosystem.md) for architecture diagrams, STDIO MCP schemas, and Docker setup.
+
+---
+
 ## Disclaimer, Docs & License
 
 > This repository is built purely for research, engineering verification, and educational experiments — never investment advice or buy/sell recommendations. Market data, LLM rankings, and pattern signals can be incomplete or delayed.
 
-[Usage](docs/usage.md) · [Configuration](docs/configuration.md) · [Deployment & Mirror](docs/deployment.md) · [Strategy Guide](docs/strategy-guide.md) · [Scoring](docs/scoring.md) · [Design](docs/design.md) · [Positioning](docs/positioning.md) · [Comparison](docs/comparison.md) · [Reference](docs/reference.md) · [Changelog](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
+[Usage](docs/usage.md) · [Configuration](docs/configuration.md) · [Ecosystem & MCP](docs/ecosystem.md) · [Deployment & Mirror](docs/deployment.md) · [Strategy Guide](docs/strategy-guide.md) · [Scoring](docs/scoring.md) · [Result Schema](docs/result-schema.md) · [Reference](docs/reference.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
 Licensed under the [Apache License 2.0](LICENSE).

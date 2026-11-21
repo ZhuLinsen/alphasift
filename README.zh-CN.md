@@ -17,6 +17,8 @@
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://zhulinsen.github.io/alphasift/?lang=zh)
 [![7 Markets](https://img.shields.io/badge/Markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-6366f1.svg)](https://zhulinsen.github.io/alphasift/?lang=zh)
 [![Agent Skill](https://img.shields.io/badge/Agent%20Skill-OpenClaw%20%7C%20Claude%20Code-10b981.svg)](SKILL.md)
+[![MCP Ready](https://img.shields.io/badge/MCP-STDIO%20Ready-8b5cf6.svg)](docs/ecosystem.md)
+[![Docker Ready](https://img.shields.io/badge/Docker-Ready-0284c7.svg)](Dockerfile)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ZhuLinsen/alphasift/pulls)
 
 [**在线看板**](https://zhulinsen.github.io/alphasift/?lang=zh) · [**核心亮点**](#-为什么选择-alphasift) · [**4 种零门槛用法**](#-4-种零门槛上手方式) · [**12 通道一行推送**](#-一行-12-通道推送notify_urls) · [**track-record 原始账本**](https://github.com/ZhuLinsen/alphasift/tree/track-record) · [**Agent Skill**](SKILL.md)
@@ -83,17 +85,18 @@ alphasift patterns replay --pack-dir ./data/pack/cn --output-md replay.md
 alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html --push
 ```
 
-### 3. 一键接入 Claude Code / OpenClaw / Cursor / Codex（`SKILL.md` + HTTP API + Python）
-直接将 [SKILL.md](SKILL.md)（或 [agents/openai.yaml](agents/openai.yaml)）接入 Agent 工作区、通过 Python 调用，或启动只读本地 HTTP 服务：
-```python
-from alphasift import screen
-
-res = screen("dual_low", market="cn", use_llm=False)
-for pick in res.picks:
-    print(pick.rank, pick.code, pick.name, pick.industry, pick.final_score)
+### 3. 一键接入 Claude Code / Cursor / Codex / OpenClaw（`alphasift mcp` + 本地工作台 + Docker）
+启动零依赖 STDIO MCP 服务（`10` 个只读工具 + `2` 个资源），打开交互式本地工作台（`http://127.0.0.1:8765/ui`），或使用 Docker 一键运行：
+```json
+{
+  "mcpServers": {
+    "alphasift": { "command": "alphasift", "args": ["mcp"] }
+  }
+}
 ```
 ```bash
-alphasift serve --host 127.0.0.1 --port 8000   # 提供只读 JSON 接口与本地 /daily-report.html
+alphasift serve --host 127.0.0.1 --port 8765   # 本地交互工作台 (/ui) + 只读 JSON 接口 + 日报预览
+docker compose up --build -d                    # 容器化部署至 127.0.0.1:8765
 ```
 
 ### 4. GitHub Actions 零服务器定时选股与 12 通道推送
@@ -107,13 +110,13 @@ alphasift serve --host 127.0.0.1 --port 8000   # 提供只读 JSON 接口与本�
 
 ## 🧭 为什么选择 AlphaSift：横向对比
 
-| 维度 | 传统条件选股（东财 / TradingView） | 单股 AI 研报（`daily_stock_analysis`） | 多智能体博弈（`TradingAgents`） | **AlphaSift** |
-|---|---|---|---|---|
-| **选股范围** | 单市场人工点选条件 | 聚焦用户已给定的自选股池 | 围绕单票做多轮对话 | **A 股 / 美 / 港 / 日 / 韩 / 台 / 印 7 市场全量初筛** |
-| **规则透明度与分散度** | 封闭黑盒或人工拼凑 | 偏重单股 Prompt 叙事 | 多角色文本投票 | **可审计 YAML DSL + 8 行业桶硬上限正交分散** |
-| **AI 幻觉防护** | 无 | 偏叙事型多空分析 | 对话共识无硬约束 | **Top 12 公告/资金流注入 + 重大负面 `<= 35` 分封顶 + 严禁名气偏见** |
-| **后验真实性** | 无持续跟踪 | 需人工复盘 | 离线回放 | **公开 `track-record` 账本（`next_open` T+5/10/20 扣除涨停不可成交）** |
-| **工作流衔接** | 独立工具 | **天然衔接的下游 L3 精研引擎** | 独立脚本 | **上游全市场发现底座（内置 `DSA_API_URL` 联动）+ 一行 12 通道推送** |
+| 维度 | 传统条件选股（东财 / TradingView） | 单股 AI 研报（`daily_stock_analysis`） | **AlphaSift** |
+|---|---|---|---|
+| **选股范围** | 单市场人工点选条件 | 聚焦用户已给定的自选股池 | **A 股 / 美 / 港 / 日 / 韩 / 台 / 印 7 市场全量初筛** |
+| **规则透明度与分散度** | 封闭黑盒或人工拼凑 | 偏重单股 Prompt 叙事 | **可审计 YAML DSL + 8 行业桶硬上限正交分散** |
+| **AI 幻觉防护** | 无 | 偏叙事型多空分析 | **Top 12 公告/资金流注入 + 重大负面 `<= 35` 分封顶 + 严禁名气偏见** |
+| **后验真实性** | 无持续跟踪 | 需人工复盘 | **公开 `track-record` 账本（`next_open` T+5/10/20 扣除涨停不可成交）** |
+| **工作流衔接** | 独立工具 | **天然衔接的下游 L3 精研引擎** | **上游全市场发现底座（`alphasift mcp` / `DSA_API_URL`）+ 一行 12 通道推送** |
 
 ---
 
@@ -121,7 +124,7 @@ alphasift serve --host 127.0.0.1 --port 8000   # 提供只读 JSON 接口与本�
 
 ```
 +-------------------------------------------------------------------+
-|  7 市场实时快照链路  +  私有离线日线包 DailyPack (actions/cache)   |
+|  7 市场实时快照链路  +  私有离线日线包 DailyPack (actions/cache)  |
 +---------------------------------+---------------------------------+
                                   |
                                   v
@@ -252,10 +255,22 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 
 ---
 
+## 🔗 相关项目 — 开源量化铁三角（Quant Trio）
+
+| 项目 | 在链路中的定位 | 协同方式 |
+|---|---|---|
+| **[AlphaEvo](https://github.com/ZhuLinsen/alphaevo)** | 研究与因子挖掘 | 进化式发现与样本外检验 α 因子后，沉淀为 AlphaSift YAML 策略规则 |
+| **[AlphaSift](https://github.com/ZhuLinsen/alphasift)** | **多市场初筛与验证底座** | 盘后从 7 市场 `5,000+` 标的精选 `3–5` 只并公开验证 `T+5 / 10 / 20` |
+| **[daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis)** | L3 个股深度精研 | 通过 `DSA_API_URL` 或 `alphasift mcp` 接收初筛名单，生成个股资讯与操作建议 |
+
+更多结构图、STDIO MCP 工具列表与 Docker 快速启动见 [docs/ecosystem.md](docs/ecosystem.md)。
+
+---
+
 ## 免责声明、文档与开源协议
 
 > 本项目仅用于量化研究、开源工程验证与个人学习，不构成任何投资建议、收益承诺或买卖指令。
 
-[使用指南](docs/usage.md) · [配置参考](docs/configuration.md) · [部署与镜像](docs/deployment.md) · [策略编写指南](docs/strategy-guide.md) · [评分体系](docs/scoring.md) · [设计原则](docs/design.md) · [项目定位](docs/positioning.md) · [横向比较](docs/comparison.md) · [参考资料](docs/reference.md) · [更新记录](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
+[使用指南](docs/usage.md) · [配置参考](docs/configuration.md) · [生态与 MCP](docs/ecosystem.md) · [部署与镜像](docs/deployment.md) · [策略编写指南](docs/strategy-guide.md) · [评分体系](docs/scoring.md) · [输出契约](docs/result-schema.md) · [参考资料](docs/reference.md) · [参与贡献](CONTRIBUTING.md) · [安全策略](SECURITY.md) · [更新记录](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
 基于 [Apache License 2.0](LICENSE) 开源。

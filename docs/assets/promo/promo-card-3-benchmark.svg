@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#090d16"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg3)"/>
+  <rect x="64" y="46" width="440" height="32" rx="16" fill="#2e1b18" stroke="#f59e0b" stroke-opacity="0.55"/>
+  <text x="84" y="67" fill="#fbbf24" font-family="ui-monospace,monospace" font-size="13" font-weight="700" letter-spacing="1.2">ZERO-HYPE ENGINEERING · VERIFIED LEDGER</text>
+  <text x="64" y="132" fill="#f8fafc" font-family="-apple-system,sans-serif" font-size="44" font-weight="800" letter-spacing="-0.8">Built Against Backtest &amp; AI Failure Modes</text>
+  <text x="64" y="172" fill="#94a3b8" font-family="-apple-system,sans-serif" font-size="21">Why deterministic guardrails, next_open accounting, and paired Rules vs AI attribution matter</text>
+
+  <!-- Three Vertical Pillars -->
+  <g transform="translate(64,218)">
+    <rect x="0" y="0" width="368" height="316" rx="16" fill="#111b2e" stroke="#f59e0b" stroke-width="1.6"/>
+    <text x="24" y="44" fill="#fbbf24" font-family="ui-monospace,monospace" font-size="13" font-weight="700">01 · NO PAPER GAINS AT LIMIT-UP</text>
+    <text x="24" y="84" fill="#f8fafc" font-family="-apple-system,sans-serif" font-size="24" font-weight="700">next_open Entry Audit</text>
+    <text x="26" y="126" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Enters at T+1 open (not signal close)</text>
+    <text x="26" y="158" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Flags one-price limit-up untradable</text>
+    <text x="26" y="190" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Delayed exit when limit-down locked</text>
+    <text x="26" y="222" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Matched CSI300 / S&amp;P500 / Nikkei bench</text>
+    <rect x="26" y="252" width="316" height="40" rx="8" fill="#1e293b"/>
+    <text x="42" y="277" fill="#fbbf24" font-family="ui-monospace,monospace" font-size="13">606 pytest tests · public JSONL logs</text>
+  </g>
+
+  <g transform="translate(456,218)">
+    <rect x="0" y="0" width="368" height="316" rx="16" fill="#111b2e" stroke="#38bdf8" stroke-width="1.6"/>
+    <text x="24" y="44" fill="#38bdf8" font-family="ui-monospace,monospace" font-size="13" font-weight="700">02 · PROVE AI VALUE OR STAY RULES</text>
+    <text x="24" y="84" fill="#f8fafc" font-family="-apple-system,sans-serif" font-size="23" font-weight="700">Rules vs AI Paired Tests</text>
+    <text x="26" y="126" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Dual track on same date &amp; strategy</text>
+    <text x="26" y="158" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Measures AI Added vs AI Dropped alpha</text>
+    <text x="26" y="190" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Code-enforced red-flag cap &lt;= 35 pts</text>
+    <text x="26" y="222" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Omitted picks cannot keep stale scores</text>
+    <rect x="26" y="252" width="316" height="40" rx="8" fill="#1e293b"/>
+    <text x="42" y="277" fill="#38bdf8" font-family="ui-monospace,monospace" font-size="13">Zero-SDK OpenAI/Gemini HTTP client</text>
+  </g>
+
+  <g transform="translate(848,218)">
+    <rect x="0" y="0" width="368" height="316" rx="16" fill="#111b2e" stroke="#10b981" stroke-width="1.6"/>
+    <text x="24" y="44" fill="#34d399" font-family="ui-monospace,monospace" font-size="13" font-weight="700">03 · TRANSPARENT ATTRIBUTION</text>
+    <text x="24" y="84" fill="#f8fafc" font-family="-apple-system,sans-serif" font-size="23" font-weight="700">Waterfall &amp; Topic Exposure</text>
+    <text x="26" y="126" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• p25/p50/p75 threshold tight-filter hints</text>
+    <text x="26" y="158" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Per-pick topic &amp; hotspot alignment tags</text>
+    <text x="26" y="190" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Portfolio concentration &amp; replacements</text>
+    <text x="26" y="222" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• 250-day Pattern Gate: N &gt;= 200, excess &gt; 0</text>
+    <rect x="26" y="252" width="316" height="40" rx="8" fill="#1e293b"/>
+    <text x="42" y="277" fill="#34d399" font-family="ui-monospace,monospace" font-size="13">EN / 中文 / 日本語 Live Dashboard</text>
+  </g>
+
+  <text x="64" y="592" fill="#64748b" font-family="ui-monospace,monospace" font-size="14">Live Verification Dashboard: https://zhulinsen.github.io/alphasift/</text>
+  <text x="1216" y="592" text-anchor="end" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="14">github.com/ZhuLinsen/alphasift</text>
+</svg>

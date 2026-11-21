@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#070d1a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg2)"/>
+  <rect x="64" y="46" width="380" height="32" rx="16" fill="#0f2922" stroke="#10b981" stroke-opacity="0.55"/>
+  <text x="84" y="67" fill="#10b981" font-family="ui-monospace,monospace" font-size="13" font-weight="700" letter-spacing="1.2">OPEN-SOURCE QUANT TRIO ARCHITECTURE</text>
+  <text x="64" y="132" fill="#f8fafc" font-family="-apple-system,sans-serif" font-size="44" font-weight="800" letter-spacing="-0.8">From Alpha Research to Daily Conviction</text>
+  <text x="64" y="172" fill="#94a3b8" font-family="-apple-system,sans-serif" font-size="21">Three composable repos by ZhuLinsen: factor mining, cross-market funnel, and deep single-stock briefs</text>
+
+  <!-- Box 1: AlphaEvo -->
+  <g transform="translate(64,218)">
+    <rect x="0" y="0" width="348" height="296" rx="16" fill="#121c30" stroke="#a78bfa" stroke-width="1.8"/>
+    <rect x="24" y="24" width="142" height="26" rx="13" fill="#2e1f4d"/>
+    <text x="95" y="42" text-anchor="middle" fill="#c4b5fd" font-family="ui-monospace,monospace" font-size="12" font-weight="700">STEP 1 · RESEARCH</text>
+    <text x="24" y="88" fill="#f8fafc" font-family="-apple-system,sans-serif" font-size="30" font-weight="800">AlphaEvo</text>
+    <text x="24" y="116" fill="#a78bfa" font-family="ui-monospace,monospace" font-size="14">ZhuLinsen/alphaevo</text>
+    <line x1="24" y1="136" x2="324" y2="136" stroke="#28354e"/>
+    <text x="24" y="168" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Evolutionary AST/LLM alpha mining</text>
+    <text x="24" y="200" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Out-of-sample IC &amp; turnover gates</text>
+    <text x="24" y="232" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Exports YAML strategy priors</text>
+    <text x="24" y="272" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="13">Output: Proven Factor Genomes</text>
+  </g>
+
+  <!-- Arrow 1->2 -->
+  <path d="M 422 366 L 456 366" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="456,358 470,366 456,374" fill="#38bdf8"/>
+
+  <!-- Box 2: AlphaSift -->
+  <g transform="translate(474,204)">
+    <rect x="0" y="0" width="356" height="324" rx="16" fill="#0f2538" stroke="#38bdf8" stroke-width="2.2"/>
+    <rect x="24" y="24" width="176" height="26" rx="13" fill="#0c3a54"/>
+    <text x="112" y="42" text-anchor="middle" fill="#38bdf8" font-family="ui-monospace,monospace" font-size="12" font-weight="700">STEP 2 · L1/L2 FUNNEL</text>
+    <text x="24" y="88" fill="#ffffff" font-family="-apple-system,sans-serif" font-size="32" font-weight="800">AlphaSift</text>
+    <text x="24" y="116" fill="#38bdf8" font-family="ui-monospace,monospace" font-size="14">ZhuLinsen/alphasift (this repo)</text>
+    <line x1="24" y1="136" x2="332" y2="136" stroke="#1f4662"/>
+    <text x="24" y="168" fill="#e2e8f0" font-family="-apple-system,sans-serif" font-size="16">• 5,000+ stocks → 3–5 picks in seconds</text>
+    <text x="24" y="200" fill="#e2e8f0" font-family="-apple-system,sans-serif" font-size="16">• 7 global markets + 250D Pattern Radar</text>
+    <text x="24" y="232" fill="#e2e8f0" font-family="-apple-system,sans-serif" font-size="16">• Announcement risk + portfolio caps</text>
+    <text x="24" y="264" fill="#e2e8f0" font-family="-apple-system,sans-serif" font-size="16">• Public T+5/10/20 next_open ledger</text>
+    <text x="24" y="302" fill="#10b981" font-family="ui-monospace,monospace" font-size="13">MCP + JSON + CLI + Web Workbench</text>
+  </g>
+
+  <!-- Arrow 2->3 -->
+  <path d="M 840 366 L 874 366" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="874,358 888,366 874,374" fill="#10b981"/>
+
+  <!-- Box 3: DSA -->
+  <g transform="translate(892,218)">
+    <rect x="0" y="0" width="324" height="296" rx="16" fill="#121c30" stroke="#10b981" stroke-width="1.8"/>
+    <rect x="24" y="24" width="166" height="26" rx="13" fill="#0d352a"/>
+    <text x="107" y="42" text-anchor="middle" fill="#34d399" font-family="ui-monospace,monospace" font-size="12" font-weight="700">STEP 3 · L3 DEEP DIVE</text>
+    <text x="24" y="88" fill="#f8fafc" font-family="-apple-system,sans-serif" font-size="28" font-weight="800">daily_stock_analysis</text>
+    <text x="24" y="116" fill="#10b981" font-family="ui-monospace,monospace" font-size="14">73.6k Stars · Single-Stock AI</text>
+    <line x1="24" y1="136" x2="300" y2="136" stroke="#28354e"/>
+    <text x="24" y="168" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Deep technicals, catalysts &amp; news</text>
+    <text x="24" y="200" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Consumes AlphaSift shortlist &amp; risk</text>
+    <text x="24" y="232" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Actionable decision dashboards</text>
+    <text x="24" y="272" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="13">Optional downstream L3 integration</text>
+  </g>
+
+  <text x="64" y="592" fill="#64748b" font-family="ui-monospace,monospace" font-size="14">End-to-End Closed Loop:  Hypothesize (AlphaEvo)  ──▶  Screen &amp; Verify (AlphaSift)  ──▶  Deep Research (DSA)</text>
+</svg>
