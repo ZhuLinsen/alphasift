@@ -13,7 +13,7 @@ import alphasift
 from alphasift import pack as pack_mod
 from alphasift.config import Config
 from alphasift.pack import DailyPack, FIELDS, PackError, save_pack
-from alphasift.server import build_api_response
+from alphasift.server import build_api_response, build_html_response
 
 
 def _make_pack(n_days: int = 70) -> DailyPack:
@@ -106,6 +106,8 @@ def test_server_radar_endpoints_and_top_level_exports(tmp_path: Path) -> None:
         "list_patterns",
         "scan_patterns",
         "build_daily_report",
+        "generate_ai_daily_brief",
+        "render_daily_report_html",
         "push_daily_report",
         "doctor_radar_readiness",
     ):
@@ -191,3 +193,10 @@ def test_server_radar_endpoints_and_top_level_exports(tmp_path: Path) -> None:
 
     s_bad, p_bad = build_api_response(ok_cfg, "/market-stats", query="trade_date=1999-01-01")
     assert s_bad == 400 and p_bad["error"] == "invalid_request"
+
+    s_html, html_body = build_html_response(ok_cfg, "/daily-report.html")
+    assert s_html == 200 and "AlphaSift · A 股盘后量化投研日报" in html_body and "样本2" in html_body
+    s_html_503, html_err = build_html_response(missing_pack_cfg, "/daily-report.html")
+    assert s_html_503 == 503 and "503" in html_err
+    s_html_404, _ = build_html_response(ok_cfg, "/missing.html")
+    assert s_html_404 == 404

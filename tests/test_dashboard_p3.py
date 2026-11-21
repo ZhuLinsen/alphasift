@@ -190,6 +190,9 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
         "未评估",
         "样本不足",
         "trend_ai",
+        "ai_case_studies",
+        "ai_brief",
+        "site/daily_report.html",
         "universe_baseline",
         "by_overhead_supply",
         "muted-cell",
@@ -246,3 +249,5 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
     step_names = [s.get("name", "") for s in tr_data["jobs"]["record"]["steps"]]
     assert step_names.index("Daily report and optional IM push") < step_names.index("Build site data")
     assert "evaluate --track track --markets" in tr_text and '--pack-dir "$ALPHASIFT_PACK_DIR"' in tr_text
+    assert "--output-html track/site/daily_report.html" in tr_text
+    assert "--ai-brief auto" in tr_text

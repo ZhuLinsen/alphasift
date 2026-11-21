@@ -229,10 +229,12 @@ alphasift patterns replay --output-json local/pattern_replay.json --output-md lo
 # 打包与推送就绪自检（不会打印任何 Webhook 或 Token 密钥）
 alphasift doctor radar --explain
 
-# 生成结构化 report.json 与 <1200 字 IM 卡片（公告排雷预警置顶，完整候选/形态与 AI 归因详见网页看板），并按配置幂等推送
-alphasift daily-report --expected-trade-date 2026-11-20 --allow-stale-pack --output-json local/report.json --output-card local/card.md --push --explain
+# 生成结构化 report.json、<1200 字 IM 卡片与可打印独立 HTML 研报（公告排雷预警置顶，完整候选/AI简评详见 HTML 与看板）
+alphasift daily-report --expected-trade-date 2026-11-20 --allow-stale-pack --ai-brief auto --output-json local/report.json --output-card local/card.md --output-html local/daily_report.html --push --explain
 ```
 
+- **数据源稳定性**：默认 A 股快照优先级调整为 `em_datacenter -> sina -> efinance -> akshare_em`（`_fetch_em_datacenter` 改用 `FREE_CAP` 映射流通市值），减少海外环境下多源超时触发的降级。
+- **跨策略共识、AI 综述简报与独立 HTML 研报**：`alphasift/daily_brief.py` 计算多策略共识（`>= 2` 策略命中）、行业集中度与策略×形态共振，并在配置 LLM Key 时由 `--ai-brief auto` 生成结构化 `ai_brief`（无 Key 或调用异常时自动回退规则合成）；`alphasift/daily_report_html.py` 与 HTTP `GET /daily-report.html` 提供零外部依赖、支持打印与 PDF 导出的独立投研日报。
 - **IM 渠道环境变量**：支持企业微信（`WECOM_WEBHOOK_URL`）、飞书机器人（`FEISHU_WEBHOOK_URL`，可选加签密钥 `FEISHU_WEBHOOK_SECRET`）与 Telegram（`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`），以及卡片详情跳转链接 `ALPHASIFT_DASHBOARD_URL`（或 `--detail-url`）。同一交易日同一渠道加进程/文件锁并发去重，失败自动落盘并允许下次自动重试；若 `--expected-trade-date` 检出旧包（`pack_is_stale=True`），默认跳过未强制推送（`skipped_stale_pack`）。未配置任何渠道时静默跳过。
 - **CLI 与 HTTP 同源输入**：`alphasift daily-report` 与 HTTP `/daily-report` 共用 `load_daily_report_runs()`（按沪深交易时段归属日加载规则榜与 AI 榜并生成 `ai_highlights`）。
 - **公告排雷**：默认对重点候选做近期公告负面关键词抽检，**卡片内优先预留公告预警篇幅并置于策略与形态概览之前**；离线或接口异常时降级写入 `degradation`，不影响日报生成。

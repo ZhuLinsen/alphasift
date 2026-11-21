@@ -5,11 +5,12 @@
 - **成交与历史前复权口径修复**：
   - `pack_features.compute_pack_daily_features` 改在计算前先按 `trade_date` 截断矩阵再 `forward_adjust`，消除未来除权改写历史均线的偷价问题；`pipeline._attach_pack_daily_features` 当快照日期早于包尾日时传入目标日截断对齐。
   - `alphasift/evaluate.py` 与 `pack.pack_price_paths(..., include_raw=True)` 对 A 股一字涨跌停判定优先使用未复权 `raw_open / raw_previous_close / raw_high / raw_low` 原始行情；公开战绩 `scripts/track_record.py evaluate --pack-dir` 默认 `entry_mode=auto`，在 `ALPHASIFT_NEXT_OPEN_SWITCH_DATE`（默认 `2026-11-21`）之前保留历史 `close` 口径并将不可成交标为 `未评估（untradable_share_pct=null）`，切换日起显式接入 `next_open` 与一字涨停过滤。
-  - `em_datacenter` 快照新增返回 `OPEN_PRICE / HIGH_PRICE / LOW_PRICE / PRE_CLOSE_PRICE / VOLUME / MAX_TRADE_DATE` 并纳入北京证券交易所标的。
+  - `em_datacenter` 快照新增返回 `OPEN_PRICE / HIGH_PRICE / LOW_PRICE / PRE_CLOSE_PRICE / VOLUME / MAX_TRADE_DATE`，改用 `FREE_CAP` 映射流通市值并纳入北京证券交易所标的；默认快照数据源优先级调整为 `em_datacenter` 优先（减少海外环境下前置限流报错）。
 - **AI 对比口径与形态 250 日回放统计增强**：
-  - `track_comparison` 改为同一策略严格按**共同信号日**配对，输出 `paired_days`、`ai_missing_rate_pct`、`avg_pick_overlap_pct`、AI 独选与 AI 剔除平均超额（`paired_days < 10` 时隐藏差值）；`trend`（规则）与 `trend_ai`（AI）拆线分离，看板支持单独或叠加对比。
+  - `track_comparison` 改为同一策略严格按**共同信号日**配对，输出 `paired_days`、`ai_missing_rate_pct`、`avg_pick_overlap_pct`、AI 独选与 AI 剔除平均超额（`paired_days < 10` 时隐藏差值），并沉淀个股级正反案例 `ai_case_studies`；`trend`（规则）与 `trend_ai`（AI）拆线分离，看板支持单独或叠加对比。
   - `pattern_replay` 修复基准匹配门槛，毕业门限（`>= 200`）改按 `excess_scored` 统计，增加全市场与流动性 >= 8000 万基准对比（`universe_baseline`）、按信号日聚合均值计算的 `daily_t_stat` 与前后半段（H1/H2）分布校验，以及腾讯指数优先、新浪指数重试兜底。
-- **日报重构、并发锁推送、看板视觉改版与串行 Workflow**：
+- **跨策略共识简报、独立 HTML 研报、并发锁推送与串行 Workflow**：
+  - 新增 `alphasift/daily_brief.py`（跨策略共识 `cross_strategy_synthesis` 与支持 LLM / 规则双模式回退的 `generate_ai_daily_brief`）与 `alphasift/daily_report_html.py`（零依赖可打印 `daily_report.html`）；CLI 新增 `--output-html` / `--ai-brief`，HTTP 服务新增 `/daily-report.html`。
   - CLI `alphasift daily-report` 与 HTTP `/daily-report` 统一通过 `load_daily_report_runs()` 加载同交易日规则/AI 策略与 `ai_highlights`，新增 `expected_trade_date / pack_is_stale / stale_reason / detail_url`；IM 卡片置顶公告排雷预警并预留截断预算，将策略股票清单与实验形态清单下沉网页看板。
   - `alphasift/notify.py` 新增进程锁 + `fcntl.flock` 文件锁与 `pending -> sent / failed` 两阶段幂等状态机，并发防重发、失败下次自动重试，检测到旧包（`pack_is_stale`）时默认跳过未强制推送。
   - `scripts/track_record_page.html` 改版为高信息密度专业投研看板：首屏四宫格展示 A 股情绪宽度/7 档涨跌分布与中位数、涨跌停/封板率、连板高度梯队、公告预警/AI 要点；AI 配对归因与分离走势紧随其后；成绩单、形态雷达、250 日回放切片与历史明细分层折叠。

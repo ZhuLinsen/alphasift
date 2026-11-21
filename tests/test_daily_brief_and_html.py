@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import json
+import sys
 
 import numpy as np
 import pandas as pd
 
+from alphasift.cli import main as cli_main
 from alphasift.config import Config
 from alphasift.daily_brief import (
     BRIEF_DISCLAIMER,
@@ -15,6 +18,7 @@ from alphasift.daily_brief import (
     generate_ai_daily_brief,
 )
 from alphasift.daily_report import build_daily_report
+from alphasift.daily_report_html import render_daily_report_html, write_daily_report_html
 from alphasift.models import Pick, ScreenResult
 from alphasift.pack import DailyPack, FIELDS
 
@@ -183,3 +187,84 @@ def test_generate_ai_daily_brief_modes_and_fallbacks() -> None:
         "strategy_pattern_resonance": [],
         "risk_spotlight": [],
     }
+
+
+def test_render_and_write_daily_report_html_and_cli(tmp_path: Path, monkeypatch, capsys) -> None:
+    from alphasift.pack import save_pack
+
+    pack = _pack()
+    pack_dir = tmp_path / "pack_cn"
+    save_pack(pack_dir, pack)
+
+    def ann_fn(df, *, max_rows: int, cache_dir=None):
+        return [
+            {
+                "code": "000002",
+                "name": "股票02<script>alert(1)</script>",
+                "announcement": "股东拟减持",
+                "negative_event_flags": ["减持"],
+                "announcement_categories": ["减持"],
+            }
+        ], []
+
+    report = build_daily_report(
+        pack,
+        expected_trade_date="2099-01-01",
+        allow_stale_pack=True,
+        strategy_runs=_sample_runs(),
+        announcement_collector=ann_fn,
+    )
+    track_summary = {
+        "strategy_names": {"dual_low": "双低稳健"},
+        "track_comparison": [
+            {
+                "market": "cn",
+                "strategy": "dual_low",
+                "windows": {
+                    "5": {
+                        "ai_case_studies": {
+                            "best_ai_adds": [{"date": "2026-10-12", "code": "600519", "name": "贵州茅台", "excess_return_pct": 5.2}],
+                            "best_ai_avoids": [{"date": "2026-10-12", "code": "000002", "name": "股票02", "excess_return_pct": -4.1}],
+                            "missed_by_ai": [],
+                        }
+                    }
+                },
+            }
+        ],
+    }
+    html_out = tmp_path / "daily_report.html"
+    written = write_daily_report_html(html_out, report, track_summary=track_summary)
+    assert written == html_out and html_out.is_file()
+    html_text = html_out.read_text(encoding="utf-8")
+    assert "@media print" in html_text
+    assert "旧包降级模式" in html_text
+    assert "多策略共识" in html_text
+    assert "贵州茅台" in html_text
+    assert "股票02&lt;script&gt;alert(1)&lt;/script&gt;" in html_text
+    assert "<script>alert(1)</script>" not in html_text
+    assert 'class="kline"' in html_text
+    assert 'class="dist-svg"' in html_text
+
+    # CLI --output-html and --ai-brief off smoke
+    cli_html = tmp_path / "cli_report.html"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "alphasift",
+            "daily-report",
+            "--pack-dir",
+            str(pack_dir),
+            "--no-announcements",
+            "--ai-brief",
+            "off",
+            "--output-html",
+            str(cli_html),
+            "--json",
+        ],
+    )
+    cli_main()
+    cli_payload = json.loads(capsys.readouterr().out)
+    assert cli_html.is_file()
+    assert cli_payload["ai_brief"]["mode"] == "rule_fallback"
+    assert render_daily_report_html(cli_payload).startswith("<!doctype html>")
