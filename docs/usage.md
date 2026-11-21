@@ -182,15 +182,17 @@ alphasift evaluate <run_id> --with-price-path --explain
 
 ## A 股离线日线包
 
+> 离线日线包仅供研究者**在本地或 GitHub Actions 私有缓存（`actions/cache`）中自建自用**，主仓库**不提供公开下载或二次分发**。
+
 ```bash
-alphasift pack pull
+alphasift pack build --days 250
 alphasift pack info --trade-date 2026-11-18
 ALPHASIFT_PACK_DIR=data/pack/sample alphasift pack build --days 250 --codes-limit 30
 python3 scripts/build_pack.py backfill --days 250 --trade-date 2026-11-18
 python3 scripts/build_pack.py update --days 250 --trade-date 2026-11-19
 ```
 
-`pull` 从 GitHub Release 拉取清单，校验 SHA-256；本地文件已与清单一致时跳过下载。`info` 输出校验后的清单和 `fresh` 字段。省略 `--trade-date` 时，按 A 股收盘时间和工作日估算预期交易日，节假日可显式指定。
+`info` 输出校验后的清单和 `fresh` 字段。省略 `--trade-date` 时，按 A 股收盘时间和工作日估算预期交易日，节假日可显式指定。只有当用户显式设置 `ALPHASIFT_PACK_REPO` 指向自己的私有仓库（配合 `GITHUB_TOKEN`）时，`alphasift pack pull` 才会从对应仓库拉取并校验 SHA-256；默认不指向任何公开仓库。
 
 默认保留 250 个交易日，数据全部来自项目现有数据源。省略 `--codes-limit` 可构建全量包。
 

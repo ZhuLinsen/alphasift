@@ -165,7 +165,7 @@ tushare -> sina -> efinance -> akshare_em -> em_datacenter
 | 环境变量 | 默认值 | 用途 |
 |----------|--------|------|
 | `ALPHASIFT_PACK_DIR` | `<ALPHASIFT_DATA_DIR>/pack/cn` | 包文件及按日期范围保存的 `.backfill/` 续传缓存 |
-| `ALPHASIFT_PACK_REPO` | `ZhuLinsen/alphasift` | `pack pull` 的 GitHub Release 仓库，默认标签为 `data-cn` |
+| `ALPHASIFT_PACK_REPO` | 未设置（默认禁用公开拉取） | 可选，仅当你自己在私有仓库维护打包资产时，供 `pack pull` 指向你的 `owner/repo`（配合 `GITHUB_TOKEN`） |
 | `TICKPLUS_API_KEY` | 未设置 | 可选，与 daily_stock_analysis 同名。设置后 `scripts/build_pack.py update` 优先用 TickPlus 取当日日线；未设置时依次尝试现有快照源、腾讯批量行情（`qt.gtimg.cn`）与历史日线源 |
 
 TickPlus `updatedaykline` 约提供最近一周的不复权日线，接口使用 HTTP 并在查询串传递密钥。本次仅用按文档字段构造的离线样例验证，尚未进行实盘接口验证。名称、行业、估值和市值等元数据来自构建或更新时的最新可用快照，源缺失的可选字段可省略。

@@ -1,12 +1,10 @@
 name: CN daily data pack
 
-# Build and publish the CN unadjusted daily pack (`daily.npz`, `meta.csv.gz`,
-# `manifest.json`) to the `data-cn` GitHub Release using public free sources by
-# default, with optional TickPlus incremental acceleration when configured.
+# Build and update the CN unadjusted daily pack (`daily.npz`, `meta.csv.gz`,
+# `manifest.json`) inside private GitHub Actions cache (`actions/cache`) only,
+# without publishing raw market data to public GitHub Releases.
 
 on:
-  schedule:
-    - cron: "45 8 * * 1-5" # 16:45 Beijing on weekdays, after CN close
   workflow_call:
     inputs:
       mode:
@@ -62,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
-      contents: write
+      contents: read
     env:
       ALPHASIFT_PACK_DIR: ${{ github.workspace }}/pack
     steps:
@@ -74,11 +72,13 @@ jobs:
       - name: Install
         run: python -m pip install -e .
 
-      - name: Pull existing data-cn pack when updating
-        if: (inputs.mode || 'update') == 'update'
-        env:
-          ALPHASIFT_PACK_REPO: ${{ github.repository }}
-        run: alphasift pack pull || echo "::notice::no prior data-cn release found; will initialize via backfill"
+      - name: Restore and save CN daily pack in private Actions cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ALPHASIFT_PACK_DIR }}
+          key: cn-daily-pack-${{ github.run_id }}
+          restore-keys: |
+            cn-daily-pack-
 
       - name: Build or update CN daily pack
         env:
@@ -98,24 +98,3 @@ jobs:
           fi
           python scripts/build_pack.py "$mode" "${extra_args[@]}"
           alphasift doctor radar --pack-dir "$ALPHASIFT_PACK_DIR" --explain
-
-      - name: Publish data-cn Release assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          notes="AlphaSift A 股离线日线包（仅供量化研究与个人回测使用，不构成投资建议）。"
-          if gh release view data-cn >/dev/null 2>&1; then
-            gh release upload data-cn \
-              "$ALPHASIFT_PACK_DIR/daily.npz" \
-              "$ALPHASIFT_PACK_DIR/meta.csv.gz" \
-              "$ALPHASIFT_PACK_DIR/manifest.json" \
-              --clobber
-          else
-            gh release create data-cn \
-              "$ALPHASIFT_PACK_DIR/daily.npz" \
-              "$ALPHASIFT_PACK_DIR/meta.csv.gz" \
-              "$ALPHASIFT_PACK_DIR/manifest.json" \
-              --title "CN Daily Pack (data-cn)" \
-              --notes "$notes"
-          fi

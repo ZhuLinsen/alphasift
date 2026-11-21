@@ -235,17 +235,23 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
         assert 'echo "$TICKPLUS_API_KEY"' not in text
         loaded[name] = (data, text)
 
-    # data-pack.yml exposes workflow_call with strictly string inputs for reuse.
-    dp_data, _ = loaded["data-pack.yml"]
+    # data-pack.yml exposes workflow_call with strictly string inputs and uses private Actions cache.
+    dp_data, dp_text = loaded["data-pack.yml"]
     dp_on = dp_data.get("on") if "on" in dp_data else dp_data[True]
     wf_call_inputs = dp_on["workflow_call"]["inputs"]
     assert all(spec["type"] == "string" for spec in wf_call_inputs.values())
+    assert "gh release create" not in dp_text and "gh release upload" not in dp_text
+    assert "actions/cache" in dp_text
+    assert "alphasift pack pull" not in dp_text
 
-    # track-record.yml chains pack -> record, evaluates with --pack-dir, and builds after daily-report.
+    # track-record.yml chains pack -> record via private Actions cache, evaluates with --pack-dir, and builds after daily-report.
     tr_data, tr_text = loaded["track-record.yml"]
     assert "pack" in tr_data["jobs"]
     assert tr_data["jobs"]["pack"]["uses"] == "./.github/workflows/data-pack.yml"
     assert tr_data["jobs"]["record"]["needs"] == ["pack"]
+    assert "gh release create" not in tr_text and "gh release upload" not in tr_text
+    assert "actions/cache/restore" in tr_text
+    assert "alphasift pack pull" not in tr_text
     step_names = [s.get("name", "") for s in tr_data["jobs"]["record"]["steps"]]
     assert step_names.index("Daily report and optional IM push") < step_names.index("Build site data")
     assert "evaluate --track track --markets" in tr_text and '--pack-dir "$ALPHASIFT_PACK_DIR"' in tr_text

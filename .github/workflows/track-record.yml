@@ -36,7 +36,7 @@ jobs:
       (github.event_name == 'schedule' && github.event.schedule == '30 10 * * 1-5') ||
       (github.event_name == 'workflow_dispatch' && (inputs.session || 'asia') == 'asia')
     permissions:
-      contents: write
+      contents: read
     uses: ./.github/workflows/data-pack.yml
     secrets: inherit
     with:
@@ -96,12 +96,23 @@ jobs:
           echo "markets=$markets" >> "$GITHUB_OUTPUT"
           echo "session=$session markets=$markets"
 
-      - name: Pull CN data pack
+      - name: Restore CN data pack from private Actions cache
         if: steps.session.outputs.session != 'us'
-        env:
-          ALPHASIFT_PACK_REPO: ${{ github.repository }}
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.ALPHASIFT_PACK_DIR }}
+          key: cn-daily-pack-${{ github.run_id }}
+          restore-keys: |
+            cn-daily-pack-
+
+      - name: Verify CN data pack cache
+        if: steps.session.outputs.session != 'us'
         run: |
-          alphasift pack pull --wait-sec 180 --poll-sec 30 || echo "::warning::data-cn pack unavailable; falling back to per-stock daily fetch"
+          if [ -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
+            alphasift pack info || echo "::warning::cached CN pack failed verification"
+          else
+            echo "::warning::CN daily pack cache unavailable; falling back to per-stock daily fetch"
+          fi
 
       - name: Screen
         if: steps.session.outputs.session != 'rebuild'

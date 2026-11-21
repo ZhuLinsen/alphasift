@@ -1078,7 +1078,7 @@ def doctor_radar_readiness(
     recommendations: list[str] = []
     if not pack_info["valid"]:
         recommendations.append(
-            "CN DailyPack 未就绪：请运行 `alphasift pack pull` 或 `alphasift pack build` 构建本地日线包。"
+            "CN DailyPack 未就绪：数据包仅限本地/私有使用，请运行 `alphasift pack build`（或 `python scripts/build_pack.py backfill`）构建本地日线包。"
         )
     elif not pack_info["fresh"]:
         recommendations.append(

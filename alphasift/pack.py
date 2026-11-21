@@ -34,7 +34,7 @@ from alphasift.snapshot import fetch_cn_snapshot, fetch_snapshot_with_fallback
 
 DEFAULT_DAYS = 250
 DEFAULT_TAG = "data-cn"
-DEFAULT_REPO = "ZhuLinsen/alphasift"
+DEFAULT_REPO = ""
 FIELDS = ("open", "high", "low", "close", "pre_close", "volume", "amount")
 PRICE_FIELDS = FIELDS[:5]
 META_FIELDS = ("name", "industry", "pe_ratio", "pb_ratio", "total_mv", "circ_mv", "list_date", "is_st")
@@ -527,7 +527,12 @@ def stitch_snapshot(pack: DailyPack, snapshot: pd.DataFrame, trade_date: str | d
 def pull(directory: str | Path | None = None, *, repo: str | None = None, tag: str = DEFAULT_TAG) -> dict:
     """Fetch the manifest and publish verified GitHub assets if hashes changed."""
     path = Path(directory) if directory is not None else pack_dir()
-    repo = repo or os.getenv("ALPHASIFT_PACK_REPO", "").strip() or DEFAULT_REPO
+    repo = (repo or os.getenv("ALPHASIFT_PACK_REPO", "") or DEFAULT_REPO).strip()
+    if not repo:
+        raise PackError(
+            "CN daily pack is private and not publicly distributed; build locally with "
+            "'alphasift pack build' / 'python scripts/build_pack.py backfill' or set ALPHASIFT_PACK_REPO"
+        )
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not re.fullmatch(r"[A-Za-z0-9_.-]+", tag):
         raise PackError("Invalid GitHub pack repository or release tag")
     base = f"https://github.com/{repo}/releases/download/{tag}"
@@ -561,7 +566,7 @@ def pull_with_wait(
     poll_interval_sec: float = 30.0,
     sleep_fn=time.sleep,
 ) -> dict:
-    """Pull ``data-cn`` release pack, optionally polling until ``expected_trade_date`` arrives."""
+    """Pull a private ``data-cn`` release pack when ``ALPHASIFT_PACK_REPO`` is configured, optionally polling until ``expected_trade_date`` arrives."""
     target = _iso_date(expected_trade_date) if expected_trade_date is not None else expected_trade_date_str()
     budget = max(0.0, float(max_wait_sec))
     interval = max(0.1, float(poll_interval_sec))
@@ -610,8 +615,10 @@ def expected_trade_date_str() -> str:
 
 
 def _download(base: str, dst: Path) -> None:
+    token = (os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN") or "").strip()
+    kwargs: dict[str, Any] = {"headers": {"Authorization": f"Bearer {token}"}} if token else {}
     try:
-        with requests.get(f"{base}/{dst.name}", stream=True, timeout=(10, 60)) as response:
+        with requests.get(f"{base}/{dst.name}", stream=True, timeout=(10, 60), **kwargs) as response:
             response.raise_for_status()
             with dst.open("wb") as out:
                 for chunk in response.iter_content(chunk_size=1024 * 1024):

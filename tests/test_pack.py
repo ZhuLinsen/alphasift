@@ -772,6 +772,13 @@ def test_pull_rejects_corrupted_asset_without_replacing_pack(tmp_path, monkeypat
     assert pack.load_pack(local).manifest == original
 
 
+def test_pull_requires_configured_repo(tmp_path, monkeypatch):
+    monkeypatch.delenv("ALPHASIFT_PACK_REPO", raising=False)
+    assert pack.DEFAULT_REPO == ""
+    with pytest.raises(pack.PackError, match="private and not publicly distributed"):
+        pack.pull(tmp_path)
+
+
 @pytest.fixture
 def _tickplus(monkeypatch):
     class _Clock(datetime):
