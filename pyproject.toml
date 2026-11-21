@@ -10,6 +10,23 @@ readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
+keywords = [
+    "stock-screener",
+    "a-shares",
+    "a-stock",
+    "quant",
+    "quantitative-trading",
+    "quantitative-finance",
+    "algorithmic-trading",
+    "ai-agent",
+    "agent-skill",
+    "openclaw",
+    "claude-code",
+    "llm",
+    "akshare",
+    "yfinance",
+    "backtesting",
+]
 dependencies = [
     "pandas>=2.0",
     "pyyaml>=6.0",
@@ -24,6 +41,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]
+
+[project.urls]
+Homepage = "https://zhulinsen.github.io/alphasift/"
+Repository = "https://github.com/ZhuLinsen/alphasift"
+Documentation = "https://github.com/ZhuLinsen/alphasift/tree/main/docs"
+Issues = "https://github.com/ZhuLinsen/alphasift/issues"
 
 [project.scripts]
 alphasift = "alphasift.cli:main"

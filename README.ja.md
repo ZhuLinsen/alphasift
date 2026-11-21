@@ -1,40 +1,40 @@
 <div align="center">
 
 <a href="https://zhulinsen.github.io/alphasift/?lang=ja">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner-light.svg">
-    <img alt="AlphaSift — AI エージェント向けクオンツ銘柄発掘・T+N検証ベンチマーク" src="docs/assets/banner-dark.svg" width="100%">
-  </picture>
+  <img src="docs/assets/alphasift-logo.svg" alt="AlphaSift Logo" width="680">
 </a>
 
-<h3>AI エージェントのための全市場銘柄発掘＆事後検証エンジン — 監査可能な YAML 戦略、250日実証パターン検出、任意の AI デュアルトラック帰属分析、検証済み T+N トラックレコード</h3>
+# 🔎 AlphaSift
 
-<p>
-  <a href="https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml"><img src="https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
-  <a href="https://zhulinsen.github.io/alphasift/?lang=ja"><img src="https://img.shields.io/badge/dashboard-live%20(日%20%7C%20中%20%7C%20EN)-22c55e.svg" alt="ライブダッシュボード"></a>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-3b82f6.svg" alt="Python 3.10+"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-10b981.svg" alt="Apache 2.0"></a>
-</p>
+**オープンソース全市場 AI 株式スクリーナー・250日実証パターン検出・公開 T+N 検証ベンチマーク**
 
-<p>
-  <a href="https://zhulinsen.github.io/alphasift/?lang=ja"><strong>ライブダッシュボード</strong></a> ·
-  <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=ja"><strong>日次レポート</strong></a> ·
-  <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record"><strong>track-record 生ログ</strong></a> ·
-  <a href="SKILL.md"><strong>Agent Skill</strong></a>
-</p>
+*中国A株・米国・香港・日本・韓国・台湾・インドの7市場 → 監査可能な YAML 戦略 → 開示リスク重視 AI 再ランク → 1行12チャネル通知＆T+5/10/20 公開検証*
 
-<p>
-  <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <strong>日本語</strong>
-</p>
+[![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
+[![CI](https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml/badge.svg)](https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3b82f6.svg)](https://www.python.org/downloads/)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-10b981.svg)](LICENSE)
+[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://zhulinsen.github.io/alphasift/?lang=ja)
+[![7 Markets](https://img.shields.io/badge/Markets-CN%20%7C%20US%20%7C%20HK%20%7C%20JP%20%7C%20KR%20%7C%20TW%20%7C%20IN-6366f1.svg)](https://zhulinsen.github.io/alphasift/?lang=ja)
+[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-OpenClaw%20%7C%20Claude%20Code-10b981.svg)](SKILL.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ZhuLinsen/alphasift/pulls)
+
+[**ライブダッシュボード**](https://zhulinsen.github.io/alphasift/?lang=ja) · [**AlphaSift の特長**](#-なぜ-alphasift-なのか) · [**4つの始め方**](#-4-つのゼロ摩擦スタート) · [**1行12チャネル通知**](#-1行-notify_urls-通知チャネル一覧12種標準対応) · [**track-record 生ログ**](https://github.com/ZhuLinsen/alphasift/tree/track-record) · [**Agent Skill**](SKILL.md)
+
+[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
 
 </div>
 
 ---
 
-## 多言語ライブターミナル＆日次リサーチレポート
+## ✨ なぜ AlphaSift なのか
 
-毎営業日の引け後に全内蔵戦略を自動実行し、**`T+5 / T+10 / T+20`** で各市場のベンチマークに対する超過リターンを公開計測しています（寄付ストップ高による取引不可判定も集計）。Web ダッシュボードおよび印刷対応 HTML レポートは **日本語・中文・English** と **Obsidian Dark・Editorial Light** に標準対応しています。
+多くの AI 銘柄分析ツールは単発のチャット要約や過学習したバックテストに留まります。**AlphaSift は全市場スクリーニング・開示情報連動 AI 再評価・公開事後検証を一つの透明なパイプラインへ統合しています：**
+
+1. **API キー不要の決定的基盤＆直交分散**：L1 ハードフィルタ、マルチファクター評価、8 業種バケット上限分散（`portfolio_profile.mode: hard_cap`、`max_same_bucket: 1`）は API キーなしで決定的に動作します。中国 A 株 10 戦略の直交化により、250 日パック 3 時点検証で戦略間の平均重複率は **8.0%–24.9% → 0.9%–1.8%**（最大 **100% → 20%**）、銀行セクター集中度は **22%–31.1% → 4.0%–9.1%** へ低減しました。
+2. **250日 `next_open` 実証パターン検出**：過去 180 営業日・5,218 銘柄の実証リプレイで `T+5 一致 >= 200` かつ `対 CSI 300 超過 > 0%` の条件を満たした 2 パターンのみ `active` 認定し、他の 5 パターンは `experimental` として分離しています。
+3. **開示・資金フロー連動レッドライン AI**：標準モデル **`gemini/gemini-3.8-flash`**（`gemini/gemini-4-hydrogen` 自動フォールバック）をはじめ DeepSeek / OpenAI / Ollama に対応。`LLM_CANDIDATE_CONTEXT_ENABLED=true` により上位 12 銘柄の適時開示・ニュース・資金フローを注入し、重大な未解消悪材料は **`llm_score <= 35`** に制限（知名度バイアス禁止）、同日の `rules` vs `ai` 超過寄与を比較します。
+4. **公開 `next_open` T+N 台帳・1行通知・Fork 保護**：毎日の選定は `track-record` ブランチへ記録され、`T+5 / T+10 / T+20` でベンチマーク比較されます。1行 **`NOTIFY_URLS`** で 12 チャネルへ通知でき、**Plan A Fork 保護**により Fork リポジトリは `ALPHASIFT_ENABLE_PAGES=true` を設定しない限り重複サイトを公開せず、スキャンと通知のみ安全実行します。
 
 <table>
   <tr>
@@ -53,7 +53,7 @@
   </tr>
   <tr>
     <td colspan="2" align="center">
-      <a href="https://zhulinsen.github.io/alphasift/site/daily_report.html?lang=ja&theme=dark">
+      <a href="docs/usage.md">
         <img src="docs/assets/daily-report.png" alt="AlphaSift 日次リサーチレポート" width="88%">
       </a>
       <br><sub><b>印刷対応スタンドアロン日次レポート</b>（<code>alphasift daily-report --output-html</code>）— 引け後要約、適時開示チェック、20日ローソク足検出</sub>
@@ -63,96 +63,133 @@
 
 ---
 
-## アーキテクチャと主な特長
+## ⚡ 4 つのゼロ摩擦スタート
 
-```mermaid
-flowchart LR
-  M["7市場スナップショット + 非公開日足パック DailyPack"] --> L1["L1 YAML ハードフィルタ + マルチファクター採点"]
-  L1 --> L2["L2 インテリジェンス重視 AI (Gemini 3.8 Flash / DeepSeek / OpenAI)"]
-  L2 --> RK["リスク層 + 8業種バケット上限分散 (hard_cap)"]
-  RK --> L3["L3 事後分析 (scorecard / DSA / HTTP) + 開示リスク検査"]
-  L3 --> OUT["印刷対応 HTML レポート + 1行 NOTIFY_URLS 12チャネル通知"]
-  RK --> AUD["track-record 履歴保存 + next_open T+N 超過リターン検証"]
-```
-
-| 主な特長 | 設計・実測結果 |
-|---|---|
-| **API キー不要の決定的エンジン** | L1 スクリーニング、マルチファクター評価、リスク制御、8 業種分散（`portfolio_profile.mode: hard_cap`）はすべて API キーなしで決定的に動作します。 |
-| **A 株 10 戦略の直交化** | 時価総額・スタイル別（超大型高配当 `blue_chip_income` ≥ 500 億元 vs 中小型 `dual_low` 50–600 億元等）＋ `max_same_bucket: 1` により重複を解消。250 日パックの 3 時点検証（`2026-09-21` / `10-20` / `11-20`）で戦略間の平均重複率は **8.0%–24.9% → 0.9%–1.8%**（最大 **100% → 20%**）、銀行セクター集中度は **22%–31.1% → 4.0%–9.1%** へ低減しました。 |
-| **250日 `next_open` 実証パターン検出** | 過去 180 営業日・5,218 銘柄の実証リプレイで `T+5 一致 ≥ 200` かつ `対 CSI 300 超過 > 0%` のパターンのみ `active` 認定。基準を満たした 2 パターンが卒業し、5 パターンは `experimental` として分離表示されます。 |
-| **情報連動 Rules vs AI トラック** | `GEMINI_API_KEY`（デフォルト `gemini/gemini-3.8-flash` ＋ `gemini/gemini-4-hydrogen` 自動フォールバック）等を設定すると、`LLM_CANDIDATE_CONTEXT_ENABLED=true` により上位 12 銘柄の適時開示・ニュース・資金フローを注入し、重大悪材料は `llm_score <= 35` に制限（知名度バイアス禁止）。 |
-| **自己修復・Fork Pages 保護ガード** | 中国 A 株チェーン（`em_datacenter → sina → efinance → akshare_em`、トークン設定時は Tushare 優先）は健全性に応じて自動並べ替え、日足生データは非公開キャッシュのみ使用。**Plan A Fork 保護：** Fork 先は `ALPHASIFT_ENABLE_PAGES=true` を設定しない限り重複サイトを公開せず、スクリーニングと通知のみ安全実行します。 |
-| **1行 `NOTIFY_URLS` 12チャネル通知** | 追加依存なしで **PushPlus・Server醤/³・Bark・Email (SMTP)・WeCom・Feishu・DingTalk・Telegram・Discord・Slack・ntfy・Custom JSON** を URI 自動判別で通知（`apprise` 導入時は 90+ 連携対応、フッターに `site/feed.xml` も提供）。 |
-
----
-
-## 実証パターン 250 日リプレイ結果（`next_open` 対 CSI 300）
-
-検証期間 **`2026-02-05 .. 2026-11-06`**（180 営業日、対象 5,218 銘柄、寄付きストップ高除外）：
-
-| パターン | 系統 / モード | 総シグナル | T+5 一致 | T+5 超過 | T+5 超過勝率 | T+10 超過 | 判定 |
-|---|---|---:|---:|---:|---:|---:|---|
-| **20日線低ボラ縮小押し目** (`ma20_shrink_pullback` v2.0) | `trend_continuation · direct` | 2,295 | 2,293 | **+0.158%** | 46.45% | **+0.905%** | **`active`** |
-| **低ボラ堅調トレンド突破** (`steady_trend_breakout` v1.0) | `breakout · direct` | 460 | 460 | **+0.271%** | 48.70% | **+0.560%** | **`active`** |
-| その他 5 パターン (`single_yang_hold` 等) | mixed | 992–9,233 | 988–9,221 | -1.185% .. -0.175% | 38.26%–45.47% | -1.207% .. -0.619% | `experimental` |
-
----
-
-## クイックスタート
-
+### 1. API キー不要・30秒で全市場スキャン
 ```bash
+git clone https://github.com/ZhuLinsen/alphasift.git && cd alphasift
 pip install -e .
 
-# 1. API キー不要で全市場スキャン
 alphasift quickstart
 alphasift screen dual_low --no-llm
 alphasift screen global_value --market jp --no-llm
+```
 
-# 2. LLM 再ランク有効化（gemini/gemini-3.8-flash ＋ gemini-4-hydrogen フォールバック）
-cp .env.example .env
+### 2. LLM 再ランク・250日リプレイ・日次 HTML レポート
+```bash
+cp .env.example .env   # GEMINI_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY を設定
 alphasift screen dual_low --save-run
-
-# 3. パターンリプレイ・日次レポート HTML・通知テスト
 alphasift patterns replay --pack-dir ./data/pack/cn --output-md replay.md
 alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html --push
-alphasift notify status
-alphasift notify test --dry-run
+```
+
+### 3. Claude Code・OpenClaw・Cursor・Codex と連携（`SKILL.md` + HTTP API + Python）
+[SKILL.md](SKILL.md) または [agents/openai.yaml](agents/openai.yaml) をエージェントへ読み込み、Python 呼び出しまたはローカル HTTP API で利用できます：
+```python
+from alphasift import screen
+
+res = screen("dual_low", market="cn", use_llm=False)
+for pick in res.picks:
+    print(pick.rank, pick.code, pick.name, pick.industry, pick.final_score)
+```
+```bash
+alphasift serve --host 127.0.0.1 --port 8000   # エージェント向け読み取り専用 JSON API
+```
+
+### 4. GitHub Actions で完全自動実行＆1行通知
+1. リポジトリを Fork し **GitHub Actions** を有効化します。
+2. *Settings -> Secrets and variables -> Actions -> Secrets* に `GEMINI_API_KEY`（任意）および `NOTIFY_URLS`（任意）を設定します。
+3. **Plan A Fork Pages 保護**：Fork 先では重複サイト公開を防ぐため、Variables に `ALPHASIFT_ENABLE_PAGES=true` を設定しない限り GitHub Pages デプロイをスキップし、スクリーニングと通知のみ動作します。
+
+---
+
+## 🧭 既存ツールとの比較
+
+| 比較軸 | 一般スクリーナー (`TradingView` 等) | 個別銘柄 AI 分析 (`daily_stock_analysis`) | マルチエージェント議論 (`TradingAgents`) | **AlphaSift** |
+|---|---|---|---|---|
+| **対象範囲** | 1市場ずつ手動条件絞り込み | 指定済みウォッチリスト深掘り | 単一銘柄のロールプレイ議論 | **7市場全量スクリーニング (CN/US/HK/JP/KR/TW/IN)** |
+| **再現性と業種分散** | ブラックボックス / 手動設定 | プロンプト主導 | 会話合意 | **監査可能 YAML DSL ＋ 8業種 `hard_cap` 直交分散** |
+| **AI ガードレール** | なし | 個別銘柄ナラティブ | 対話コンセンサス | **適時開示/資金フロー注入 ＋ 悪材料 `<= 35` 上限 ＋ 知名度バイアス禁止** |
+| **事後検証** | なし | 手動振り返り | オフライン再生 | **公開 `track-record` 台帳 (`next_open` T+5/10/20＆ストップ高除外)** |
+| **連携性** | 単体 UI | **後段 L3 詳細分析と好相性** | 個別スクリプト | **上流候補発掘 (`DSA_API_URL` 連携) ＋ 1行12チャネル通知** |
+
+---
+
+## 🏗️ システムアーキテクチャ
+
+```
++-------------------------------------------------------------------+
+|  7市場スナップショット連携  +  非公開日足パック (actions/cache)   |
++---------------------------------+---------------------------------+
+                                  |
+                                  v
++-------------------------------------------------------------------+
+|  L1 決定的スクリーニング: YAML ハードフィルタ & マルチファクター  |
++---------------------------------+---------------------------------+
+                                  |
+                                  v
++-------------------------------------------------------------------+
+|  L2 情報連動レッドライン AI + 上位12銘柄文脈 (悪材料 <= 35 上限)  |
++---------------------------------+---------------------------------+
+                                  |
+                                  v
++-------------------------------------------------------------------+
+|  リスク制御層 & 8業種ハードキャップ分散 (max_same_bucket: 1)      |
++----------------+--------------------------------+-----------------+
+                 |                                |
+                 v                                v
++---------------------------------+  +------------------------------+
+|  L3 分析 (scorecard / DSA)      |  |  track-record 不変履歴台帳   |
+|  印刷対応 HTML & 12チャネル通知 |  |  next_open T+5/10/20 検証    |
++---------------------------------+  +------------------------------+
 ```
 
 ---
 
-## 1行 `NOTIFY_URLS` 通知チャネル一覧（12種標準対応）
+## 📊 実証パターン 250 日リプレイ結果（`next_open` 対 CSI 300）
+
+検証期間 **`2026-02-05 .. 2026-11-06`**（180 営業日、対象 5,218 銘柄、寄付きストップ高除外）：
+
+| パターン | 総シグナル | T+5 一致 | T+5 超過 | T+10 超過 | 判定 |
+|---|---:|---:|---:|---:|---|
+| **20日線低ボラ縮小押し目** (`ma20_shrink_pullback` v2.0) | 2,295 | 2,293 | **+0.158%** | **+0.905%** | **`active`** |
+| **低ボラ堅調トレンド突破** (`steady_trend_breakout` v1.0) | 460 | 460 | **+0.271%** | **+0.560%** | **`active`** |
+| その他 5 パターン (`single_yang_hold` / `box_breakout` 等) | 992–9,233 | 988–9,221 | -1.185% .. -0.175% | -1.207% .. -0.619% | `experimental` |
+
+---
+
+## 🔔 1行 `NOTIFY_URLS` 通知チャネル一覧（12種標準対応）
 
 1つの変数 **`NOTIFY_URLS`** にカンマまたは改行区切りで URL を指定するだけでプロトコルを自動判定します（追加パッケージ不要、従来の個別変数も完全互換）：
 
 ```bash
-NOTIFY_URLS="pushplus://YOUR_TOKEN,sct://YOUR_SENDKEY,bark://api.day.app/YOUR_KEY,mailto://sender@qq.com:auth_code@qq.com?to=me@qq.com,https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
+NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://sender@qq.com:auth@qq.com?to=a@qq.com,b@qq.com,https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
 ```
 
-| チャネル | 1行 `NOTIFY_URLS` 書式 | 個別環境変数 | 仕様 |
-|---|---|---|---|
-| **PushPlus** (`pushplus`) | `pushplus://TOKEN[/TOPIC]` | `PUSHPLUS_TOKEN`, `PUSHPLUS_TOPIC` | WeChat 向けプッシュ |
-| **Server醤 / ³** (`serverchan`) | `sct://SENDKEY`（`sctp123t...` 自動判別） | `SERVERCHAN_SENDKEY` | ServerChan / ServerChan³ |
-| **Bark** (`bark`) | `bark://KEY` / `bark://host/KEY` | `BARK_URL` | iOS APNs プッシュ |
-| **Email** (`email`) | `mailto://user:pass@host[:port]?to=a,b` | `EMAIL_SENDER`, `EMAIL_PASSWORD`, `EMAIL_RECEIVERS` | 標準ライブラリ `smtplib`（主要ドメイン SSL/TLS 自動推定） |
-| **WeCom** (`wecom`) | `wecom://KEY` / Webhook URL | `WECOM_WEBHOOK_URL` | `<1200` 文字 Markdown カード |
-| **Feishu** (`feishu`) | `feishu://TOKEN[#secret=SEC]` | `FEISHU_WEBHOOK_URL`, `FEISHU_WEBHOOK_SECRET` | HMAC-SHA256 署名対応カード |
-| **DingTalk** (`dingtalk`) | `dingtalk://TOKEN[#secret=SEC]` | `DINGTALK_WEBHOOK_URL`, `DINGTALK_WEBHOOK_SECRET` | query HMAC 署名対応 Markdown |
-| **Telegram** (`telegram`) | `tgram://BOT_TOKEN/CHAT_ID` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Bot API コンパクト通知 |
-| **Discord** (`discord`) | `discord://ID/TOKEN` / Webhook URL | `DISCORD_WEBHOOK_URL` | ダッシュボードリンク付き Embed |
-| **Slack** (`slack`) | `slack://T.../B.../...` / Webhook URL | `SLACK_WEBHOOK_URL` | Incoming Webhook |
-| **ntfy** (`ntfy`) | `ntfy://topic` / `https://ntfy.sh/topic` | `NTFY_URL` | pub-sub プッシュ通知 |
-| **Custom JSON** (`custom`) | `custom://https://...` / 不明な HTTPS | `CUSTOM_WEBHOOK_URL`, `CUSTOM_WEBHOOK_TOKEN` | JSON ＋ Bearer 認証対応 |
-| **Apprise（任意）** | 任意の Apprise スキーム（`apprise` 導入時） | `NOTIFY_URLS` | 90+ 通知先へ自動フォールバック |
+| チャネル | 1行 `NOTIFY_URLS` 書式 | 個別環境変数 |
+|---|---|---|
+| **PushPlus** (`pushplus`) | `pushplus://TOKEN[/TOPIC]` | `PUSHPLUS_TOKEN`, `PUSHPLUS_TOPIC` |
+| **ServerChan / ServerChan3** (`serverchan`) | `sct://SENDKEY` (`SCT...` / `sctp123t...`) | `SERVERCHAN_SENDKEY` |
+| **Bark** (`bark`) | `bark://KEY` / `bark://host/KEY` | `BARK_URL` |
+| **Email SMTP** (`email`) | `mailto://user:pass@host[:port]?to=a,b` | `EMAIL_SENDER`, `EMAIL_PASSWORD`, `EMAIL_RECEIVERS` |
+| **WeCom** (`wecom`) | `wecom://KEY` / Webhook URL | `WECOM_WEBHOOK_URL` |
+| **Feishu** (`feishu`) | `feishu://TOKEN[#secret=SEC]` | `FEISHU_WEBHOOK_URL`, `FEISHU_WEBHOOK_SECRET` |
+| **DingTalk** (`dingtalk`) | `dingtalk://TOKEN[#secret=SEC]` | `DINGTALK_WEBHOOK_URL`, `DINGTALK_WEBHOOK_SECRET` |
+| **Telegram** (`telegram`) | `tgram://BOT_TOKEN/CHAT_ID` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
+| **Discord** (`discord`) | `discord://ID/TOKEN` / Webhook URL | `DISCORD_WEBHOOK_URL` |
+| **Slack** (`slack`) | `slack://T.../B.../...` / Webhook URL | `SLACK_WEBHOOK_URL` |
+| **ntfy** (`ntfy`) | `ntfy://topic` / `https://ntfy.sh/topic` | `NTFY_URL` |
+| **Custom JSON** (`custom`) | `custom://https://...` / 不明な HTTPS | `CUSTOM_WEBHOOK_URL`, `CUSTOM_WEBHOOK_TOKEN` |
+| **Apprise（任意）** | 任意の Apprise スキーム（`apprise` 導入時） | `NOTIFY_URLS` |
 
-> 全チャネルで `(trade_date, channel)` のファイルロック冪等台帳を共有し、すべてのトークン・URL 秘密情報はエラー出力時に自動マスクされます。フッターに控えめな [`site/feed.xml`](https://zhulinsen.github.io/alphasift/site/feed.xml) Atom 1.0 RSS も出力します。
+> 全チャネルで `(trade_date, channel)` のファイルロック冪等台帳を共有し、トークン・秘密情報はエラー出力時に自動マスクされます（確認：`alphasift notify status` / `alphasift notify test --dry-run`）。フッターに控えめな [`site/feed.xml`](https://zhulinsen.github.io/alphasift/site/feed.xml) Atom 1.0 RSS も出力します。
 
 ---
 
 <details>
 <summary><strong>対応市場・内蔵 12 戦略・2026-11-20 実行例・Fork Pages 保護</strong></summary>
 
-- **対応市場（7 市場）**：`cn`（中国 A 株）、`us`（米国株 ≥ $1B）、`hk`（香港株）、`jp`（日本株 ≥ ¥1,500 億）、`kr`（韓国株、Yahoo + Naver Finance）、`tw`（台湾株）、`in`（インド株）。
+- **対応市場（7 市場）**：`cn`（中国 A 株）、`us`（米国株 >= $1B）、`hk`（香港株）、`jp`（日本株 >= 1,500 億円）、`kr`（韓国株、Yahoo + Naver Finance）、`tw`（台湾株）、`in`（インド株）。
 - **2026-11-20 実測出力例**：
   - 中国 A 株 `dual_low`：5,215 銘柄 → 205 銘柄 → 5 業種分散 Top 5（`601997` 貴陽銀行、`601117` 中国化学、`600741` 華域汽車、`603799` 華友鈷業、`601233` 桐昆股份）。
   - 日本株 `global_value --market jp`：748 銘柄 → 311 銘柄（`9501.T` 東京電力HD、`5401.T` 日本製鉄、`1605.T` INPEX、`9104.T` 商船三井、`9022.T` JR東海）。

@@ -1,0 +1,46 @@
+<svg width="100%" viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>ALPHASIFT - Full-Market AI Quant Screener</title>
+  <desc>ALPHASIFT retro terminal wordmark with tagline FULL-MARKET AI QUANT SCREENER</desc>
+
+  <defs>
+    <linearGradient id="alphasiftGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="50%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#34D399"/>
+    </linearGradient>
+    <pattern id="alphasiftScan" width="680" height="4" patternUnits="userSpaceOnUse">
+      <rect width="680" height="2" fill="rgba(255,255,255,0.02)"/>
+      <rect y="2" width="680" height="2" fill="transparent"/>
+    </pattern>
+  </defs>
+
+  <rect width="680" height="220" rx="12" fill="#0B0E14"/>
+  <rect width="680" height="220" rx="12" fill="url(#alphasiftScan)"/>
+  <rect x="0.75" y="0.75" width="678.5" height="218.5" rx="11.25" fill="none" stroke="#FFFFFF" stroke-opacity="0.09" stroke-width="1.5"/>
+
+  <!-- Terminal Window Dots -->
+  <circle cx="52" cy="30" r="4" fill="#38BDF8" opacity="0.65"/>
+  <circle cx="67" cy="30" r="4" fill="#3B82F6" opacity="0.65"/>
+  <circle cx="82" cy="30" r="4" fill="#34D399" opacity="0.65"/>
+
+  <!-- Layered Wireframe Echo Strokes + Gradient Wordmark -->
+  <g font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'DejaVu Sans Mono', monospace" font-size="66" font-weight="800" letter-spacing="3" text-anchor="middle">
+    <text x="340" y="132" fill="none" stroke="#38BDF8" stroke-width="1" stroke-opacity="0.08" transform="translate(-15, -5)">ALPHASIFT</text>
+    <text x="340" y="132" fill="none" stroke="#38BDF8" stroke-width="1" stroke-opacity="0.12" transform="translate(-12, -4)">ALPHASIFT</text>
+    <text x="340" y="132" fill="none" stroke="#3B82F6" stroke-width="1.1" stroke-opacity="0.18" transform="translate(-9, -3)">ALPHASIFT</text>
+    <text x="340" y="132" fill="none" stroke="#3B82F6" stroke-width="1.2" stroke-opacity="0.26" transform="translate(-6, -2)">ALPHASIFT</text>
+    <text x="340" y="132" fill="none" stroke="#34D399" stroke-width="1.2" stroke-opacity="0.40" transform="translate(-3, -1)">ALPHASIFT</text>
+    <text x="340" y="132" fill="url(#alphasiftGrad)">ALPHASIFT</text>
+  </g>
+
+  <!-- Hairline Accent Dividers -->
+  <rect x="100" y="154" width="480" height="1" fill="url(#alphasiftGrad)" opacity="0.45"/>
+  <rect x="140" y="158" width="400" height="0.5" fill="#34D399" opacity="0.22"/>
+
+  <!-- Vertical Edge Annotations -->
+  <text x="52" y="114" text-anchor="middle" fill="#38BDF8" fill-opacity="0.40" transform="rotate(-90, 52, 114)" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11" letter-spacing="1.5">7 MARKETS</text>
+  <text x="628" y="114" text-anchor="middle" fill="#34D399" fill-opacity="0.40" transform="rotate(90, 628, 114)" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11" letter-spacing="1.5">T+N AUDIT</text>
+
+  <!-- Centered Bottom Tagline -->
+  <text x="340" y="186" text-anchor="middle" fill="#94A3B8" fill-opacity="0.80" font-family="ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace" font-size="11.5" letter-spacing="2.2">[ FULL-MARKET AI QUANT SCREENER ]</text>
+</svg>

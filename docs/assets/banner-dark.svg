@@ -48,7 +48,7 @@
       <text x="338" y="18" text-anchor="middle" fill="#60a5fa">2 Active Patterns</text>
 
       <rect x="420" y="0" width="132" height="28" rx="7" fill="#17171d" stroke="#ffffff" stroke-opacity="0.12"/>
-      <text x="486" y="18" text-anchor="middle" fill="#e4e4e7">6-Channel + RSS</text>
+      <text x="486" y="18" text-anchor="middle" fill="#e4e4e7">12-Channel Push</text>
 
       <rect x="562" y="0" width="110" height="28" rx="7" fill="#17171d" stroke="#ffffff" stroke-opacity="0.12"/>
       <text x="617" y="18" text-anchor="middle" fill="#34d399">Private Pack</text>
