@@ -58,7 +58,7 @@ TUSHARE_TOKEN=...
 | `INDUSTRY_PROVIDER` | 否 | 可选行业、概念、板块热度 provider，如 `akshare`；默认关闭 | `none` |
 | `INDUSTRY_AUTO_BACKFILL` | 否 | A 股快照缺少行业字段时，自动用东财行业映射补全（本地缓存 7 天），让组合分散度控制能够生效 | `true` |
 | `INDUSTRY_PROVIDER_MAX_BOARDS` | 否 | provider 模式最多反查板块数 | `80` |
-| `SNAPSHOT_SOURCE_PRIORITY` | 否 | 数据源优先级，逗号分隔；不设置时若配置了 Tushare token 会优先 `tushare` | 无 token: `sina,efinance,akshare_em,em_datacenter` |
+| `SNAPSHOT_SOURCE_PRIORITY` | 否 | 数据源优先级，逗号分隔；不设置时若配置了 Tushare token 会优先 `tushare` | 无 token: `em_datacenter,sina,efinance,akshare_em` |
 | `SNAPSHOT_FALLBACK_MAX_AGE_HOURS` | 否 | last-good 快照缓存最大可接受年龄；为空/`none` 表示不限制 | - |
 | `ALPHASIFT_SOURCE_HEALTH_PATH` | 否 | 跨运行记录快照数据源成败的文件；最近 6 小时内失败过的源会排到后面再试。设为 `off` 关闭 | `$ALPHASIFT_DATA_DIR/source_health.json` |
 | `ALPHASIFT_SOURCE_CALL_TIMEOUT_SEC` | 否 | 第三方 wrapper 数据源调用的全局等待超时；`0`/`off` 表示关闭 | - |
@@ -139,13 +139,13 @@ alphasift --env-file /path/to/daily_stock_analysis/.env \
 支持五种 A 股全市场快照数据源，自动按优先级降级。默认未配置 Tushare token 时使用：
 
 ```text
-sina -> efinance -> akshare_em -> em_datacenter
+em_datacenter -> sina -> efinance -> akshare_em
 ```
 
 若配置了 `TUSHARE_TOKEN` / `TUSHARE_API_TOKEN`，且没有手工设置 `SNAPSHOT_SOURCE_PRIORITY`，默认链路改为：
 
 ```text
-tushare -> sina -> efinance -> akshare_em -> em_datacenter
+tushare -> em_datacenter -> sina -> efinance -> akshare_em
 ```
 
 | 数据源 | 接口 | 特点 |
@@ -163,7 +163,7 @@ tushare -> sina -> efinance -> akshare_em -> em_datacenter
 | 能力 | 默认链路 | 主要字段 |
 |------|----------|----------|
 | 日 K 增强 | 有 token: `tushare,tencent,sina,akshare,baostock`；无 token: `tencent,sina,akshare,baostock`，并按 source-health 动态后移不健康源 | OHLCV、前复权（支持源）、技术指标、20日波动/ATR/回撤、逐行 `daily_source` 来源标记、`daily_quality_score`/flags（含 `fetch_failed` 行级失败标记）、source-health 统计；screen degradation 会汇总日K来源、质量 flags、异常 source-health 与 hard-filter 淘汰摘要；低质量、拉取失败或 stale cache 行会进入最终风险扣分 |
-| 全市场快照 | 有 token: `tushare,sina,efinance,akshare_em,em_datacenter`；无 token: `sina,efinance,akshare_em,em_datacenter` | 价格、涨跌幅、成交额、市值、PE/PB、换手率 |
+| 全市场快照 | 有 token: `tushare,em_datacenter,sina,efinance,akshare_em`；无 token: `em_datacenter,sina,efinance,akshare_em` | 价格、涨跌幅、成交额、市值、PE/PB、换手率 |
 | 候选级上下文 | `news,fund_flow,announcement,quote` | 新闻、资金流、公告、腾讯行情估值/换手率 |
 | 失败降级 | source health 熔断 + daily history cache + snapshot last-good cache | stale/fallback/source_errors 元数据 |
 

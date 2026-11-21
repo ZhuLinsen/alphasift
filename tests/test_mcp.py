@@ -96,13 +96,17 @@ def test_mcp_tool_calls_and_safety_guards(tmp_path, monkeypatch):
     assert "TOP_SECRET" not in txt
     assert json.loads(txt)["wecom_configured"] is True
 
-    # stdout prints inside tool handler are redirected away from JSON-RPC stream
-    monkeypatch.setattr(
-        "alphasift.mcp.screen",
-        lambda strategy, **kw: print("NOISY_LIBRARY_STDOUT") or __import__(
-            "alphasift.models", fromlist=["ScreenResult"]
-        ).ScreenResult(strategy=strategy, market=kw["market"], strategy_version="1.0", snapshot_count=10, after_filter_count=2),
-    )
+    # stdout prints inside tool handler are redirected away from JSON-RPC stream,
+    # and read-only MCP screen disables side-effectful downstream analyzers (post_analyzers=["scorecard"]).
+    seen_post_analyzers = []
+
+    def _mock_screen(strategy, **kw):
+        seen_post_analyzers.append(kw.get("post_analyzers"))
+        print("NOISY_LIBRARY_STDOUT")
+        from alphasift.models import ScreenResult
+        return ScreenResult(strategy=strategy, market=kw["market"], strategy_version="1.0", snapshot_count=10, after_filter_count=2)
+
+    monkeypatch.setattr("alphasift.mcp.screen", _mock_screen)
     scr = server.handle_request(
         {
             "jsonrpc": "2.0",
@@ -112,6 +116,7 @@ def test_mcp_tool_calls_and_safety_guards(tmp_path, monkeypatch):
         }
     )
     assert scr["result"]["isError"] is False
+    assert seen_post_analyzers == [["scorecard"]]
     assert "NOISY_LIBRARY_STDOUT" not in scr["result"]["content"][0]["text"]
     assert json.loads(scr["result"]["content"][0]["text"])["strategy"] == "balanced_alpha"
 

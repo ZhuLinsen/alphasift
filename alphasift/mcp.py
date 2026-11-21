@@ -328,6 +328,7 @@ class MCPServer:
             use_llm=use_llm,
             llm_context=llm_context,
             explain_filters=explain_filters,
+            post_analyzers=["scorecard"],
             config=self.config,
         )
         return asdict(result)

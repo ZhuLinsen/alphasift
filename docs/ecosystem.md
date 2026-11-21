@@ -29,7 +29,7 @@ AlphaSift serves as the **cross-market funnel & public verification engine** in 
 
 AlphaSift ships a zero-dependency JSON-RPC 2.0 STDIO MCP server (`2024-11-05`) supporting both `Content-Length` headers and newline-delimited JSON.
 
-### Claude Code / Cursor / OpenClaw (`mcpServers`)
+### Claude Code / Cursor (`mcpServers`)
 
 ```json
 {
@@ -41,6 +41,7 @@ AlphaSift ships a zero-dependency JSON-RPC 2.0 STDIO MCP server (`2024-11-05`) s
   }
 }
 ```
+> For **OpenAI Codex CLI** (`mcp_servers` TOML / `codex mcp add alphasift -- alphasift mcp`) and **OpenClaw** (`mcp.servers`), use the respective client key mapping with the same `alphasift mcp` command.
 
 ### Exposed Tools (10) & Resources (2)
 

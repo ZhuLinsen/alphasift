@@ -616,6 +616,26 @@ def test_rank_candidates_round6_negated_risk_dsa_news_omitted_cap_and_zero_cov(m
     assert res_zero.ranked is False
     assert res_zero.picks[0].llm_score is None
 
+    # 4. Pre-LLM pick.risk_summary is preserved even when LLM output omits or clears "risk"
+    p_prior_risk = Pick(
+        rank=1,
+        code="600014",
+        name="PriorRisk",
+        final_score=90.0,
+        screen_score=90.0,
+        risk_summary="立案调查尚未完结",
+    )
+    monkeypatch.setattr(
+        "alphasift.ranker._call_llm",
+        lambda *_a, **_kw: json.dumps({"ranked": [{"code": "600014", "llm_score": 99, "risk": ""}]}),
+    )
+    res_prior = rank_candidates_with_metadata([p_prior_risk], "", "k", "fake/model", max_retries=0)
+    assert res_prior.ranked is True
+    assert res_prior.picks[0].llm_score == 35.0
+    assert "red_flag_capped" in res_prior.picks[0].risk_flags
+    assert "立案调查尚未完结" in res_prior.picks[0].risk_summary
+    assert "触发红线上限(35)" in res_prior.picks[0].risk_summary
+
 
 def test_topic_alignment_fields_do_not_bloat_ranking_prompt():
     base_pick = Pick(rank=1, code="600519", name="贵州茅台", final_score=80.0, screen_score=80.0, industry="白酒")

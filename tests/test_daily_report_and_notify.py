@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import base64
+from datetime import date
 import hashlib
 import hmac
 import json
@@ -311,6 +312,27 @@ def test_doctor_radar_and_cli_smoke(tmp_path: Path, monkeypatch, capsys) -> None
     assert out_json.is_file() and out_card.is_file()
     assert cli_rep["im_card_chars"] < 1200
     assert cli_rep["push"]["status"] == "skipped_no_channels"
+
+    # When a webhook IS configured, daily-report --push without --expected-trade-date guards against stale historical packs
+    monkeypatch.setenv("WECOM_WEBHOOK_URL", "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=TEST")
+    monkeypatch.setattr("alphasift.markets.latest_settled_close", lambda _m: (date(2099, 1, 1), 60.0))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "alphasift",
+            "daily-report",
+            "--pack-dir",
+            str(pack_dir),
+            "--no-announcements",
+            "--push",
+            "--json",
+        ],
+    )
+    cli_main()
+    stale_rep = json.loads(capsys.readouterr().out)
+    assert stale_rep["pack_is_stale"] is True
+    assert stale_rep["push"]["status"] == "skipped_stale_pack"
 
 
 def test_daily_report_alert_first_order_and_reserved_budget() -> None:

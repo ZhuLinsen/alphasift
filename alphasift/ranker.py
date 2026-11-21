@@ -243,12 +243,21 @@ def rank_candidates_with_metadata(
         ranked = parsed.picks
         matched_codes = parsed.matched_codes
         weight = min(max(rank_weight, 0.0), 1.0)
+        pre_risk_by_code = {
+            _normalize_code(p.code): str(p.risk_summary)
+            for p in candidates
+            if _normalize_code(p.code) and p.risk_summary
+        }
         for i, pick in enumerate(ranked):
             norm_code = _normalize_code(pick.code)
             was_matched = matched_codes is None or norm_code in matched_codes
+            prior_risk = pre_risk_by_code.get(norm_code, "")
+            if prior_risk and not pick.risk_summary:
+                pick.risk_summary = prior_risk
             adverse_reasons = _unresolved_adverse_reasons(
                 pick,
                 context_flags=adverse_context_by_code.get(norm_code, ()),
+                extra_texts=(prior_risk,),
             )
             if not was_matched:
                 pick.llm_score = None
@@ -296,6 +305,7 @@ def _unresolved_adverse_reasons(
     pick: Pick,
     *,
     context_flags: tuple[str, ...] | list[str] = (),
+    extra_texts: tuple[str, ...] | list[str] = (),
 ) -> list[str]:
     reasons: list[str] = []
     for flag in context_flags:
@@ -317,6 +327,7 @@ def _unresolved_adverse_reasons(
         *pick.deep_analysis_risk_flags,
         pick.risk_summary,
         pick.dsa_analysis_summary,
+        *extra_texts,
         *news_titles,
     ]
     cleaned_sources = [_strip_negated_risk_phrases(str(x)) for x in text_sources if x]

@@ -141,7 +141,7 @@ LLM 输出：
 8. `watch_items` 和 `invalidators`：后续跟踪项和会推翻候选逻辑的观察点
 
 LLM 只能在候选池内重排，不能推荐候选池外股票，也不能替代硬筛条件。
-LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代码检查；不满足阈值时会重试，仍失败则回退到 `screen_score`。调用层支持 LiteLLM JSON mode、fallback models、多渠道 key/base_url 解析和高级 Router YAML。
+LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代码检查；不满足阈值时会重试，仍失败则回退到 `screen_score`。调用层采用零依赖 `requests` OpenAI/Gemini HTTP 客户端，支持 JSON mode、fallback models、多渠道 key/base_url 解析与来源隔离。
 
 ## 后验评估与形态标签
 
@@ -178,12 +178,11 @@ LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代
 
 ### LLM 配置
 
-为便于复用 `daily_stock_analysis` 的配置，AlphaSift 支持同一套 LiteLLM 环境变量：
+为便于复用 `daily_stock_analysis` 的配置，AlphaSift 支持同一套多渠道与标准模型环境变量（v0.3 已移除 `LITELLM_CONFIG` Router YAML）：
 
-- `LITELLM_MODEL`
-- `LITELLM_FALLBACK_MODELS`
+- `LITELLM_MODEL`（默认 `gemini/gemini-3.8-flash`）
+- `LITELLM_FALLBACK_MODELS`（默认 `gemini/gemini-4-hydrogen`）
 - `LLM_CHANNELS` + `LLM_{NAME}_PROTOCOL/BASE_URL/API_KEY/API_KEYS/MODELS/ENABLED`
-- `LITELLM_CONFIG`
 - `OPENAI_API_KEY` / `OPENAI_BASE_URL`
 - `GEMINI_API_KEY` / `GEMINI_API_KEYS`
 - `DEEPSEEK_API_KEY`

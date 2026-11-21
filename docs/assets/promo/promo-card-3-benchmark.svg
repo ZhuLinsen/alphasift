@@ -21,7 +21,7 @@
     <text x="26" y="190" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Delayed exit when limit-down locked</text>
     <text x="26" y="222" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Matched CSI300 / S&amp;P500 / Nikkei bench</text>
     <rect x="26" y="252" width="316" height="40" rx="8" fill="#1e293b"/>
-    <text x="42" y="277" fill="#fbbf24" font-family="ui-monospace,monospace" font-size="13">606 pytest tests · public JSONL logs</text>
+    <text x="42" y="277" fill="#fbbf24" font-family="ui-monospace,monospace" font-size="13">606+ pytest tests · public JSON logs</text>
   </g>
 
   <g transform="translate(456,218)">

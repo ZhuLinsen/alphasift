@@ -67,11 +67,11 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 > Key design choices in AlphaSift v0.3:
 > - **Deterministic L1/L2 base**: 12 auditable YAML strategies across 7 markets (CN/HK/US/JP/KR/TW/IN) with piecewise-linear quantile scoring and orthogonal sector caps (`hard_cap`).
 > - **Code-enforced LLM guardrails**: optional L2 re-ranking runs via a zero-SDK `requests` OpenAI/Gemini client (works with OpenAI, Gemini, DeepSeek, Ollama), but adverse filings cap LLM score at `35.0` in Python—not just in a prompt—and omitted picks never keep stale scores.
-> - **Paired attribution**: every day logs both deterministic `rules` and `ai` tracks on `track-record` so you can measure whether AI actually adds excess return over rules (`T+5 / T+10 / T+20` vs index benchmark at `next_open`).
-> - **MCP + Local Workbench**: `alphasift mcp` speaks zero-dependency STDIO JSON-RPC 2.0 (10 tools, 2 resources); `alphasift serve` launches an offline-safe local Web UI at `/ui`.
+> - **Paired attribution**: CN sessions log both deterministic `rules` and `ai` tracks side-by-side (when LLM credentials are configured and non-degraded) so you can measure whether AI actually adds excess return over rules (`T+5 / T+10 / T+20` vs index benchmark at `next_open`).
+> - **MCP + Local Workbench**: `alphasift mcp` speaks zero-dependency STDIO JSON-RPC 2.0 (10 tools, 2 resources; read-only `scorecard` post-analysis without outbound pushes); `alphasift serve --port 8765` launches an offline-safe local Web UI at `/ui`. Install from source with `pip install -e .` (PyPI package publish queued in Week 1).
 >
 > Live verifiable ledger: https://zhulinsen.github.io/alphasift/?lang=en
-> Happy to answer questions on anti-survivorship evaluation, non-saturating factor curves, or MCP safety boundaries!
+> Happy to answer questions on `next_open` entry timing and limit-up accounting, non-saturating factor curves, or MCP safety boundaries!
 
 ### 3.2 Reddit — `r/algotrading` & `r/LocalLLaMA`
 
@@ -124,7 +124,7 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 
 | 周期 | 动作清单 | 验证指标 & 目标 |
 |---|---|---|
-| **Week 1：生态内循环 + 基础指数收录** | 提交 `daily_stock_analysis` & `AlphaEvo` 互链 PR；确认 GitHub 20/20 Topics（含 `mcp`）；提交 PyPI 元数据更新与 Bing/Google Pages sitemap 索引 | DSA 引流点击率、Google/Bing 品牌词检索收录、GitHub Stars 周增量 |
-| **Week 2：英文开发者社区集中爆发** | 周二发布 `Show HN` + 同步 X Thread（4 张图）；周四发布 `r/LocalLLaMA`（主打 Zero-SDK MCP + Ollama）与 `r/algotrading`（主打 `next_open` 抗幸存者偏差） | 首页 Referral 峰值、Fork 启用 `ALPHASIFT_ENABLE_LEDGER` 数、Clones 数 |
+| **Week 1：生态内循环 + 基础指数收录** | 提交 `daily_stock_analysis` & `AlphaEvo` 互链 PR；确认 GitHub 20/20 Topics（含 `mcp`）；发布 PyPI 首版（同步 `pyproject.toml` keywords/classifiers）与 Bing/Google Pages sitemap 索引 | DSA 引流点击率、Google/Bing 品牌词检索收录、GitHub Stars 周增量 |
+| **Week 2：英文开发者社区集中爆发** | 周二发布 `Show HN` + 同步 X Thread（4 张图）；周四发布 `r/LocalLLaMA`（主打 Zero-SDK MCP + Ollama）与 `r/algotrading`（主打 `next_open` 涨停不可成交口径） | 首页 Referral 峰值、Fork 启用数、Clones 数 |
 | **Week 3：中文技术社区沉淀长尾搜索** | V2EX `/go/share` 工程向分享 + 知乎深度剖析长文 + 掘金 Docker/MCP 上手实战，全篇配 `promo-card-2/3` 清晰图解 | Baidu/知乎长尾搜索露出、`NOTIFY_URLS` 讨论与 Strategy Issue 数 |
 | **Week 4：实盘数据复盘闭环** | 提取 `track-record` 累计 ≥10 天同日配对后的真实 `Rules vs AI` 归因数据，发布首期“实证月报”帖并反哺 README 示例与小红书图集 | 自然复访率（Unique/Views 比值）、社区 Strategy/Pattern PR 贡献 |

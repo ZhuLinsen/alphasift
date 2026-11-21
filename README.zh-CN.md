@@ -77,16 +77,17 @@ alphasift screen dual_low --no-llm
 alphasift screen global_value --market hk --no-llm
 ```
 
-### 2. 开启情报红线 AI 复核、250 日回放与盘后 HTML 研报
+### 2. 开启情报红线 AI 复核、本地日线包、250 日回放与盘后研报
 ```bash
 cp .env.example .env   # 按需填入 GEMINI_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY
+alphasift pack build --days 250   # 本地离线回放或日报前，先构建 CN 日线包
 alphasift screen dual_low --save-run
 alphasift patterns replay --pack-dir ./data/pack/cn --output-md replay.md
 alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html --push
 ```
 
-### 3. 一键接入 Claude Code / Cursor / Codex / OpenClaw（`alphasift mcp` + 本地工作台 + Docker）
-启动零依赖 STDIO MCP 服务（`10` 个只读工具 + `2` 个资源），打开交互式本地工作台（`http://127.0.0.1:8765/ui`），或使用 Docker 一键运行：
+### 3. 一键接入 Claude Code / Cursor / Codex / OpenClaw（`alphasift mcp` + 工作台 / Docker）
+启动只读 STDIO MCP 服务（`10` 个工具 + `2` 个资源；默认仅运行 `scorecard` 后置评分、不触发外部推送），或按需选一在本地 `8765` 端口启动交互式工作台：
 ```json
 {
   "mcpServers": {
@@ -94,9 +95,11 @@ alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html
   }
 }
 ```
+> *上方为 Claude Code / Cursor JSON 写法；Codex（`mcp_servers` TOML）与 OpenClaw（`mcp.servers`）写法见 [docs/ecosystem.md](docs/ecosystem.md)。*
 ```bash
 alphasift serve --host 127.0.0.1 --port 8765   # 本地交互工作台 (/ui) + 只读 JSON 接口 + 日报预览
-docker compose up --build -d                    # 容器化部署至 127.0.0.1:8765
+# 或改用容器在同端口启动：
+docker compose up --build -d
 ```
 
 ### 4. GitHub Actions 零服务器定时选股与 12 通道推送
@@ -151,7 +154,7 @@ docker compose up --build -d                    # 容器化部署至 127.0.0.1:8
 
 | 核心设计 | 工程细节 |
 |---|---|
-| **自愈行情链路与私有数据包** | A 股快照链（`em_datacenter → sina → efinance → akshare_em`，配 `TUSHARE_TOKEN` 时 `tushare` 优先）支持熔断避障；`daily.npz` / `meta.csv.gz` 严格保留在本地或 Actions 私有缓存，绝不通过公开 Release 分发。 |
+| **自愈行情链路与数据包存储** | A 股快照链（`em_datacenter → sina → efinance → akshare_em`，配 `TUSHARE_TOKEN` 时 `tushare` 优先）支持熔断避障；`daily.npz` / `meta.csv.gz` 仅保留在本地或 CI Actions 缓存，不通过公开 Release 分发；Fork 后 `track-record` 分支可见性与 Fork 仓库一致。 |
 | **策略 vs AI 同日配对归因** | 同一个交易日分别跑纯规则（`rules`）和 AI 复核（`ai`），直接统计 AI 新纳入 / AI 剔除个股的超额收益贡献。 |
 | **幂等去重与防误发** | `(trade_date, channel)` 文件双锁防重复刷屏，旧数据默认阻断推送（除非 `--force-push`），日志自动脱敏所有 Token。 |
 
@@ -204,7 +207,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 |---|---|---|---|
 | `dual_low` | `cn` | 价值 | 中小盘双低（50–600 亿市值，低 PE + 低 PB），行业桶硬上限 `1` |
 | `blue_chip_income` | `cn` | 红利 | 超大盘高流动性高股息蓝筹（≥ 500 亿市值） |
-| `quality_value` | `cn` | GARP 成长 | 中盘稳健估值 + 波动/回撤约束（150–2000 亿） |
+| `quality_value` | `cn` | GARP 成长 | 中盘稳健估值 + MA20 趋势确认（`80–1200 亿`市值） |
 | `low_volatility_quality` | `cn` | 质量防御 | 基于日 K 20 日波动率、最大回撤与 ATR 的低波防线 |
 | `balanced_alpha` | `cn` | 均衡框架 | 跨因子综合发现，强制行业正交分散 |
 | `momentum_quality` | `cn` | 趋势质量 | 60 日中期趋势确认 + 基本面质量硬过滤 |
@@ -213,14 +216,14 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 | `oversold_reversal` | `cn` | 超跌修复 | 短期超跌 + 回撤受控的均值回复候选 |
 | `volume_breakout` | `cn` | 放量突破 | 成交量显著放大并突破关键压力区间 |
 | `global_value` | `us, hk, jp, kr, tw, in` | 多市场价值 | 去除币种绝对阈值的 `dual_low` 跨市场版本 |
-| `us_momentum_quality` | `us` | 美股趋势 | 美股十亿美元以上大盘动量 + 质量精选 |
+| `us_momentum_quality` | `us` | 美股趋势 | 美股 20 亿美元以上大盘动量 + 质量精选（`>= $2B`） |
 
 </details>
 
 <details>
-<summary><strong>真实运行示例（2026-11-20 截面，<code>--no-llm</code> 纯规则模式）</strong></summary>
+<summary><strong>真实运行示例（独立离线 2026-11-20 快照，<code>--no-llm</code> 纯规则模式）</strong></summary>
 
-**A 股（`dual_low` on 2026-11-20 pack）：** 5,215 只 → 205 只入围 → Top 5 来自 5 个互不重复行业（`hard_cap: 1`）：
+**A 股（`dual_low` v1.1 独立快照示例；每日实盘账本以 `track-record` 分支为准）：** 5,215 只 → 205 只入围 → Top 5 来自 5 个互不重复行业（`hard_cap: 1`）：
 
 | # | 代码 | 名称 | 行业 | PE | PB |
 |---:|---|---|---|---:|---:|

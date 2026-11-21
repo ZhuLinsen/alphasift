@@ -214,7 +214,10 @@ jobs:
       - name: Evaluate T+N
         env:
           MARKETS: ${{ steps.session.outputs.markets }}
-        run: python scripts/track_record.py evaluate --track track --markets "$MARKETS" --pack-dir "$ALPHASIFT_PACK_DIR"
+          ALPHASIFT_NEXT_OPEN_SWITCH_DATE: ${{ vars.ALPHASIFT_NEXT_OPEN_SWITCH_DATE }}
+        run: |
+          if [ -z "${ALPHASIFT_NEXT_OPEN_SWITCH_DATE:-}" ]; then unset ALPHASIFT_NEXT_OPEN_SWITCH_DATE; fi
+          python scripts/track_record.py evaluate --track track --markets "$MARKETS" --pack-dir "$ALPHASIFT_PACK_DIR"
 
       - name: Daily report and optional IM push
         if: steps.session.outputs.session == 'asia'

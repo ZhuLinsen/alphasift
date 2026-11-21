@@ -35,8 +35,8 @@ Most open-source stock tools stop at static indicator filters, one-shot LLM chat
 
 1. **Deterministic Zero-Key Base & Orthogonal Strategies**: L1 hard filters, multi-factor curves, risk overlay, and 8-bucket hard sector diversity (`portfolio_profile.mode: hard_cap`, `max_same_bucket: 1`) run deterministically with zero API keys. Across 3 local 250-day snapshots (`2026-09-21`, `10-20`, `11-20`), orthogonalizing all 10 CN strategies cut mean pairwise overlap from **8.0%–24.9% -> 0.9%–1.8%** (`max` **100% -> 20%**) and bank concentration from **22%–31.1% -> 4.0%–9.1%**.
 2. **Empirically Audited 250-Day Pattern Radar**: Stateless chart patterns must pass a 250-day `next_open` replay (`N >= 200` and positive T+5 excess vs CSI 300) before graduating to `active`; 2 verified patterns are `active`, while 5 classic patterns stay muted `experimental`.
-3. **Intelligence-First Red-Flag AI Track**: Instead of guessing on ticker fame, L2 AI injects Top-12 live filings, news, and fund-flow context (`LLM_CANDIDATE_CONTEXT_ENABLED=true`), enforces a hard red-flag ceiling (`llm_score <= 35` for unresolved adverse filings), bans brand/familiarity bias, and logs paired same-day `rules` vs `ai` alpha (`gemini/gemini-3.8-flash` default with `gemini/gemini-4-hydrogen` fallback, plus DeepSeek / OpenAI / Ollama).
-4. **Public `next_open` T+N Ledger, 1-Line 12-Channel Push & Fork Safety**: Every session is committed to `track-record` and graded at `T+5 / T+10 / T+20` with untradable limit-up accounting. Dispatch `<1,200`-char alert briefs via a single `NOTIFY_URLS` variable across **12 native zero-dep protocols**, while a **Plan A Fork Guard** prevents forked repos from publishing duplicate websites unless `ALPHASIFT_ENABLE_PAGES=true` is explicitly set.
+3. **Intelligence-First Red-Flag AI Track**: Instead of guessing on ticker fame, L2 AI injects live filings, news, and fund-flow context (Top-12 in CI Actions workflows; local `Config` defaults to disabled / `8` candidates until `LLM_CANDIDATE_CONTEXT_ENABLED=true` is set), enforces a hard red-flag ceiling (`llm_score <= 35` for unresolved adverse filings), bans brand/familiarity bias, and logs paired same-day CN `rules` vs `ai` alpha (`gemini/gemini-3.8-flash` default with `gemini/gemini-4-hydrogen` fallback, plus DeepSeek / OpenAI / Ollama).
+4. **Public `next_open` T+N Ledger, 1-Line 12-Channel Push & Fork Safety**: Every session is committed to `track-record` and graded at `T+5 / T+10 / T+20` with untradable limit-up accounting. Dispatch `<1,200`-char alert briefs via a single `NOTIFY_URLS` variable across **12 native zero-dep channels**, while a **Plan A Fork Guard** prevents forked repos from publishing duplicate websites unless `ALPHASIFT_ENABLE_PAGES=true` is explicitly set.
 
 <table>
   <tr>
@@ -77,16 +77,17 @@ alphasift screen dual_low --no-llm
 alphasift screen global_value --market hk --no-llm
 ```
 
-### 2. Optional Red-Flag AI Ranking, 250D Replay & Printable Brief
+### 2. Optional Red-Flag AI Ranking, Local CN Pack, 250D Replay & Printable Brief
 ```bash
 cp .env.example .env   # add GEMINI_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY
+alphasift pack build --days 250   # build local CN daily pack once before replay/daily-report
 alphasift screen dual_low --save-run
 alphasift patterns replay --pack-dir ./data/pack/cn --output-md replay.md
 alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html --push
 ```
 
-### 3. Connect to Claude Code, Cursor, Codex, or OpenClaw (`alphasift mcp` + Workbench UI + Docker)
-Register the zero-dependency STDIO MCP server (`10` tools, `2` resources), launch the local Web Workbench UI (`http://127.0.0.1:8765/ui`), or run with Docker:
+### 3. Connect to Claude Code, Cursor, Codex, or OpenClaw (`alphasift mcp` + Workbench UI / Docker)
+Register the read-only STDIO MCP server (`10` tools, `2` resources; runs `scorecard` post-analysis without outbound notifications), or run either the local Web Workbench UI (`http://127.0.0.1:8765/ui`) or Docker container (both use host port `8765`):
 ```json
 {
   "mcpServers": {
@@ -94,9 +95,11 @@ Register the zero-dependency STDIO MCP server (`10` tools, `2` resources), launc
   }
 }
 ```
+> *Claude Code / Cursor JSON shown above; for Codex (`mcp_servers` TOML) or OpenClaw (`mcp.servers`), see [docs/ecosystem.md](docs/ecosystem.md).*
 ```bash
 alphasift serve --host 127.0.0.1 --port 8765   # Interactive Workbench UI (/ui) & read-only JSON API
-docker compose up --build -d                    # Containerized Workbench UI on 127.0.0.1:8765
+# Or containerized on the same loopback port:
+docker compose up --build -d
 ```
 
 ### 4. Free Cloud Daily Screening & 1-Line Push via GitHub Actions
@@ -151,7 +154,7 @@ docker compose up --build -d                    # Containerized Workbench UI on 
 
 | Capability | Engineering Design |
 |---|---|
-| **Self-Healing Sources & Private Pack** | Health-ordered CN snapshot chain (`em_datacenter -> sina -> efinance -> akshare_em`, or `tushare` first with token). Raw `daily.npz` / `meta.csv.gz` matrices stay strictly local or inside private GitHub `actions/cache` and are never redistributed via public Releases. |
+| **Self-Healing Sources & Pack Storage** | Health-ordered CN snapshot chain (`em_datacenter -> sina -> efinance -> akshare_em`, or `tushare` first with token). Raw `daily.npz` / `meta.csv.gz` matrices stay local or in CI Actions cache and are never redistributed via public GitHub Releases; fork ledger branches inherit fork repo visibility. |
 | **Paired Rules vs AI Attribution** | Runs deterministic `rules` and context-grounded `ai` tracks side by side on identical market dates to measure net added/dropped stock alpha honestly. |
 | **Low-Noise Idempotent Delivery** | File-locked `(trade_date, channel)` deduplication prevents repeat group pings and blocks stale packs unless `--force-push` is passed. |
 
@@ -204,7 +207,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 |---|---|---|---|
 | `dual_low` | `cn` | Value | Mid-cap low PE/PB (`5B–60B CNY`), `hard_cap: 1` per industry bucket |
 | `blue_chip_income` | `cn` | Income | Mega-cap liquid dividend leaders (`>= 50B CNY`) |
-| `quality_value` | `cn` | GARP | Mid-cap growth valuation stability (`15B–200B CNY`) |
+| `quality_value` | `cn` | GARP | Mid-cap growth valuation stability (`8B–120B CNY`, `>= MA20`) |
 | `low_volatility_quality` | `cn` | Defensive | Low 20D volatility, controlled drawdown & ATR (daily K-line) |
 | `balanced_alpha` | `cn` | Multi-Factor | Broad balanced factor discovery with sector hard cap |
 | `momentum_quality` | `cn` | Trend Quality | 60D trend confirmation + quality gates |
@@ -213,14 +216,14 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 | `oversold_reversal` | `cn` | Reversal | Controlled-drawdown mean-reversion candidates |
 | `volume_breakout` | `cn` | Breakout | Volume expansion breaking 20D resistance |
 | `global_value` | `us, hk, jp, kr, tw, in` | Value | Currency-neutral low PE/PB screener for global markets |
-| `us_momentum_quality` | `us` | Trend | US large-cap (`>= $1B`) momentum + quality |
+| `us_momentum_quality` | `us` | Trend | US large-cap (`>= $2B`) momentum + quality |
 
 </details>
 
 <details>
-<summary><strong>Real Sample Output (2026-11-20 Snapshot, Deterministic <code>--no-llm</code>)</strong></summary>
+<summary><strong>Real Sample Output (Standalone Local 2026-11-20 Run, Deterministic <code>--no-llm</code>)</strong></summary>
 
-**China A-Shares (`dual_low` on 2026-11-20 pack snapshot):** 5,215 stocks -> 205 filtered -> Top 5 across 5 distinct industries (`hard_cap: 1`):
+**China A-Shares (`dual_low` v1.1 standalone snapshot run; live daily runs appear on `track-record`):** 5,215 stocks -> 205 filtered -> Top 5 across 5 distinct industries (`hard_cap: 1`):
 
 | # | Code | Security | Industry | PE | PB |
 |---:|---|---|---|---:|---:|

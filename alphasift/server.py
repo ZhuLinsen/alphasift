@@ -349,7 +349,10 @@ def build_api_response(
                 strategy_runs=strategy_runs,
                 include_announcements=include_ann,
                 announcement_max_codes=ann_max,
-                announcement_cache_dir=config.data_dir / "candidate_context_cache",
+                announcement_cache_dir=(
+                    config.llm_candidate_context_cache_dir
+                    or (config.data_dir / "candidate_context_cache")
+                ),
                 ai_brief_mode=ai_brief,
                 config=config,
             )

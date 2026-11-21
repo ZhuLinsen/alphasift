@@ -1113,6 +1113,7 @@ def main():
             write_daily_report,
         )
         from alphasift.daily_report_html import write_daily_report_html
+        from alphasift.markets import latest_settled_close
         from alphasift.notify import push_daily_report
 
         config = Config.from_env()
@@ -1125,7 +1126,13 @@ def main():
                 runs_dir=Path(args.runs_dir).expanduser() if args.runs_dir else None,
                 trade_date=args.trade_date or daily_pack.trade_date,
             )
-            allow_stale = True if not args.expected_trade_date else bool(args.allow_stale_pack)
+            explicit_expected_date = args.expected_trade_date
+            resolved_expected_date = explicit_expected_date
+            if not resolved_expected_date and args.push and not args.force_push and not args.trade_date:
+                settled = latest_settled_close("cn")
+                if settled is not None:
+                    resolved_expected_date = settled[0].isoformat()
+            allow_stale = True if not explicit_expected_date else bool(args.allow_stale_pack)
             track_summary = None
             summary_candidates = []
             if args.output_html:
@@ -1142,7 +1149,7 @@ def main():
             report = build_daily_report(
                 daily_pack,
                 trade_date=args.trade_date,
-                expected_trade_date=args.expected_trade_date,
+                expected_trade_date=resolved_expected_date,
                 allow_stale_pack=allow_stale,
                 detail_url=args.detail_url or config.dashboard_url,
                 strategy_runs=runs,

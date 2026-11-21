@@ -35,7 +35,7 @@
 
 1. **API キー不要の決定的基盤＆直交分散**：L1 ハードフィルタ、マルチファクター評価、8 業種バケット上限分散（`portfolio_profile.mode: hard_cap`、`max_same_bucket: 1`）は API キーなしで決定的に動作します。中国 A 株 10 戦略の直交化により、250 日パック 3 時点検証で戦略間の平均重複率は **8.0%–24.9% → 0.9%–1.8%**（最大 **100% → 20%**）、銀行セクター集中度は **22%–31.1% → 4.0%–9.1%** へ低減しました。
 2. **250日 `next_open` 実証パターン検出**：過去 180 営業日・5,218 銘柄の実証リプレイで `T+5 一致 >= 200` かつ `対 CSI 300 超過 > 0%` の条件を満たした 2 パターンのみ `active` 認定し、他の 5 パターンは `experimental` として分離しています。
-3. **開示・資金フロー連動レッドライン AI**：標準モデル **`gemini/gemini-3.8-flash`**（`gemini/gemini-4-hydrogen` 自動フォールバック）をはじめ DeepSeek / OpenAI / Ollama に対応。`LLM_CANDIDATE_CONTEXT_ENABLED=true` により上位 12 銘柄の適時開示・ニュース・資金フローを注入し、重大な未解消悪材料は **`llm_score <= 35`** に制限（知名度バイアス禁止）、同日の `rules` vs `ai` 超過寄与を比較します。
+3. **開示・資金フロー連動レッドライン AI**：標準モデル **`gemini/gemini-3.8-flash`**（`gemini/gemini-4-hydrogen` 自動フォールバック）をはじめ DeepSeek / OpenAI / Ollama に対応。CI Actions では上位 12 銘柄（ローカル `Config` の初期値は無効・上限 `8` 銘柄、`LLM_CANDIDATE_CONTEXT_ENABLED=true` で有効化）の適時開示・ニュース・資金フローを注入し、重大な未解消悪材料は **`llm_score <= 35`** に制限（知名度バイアス禁止）、CN セッションで同日の `rules` vs `ai` 超過寄与を比較します。
 4. **公開 `next_open` T+N 台帳・1行通知・Fork 保護**：毎日の選定は `track-record` ブランチへ記録され、`T+5 / T+10 / T+20` でベンチマーク比較されます。1行 **`NOTIFY_URLS`** で 12 チャネルへ通知でき、**Plan A Fork 保護**により Fork リポジトリは `ALPHASIFT_ENABLE_PAGES=true` を設定しない限り重複サイトを公開せず、スキャンと通知のみ安全実行します。
 
 <table>
@@ -77,16 +77,17 @@ alphasift screen dual_low --no-llm
 alphasift screen global_value --market jp --no-llm
 ```
 
-### 2. LLM 再ランク・250日リプレイ・日次 HTML レポート
+### 2. LLM 再ランク・ローカル CN パック・250日リプレイ・日次 HTML レポート
 ```bash
 cp .env.example .env   # GEMINI_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY を設定
+alphasift pack build --days 250   # replay / daily-report 前にローカル CN 日次パックを構築
 alphasift screen dual_low --save-run
 alphasift patterns replay --pack-dir ./data/pack/cn --output-md replay.md
 alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html --push
 ```
 
-### 3. Claude Code・Cursor・Codex・OpenClaw と連携（`alphasift mcp` + Workbench UI + Docker）
-依存なしの STDIO MCP サーバー（`10` ツール + `2` リソース）、ローカル Web Workbench UI（`http://127.0.0.1:8765/ui`）、または Docker で即起動できます：
+### 3. Claude Code・Cursor・Codex・OpenClaw と連携（`alphasift mcp` + Workbench UI / Docker）
+読み取り専用の STDIO MCP サーバー（`10` ツール + `2` リソース、外部通知を送らない `scorecard` 後処理のみ実行）、ローカル Web Workbench UI（`http://127.0.0.1:8765/ui`）、または同一ホストポート `8765` の Docker コンテナを選べます：
 ```json
 {
   "mcpServers": {
@@ -94,9 +95,11 @@ alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html
   }
 }
 ```
+> *上記は Claude Code / Cursor 用 JSON 例です。Codex（`mcp_servers` TOML）や OpenClaw（`mcp.servers`）の設定形式は [docs/ecosystem.md](docs/ecosystem.md) を参照してください。*
 ```bash
 alphasift serve --host 127.0.0.1 --port 8765   # ローカル Workbench UI (/ui) & 読み取り専用 API
-docker compose up --build -d                    # 127.0.0.1:8765 でコンテナ起動
+# または Docker Compose で同一ループバックポートに起動:
+docker compose up --build -d
 ```
 
 ### 4. GitHub Actions で完全自動実行＆1行通知
@@ -196,7 +199,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 |---|---|---|---|
 | `dual_low` | `cn` | バリュー | 中型低 PE/PB（時価総額 50–600 億元）、業種上限 `1` |
 | `blue_chip_income` | `cn` | 高配当 | 超大型・高流動性・高配当（>= 500 億元） |
-| `quality_value` | `cn` | GARP | 中型成長×安定収益×ボラ制御 |
+| `quality_value` | `cn` | GARP | 中型成長×適正バリュエーション×MA20 トレンド維持（`8B–120B CNY`） |
 | `low_volatility_quality` | `cn` | 防御 | 20 日ボラティリティ＆ドローダウン制御（要日足） |
 | `balanced_alpha` | `cn` | 多因子 | マルチファクター総合＋業種分散 |
 | `momentum_quality` | `cn` | トレンド品質 | 60 日トレンド確認＋ファンダ基準 |
@@ -205,12 +208,12 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 | `oversold_reversal` | `cn` | リバーサル | 短期売られ過ぎからの自律反発 |
 | `volume_breakout` | `cn` | ブレイクアウト | 出来高伴う 20 日高値ブレイク |
 | `global_value` | `us, hk, jp, kr, tw, in` | グローバル | 通貨中立の割安低 PE/PB スクリーニング |
-| `us_momentum_quality` | `us` | 米国株 | 米国大型株 (>= $1B) モメンタム＋クオリティ |
+| `us_momentum_quality` | `us` | 米国株 | 米国大型株 (`>= $2B`) モメンタム＋クオリティ |
 
 </details>
 
 <details>
-<summary><strong>対応市場・2026-11-20 実行例・主な環境変数と Fork 保護</strong></summary>
+<summary><strong>対応市場・2026-11-20 サンプル出力・主な環境変数と Fork 保護</strong></summary>
 
 | 市場 | スナップショット＆日足ソース | 補足事項 |
 |---|---|---|
@@ -218,7 +221,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 | `us, hk, jp, tw, in` | Yahoo Finance スクリーナー + `yfinance` | 大型・中型流動性フィルター、非公式エンドポイント |
 | `kr` | Yahoo Finance + Naver Finance | Naver で PE/PB 補完（`ALPHASIFT_KR_VALUATION=0` で無効化） |
 
-- **2026-11-20 実測出力例（`--no-llm`）**：
+- **2026-11-20 実測出力例（オフライン `--no-llm` サンプル実行、公開台帳は `track-record` 参照）**：
   - 中国 A 株 `dual_low`：5,215 銘柄 → 205 銘柄 → 5 業種分散 Top 5（`601997` 貴陽銀行、`601117` 中国化学、`600741` 華域汽車、`603799` 華友鈷業、`601233` 桐昆股份）。
   - 香港株 `global_value --market hk`：567 銘柄 → 236 銘柄（`0267.HK`, `0001.HK`, `1339.HK`, `1398.HK`, `0358.HK`）。
   - 日本株 `global_value --market jp`：748 銘柄 → 311 銘柄（`9501.T` 東京電力HD、`5401.T` 日本製鉄、`1605.T` INPEX、`9104.T` 商船三井、`9022.T` JR東海）。

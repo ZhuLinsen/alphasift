@@ -62,9 +62,9 @@
   <!-- Architecture Strip -->
   <g transform="translate(64,424)">
     <rect x="0" y="0" width="1152" height="118" rx="14" fill="url(#glow)" stroke="#38bdf8" stroke-opacity="0.35"/>
-    <text x="28" y="38" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="15" font-weight="700">L1 HARD WATERFALL  ──▶  L2 QUANTILE SCORE &amp; RISK  ──▶  GUARDED LLM RERANK  ──▶  PUBLIC BENCHMARK</text>
-    <text x="28" y="72" fill="#94a3b8" font-family="-apple-system,sans-serif" font-size="16">Code-enforced red-flag cap (&lt;=35 pts) · Portfolio sector/topic cap · 250D CN Pattern Replay · 12 IM webhooks &amp; RSS</text>
-    <text x="28" y="98" fill="#38bdf8" font-family="ui-monospace,monospace" font-size="14">github.com/ZhuLinsen/alphasift   ·   zhulinsen.github.io/alphasift   ·   pip install alphasift</text>
+    <text x="28" y="38" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="14.5" font-weight="700">L1 HARD WATERFALL  ──▶  L2 QUANTILE SCORE &amp; LLM RERANK  ──▶  RISK OVERLAY  ──▶  PUBLIC BENCHMARK</text>
+    <text x="28" y="72" fill="#94a3b8" font-family="-apple-system,sans-serif" font-size="16">Code-enforced red-flag cap (&lt;=35 pts) · Portfolio sector/topic cap · 250D CN Pattern Replay · 12 native channels &amp; RSS</text>
+    <text x="28" y="98" fill="#38bdf8" font-family="ui-monospace,monospace" font-size="14">github.com/ZhuLinsen/alphasift   ·   zhulinsen.github.io/alphasift   ·   pip install -e .</text>
   </g>
 
   <!-- Footer tag -->
