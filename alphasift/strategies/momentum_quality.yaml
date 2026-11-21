@@ -1,10 +1,10 @@
 # 趋势质量策略
 name: momentum_quality
 display_name: 趋势质量
-description: 兼顾趋势确认和基本面质量的中线候选发现
-version: "1.1"
+description: 要求均线多头排列与60日中期主升趋势，结合基本面与活跃度筛选真趋势领涨候选
+version: "1.2"
 category: framework
-tags: [momentum, quality, trend, llm_friendly]
+tags: [momentum, quality, trend, daily_k, llm_friendly]
 style:
   risk_profile: balanced
   holding_period: swing
@@ -18,26 +18,31 @@ screening:
   market_scope: [cn]
   hard_filters:
     exclude_st: true
-    amount_min: 200000000
-    market_cap_min: 8000000000
-    pe_ttm_min: 0
-    pe_ttm_max: 60
-    pb_min: 0
-    pb_max: 8.0
+    amount_min: 150000000
+    market_cap_min: 6000000000
+    market_cap_max: 200000000000
+    pe_ttm_min: 15
+    pe_ttm_max: 90
+    pb_min: 1.5
+    pb_max: 12.0
+    turnover_rate_min: 1.2
     change_pct_min: -3.5
     change_pct_max: 7.5
     price_min: 4
     price_max: 220
-  tech_weight: 0.45
+    change_60d_min: 15.0
+    change_60d_max: 75.0
+    require_ma_bullish: true
+    require_price_above_ma20: true
+    signal_score_min: 60
+  tech_weight: 0.55
   factor_weights:
-    momentum: 0.28
-    value: 0.15
-    liquidity: 0.18
-    activity: 0.15
-    stability: 0.12
-    reversal: 0.04
-    theme_heat: 0.06
-    size: 0.02
+    momentum: 0.42
+    activity: 0.20
+    liquidity: 0.14
+    stability: 0.10
+    theme_heat: 0.08
+    value: 0.06
   scoring_profile:
     momentum_chase_start_pct: 5.0
     momentum_chase_penalty_slope: 14.0
@@ -50,14 +55,17 @@ screening:
     high_turnover_rate: 14.0
     low_llm_confidence: 0.50
   portfolio_profile:
+    mode: hard_cap
     max_same_bucket: 1
-    concentration_penalty: 4.5
+    concentration_penalty: 5.0
     buckets:
-      金融: [券商, 银行, 保险]
-      消费: [白酒, 食品, 家电, 零售, 消费]
-      AI算力: [AI算力, 算力, 数据中心, 服务器, 光模块]
-      新能源: [新能源, 光伏, 锂电, 电池, 储能]
-      周期: [钢铁, 煤炭, 有色, 化工]
+      金融: [券商, 银行, 保险, 多元金融]
+      基建航运: [建筑施工, 基础建设, 港口航运, 航运, 铁路, 公路, 物流]
+      消费: [白酒, 食品, 家电, 白色家电, 零售, 消费, 酿酒]
+      医药: [医药, 中药, 中药生产, 医疗器械, 生物制品, 化学制药]
+      科技电子: [半导体, 电子元件, 消费电子, 计算机软件, AI算力, 通信设备, 光模块]
+      新能源: [新能源, 光伏, 锂电, 电池, 储能, 输变电设备]
+      周期资源: [钢铁, 煤炭, 有色, 稀有金属, 基本金属, 贵金属, 化工, 石油天然气, 化学原料]
       公用事业: [电力, 燃气, 水务, 环保, 公用事业]
   scorecard_profile:
     value_quality_bonus: 1.8

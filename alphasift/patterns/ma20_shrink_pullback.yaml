@@ -1,34 +1,37 @@
 name: ma20_shrink_pullback
-display_name: 20日线缩量回踩
+display_name: 20日线低波缩量回踩
 family: trend_continuation
-status: experimental
-version: "1.0"
-description: 均线多头排列下缩量回踩20日均线附近，波动受控且未破位（与 shrink_pullback 策略对齐）
+status: active
+version: "2.0"
+description: 多头趋势（MA20>MA60 且斜率稳健）中低波动缩量回踩20日均线附近，过滤高波情绪股与追高阳线（与 shrink_pullback 策略对齐）
 aligned_strategy: shrink_pullback
-tags: [trend_continuation, pullback, ma20]
+tags: [trend_continuation, pullback, ma20, low_volatility]
 market_scope: [cn]
 min_history_days: 60
 
 universe:
   exclude_st: true
   proxy_amount_min: 80000000
-  close_min: 2.0
+  close_min: 3.0
 
 mode: direct
 conditions:
   - feature: ma_bullish
     equals: true
+  - feature: ma20_above_ma60
+    equals: true
   - feature: ma20_slope_5d_pct
-    min: 0.0
+    min: 0.2
+    max: 4.0
+  - feature: atr20_pct
+    max: 3.2
   - feature: pullback_to_ma20_atr
-    min: -0.6
-    max: 1.2
+    min: -0.5
+    max: 0.8
   - feature: low_to_ma20_atr
     max: 0.6
   - feature: vol_ratio_20d
-    max: 0.95
-  - feature: atr20_pct
-    max: 6.5
+    max: 0.85
   - feature: ret_limit_ratio
-    min: -0.35
-    max: 0.45
+    min: -0.25
+    max: 0.20

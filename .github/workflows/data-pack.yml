@@ -64,8 +64,8 @@ jobs:
     env:
       ALPHASIFT_PACK_DIR: ${{ github.workspace }}/pack
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -73,7 +73,7 @@ jobs:
         run: python -m pip install -e .
 
       - name: Restore and save CN daily pack in private Actions cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ env.ALPHASIFT_PACK_DIR }}
           key: cn-daily-pack-${{ github.run_id }}
@@ -97,4 +97,5 @@ jobs:
             extra_args+=(--trade-date "$trade_date")
           fi
           python scripts/build_pack.py "$mode" "${extra_args[@]}"
+          rm -rf "$ALPHASIFT_PACK_DIR/.backfill"
           alphasift doctor radar --pack-dir "$ALPHASIFT_PACK_DIR" --explain

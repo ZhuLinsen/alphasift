@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **模型默认升级、策略正交化、形态毕业与私有化 CI**：
+  - `alphasift/config.py` 默认主模型升级为 `gemini/gemini-3.8-flash`，未显式覆盖 `LITELLM_FALLBACK_MODELS` 时自动挂载 `gemini/gemini-4-hydrogen` 备选链路。
+  - 重构 10 组 A 股内置策略（统一 8 行业硬上限 `mode: hard_cap` + `max_same_bucket: 1`），拉平超大盘红利（`blue_chip_income`）、中小盘双低（`dual_low`）、中盘 GARP 成长（`quality_value`）、中期多头趋势（`momentum_quality`）与均衡多因子（`balanced_alpha`）的风格正交性，大幅降低同质重合与银行单板块集中。
+  - 校准 `ma20_shrink_pullback`（v2.0）并新增 `steady_trend_breakout`（v1.0）：经本地 250 日 `next_open` + 沪深 300 基准回放检验均为样本 ≥200 且 T+5/T+10 超额为正，正式毕业为首批 2 个 `active` 形态（其余 5 个经典形态保留 `experimental`）。
+  - 看板与独立 HTML 日报重构为 Obsidian Dark / Editorial Paper Light 双主题终端 UI，修复 `track-record.yml` 跳过 `pack` 时的 Pages `deploy` 条件，全面切换 Actions 缓存私有日线包并升级至 Node 24 原生官方 Actions 版本（`checkout@v7`、`setup-python@v7`、`cache@v6`、`upload-pages-artifact@v5`、`deploy-pages@v5`）。
+
 - **成交与历史前复权口径修复**：
   - `pack_features.compute_pack_daily_features` 改在计算前先按 `trade_date` 截断矩阵再 `forward_adjust`，消除未来除权改写历史均线的偷价问题；`pipeline._attach_pack_daily_features` 当快照日期早于包尾日时传入目标日截断对齐。
   - `alphasift/evaluate.py` 与 `pack.pack_price_paths(..., include_raw=True)` 对 A 股一字涨跌停判定优先使用未复权 `raw_open / raw_previous_close / raw_high / raw_low` 原始行情；公开战绩 `scripts/track_record.py evaluate --pack-dir` 默认 `entry_mode=auto`，在 `ALPHASIFT_NEXT_OPEN_SWITCH_DATE`（默认 `2026-11-21`）之前保留历史 `close` 口径并将不可成交标为 `未评估（untradable_share_pct=null）`，切换日起显式接入 `next_open` 与一字涨停过滤。

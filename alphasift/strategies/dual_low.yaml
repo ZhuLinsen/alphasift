@@ -22,9 +22,9 @@ screening:
     pe_ttm_min: 0
     pe_ttm_max: 15
     pb_min: 0
-    pb_max: 2.0
+    pb_max: 1.8
     market_cap_min: 5000000000
-    market_cap_max: 300000000000
+    market_cap_max: 60000000000
     price_min: 3
     price_max: 80
     change_pct_min: -4.5
@@ -56,13 +56,17 @@ screening:
     low_llm_confidence: 0.45
   portfolio_profile:
     mode: hard_cap
-    max_same_bucket: 2
-    concentration_penalty: 3.0
+    max_same_bucket: 1
+    concentration_penalty: 4.0
     buckets:
-      金融: [券商, 银行, 保险]
-      地产链: [地产, 房地产, 建材, 家居, 物业]
-      周期: [钢铁, 煤炭, 有色, 化工]
-      基建: [建筑, 基础建设, 基建, 工程建设]
+      金融: [券商, 银行, 保险, 多元金融]
+      基建航运: [建筑施工, 基础建设, 港口航运, 航运, 铁路, 公路, 物流]
+      消费: [白酒, 食品, 家电, 白色家电, 零售, 消费, 酿酒]
+      医药: [医药, 中药, 中药生产, 医疗器械, 生物制品, 化学制药]
+      科技电子: [半导体, 电子元件, 消费电子, 计算机软件, AI算力, 通信设备, 光模块]
+      新能源: [新能源, 光伏, 锂电, 电池, 储能, 输变电设备]
+      周期资源: [钢铁, 煤炭, 有色, 稀有金属, 基本金属, 贵金属, 化工, 石油天然气, 化学原料]
+      公用事业: [电力, 燃气, 水务, 环保, 公用事业]
   scorecard_profile:
     value_quality_value_min: 72.0
     value_quality_stability_min: 65.0

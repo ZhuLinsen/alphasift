@@ -122,7 +122,7 @@ def test_server_radar_endpoints_and_top_level_exports(tmp_path: Path) -> None:
     assert s_schema == 200 and p_schema["object"] == "DailyReport"
 
     s_pat, p_pat = build_api_response(missing_pack_cfg, "/patterns")
-    assert s_pat == 200 and len(p_pat["patterns"]) == 6
+    assert s_pat == 200 and len(p_pat["patterns"]) == 7
 
     s_doc, p_doc = build_api_response(missing_pack_cfg, "/doctor/radar", query="trade_date=2026-10-08")
     assert s_doc == 200 and p_doc["status"] == "degraded"

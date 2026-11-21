@@ -97,14 +97,15 @@ def test_pattern_yaml_mirror_sync_and_schema_validation(tmp_path: Path) -> None:
     repo_dir = Path("patterns")
     bundled_dir = Path("alphasift/patterns")
     repo_files = sorted(repo_dir.glob("*.yaml"))
-    assert len(repo_files) == 6
+    assert len(repo_files) == 7
     for rf in repo_files:
         bf = bundled_dir / rf.name
         assert bf.is_file(), f"Missing bundled mirror {bf}"
         assert rf.read_bytes() == bf.read_bytes()
 
     specs = list_patterns(include_experimental=True)
-    assert len(specs) == 6
+    assert len(specs) == 7
+    assert len(list_patterns(include_experimental=False)) >= 2
     assert all(spec.family in {"bottom_reversal", "trend_continuation", "breakout"} for spec in specs)
     assert all(spec.market_scope == ("cn",) for spec in specs)
 
@@ -177,6 +178,13 @@ def test_all_six_patterns_trigger_on_synthetic_fixtures() -> None:
     r_ss.append((13.75, 13.95, 13.65, 13.85, 11_000_000.0))  # idx 73 hold
     r_ss.append((13.90, 14.60, 13.88, 14.55, 24_000_000.0))  # idx 74 confirm > 14.35 (lag=2)
 
+    # 7) steady_trend_breakout: steady low-vol uptrend (MA20 > MA60), mild vol breakout above prev 20d high on idx=74
+    r_stb = [(10.0 + 0.10 * i, 10.15 + 0.10 * i, 9.85 + 0.10 * i, 10.0 + 0.10 * i, 12_000_000.0) for i in range(55)]
+    for k in range(19):
+        px = 15.42 + 0.01 * k
+        r_stb.append((px - 0.02, px + 0.15, px - 0.15, px, 11_000_000.0))
+    r_stb.append((15.62, 15.98, 15.60, 15.94, 22_000_000.0))
+
     pack = _make_ohlcv_pack({
         "000001": _to_pack_bars(r_bvy),
         "000002": _to_pack_bars(r_dbb),
@@ -184,6 +192,7 @@ def test_all_six_patterns_trigger_on_synthetic_fixtures() -> None:
         "000004": _to_pack_bars(r_syh),
         "000005": _to_pack_bars(r_box),
         "000006": _to_pack_bars(r_ss),
+        "000007": _to_pack_bars(r_stb),
     })
 
     scan = scan_patterns(pack, include_experimental=True)
@@ -197,6 +206,7 @@ def test_all_six_patterns_trigger_on_synthetic_fixtures() -> None:
     ss_hits = scan.signals_by_pattern["shooting_star_confirm"]
     assert [s.code for s in ss_hits] == ["000006"]
     assert ss_hits[0].observe_lag_days == 2
+    assert "000007" in [s.code for s in scan.signals_by_pattern["steady_trend_breakout"]]
 
 
 def test_observe_confirm_invalidation_and_zero_lookahead_with_future_split() -> None:
@@ -349,7 +359,7 @@ def test_replay_next_open_tradability_limit_down_roll_and_graduation(
     monkeypatch.setattr(sys, "argv", ["alphasift", "patterns", "list", "--include-experimental", "--json"])
     cli_main()
     listed = json.loads(capsys.readouterr().out)
-    assert len(listed) == 6
+    assert len(listed) == 7
 
 
 def test_cli_patterns_scan_json(tmp_path: Path, monkeypatch, capsys) -> None:
@@ -365,7 +375,7 @@ def test_cli_patterns_scan_json(tmp_path: Path, monkeypatch, capsys) -> None:
     cli_main()
     payload = json.loads(capsys.readouterr().out)
     assert payload["trade_date"] == pack.trade_date
-    assert len(payload["patterns_evaluated"]) == 6
+    assert len(payload["patterns_evaluated"]) == 7
     assert payload["usage_policy"] == "cn_only_regime_slice_only"
 
 

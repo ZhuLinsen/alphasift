@@ -1,0 +1,39 @@
+name: steady_trend_breakout
+display_name: 低波趋势稳健突破
+family: breakout
+status: active
+version: "1.0"
+description: 多头趋势且前期低波窄幅整理后，温和放量突破20日高点（拒绝追高大阳与次日一字接盘，与 volume_breakout 策略对齐）
+aligned_strategy: volume_breakout
+tags: [breakout, volume, consolidation, low_volatility]
+market_scope: [cn]
+min_history_days: 60
+
+universe:
+  exclude_st: true
+  proxy_amount_min: 150000000
+  close_min: 3.0
+
+mode: direct
+conditions:
+  - feature: ma_bullish
+    equals: true
+  - feature: ma20_above_ma60
+    equals: true
+  - feature: prev_below_prev_high_20d
+    equals: true
+  - feature: atr20_pct
+    max: 3.5
+  - feature: prev_range_20d_atr
+    max: 4.0
+  - feature: breakout_20d_atr
+    min: 0.05
+    max: 1.2
+  - feature: vol_ratio_20d
+    min: 1.2
+    max: 3.0
+  - feature: ret_limit_ratio
+    min: 0.15
+    max: 0.55
+  - feature: close_pos_in_bar
+    min: 0.65

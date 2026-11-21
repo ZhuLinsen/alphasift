@@ -2,7 +2,7 @@
 name: low_volatility_quality
 display_name: 低波质量
 description: 偏防守的质量型候选，优先选择波动较低、回撤浅、估值不过热且数据质量可靠的股票
-version: "1.0"
+version: "1.1"
 category: quality
 tags: [quality, defensive, low_volatility, daily_k]
 style:
@@ -19,10 +19,11 @@ screening:
   hard_filters:
     exclude_st: true
     amount_min: 100000000
-    market_cap_min: 12000000000
-    pe_ttm_min: 0
-    pe_ttm_max: 45
-    pb_min: 0
+    market_cap_min: 10000000000
+    market_cap_max: 180000000000
+    pe_ttm_min: 9
+    pe_ttm_max: 40
+    pb_min: 1.2
     pb_max: 5.0
     change_pct_min: -3.0
     change_pct_max: 5.0
@@ -67,14 +68,18 @@ screening:
     stale_daily_cache_points: 3.0
     fetch_failed_daily_points: 7.0
   portfolio_profile:
+    mode: hard_cap
     max_same_bucket: 1
-    concentration_penalty: 3.5
+    concentration_penalty: 4.5
     buckets:
-      金融: [券商, 银行, 保险]
-      消费: [白酒, 食品, 家电, 零售, 消费]
-      医药: [医药, 医疗, 创新药]
+      金融: [券商, 银行, 保险, 多元金融]
+      基建航运: [建筑施工, 基础建设, 港口航运, 航运, 铁路, 公路, 物流]
+      消费: [白酒, 食品, 家电, 白色家电, 零售, 消费, 酿酒]
+      医药: [医药, 中药, 中药生产, 医疗器械, 生物制品, 化学制药]
+      科技电子: [半导体, 电子元件, 消费电子, 计算机软件, AI算力, 通信设备, 光模块]
+      新能源: [新能源, 光伏, 锂电, 电池, 储能, 输变电设备]
+      周期资源: [钢铁, 煤炭, 有色, 稀有金属, 基本金属, 贵金属, 化工, 石油天然气, 化学原料]
       公用事业: [电力, 燃气, 水务, 环保, 公用事业]
-      红利资产: [运营商, 高速, 港口, 煤炭, 电力]
   scorecard_profile:
     value_quality_stability_min: 72.0
     value_quality_bonus: 2.2

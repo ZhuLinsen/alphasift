@@ -1,10 +1,10 @@
 # 稳健价值策略
 name: quality_value
 display_name: 稳健价值
-description: 估值合理、流动性充足、波动不过热，并要求有温和活跃度确认的稳健候选
-version: "1.1"
+description: 中盘 GARP 合理估值与趋势确认，兼顾盈利质量、稳定成交与中期均线支撑
+version: "1.2"
 category: value
-tags: [value, quality, stability, dynamic_signal]
+tags: [value, quality, stability, daily_k, dynamic_signal]
 style:
   risk_profile: defensive
   holding_period: watchlist
@@ -19,25 +19,28 @@ screening:
   hard_filters:
     exclude_st: true
     amount_min: 80000000
-    pe_ttm_min: 0
-    pe_ttm_max: 25
-    pb_min: 0
-    pb_max: 4.0
-    market_cap_min: 10000000000
-    market_cap_max: 800000000000
+    pe_ttm_min: 10
+    pe_ttm_max: 32
+    pb_min: 1.4
+    pb_max: 5.5
+    market_cap_min: 8000000000
+    market_cap_max: 120000000000
+    turnover_rate_min: 0.8
     change_pct_min: -3.5
     change_pct_max: 5.0
     price_min: 3
     price_max: 180
-  tech_weight: 0.15
+    change_60d_min: 0.0
+    require_price_above_ma20: true
+  tech_weight: 0.30
   factor_weights:
-    value: 0.32
+    value: 0.24
     stability: 0.24
-    liquidity: 0.18
-    momentum: 0.08
-    activity: 0.08
+    momentum: 0.20
+    liquidity: 0.14
+    activity: 0.10
+    size: 0.04
     reversal: 0.04
-    size: 0.06
   scoring_profile:
     momentum_chase_start_pct: 3.0
     momentum_chase_penalty_slope: 16.0
@@ -52,12 +55,18 @@ screening:
     high_turnover_rate: 10.0
     low_llm_confidence: 0.45
   portfolio_profile:
+    mode: hard_cap
     max_same_bucket: 1
     concentration_penalty: 4.5
     buckets:
-      金融: [券商, 银行, 保险]
-      消费: [白酒, 食品, 家电, 零售, 消费]
-      公用事业: [电力, 燃气, 水务, 公用事业]
+      金融: [券商, 银行, 保险, 多元金融]
+      基建航运: [建筑施工, 基础建设, 港口航运, 航运, 铁路, 公路, 物流]
+      消费: [白酒, 食品, 家电, 白色家电, 零售, 消费, 酿酒]
+      医药: [医药, 中药, 中药生产, 医疗器械, 生物制品, 化学制药]
+      科技电子: [半导体, 电子元件, 消费电子, 计算机软件, AI算力, 通信设备, 光模块]
+      新能源: [新能源, 光伏, 锂电, 电池, 储能, 输变电设备]
+      周期资源: [钢铁, 煤炭, 有色, 稀有金属, 基本金属, 贵金属, 化工, 石油天然气, 化学原料]
+      公用事业: [电力, 燃气, 水务, 环保, 公用事业]
   scorecard_profile:
     value_quality_value_min: 72.0
     value_quality_stability_min: 68.0

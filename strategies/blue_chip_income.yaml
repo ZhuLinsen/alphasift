@@ -2,7 +2,7 @@
 name: blue_chip_income
 display_name: 蓝筹收益质量
 description: 面向高流动性大盘蓝筹的收益质量候选，强调合理估值、稳定成交和防守型持有体验
-version: "1.0"
+version: "1.1"
 category: income
 tags: [value, quality, income, blue_chip, defensive, snapshot_only]
 style:
@@ -19,11 +19,11 @@ screening:
   hard_filters:
     exclude_st: true
     amount_min: 120000000
-    market_cap_min: 30000000000
+    market_cap_min: 50000000000
     pe_ttm_min: 0
-    pe_ttm_max: 22
+    pe_ttm_max: 18
     pb_min: 0
-    pb_max: 3.2
+    pb_max: 2.5
     turnover_rate_min: 0.4
     volume_ratio_min: 0.6
     change_pct_min: -3.0
@@ -59,13 +59,18 @@ screening:
     high_pb_points: 5.0
     low_llm_confidence: 0.45
   portfolio_profile:
-    max_same_bucket: 2
-    concentration_penalty: 3.0
+    mode: hard_cap
+    max_same_bucket: 1
+    concentration_penalty: 4.0
     buckets:
-      金融: [银行, 保险, 券商]
-      红利资产: [运营商, 高速, 港口, 公用事业, 煤炭, 电力]
-      消费蓝筹: [白酒, 食品, 家电, 消费]
-      制造龙头: [工程机械, 汽车, 电气设备, 高端制造]
+      金融: [券商, 银行, 保险, 多元金融]
+      基建航运: [建筑施工, 基础建设, 港口航运, 航运, 铁路, 公路, 物流]
+      消费: [白酒, 食品, 家电, 白色家电, 零售, 消费, 酿酒]
+      医药: [医药, 中药, 中药生产, 医疗器械, 生物制品, 化学制药]
+      科技电子: [半导体, 电子元件, 消费电子, 计算机软件, AI算力, 通信设备, 光模块]
+      新能源: [新能源, 光伏, 锂电, 电池, 储能, 输变电设备]
+      周期资源: [钢铁, 煤炭, 有色, 稀有金属, 基本金属, 贵金属, 化工, 石油天然气, 化学原料]
+      公用事业: [电力, 燃气, 水务, 环保, 公用事业]
   scorecard_profile:
     value_quality_value_min: 74.0
     value_quality_stability_min: 70.0

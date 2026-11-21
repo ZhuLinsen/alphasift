@@ -26,8 +26,8 @@ def _snapshot_rows(industry_labels=None):
                 "volume_ratio": 1.0,
                 "pe_ratio": 6.0 + i,
                 "pb_ratio": 0.6 + i * 0.1,
-                "total_mv": 100_000_000_000,
-                "circ_mv": 100_000_000_000,
+                "total_mv": 40_000_000_000,
+                "circ_mv": 40_000_000_000,
             }
         )
     df = pd.DataFrame(rows)

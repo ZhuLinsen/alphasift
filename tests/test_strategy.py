@@ -83,6 +83,19 @@ def test_builtin_strategy_factor_weights_are_normalized_and_diversified():
         assert weights["activity"] > 0
 
 
+def test_cn_strategies_enforce_hard_cap_and_mirror_sync():
+    repo_dir = Path("strategies")
+    bundled_dir = Path("alphasift/strategies")
+    strategies = load_all_strategies(repo_dir)
+    cn_strats = [s for s in strategies.values() if "cn" in s.screening.market_scope]
+    assert len(cn_strats) >= 10
+    for strat in cn_strats:
+        pp = strat.screening.portfolio_profile
+        assert pp.get("mode") == "hard_cap", strat.name
+        assert pp.get("max_same_bucket") == 1, strat.name
+        assert (bundled_dir / f"{strat.name}.yaml").read_bytes() == (repo_dir / f"{strat.name}.yaml").read_bytes(), strat.name
+
+
 def test_strategy_info_exposes_catalog_capabilities():
     info_by_name = {
         item.name: item
