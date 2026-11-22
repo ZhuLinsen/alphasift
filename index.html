@@ -2164,7 +2164,10 @@ function renderMetaAndKpis() {
   const hs = $("health-strip");
   if (hs) {
     const aiCnt = (s.track_comparison || []).length;
-    const latestCnDate = ((s.latest || []).find((r) => r.market === "cn") || {}).date || "";
+    const cnRuns = Array.isArray(s.latest)
+      ? s.latest.filter((r) => r && r.market === "cn")
+      : ((s.latest || {}).cn || []);
+    const latestCnDate = cnRuns.reduce((mx, r) => (r && r.date && r.date > mx ? r.date : mx), "");
     const art = s.artifacts || {};
     const artPat = art.patterns || {};
     const artRep = art.report || {};
