@@ -529,3 +529,37 @@ def test_three_white_soldiers_suspension_gap_cooldown_and_lookahead() -> None:
     scan_trunc = scan_patterns(trunc, patterns=["three_white_soldiers"], as_of_index=-1)
     assert [s.code for s in scan_as_of.signals_by_pattern["three_white_soldiers"]] == ["000001"]
     assert scan_as_of.signals_by_pattern["three_white_soldiers"] == scan_trunc.signals_by_pattern["three_white_soldiers"]
+
+
+def test_strict_graduation_checks_net_cost_baseline_and_stability() -> None:
+    dummy_spec = PatternSpec(
+        name="tmp_strict", display_name="严格", family="trend_continuation", status="experimental",
+        version="1.0", description="", mode="direct", min_history_days=60, universe={}, conditions=[],
+    )
+    ok_stab = {"sign_consistent": True, "stable_direction": "positive", "t_stat": 2.4}
+    beatable_base = {"equal_weight_excess_mean_pct": 0.10}
+
+    # 1) Gross +0.15% fails 25bp net cost (-0.10%)
+    obs_thin = [{"date": f"2026-05-{(i % 20) + 1:02d}", "horizons": {"t5": {"status": "ok", "raw_return_pct": 0.15, "excess_return_pct": 0.15, "exit_delayed": False}}} for i in range(250)]
+    t5_thin = _summarize_horizon_obs(obs_thin, 5, net_cost_bps=25.0, applied_cost_bps=0.0)
+    assert t5_thin["gross_excess_mean_pct"] == pytest.approx(0.15)
+    assert t5_thin["net_excess_mean_pct"] == pytest.approx(-0.10)
+    g1 = _evaluate_graduation(dummy_spec, t5_thin, stability=ok_stab, universe_baseline_t5=beatable_base)
+    assert g1["passed"] is False and g1["checks"]["net_excess_ok"] is False
+
+    # 2) Strong net +0.30% fails when equal-weight universe baseline is +0.40%
+    obs_strong = [{"date": f"2026-05-{(i % 20) + 1:02d}", "horizons": {"t5": {"status": "ok", "raw_return_pct": 0.55, "excess_return_pct": 0.55, "exit_delayed": False}}} for i in range(250)]
+    t5_strong = _summarize_horizon_obs(obs_strong, 5, net_cost_bps=25.0, applied_cost_bps=0.0)
+    assert t5_strong["net_excess_mean_pct"] == pytest.approx(0.30)
+    g2 = _evaluate_graduation(dummy_spec, t5_strong, stability=ok_stab, universe_baseline_t5={"equal_weight_excess_mean_pct": 0.40})
+    assert g2["passed"] is False and g2["checks"]["beats_universe_ok"] is False
+
+    # 3) Fails split-half / clustered t-stat check even when net excess > universe
+    bad_stab = {"sign_consistent": False, "stable_direction": "mixed_or_insufficient", "t_stat": 0.4}
+    g3 = _evaluate_graduation(dummy_spec, t5_strong, stability=bad_stab, universe_baseline_t5=beatable_base)
+    assert g3["passed"] is False and g3["checks"]["stability_ok"] is False
+
+    # 4) Passes only when samples, net excess, universe beat, AND split-half t-stat all satisfy gate
+    g4 = _evaluate_graduation(dummy_spec, t5_strong, stability=ok_stab, universe_baseline_t5=beatable_base)
+    assert g4["passed"] is True and g4["recommended_status"] == "active"
+    assert all(g4["checks"][k] for k in ("samples_ok", "net_excess_ok", "beats_universe_ok", "stability_ok"))

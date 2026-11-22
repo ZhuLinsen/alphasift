@@ -69,6 +69,18 @@ jobs:
       ALPHASIFT_CANDIDATE_CONTEXT_CACHE_DIR: ${{ github.workspace }}/state/candidate_context
       ALPHASIFT_PACK_DIR: ${{ github.workspace }}/pack
       ALPHASIFT_NOTIFY_STATE_PATH: ${{ github.workspace }}/state/notify_state.json
+      OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+      LITELLM_MODEL: ${{ vars.LITELLM_MODEL }}
+      LITELLM_FALLBACK_MODELS: ${{ vars.LITELLM_FALLBACK_MODELS }}
+      LLM_CHANNELS: ${{ vars.LLM_CHANNELS }}
+      LLM_PRIMARY_PROTOCOL: ${{ vars.LLM_PRIMARY_PROTOCOL || 'openai' }}
+      LLM_PRIMARY_BASE_URL: ${{ vars.LLM_PRIMARY_BASE_URL }}
+      LLM_PRIMARY_MODELS: ${{ vars.LLM_PRIMARY_MODELS }}
+      LLM_BACKUP_PROTOCOL: ${{ vars.LLM_BACKUP_PROTOCOL || 'openai' }}
+      LLM_BACKUP_BASE_URL: ${{ vars.LLM_BACKUP_BASE_URL }}
+      LLM_BACKUP_MODELS: ${{ vars.LLM_BACKUP_MODELS }}
+      LLM_CANDIDATE_CONTEXT_ENABLED: ${{ vars.LLM_CANDIDATE_CONTEXT_ENABLED || 'true' }}
+      LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES: "12"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
@@ -150,24 +162,15 @@ jobs:
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL }}
-          LITELLM_MODEL: ${{ secrets.LITELLM_MODEL || vars.LITELLM_MODEL }}
-          LITELLM_FALLBACK_MODELS: ${{ secrets.LITELLM_FALLBACK_MODELS || vars.LITELLM_FALLBACK_MODELS }}
-          LLM_CHANNELS: ${{ secrets.LLM_CHANNELS || vars.LLM_CHANNELS }}
-          LLM_PRIMARY_PROTOCOL: ${{ secrets.LLM_PRIMARY_PROTOCOL || vars.LLM_PRIMARY_PROTOCOL || 'openai' }}
           LLM_PRIMARY_BASE_URL: ${{ secrets.LLM_PRIMARY_BASE_URL || vars.LLM_PRIMARY_BASE_URL }}
           LLM_PRIMARY_API_KEY: ${{ secrets.LLM_PRIMARY_API_KEY }}
           LLM_PRIMARY_API_KEYS: ${{ secrets.LLM_PRIMARY_API_KEYS }}
-          LLM_PRIMARY_MODELS: ${{ secrets.LLM_PRIMARY_MODELS || vars.LLM_PRIMARY_MODELS }}
-          LLM_BACKUP_PROTOCOL: ${{ secrets.LLM_BACKUP_PROTOCOL || vars.LLM_BACKUP_PROTOCOL || 'openai' }}
           LLM_BACKUP_BASE_URL: ${{ secrets.LLM_BACKUP_BASE_URL || vars.LLM_BACKUP_BASE_URL }}
           LLM_BACKUP_API_KEY: ${{ secrets.LLM_BACKUP_API_KEY }}
           LLM_BACKUP_API_KEYS: ${{ secrets.LLM_BACKUP_API_KEYS }}
-          LLM_BACKUP_MODELS: ${{ secrets.LLM_BACKUP_MODELS || vars.LLM_BACKUP_MODELS }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_CANDIDATE_CONTEXT_ENABLED: ${{ vars.LLM_CANDIDATE_CONTEXT_ENABLED || 'true' }}
-          LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES: "12"
         run: |
           if [ -z "${LITELLM_FALLBACK_MODELS:-}" ]; then unset LITELLM_FALLBACK_MODELS; fi
           python scripts/track_record.py screen --track track \
@@ -229,19 +232,12 @@ jobs:
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || vars.OPENAI_BASE_URL }}
-          LITELLM_MODEL: ${{ secrets.LITELLM_MODEL || vars.LITELLM_MODEL }}
-          LITELLM_FALLBACK_MODELS: ${{ secrets.LITELLM_FALLBACK_MODELS || vars.LITELLM_FALLBACK_MODELS }}
-          LLM_CHANNELS: ${{ secrets.LLM_CHANNELS || vars.LLM_CHANNELS }}
-          LLM_PRIMARY_PROTOCOL: ${{ secrets.LLM_PRIMARY_PROTOCOL || vars.LLM_PRIMARY_PROTOCOL || 'openai' }}
           LLM_PRIMARY_BASE_URL: ${{ secrets.LLM_PRIMARY_BASE_URL || vars.LLM_PRIMARY_BASE_URL }}
           LLM_PRIMARY_API_KEY: ${{ secrets.LLM_PRIMARY_API_KEY }}
           LLM_PRIMARY_API_KEYS: ${{ secrets.LLM_PRIMARY_API_KEYS }}
-          LLM_PRIMARY_MODELS: ${{ secrets.LLM_PRIMARY_MODELS || vars.LLM_PRIMARY_MODELS }}
-          LLM_BACKUP_PROTOCOL: ${{ secrets.LLM_BACKUP_PROTOCOL || vars.LLM_BACKUP_PROTOCOL || 'openai' }}
           LLM_BACKUP_BASE_URL: ${{ secrets.LLM_BACKUP_BASE_URL || vars.LLM_BACKUP_BASE_URL }}
           LLM_BACKUP_API_KEY: ${{ secrets.LLM_BACKUP_API_KEY }}
           LLM_BACKUP_API_KEYS: ${{ secrets.LLM_BACKUP_API_KEYS }}
-          LLM_BACKUP_MODELS: ${{ secrets.LLM_BACKUP_MODELS || vars.LLM_BACKUP_MODELS }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
@@ -319,6 +315,65 @@ jobs:
         if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
         with:
           path: _site
+
+      - name: Publish health & artifact gate
+        if: steps.session.outputs.session != ''
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SESSION: ${{ steps.session.outputs.session }}
+          REPO_NAME: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib
+
+          repo = os.environ.get("REPO_NAME", "")
+          session = os.environ.get("SESSION", "")
+          event_name = os.environ.get("EVENT_NAME", "")
+          summary_path = pathlib.Path("track/site/summary.json")
+          state_dir = pathlib.Path(os.environ.get("STATE", "state"))
+          state_dir.mkdir(parents=True, exist_ok=True)
+          streak_file = state_dir / "missing_pack_streak.txt"
+
+          summary = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.is_file() else {}
+          arts = summary.get("artifacts") or {}
+          pat = arts.get("patterns") or {}
+          rep = arts.get("report") or {}
+          tc = summary.get("track_comparison") or []
+          integ = summary.get("integrity") or {}
+
+          lines = [
+              "### AlphaSift Track Record Health",
+              f"- Session: `{session}` (`{event_name}`) · Runs: `{summary.get('run_count', 0)}` · Days: `{len(summary.get('days') or [])}`",
+              f"- AI paired strategies: `{len(tc)}`",
+              f"- Patterns artifact: `{'ok' if pat.get('exists') else 'MISSING'}` ({pat.get('trade_date') or pat.get('reason') or '-'})",
+              f"- Daily report artifact: `{'ok' if rep.get('exists') else 'MISSING'}` ({rep.get('trade_date') or rep.get('reason') or '-'})",
+          ]
+          if integ.get("runs_sha256"):
+              lines.append(f"- SHA-256 ledger digest: `{integ['runs_sha256'][:16]}...` ({integ.get('runs_count', 0)} runs)")
+          step_sum = os.environ.get("GITHUB_STEP_SUMMARY")
+          if step_sum:
+              with open(step_sum, "a", encoding="utf-8") as fh:
+                  fh.write("\n".join(lines) + "\n")
+          print("\n".join(lines))
+
+          if repo == "ZhuLinsen/alphasift" and session == "asia":
+              if pat.get("exists") and rep.get("exists"):
+                  streak_file.write_text("0\n", encoding="utf-8")
+              else:
+                  prev = 0
+                  if streak_file.is_file():
+                      try:
+                          prev = int(streak_file.read_text(encoding="utf-8").strip() or "0")
+                      except ValueError:
+                          prev = 0
+                  cur = prev + 1
+                  streak_file.write_text(f"{cur}\n", encoding="utf-8")
+                  msg = f"CN pattern/report artifacts missing (consecutive asia sessions: {cur})"
+                  if event_name == "schedule" and cur >= 2:
+                      print(f"::error::{msg}")
+                      raise SystemExit(1)
+                  print(f"::warning::{msg}")
+          PY
 
   deploy:
     needs: record

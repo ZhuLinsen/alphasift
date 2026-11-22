@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import hashlib
 import inspect
 import json
 import os
@@ -335,7 +336,7 @@ def record_cn_patterns(
         from alphasift.pattern_replay import load_cn_benchmark, replay_patterns
 
         bench = load_cn_benchmark(lookback_days=max(len(daily_pack.dates) + 40, 320))
-        replay_data = replay_patterns(daily_pack, benchmark_df=bench)
+        replay_data = replay_patterns(daily_pack, benchmark_df=bench, cost_bps=25.0)
         (out_dir / "replay.json").write_text(
             json.dumps(replay_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
@@ -1056,6 +1057,35 @@ def build_site(track: Path) -> dict[str, Any]:
     latest_report = _load_latest_report_summary(site / "report.json")
     report_file = site / "report.json"
     report_html_file = site / "daily_report.html"
+    runs_hasher = hashlib.sha256()
+    run_files = sorted(
+        p for p in (track / "data" / "runs").glob("*.json")
+        if p.is_file() and not p.is_symlink()
+    )
+    for rp in run_files:
+        digest = hashlib.sha256(rp.read_bytes()).hexdigest()
+        runs_hasher.update(f"{rp.name}:{digest}\n".encode("utf-8"))
+    runs_sha256 = runs_hasher.hexdigest()
+
+    integrity_files: dict[str, str] = {}
+    manifest_lines: list[str] = [f"{runs_sha256}  data/runs/*.json ({len(run_files)} files)"]
+    for rel, path in (
+        ("site/evaluation.json", site / "evaluation.json"),
+        ("site/patterns.json", site / "patterns.json"),
+        ("site/report.json", report_file),
+    ):
+        if path.is_file() and not path.is_symlink():
+            f_digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            integrity_files[rel] = f_digest
+            manifest_lines.append(f"{f_digest}  {rel}")
+    (site / "manifest.sha256").write_text("\n".join(manifest_lines) + "\n", encoding="utf-8")
+    integrity = {
+        "algorithm": "sha256",
+        "runs_count": len(run_files),
+        "runs_sha256": runs_sha256,
+        "files": integrity_files,
+        "manifest_path": "site/manifest.sha256",
+    }
     artifacts = {
         "patterns": {
             "exists": pb is not None,
@@ -1091,6 +1121,7 @@ def build_site(track: Path) -> dict[str, Any]:
         "pattern_board": pb_summary,
         "latest_report": latest_report,
         "artifacts": artifacts,
+        "integrity": integrity,
         "trend": trend(runs, evaluation, track_filter="rules"),
         "trend_ai": trend(runs, evaluation, track_filter="ai"),
         "latest": _latest_runs(runs),
@@ -1413,6 +1444,8 @@ def _build_pattern_board(track: Path) -> dict[str, Any] | None:
             "generated_at": replay.get("generated_at"),
             "entry_mode": replay.get("entry_mode", "next_open"),
             "benchmark": replay.get("benchmark", "sh000300"),
+            "cost_bps": float(replay.get("cost_bps", 0.0)),
+            "graduation_rule": replay.get("graduation_rule"),
             "pack_summary": replay.get("pack_summary"),
             "regime_distribution": replay.get("regime_distribution"),
             "universe_baseline": replay.get("universe_baseline"),

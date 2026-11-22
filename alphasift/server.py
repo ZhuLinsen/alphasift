@@ -21,7 +21,7 @@ from alphasift.doctor import doctor_data_sources, doctor_radar_readiness
 from alphasift.market_regime import compute_market_regime, compute_market_regime_series
 from alphasift.overview import build_overview
 from alphasift.pack import PackError, load_pack, pack_dir
-from alphasift.patterns import list_patterns, scan_patterns
+from alphasift.patterns import extract_mini_kline_bars, list_patterns, scan_patterns
 from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.report import build_run_report_payload
 from alphasift.result_schema import daily_report_schema, screen_result_schema
@@ -314,12 +314,30 @@ def build_api_response(
                             "message": "Too many patterns requested (max 32).",
                         }
                     selected_patterns = deduped
-                return 200, scan_patterns(
+                payload = scan_patterns(
                     daily_pack,
                     patterns=selected_patterns,
                     trade_date=trade_date,
                     include_experimental=include_exp,
                 ).to_dict()
+                if _bool_param(params, "with_kline", False):
+                    sig_codes: list[str] = []
+                    for items in (payload.get("signals_by_pattern") or {}).values():
+                        for item in list(items)[:12]:
+                            code = str(item.get("code") or "")
+                            if code:
+                                sig_codes.append(code)
+                    if sig_codes:
+                        klines = extract_mini_kline_bars(
+                            daily_pack,
+                            sig_codes,
+                            trade_date=payload.get("trade_date"),
+                            bars=20,
+                        )
+                        for items in (payload.get("signals_by_pattern") or {}).values():
+                            for item in items:
+                                item["kline"] = klines.get(str(item.get("code") or ""), [])
+                return 200, payload
             # /daily-report
             include_ann = _bool_param(params, "announcements", False)
             include_runs = _bool_param(params, "include_runs", True)

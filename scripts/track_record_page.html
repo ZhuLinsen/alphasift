@@ -412,6 +412,10 @@ th, td {
   padding: 9px 11px; text-align: right; white-space: nowrap;
   border-bottom: 1px solid var(--border); font-size: 12.5px;
 }
+table.compact-tbl th, table.compact-tbl td {
+  padding: 6px 4px; font-size: 11px;
+}
+table.compact-tbl th { font-size: 10px; }
 th {
   font-weight: 600; color: var(--muted); font-size: 11px; letter-spacing: 0.03em;
   background: var(--surface-2); text-transform: uppercase;
@@ -487,6 +491,12 @@ tr.low-sample td, td.muted-cell { color: var(--muted); opacity: 0.78; }
 .card .sub { margin-top: 3px; color: var(--muted); font-size: 11.5px; font-family: var(--font-mono); }
 .card td, .card th { padding: 6px 10px; font-size: 12px; }
 .kline { width: 96px; height: 28px; display: inline-block; vertical-align: middle; }
+.sparkline { width: 64px; height: 18px; display: inline-block; vertical-align: middle; }
+.pat-meta-row {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px;
+  padding: 6px 14px; border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--muted); font-family: var(--font-mono);
+}
 
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
@@ -754,6 +764,7 @@ footer {
       <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener" data-i18n="footer_ledger">track-record 原始账本</a>
       <a id="footer-report-link" href="site/daily_report.html" style="display:none;" data-i18n="footer_report">每日投研日报</a>
       <a href="site/feed.xml" target="_blank" rel="noopener" data-i18n="footer_rss">Atom RSS 订阅</a>
+      <a id="footer-manifest-link" href="site/manifest.sha256" target="_blank" rel="noopener" style="display:none;">SHA-256</a>
       <a href="https://github.com/ZhuLinsen/alphasift/blob/main/README.md" target="_blank" rel="noopener" data-i18n="footer_readme">README 文档</a>
     </div>
   </footer>
@@ -954,7 +965,10 @@ const I18N = {
     ub_bench: "· 沪深300 {ret}",
     ub_t10: "· T+10 等权超额 {ex}",
     rep_subhead: "250 日 next_open 回放门槛评估（{start} .. {end}，{sess} 个信号日）",
-    rep_cols: ["形态", "谱系/模式", "总信号", "不可成交", "T+5 基准匹配", "T+5 超额", "T+5 胜率", "聚日 t 值", "前半 H1 / 后半 H2", "T+10 超额", "门槛状态"],
+    rep_cols: ["形态", "谱系/模式", "总信号", "不可成交", "T+5 基准匹配", "T+5 毛超额", "T+5 净超额 (-25bp)", "T+5 胜率", "聚日 t 值", "前半 H1 / 后半 H2", "T+10 超额", "门槛状态"],
+    pat_card_meta: "T+5 毛 {g} / 净 {n} · t={t} · N={cnt}",
+    pat_card_spark: "近15日",
+    footer_manifest: "SHA-256 账本校验",
     sl_head_lbl: "形态 × 市场阶段（T+5 匹配样本 / 超额）",
     sl_subhead: "形态 × 市场阶段切片（带 * 且置灰表示样本 &lt; {n}）",
     ov_head_lbl: "形态 × 上方套牢盘切片（T+5 匹配样本 / 超额 / 胜率）",
@@ -1192,7 +1206,10 @@ const I18N = {
     ub_bench: "· CSI 300 {ret}",
     ub_t10: "· T+10 EW Excess {ex}",
     rep_subhead: "250-Day next_open Graduation Gate ({start} .. {end}, {sess} signal days)",
-    rep_cols: ["Pattern", "Family / Mode", "Signals", "Untradable", "T+5 Matched", "T+5 Excess", "T+5 Win", "Clustered t", "H1 / H2 Excess", "T+10 Excess", "Status"],
+    rep_cols: ["Pattern", "Family / Mode", "Signals", "Untradable", "T+5 Matched", "T+5 Gross", "T+5 Net (-25bp)", "T+5 Win", "Clustered t", "H1 / H2 Excess", "T+10 Excess", "Status"],
+    pat_card_meta: "T+5 {g} / Net {n} · t={t} · N={cnt}",
+    pat_card_spark: "15D hits",
+    footer_manifest: "SHA-256 Manifest",
     sl_head_lbl: "Pattern × Market Regime (T+5 Matched / Excess)",
     sl_subhead: "Regime Slices (* & muted = matched N < {n})",
     ov_head_lbl: "Pattern × Top-10% Overhead Supply (T+5 Matched / Excess / Win Rate)",
@@ -1430,7 +1447,10 @@ const I18N = {
     ub_bench: "· CSI 300 {ret}",
     ub_t10: "· T+10 等重超過 {ex}",
     rep_subhead: "250日 next_open 卒業基準検証（{start} .. {end}、{sess} 営業日）",
-    rep_cols: ["パターン", "系統 / 方式", "総数", "取引不可", "T+5 一致", "T+5 超過", "T+5 勝率", "日次 t値", "前半 H1 / 後半 H2", "T+10 超過", "判定"],
+    rep_cols: ["パターン", "系統 / 方式", "総数", "取引不可", "T+5 一致", "T+5 粗超過", "T+5 純超過 (-25bp)", "T+5 勝率", "日次 t値", "前半 H1 / 後半 H2", "T+10 超過", "判定"],
+    pat_card_meta: "T+5 粗 {g} / 純 {n} · t={t} · N={cnt}",
+    pat_card_spark: "15日推移",
+    footer_manifest: "SHA-256 検証",
     sl_head_lbl: "パターン × 市場局面（T+5 一致数 / 超過）",
     sl_subhead: "市場局面スライス（* と薄字は標本 &lt; {n}）",
     ov_head_lbl: "パターン × 上値10%しこり玉（T+5 一致 / 超過 / 勝率）",
@@ -1778,7 +1798,34 @@ function syncQueryState() {
     const url = new URL(window.location.href);
     url.searchParams.set("lang", state.lang);
     url.searchParams.set("theme", state.theme);
+    const setOrDel = (k, v, def) => {
+      if (v && v !== def) url.searchParams.set(k, v);
+      else url.searchParams.delete(k);
+    };
+    setOrDel("win", state.scoreWin, "5");
+    setOrDel("mkt", state.scoreMarket, "all");
+    setOrDel("q", (state.searchQuery || "").trim(), "");
+    setOrDel("mode", state.explorerMode, "latest");
+    setOrDel("pf", state.patFilter, "all");
     window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  } catch (_) {}
+}
+
+function restoreQueryState() {
+  try {
+    const qs = new URLSearchParams(window.location.search);
+    const win = qs.get("win");
+    if (win === "5" || win === "10" || win === "20") {
+      state.scoreWin = win; state.compareWin = win; state.trendWin = win;
+    }
+    const mkt = qs.get("mkt");
+    if (mkt) state.scoreMarket = mkt;
+    const q = qs.get("q");
+    if (q !== null) state.searchQuery = q;
+    const mode = qs.get("mode");
+    if (mode === "latest" || mode === "history") state.explorerMode = mode;
+    const pf = qs.get("pf");
+    if (pf === "all" || pf === "active" || pf === "experimental") state.patFilter = pf;
   } catch (_) {}
 }
 
@@ -1843,6 +1890,7 @@ function segmented(el, key, onChange) {
     if (!w) return;
     state[key] = w;
     sync();
+    if (key === "scoreWin") syncQueryState();
     onChange();
   });
   sync();
@@ -1972,7 +2020,7 @@ function computeClientConsensus() {
   return { consensus, sectors, latestDate, cnRunCount: cnRuns.length };
 }
 
-function renderMiniKline(bars) {
+function renderMiniKline(bars, observeLag) {
   if (!Array.isArray(bars) || !bars.length) return '<span class="dim">–</span>';
   let lo = Infinity, hi = -Infinity;
   for (const b of bars) {
@@ -1982,7 +2030,7 @@ function renderMiniKline(bars) {
   }
   if (!Number.isFinite(lo) || !Number.isFinite(hi)) return '<span class="dim">–</span>';
   const span = Math.max(hi - lo, hi * 0.005, 1e-6);
-  const W = 96, H = 28, pad = 2;
+  const W = 96, H = 28, pad = 3.5;
   const n = bars.length;
   const step = (W - pad * 2) / n;
   const bw = Math.max(1.8, step * 0.65);
@@ -1997,7 +2045,31 @@ function renderMiniKline(bars) {
     shapes.push(`<line x1="${cx}" x2="${cx}" y1="${y(h).toFixed(1)}" y2="${y(l).toFixed(1)}" stroke="${col}" stroke-width="1"/>`);
     shapes.push(`<rect x="${(Number(cx) - bw / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh}" rx="0.5" fill="${col}"/>`);
   });
+  const lag = Number(observeLag || 0);
+  if (Number.isInteger(lag) && lag > 0 && n - 1 - lag >= 0) {
+    const obsX = (pad + (n - 1 - lag + 0.5) * step).toFixed(1);
+    const confX = (pad + (n - 0.5) * step).toFixed(1);
+    shapes.push(`<circle cx="${obsX}" cy="2.2" r="1.8" fill="var(--accent-hi)"/>`);
+    shapes.push(`<circle cx="${confX}" cy="${(H - 2.2).toFixed(1)}" r="1.8" fill="var(--warn)"/>`);
+  }
   return `<svg class="kline" viewBox="0 0 ${W} ${H}" aria-label="${n}D">${shapes.join("")}</svg>`;
+}
+
+function renderHitSparkline(history, slug) {
+  const vals = (history || []).slice(-15).map((h) => Number(((h && h.counts_by_pattern) || {})[slug] || 0));
+  if (!vals.length) return '<span class="dim">–</span>';
+  const maxV = Math.max(1, ...vals);
+  const W = 64, H = 18;
+  const step = W / vals.length;
+  const bw = Math.max(2, step * 0.68);
+  const bars = vals.map((v, i) => {
+    const bh = Math.max(v > 0 ? 2.5 : 1, (v / maxV) * (H - 3));
+    const x = (i * step + (step - bw) / 2).toFixed(1);
+    const y = (H - 1 - bh).toFixed(1);
+    const fill = v > 0 ? "var(--accent-hi)" : "var(--border-strong)";
+    return `<rect x="${x}" y="${y}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="0.8" fill="${fill}" opacity="${v > 0 ? "0.9" : "0.5"}"/>`;
+  });
+  return `<svg class="sparkline" viewBox="0 0 ${W} ${H}" aria-label="${vals.length}d hits">${bars.join("")}</svg>`;
 }
 
 function renderReturnDistSvg(dist) {
@@ -2092,13 +2164,24 @@ function renderMetaAndKpis() {
     const patOk = Boolean(patLatest && patLatest.trade_date);
     const repOk = Boolean(state.reportReady || (rep && rep.trade_date));
     const repDate = (rep && rep.trade_date) || "";
+    const art = s.artifacts || {};
     const items = [
-      { cls: totalFailures ? "pend" : "ok", lbl: t("hl_rules_lbl"), val: t("hl_rules_ok", { d: (s.days || []).length, r: s.run_count }) },
-      { cls: aiCnt > 0 ? "ok" : "pend", lbl: t("hl_ai_lbl"), val: aiCnt > 0 ? t("hl_ai_ok", { n: aiCnt }) : t("hl_ai_pend") },
-      { cls: patOk ? "ok" : "pend", lbl: t("hl_pat_lbl"), val: patOk ? t("hl_pat_ok", { d: patLatest.trade_date }) : t("hl_pat_pend") },
-      { cls: repOk ? "ok" : "pend", lbl: t("hl_rep_lbl"), val: repOk ? t("hl_rep_ok", { d: repDate || "ready" }) : t("hl_rep_pend") },
+      { cls: totalFailures ? "pend" : "ok", lbl: t("hl_rules_lbl"), val: t("hl_rules_ok", { d: (s.days || []).length, r: s.run_count }), tip: "" },
+      { cls: aiCnt > 0 ? "ok" : "pend", lbl: t("hl_ai_lbl"), val: aiCnt > 0 ? t("hl_ai_ok", { n: aiCnt }) : t("hl_ai_pend"), tip: "" },
+      { cls: patOk ? "ok" : "pend", lbl: t("hl_pat_lbl"), val: patOk ? t("hl_pat_ok", { d: patLatest.trade_date }) : t("hl_pat_pend"), tip: ((art.patterns || {}).reason) || "" },
+      { cls: repOk ? "ok" : "pend", lbl: t("hl_rep_lbl"), val: repOk ? t("hl_rep_ok", { d: repDate || "ready" }) : t("hl_rep_pend"), tip: ((art.report || {}).reason) || "" },
     ];
-    hs.innerHTML = items.map((it) => `<span class="health-item"><span class="health-dot ${it.cls}"></span><strong>${esc(it.lbl)}</strong><span>${esc(it.val)}</span></span>`).join("");
+    hs.innerHTML = items.map((it) => `<span class="health-item" title="${esc(it.tip)}"><span class="health-dot ${it.cls}"></span><strong>${esc(it.lbl)}</strong><span>${esc(it.val)}</span></span>`).join("");
+  }
+  const mLink = $("footer-manifest-link");
+  if (mLink) {
+    if (s.integrity && s.integrity.manifest_path) {
+      mLink.href = s.integrity.manifest_path;
+      mLink.textContent = `${t("footer_manifest")} (${String(s.integrity.runs_sha256 || "").slice(0, 8)})`;
+      mLink.style.display = "";
+    } else {
+      mLink.style.display = "none";
+    }
   }
 
   const kpi1 = bestT5
@@ -2409,6 +2492,7 @@ function initScoreMarketPills() {
     if (!m) return;
     state.scoreMarket = m;
     wrap.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.m === m)));
+    syncQueryState();
     renderScorecard();
   });
   const sortEl = $("sort-score");
@@ -2582,8 +2666,12 @@ function renderPatternRadar() {
   const counts = latest.counts_by_pattern || {};
   const patNames = Object.keys(counts);
   const replayStatus = {};
+  const replayByName = {};
   if (replay && Array.isArray(replay.patterns)) {
-    for (const p of replay.patterns) replayStatus[p.pattern] = (p.graduation || {}).recommended_status || "experimental";
+    for (const p of replay.patterns) {
+      replayStatus[p.pattern] = (p.graduation || {}).recommended_status || "experimental";
+      replayByName[p.pattern] = p;
+    }
   }
 
   if (!patNames.length) {
@@ -2603,26 +2691,38 @@ function renderPatternRadar() {
       <button type="button" data-pf="active" aria-pressed="${state.patFilter === "active"}">${esc(t("pat_f_active", { n: actCnt }))}</button>
       <button type="button" data-pf="experimental" aria-pressed="${state.patFilter === "experimental"}">${esc(t("pat_f_exp", { n: expCnt }))}</button>
     </div></div>`;
+    const fmtS = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? "–" : `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`);
     const visible = patMeta.filter((x) => state.patFilter === "all" || x.st === state.patFilter);
     const cards = visible.map(({ name, items, total, st }) => {
       const badge = st === "active"
         ? `<span class="badge active">${esc(t("pat_status_active"))}</span>`
         : `<span class="badge exp">${esc(t("pat_status_exp"))}</span>`;
       const dname = pname(name, items[0] && items[0].display_name);
+      const rInfo = replayByName[name] || null;
+      const rh5 = rInfo ? ((rInfo.horizons || {}).t5 || {}) : {};
+      const rGrad = rInfo ? (rInfo.graduation || {}) : {};
+      const rStab = rInfo ? (rInfo.stability || {}) : {};
+      const gVal = rh5.gross_excess_mean_pct ?? rh5.excess_mean_pct;
+      const nVal = rGrad.t5_net_excess_mean_pct ?? rh5.net_excess_mean_pct;
+      const tStr = rStab.t_stat !== null && rStab.t_stat !== undefined ? Number(rStab.t_stat).toFixed(2) : "–";
+      const metaBar = rInfo
+        ? `<div class="pat-meta-row"><span>${esc(t("pat_card_meta", { g: fmtS(gVal), n: fmtS(nVal), t: tStr, cnt: rh5.excess_scored ?? rh5.scored ?? 0 }))}</span><span title="${esc(t("pat_card_spark"))}">${renderHitSparkline(pb.history, name)}</span></div>`
+        : (pb.history && pb.history.length ? `<div class="pat-meta-row"><span>${esc(t("pat_card_spark"))}</span><span>${renderHitSparkline(pb.history, name)}</span></div>` : "");
       if (!items.length) {
-        return `<div class="card"><div class="card-top"><h3><span>${esc(dname)}</span>${badge}</h3><div class="sub">${esc(t("pat_hit_zero", { d: latest.trade_date }))}</div></div><div class="empty">${esc(t("pat_no_sig"))}</div></div>`;
+        return `<div class="card"><div class="card-top"><h3><span>${esc(dname)}</span>${badge}</h3><div class="sub">${esc(t("pat_hit_zero", { d: latest.trade_date }))}</div></div>${metaBar}<div class="empty">${esc(t("pat_no_sig"))}</div></div>`;
       }
       const rows = items.slice(0, 6).map((s) => {
         const obs = s.observe_lag_days ? ` <span class="dim small">-${s.observe_lag_days}d</span>` : "";
         const ov = s.overhead_supply_10pct !== null && s.overhead_supply_10pct !== undefined ? `${Number(s.overhead_supply_10pct).toFixed(0)}%` : "–";
         return `<tr><td class="l"><strong>${esc(s.name || s.code)}</strong> <span class="mono dim small">${esc(s.code)}</span>${obs}</td>
-          <td class="mono">${pct(s.change_pct)}</td><td class="dim mono">${ov}</td><td>${renderMiniKline(s.kline)}</td></tr>`;
+          <td class="mono">${pct(s.change_pct)}</td><td class="dim mono">${ov}</td><td>${renderMiniKline(s.kline, s.observe_lag_days)}</td></tr>`;
       }).join("");
       return `<div class="card">
         <div class="card-top">
           <h3><span>${esc(dname)}</span>${badge}</h3>
           <div class="sub">${esc(t("pat_hit_n", { d: latest.trade_date, tot: total, shown: Math.min(6, items.length) }))}</div>
         </div>
+        ${metaBar}
         <div class="scroll"><table><thead><tr><th class="l">${esc(pcols[0])}</th><th>${esc(pcols[1])}</th><th>${esc(pcols[2])}</th><th>${esc(pcols[3])}</th></tr></thead><tbody>${rows}</tbody></table></div>
       </div>`;
     }).join("");
@@ -2634,6 +2734,7 @@ function renderPatternRadar() {
         const pf = btn && btn.dataset && btn.dataset.pf;
         if (!pf) return;
         state.patFilter = pf;
+        syncQueryState();
         renderPatternRadar();
       });
     }
@@ -2657,7 +2758,7 @@ function renderPatternRadar() {
     }
 
     const rcols = t("rep_cols");
-    const repHead = `<thead><tr><th class="l">${esc(rcols[0])}</th><th class="l">${esc(rcols[1])}</th><th>${esc(rcols[2])}</th><th>${esc(rcols[3])}</th><th>${esc(rcols[4])}</th><th>${esc(rcols[5])}</th><th>${esc(rcols[6])}</th><th>${esc(rcols[7])}</th><th>${esc(rcols[8])}</th><th>${esc(rcols[9])}</th><th>${esc(rcols[10])}</th></tr></thead>`;
+    const repHead = `<thead><tr><th class="l">${esc(rcols[0])}</th><th class="l">${esc(rcols[1])}</th><th>${esc(rcols[2])}</th><th>${esc(rcols[3])}</th><th>${esc(rcols[4])}</th><th>${esc(rcols[5])}</th><th>${esc(rcols[6])}</th><th>${esc(rcols[7])}</th><th>${esc(rcols[8])}</th><th>${esc(rcols[9])}</th><th>${esc(rcols[10])}</th><th>${esc(rcols[11])}</th></tr></thead>`;
     const repRows = replay.patterns.map((p) => {
       const h5 = (p.horizons || {}).t5 || {};
       const h10 = (p.horizons || {}).t10 || {};
@@ -2671,24 +2772,27 @@ function renderPatternRadar() {
         : `<span class="badge exp">${esc(t("pat_status_exp"))}</span>`;
       const tStat = stab.t_stat !== null && stab.t_stat !== undefined ? `${Number(stab.t_stat).toFixed(2)}` : "–";
       const h1h2 = (stab.h1_days || stab.h2_days)
-        ? `${pct(stab.h1_daily_excess_mean_pct ?? stab.h1_excess_mean_pct)} (${stab.h1_days ?? 0}d) / ${pct(stab.h2_daily_excess_mean_pct ?? stab.h2_excess_mean_pct)} (${stab.h2_days ?? 0}d)`
+        ? `<div>${pct(stab.h1_daily_excess_mean_pct ?? stab.h1_excess_mean_pct)} <span class="dim">(${stab.h1_days ?? 0}d)</span></div><div>${pct(stab.h2_daily_excess_mean_pct ?? stab.h2_excess_mean_pct)} <span class="dim">(${stab.h2_days ?? 0}d)</span></div>`
         : '<span class="dim">–</span>';
+      const grossEx = h5.gross_excess_mean_pct ?? h5.excess_mean_pct;
+      const netEx = grad.t5_net_excess_mean_pct ?? h5.net_excess_mean_pct;
       return `<tr class="${muted ? "low-sample" : ""}">
-        <td class="l"><strong>${esc(pname(p.pattern, p.display_name))}</strong> <span class="mono dim small">${esc(p.pattern)}</span></td>
-        <td class="l dim">${esc(p.family)} · ${esc(p.mode)}</td>
+        <td class="l"><strong>${esc(pname(p.pattern, p.display_name))}</strong><div class="mono dim small">${esc(p.pattern)}</div></td>
+        <td class="l dim">${esc(p.family)}<div class="small">${esc(p.mode)}</div></td>
         <td class="mono">${(h5.scored ?? 0) + (p.untradable_count || 0)}</td>
         <td class="mono">${sharePct(p.untradable_share_pct)}</td>
         <td class="mono">${t5ExcessN}${t5ExcessN < MIN_PATTERN_GRAD_SAMPLE ? '<span class="tag">&lt;200</span>' : ""}</td>
-        <td class="mono">${pct(h5.excess_mean_pct)}</td>
+        <td class="mono">${pct(grossEx)}</td>
+        <td class="mono">${pct(netEx)}</td>
         <td class="mono">${sharePct(h5.excess_win_rate_pct ?? h5.win_rate_pct)}</td>
         <td class="mono">${tStat}</td>
         <td class="mono">${h1h2}</td>
         <td class="mono">${pct(h10.excess_mean_pct)}</td>
-        <td>${badge}</td>
+        <td title="${esc(grad.reason || "")}">${badge}</td>
       </tr>`;
     }).join("");
     $("replay-summary-wrap").innerHTML = `<h3 class="subhead" style="margin-top:4px;">${esc(t("rep_subhead", { start: ps.eval_start_date, end: ps.eval_end_date, sess: ps.eval_sessions ?? "-" }))}</h3>
-      <div class="panel scroll">${`<table>${repHead}<tbody>${repRows}</tbody></table>`}</div>`;
+      <div class="panel scroll">${`<table class="compact-tbl">${repHead}<tbody>${repRows}</tbody></table>`}</div>`;
 
     const slHead = `<thead><tr><th class="l">${esc(t("sl_head_lbl"))}</th>${REGIME_ORDER.map((s) => `<th>${esc(rname(s))}</th>`).join("")}</tr></thead>`;
     const slRows = replay.patterns.map((p) => {
@@ -2959,22 +3063,29 @@ function initExplorerControls() {
   const mktSel = $("market-latest");
   const daySel = $("day");
   const searchEl = $("pick-search");
+  const applyMode = (mode) => {
+    state.explorerMode = mode;
+    if (modeWrap) modeWrap.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+    $("tab-latest").classList.toggle("active", mode === "latest");
+    $("tab-history").classList.toggle("active", mode === "history");
+    if (mktSel) mktSel.style.display = mode === "latest" ? "" : "none";
+    if (daySel) daySel.style.display = mode === "history" ? "" : "none";
+  };
+  applyMode(state.explorerMode);
   if (modeWrap) {
     modeWrap.addEventListener("click", (e) => {
       const btn = e.target.closest("button");
       const mode = btn && btn.dataset && btn.dataset.mode;
       if (!mode) return;
-      state.explorerMode = mode;
-      modeWrap.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
-      $("tab-latest").classList.toggle("active", mode === "latest");
-      $("tab-history").classList.toggle("active", mode === "history");
-      if (mktSel) mktSel.style.display = mode === "latest" ? "" : "none";
-      if (daySel) daySel.style.display = mode === "history" ? "" : "none";
+      applyMode(mode);
+      syncQueryState();
     });
   }
   if (searchEl) {
+    if (state.searchQuery) searchEl.value = state.searchQuery;
     searchEl.addEventListener("input", () => {
       state.searchQuery = searchEl.value || "";
+      syncQueryState();
       renderLatest();
       if (state.currentDay) renderDay(state.currentDay);
     });
@@ -2983,6 +3094,7 @@ function initExplorerControls() {
 
 async function init() {
   initTheme();
+  restoreQueryState();
   initLang();
   initExplorerControls();
   try {

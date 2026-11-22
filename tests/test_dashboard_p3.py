@@ -172,6 +172,11 @@ def test_scorecard_untradable_share_and_pattern_board_replay_klines(tmp_path: Pa
     assert summary["artifacts"]["patterns"]["exists"] is True
     assert summary["artifacts"]["report"]["exists"] is False
     assert summary["artifacts"]["daily_report_html"]["exists"] is False
+    assert summary["integrity"]["algorithm"] == "sha256"
+    assert len(summary["integrity"]["runs_sha256"]) == 64
+    assert (tmp_path / "site" / "manifest.sha256").is_file()
+    site_patterns = json.loads((tmp_path / "site" / "patterns.json").read_text(encoding="utf-8"))
+    assert site_patterns["replay"]["cost_bps"] == 0.0 or "graduation_rule" in site_patterns["replay"]
 
     site_patterns = json.loads((tmp_path / "site" / "patterns.json").read_text(encoding="utf-8"))
     box_hits = site_patterns["latest"]["signals_by_pattern"]["box_breakout"]
@@ -221,6 +226,10 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
         "status-ok",
         "chart-crosshair",
         "three_white_soldiers",
+        "renderHitSparkline",
+        "restoreQueryState",
+        "footer-manifest-link",
+        "t5_net_excess_mean_pct",
     ):
         assert marker in html
 
@@ -287,6 +296,9 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
     assert "evaluate --track track --markets" in tr_text and '--pack-dir "$ALPHASIFT_PACK_DIR"' in tr_text
     assert "--output-html track/site/daily_report.html" in tr_text
     assert "--ai-brief auto" in tr_text
+    assert "Publish health & artifact gate" in tr_text
+    assert "GITHUB_STEP_SUMMARY" in tr_text
+    assert "missing_pack_streak" in tr_text
 
 
 def test_dashboard_page_i18n_race_guard_url_sync_and_js_syntax(tmp_path) -> None:

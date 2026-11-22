@@ -141,6 +141,8 @@ def test_server_radar_endpoints_and_top_level_exports(tmp_path: Path) -> None:
 
     s_sc, p_sc = build_api_response(ok_cfg, "/patterns/scan", query="include_experimental=true&pattern=box_breakout")
     assert s_sc == 200 and p_sc["counts_by_pattern"]["box_breakout"] == 1
+    s_sck, p_sck = build_api_response(ok_cfg, "/patterns/scan", query="include_experimental=true&pattern=box_breakout&with_kline=1")
+    assert s_sck == 200 and len(p_sck["signals_by_pattern"]["box_breakout"][0]["kline"]) == 20
 
     s_dr, p_dr = build_api_response(ok_cfg, "/daily-report")
     assert s_dr == 200 and p_dr["im_card_chars"] < 1200

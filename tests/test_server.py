@@ -556,6 +556,12 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
     assert "ov.summary" in html_text
     assert "snapshot_source_priority" in html_text
     assert "!ep.startsWith(\"//\")" in html_text
+    assert "makeSvgKline" in html_text
+    assert "renderCompareBody" in html_text
+    assert "runPatternScan" in html_text
+    assert "with_kline=1" in html_text
+    assert "cols_strat" in html_text
+    assert "cols_fresh" in html_text
 
     # Regression checks for Audit #4 security fixes
     from alphasift.daily_report_html import render_daily_report_html

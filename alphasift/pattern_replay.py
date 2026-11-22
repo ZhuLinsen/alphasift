@@ -32,6 +32,7 @@ from alphasift.patterns import (
 )
 
 GRADUATION_MIN_SAMPLES = 200
+GRADUATION_COST_BPS = 25.0
 REGIME_SLICE_WEIGHT_READY_SAMPLES = 100
 STABILITY_MIN_HALF_SAMPLES = 30
 STABILITY_MIN_HALF_DAYS = 15
@@ -197,9 +198,13 @@ def _summarize_stability(
 def _summarize_horizon_obs(
     obs_list: list[dict[str, Any]],
     horizon: int,
+    *,
+    net_cost_bps: float = GRADUATION_COST_BPS,
+    applied_cost_bps: float = 0.0,
 ) -> dict[str, Any]:
     raws: list[float] = []
     excesses: list[float] = []
+    gross_excesses: list[float] = []
     pending = 0
     delayed = 0
     h_key = f"t{horizon}"
@@ -210,8 +215,12 @@ def _summarize_horizon_obs(
         status = res["status"]
         if status == "ok":
             raws.append(res["raw_return_pct"])
-            if res["excess_return_pct"] is not None:
-                excesses.append(res["excess_return_pct"])
+            ex_val = res.get("excess_return_pct")
+            g_ex_val = res.get("gross_excess_return_pct", ex_val)
+            if ex_val is not None:
+                excesses.append(ex_val)
+            if g_ex_val is not None:
+                gross_excesses.append(g_ex_val)
             if res["exit_delayed"]:
                 delayed += 1
         elif status == "pending":
@@ -219,6 +228,14 @@ def _summarize_horizon_obs(
 
     scored = len(raws)
     excess_scored = len(excesses)
+    excess_mean = _mean_or_none(excesses)
+    gross_excess_mean = _mean_or_none(gross_excesses)
+    if float(applied_cost_bps) > 0.0:
+        net_excess_mean = excess_mean
+    elif gross_excess_mean is not None:
+        net_excess_mean = round(float(gross_excess_mean) - float(net_cost_bps) / 100.0, 3)
+    else:
+        net_excess_mean = None
     return {
         "horizon_days": horizon,
         "scored": scored,
@@ -229,25 +246,74 @@ def _summarize_horizon_obs(
         "raw_mean_pct": _mean_or_none(raws),
         "raw_median_pct": _median_or_none(raws),
         "win_rate_pct": _win_rate_or_none(raws),
-        "excess_mean_pct": _mean_or_none(excesses),
+        "excess_mean_pct": excess_mean,
+        "gross_excess_mean_pct": gross_excess_mean,
+        "net_excess_mean_pct": net_excess_mean,
         "excess_median_pct": _median_or_none(excesses),
         "excess_win_rate_pct": _win_rate_or_none(excesses),
     }
 
 
-def _evaluate_graduation(spec: PatternSpec, t5_summary: dict[str, Any]) -> dict[str, Any]:
+def _evaluate_graduation(
+    spec: PatternSpec,
+    t5_summary: dict[str, Any],
+    *,
+    stability: dict[str, Any] | None = None,
+    universe_baseline_t5: dict[str, Any] | None = None,
+    net_cost_bps: float = GRADUATION_COST_BPS,
+) -> dict[str, Any]:
     raw_scored = int(t5_summary.get("scored", 0))
     matched_scored = int(t5_summary.get("excess_scored", 0))
-    excess = t5_summary.get("excess_mean_pct")
-    passed = matched_scored >= GRADUATION_MIN_SAMPLES and excess is not None and excess > 0.0
-    if matched_scored < GRADUATION_MIN_SAMPLES:
-        reason = f"T+5 基准匹配样本 {matched_scored}（总完成 {raw_scored}）< 门槛 {GRADUATION_MIN_SAMPLES}"
-    elif excess is None:
-        reason = "缺少基准超额收益数据"
-    elif excess <= 0.0:
-        reason = f"T+5 平均超额 {excess:+.3f}% <= 0%"
+    gross_excess = t5_summary.get("gross_excess_mean_pct", t5_summary.get("excess_mean_pct"))
+    effective_net = t5_summary.get("net_excess_mean_pct")
+    if effective_net is None:
+        effective_net = t5_summary.get("excess_mean_pct")
+
+    samples_ok = matched_scored >= GRADUATION_MIN_SAMPLES
+    net_excess_ok = effective_net is not None and float(effective_net) > 0.0
+
+    ew_bench = (universe_baseline_t5 or {}).get("equal_weight_excess_mean_pct")
+    if universe_baseline_t5 is None or ew_bench is None:
+        beats_universe_ok = True
     else:
-        reason = f"达标：T+5 基准匹配样本 {matched_scored} >= {GRADUATION_MIN_SAMPLES} 且平均超额 {excess:+.3f}% > 0%"
+        beats_universe_ok = effective_net is not None and float(effective_net) > float(ew_bench)
+
+    if stability is None:
+        stability_ok = True
+    else:
+        t_val = stability.get("t_stat")
+        stability_ok = bool(
+            stability.get("sign_consistent")
+            and stability.get("stable_direction") == "positive"
+            and t_val is not None
+            and float(t_val) >= STABILITY_T_STAT_THRESHOLD
+        )
+
+    passed = bool(samples_ok and net_excess_ok and beats_universe_ok and stability_ok)
+    reasons: list[str] = []
+    if not samples_ok:
+        reasons.append(f"样本 {matched_scored}（总完成 {raw_scored}）< {GRADUATION_MIN_SAMPLES}")
+    if effective_net is None:
+        reasons.append("缺少基准超额收益数据")
+    elif not net_excess_ok:
+        reasons.append(f"扣 {float(net_cost_bps):.0f}bp 净超额 {float(effective_net):+.3f}% <= 0%")
+    if not beats_universe_ok and ew_bench is not None:
+        eff_str = "-" if effective_net is None else f"{float(effective_net):+.3f}%"
+        reasons.append(f"净超额 {eff_str} 未跑赢全A等权基线 {float(ew_bench):+.3f}%")
+    if not stability_ok:
+        t_txt = "-" if not stability or stability.get("t_stat") is None else f"{float(stability['t_stat']):+.2f}"
+        reasons.append(f"H1/H2 前后半期未同号正超额或聚日 t={t_txt} < {STABILITY_T_STAT_THRESHOLD}")
+
+    if passed:
+        reason = (
+            f"达标：样本 {matched_scored} >= {GRADUATION_MIN_SAMPLES}，扣 {float(net_cost_bps):.0f}bp "
+            f"净超额 {float(effective_net):+.3f}% > 0 且跑赢全A等权，H1/H2 同号正超额且 t={float(stability['t_stat']):+.2f}"
+            if stability and stability.get("t_stat") is not None
+            else f"达标：样本 {matched_scored} >= {GRADUATION_MIN_SAMPLES}，净超额 {float(effective_net):+.3f}% > 0"
+        )
+    else:
+        reason = "未达标：" + "；".join(reasons)
+
     return {
         "passed": passed,
         "current_yaml_status": spec.status,
@@ -256,7 +322,16 @@ def _evaluate_graduation(spec: PatternSpec, t5_summary: dict[str, Any]) -> dict[
         "t5_scored": raw_scored,
         "t5_excess_scored": matched_scored,
         "t5_unmatched_benchmark": int(t5_summary.get("unmatched_benchmark", max(0, raw_scored - matched_scored))),
-        "t5_excess_mean_pct": excess,
+        "t5_excess_mean_pct": t5_summary.get("excess_mean_pct"),
+        "t5_gross_excess_mean_pct": gross_excess,
+        "t5_net_excess_mean_pct": effective_net,
+        "checks": {
+            "samples_ok": samples_ok,
+            "net_excess_ok": net_excess_ok,
+            "beats_universe_ok": beats_universe_ok,
+            "stability_ok": stability_ok,
+            "net_cost_bps": float(net_cost_bps),
+        },
         "reason": reason,
     }
 
@@ -482,17 +557,22 @@ def replay_patterns(
                     if not np.isfinite(exit_close_px) or exit_close_px <= 0:
                         h_map[f"t{h}"] = {"status": "pending"}
                         continue
-                    raw_ret = (exit_close_px / entry_open_px - 1.0) * 100.0 - float(cost_bps) / 100.0
+                    gross_raw_ret = (exit_close_px / entry_open_px - 1.0) * 100.0
+                    raw_ret = gross_raw_ret - float(cost_bps) / 100.0
                     exit_date = dates[t_exit]
                     b_close = bench_close.get(exit_date)
+                    gross_excess_ret = None
                     excess_ret = None
                     if b_open is not None and b_close is not None and b_open > 0:
                         bench_ret = (b_close / b_open - 1.0) * 100.0
+                        gross_excess_ret = gross_raw_ret - bench_ret
                         excess_ret = raw_ret - bench_ret
                     h_map[f"t{h}"] = {
                         "status": "ok",
                         "raw_return_pct": raw_ret,
+                        "gross_raw_return_pct": gross_raw_ret,
                         "excess_return_pct": excess_ret,
+                        "gross_excess_return_pct": gross_excess_ret,
                         "exit_delayed": bool(k > h - 1),
                     }
 
@@ -505,22 +585,32 @@ def replay_patterns(
                     "horizons": h_map,
                 })
 
+        gate_cost_bps = float(cost_bps) if float(cost_bps) > 0.0 else GRADUATION_COST_BPS
         untradable_share = round((untradable_count / total_signals) * 100.0, 2) if total_signals > 0 else 0.0
         horizons_summary = {
-            f"t{h}": _summarize_horizon_obs(observations, h) for h in sorted_horizons
+            f"t{h}": _summarize_horizon_obs(
+                observations, h, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)
+            )
+            for h in sorted_horizons
         }
         primary_t5 = horizons_summary.get("t5") or horizons_summary[f"t{sorted_horizons[0]}"]
         primary_h = int(sorted_horizons[0]) if 5 not in sorted_horizons else 5
-        graduation = _evaluate_graduation(spec, primary_t5)
         stability = _summarize_stability(observations, mid_date=mid_date, horizon=primary_h)
+        graduation = _evaluate_graduation(
+            spec,
+            primary_t5,
+            stability=stability,
+            universe_baseline_t5=universe_baseline.get(f"t{primary_h}"),
+            net_cost_bps=gate_cost_bps,
+        )
 
         by_regime: dict[str, Any] = {}
         for stage in REGIME_STAGE_ORDER:
             stage_obs = [o for o in observations if o["stage"] == stage]
             sig_n = regime_signal_counts.get(stage, 0)
             unt_n = regime_untradable_counts.get(stage, 0)
-            s_t5 = _summarize_horizon_obs(stage_obs, 5) if 5 in sorted_horizons else None
-            s_t10 = _summarize_horizon_obs(stage_obs, 10) if 10 in sorted_horizons else None
+            s_t5 = _summarize_horizon_obs(stage_obs, 5, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)) if 5 in sorted_horizons else None
+            s_t10 = _summarize_horizon_obs(stage_obs, 10, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)) if 10 in sorted_horizons else None
             stage_stab = _summarize_stability(stage_obs, mid_date=mid_date, horizon=primary_h)
             t5_scored = int(s_t5["scored"]) if s_t5 else 0
             t5_excess_scored = int(s_t5["excess_scored"]) if s_t5 else 0
@@ -544,8 +634,8 @@ def replay_patterns(
         by_overhead: dict[str, Any] = {}
         for bucket in ("low_lt15", "mid_15_35", "high_ge35"):
             b_obs = [o for o in observations if _overhead_bucket(o["overhead"]) == bucket]
-            s_t5 = _summarize_horizon_obs(b_obs, 5) if 5 in sorted_horizons else None
-            s_t10 = _summarize_horizon_obs(b_obs, 10) if 10 in sorted_horizons else None
+            s_t5 = _summarize_horizon_obs(b_obs, 5, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)) if 5 in sorted_horizons else None
+            s_t10 = _summarize_horizon_obs(b_obs, 10, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)) if 10 in sorted_horizons else None
             b_stab = _summarize_stability(b_obs, mid_date=mid_date, horizon=primary_h)
             by_overhead[bucket] = {
                 "signals": len(b_obs),
@@ -564,8 +654,8 @@ def replay_patterns(
         by_month: dict[str, Any] = {}
         for ym in sorted(monthly_groups):
             m_obs = monthly_groups[ym]
-            s_t5 = _summarize_horizon_obs(m_obs, 5) if 5 in sorted_horizons else None
-            s_t10 = _summarize_horizon_obs(m_obs, 10) if 10 in sorted_horizons else None
+            s_t5 = _summarize_horizon_obs(m_obs, 5, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)) if 5 in sorted_horizons else None
+            s_t10 = _summarize_horizon_obs(m_obs, 10, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)) if 10 in sorted_horizons else None
             by_month[ym] = {
                 "signals": len(m_obs),
                 "t5_scored": int(s_t5["scored"]) if s_t5 else 0,
@@ -590,12 +680,20 @@ def replay_patterns(
             "by_month": by_month,
         })
 
+    gate_cost = float(cost_bps) if float(cost_bps) > 0.0 else GRADUATION_COST_BPS
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "entry_mode": "next_open",
         "benchmark": "sh000300",
         "cost_bps": float(cost_bps),
-        "graduation_rule": {"min_samples": GRADUATION_MIN_SAMPLES, "t5_excess_mean_pct_gt": 0.0},
+        "graduation_rule": {
+            "min_samples": GRADUATION_MIN_SAMPLES,
+            "net_cost_bps": gate_cost,
+            "t5_net_excess_mean_pct_gt": 0.0,
+            "beats_universe_equal_weight": True,
+            "split_half_positive_consistent": True,
+            "min_clustered_t_stat": STABILITY_T_STAT_THRESHOLD,
+        },
         "regime_weight_policy": "reporting_and_slice_only",
         "pack_summary": {
             "dates_total": t_len,
@@ -631,29 +729,32 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
             f"全A等权超额 {_fmt_pct(ub.get('equal_weight_excess_mean_pct'))} | "
             f"流动性>=8000万超额 {_fmt_pct(ub.get('liquid_excess_mean_pct'))}"
         ]
+    gate_bps = float((report.get("graduation_rule") or {}).get("net_cost_bps", GRADUATION_COST_BPS))
     lines = [
         "# A 股形态 250 日 next_open 回放报告",
         "",
         f"- 评估区间: `{ps['eval_start_date']}` .. `{ps['eval_end_date']}` ({ps['eval_sessions']} 交易日, 股票池 {ps['codes_total']} 只, 包截止 `{ps['pack_end_date']}`)",
-        f"- 口径: `{report['entry_mode']}` 入场（一字涨停不可成交剔除，退出一字跌停顺延），基准 `{report['benchmark']}` 同期开盘→收盘",
+        f"- 口径: `{report['entry_mode']}` 入场（一字涨停不可成交剔除，退出一字跌停顺延），基准 `{report['benchmark']}` 同期开盘→收盘，回放已计入 `{float(report.get('cost_bps', 0.0)):.0f}bp` 成本",
         *baseline_line,
-        f"- 毕业门槛: `T+5 基准匹配样本 >= {GRADUATION_MIN_SAMPLES}` 且 `T+5 超额 > 0%`（否则标 `experimental`）；情绪阶段仅作切片观察（策略权重不随阶段调整）",
+        f"- 毕业门槛: `T+5 基准匹配样本 >= {GRADUATION_MIN_SAMPLES}` 且扣 `{gate_bps:.0f}bp` 成本 `净超额 > 0%`、跑赢全A等权基线、H1/H2 同号正超额且聚日 `t >= {STABILITY_T_STAT_THRESHOLD}`（否则标 `experimental`）",
         "",
         "## 形态总览与毕业判定",
         "",
-        "| 形态 | 谱系 | 模式 | 信号数 | 不可成交 | T+5 匹配样本 | T+5 原始 | T+5 超额 | T+5 胜率 | T+10 超额 | 判定 |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|",
+        f"| 形态 | 谱系 | 模式 | 信号数 | 不可成交 | T+5 匹配样本 | T+5 原始 | T+5 毛超额 | T+5 净超额 (-{gate_bps:.0f}bp) | T+5 胜率 | T+10 超额 | 判定 |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for item in report["patterns"]:
         h5 = item["horizons"].get("t5") or {}
         h10 = item["horizons"].get("t10") or {}
         grad = item["graduation"]
         matched_n = h5.get("excess_scored", h5.get("scored", 0))
+        gross_ex = h5.get("gross_excess_mean_pct", h5.get("excess_mean_pct"))
+        net_ex = grad.get("t5_net_excess_mean_pct", h5.get("net_excess_mean_pct"))
         lines.append(
             f"| {item['display_name']} (`{item['pattern']}`) | {item['family']} | {item['mode']} | "
             f"{item['total_signals']} | {item['untradable_share_pct']:.1f}% | "
             f"{matched_n} | {_fmt_pct(h5.get('raw_mean_pct'))} | "
-            f"{_fmt_pct(h5.get('excess_mean_pct'))} | {_fmt_rate(h5.get('win_rate_pct'))} | "
+            f"{_fmt_pct(gross_ex)} | {_fmt_pct(net_ex)} | {_fmt_rate(h5.get('win_rate_pct'))} | "
             f"{_fmt_pct(h10.get('excess_mean_pct'))} | **{grad['recommended_status']}** |"
         )
 
