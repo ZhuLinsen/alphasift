@@ -237,6 +237,8 @@ class ScreenResult:
     portfolio_topic_exposure: dict[str, dict[str, Any]] = field(default_factory=dict)
     overconcentrated_topics: list[str] = field(default_factory=list)
     replacement_candidates: list[dict[str, Any]] = field(default_factory=list)
+    daily_source_counts: dict[str, int] = field(default_factory=dict)
+    daily_quality_flag_counts: dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.track:
@@ -306,3 +308,8 @@ class EvaluationResult:
     entry_mode: str = "close"
     untradable_count: int = 0
     untradable_share_pct: float | None = None
+    run_snapshot_source: str = ""
+    run_source_errors: list[str] = field(default_factory=list)
+    run_degradation: list[str] = field(default_factory=list)
+    daily_source_counts: dict[str, int] = field(default_factory=dict)
+    daily_quality_flag_counts: dict[str, int] = field(default_factory=dict)

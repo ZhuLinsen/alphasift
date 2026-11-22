@@ -86,6 +86,8 @@
     },
     "overconcentrated_topics": [],
     "replacement_candidates": [],
+    "daily_source_counts": {"pack": 10},
+    "daily_quality_flag_counts": {},
     "created_at": "2026-11-21T15:30:00+00:00"
   }
 }

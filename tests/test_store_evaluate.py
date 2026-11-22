@@ -80,6 +80,8 @@ def test_list_saved_runs_reads_only_metadata_until_limit(tmp_path):
         "llm_coverage": 0.75,
         "daily_enriched": True,
         "daily_enrich_count": 20,
+        "daily_source_counts": {},
+        "daily_quality_flag_counts": {},
         "post_analyzers": ["scorecard"],
         "path": str(path),
         "report_path": str(path.with_suffix(".md")),
@@ -621,6 +623,10 @@ def test_evaluate_saved_runs_by_windows_measures_true_t_plus_n_against_benchmark
     assert reviews[3]["failure_review"]["summary"]["failure_count"] >= 1
     assert reviews[10]["failure_review"]["summary"]["failure_count"] == 0
     assert payload["failure_review"] == reviews[3]["failure_review"]
+    assert payload["data_quality_review"]["run_count"] == 2
+    assert payload["data_quality_review"]["clean_run_count"] == 2
+    assert reviews[3]["data_quality_review"]["run_count"] == 2
+    assert reviews[10]["data_quality_review"]["run_count"] == 2
 
 
 def test_evaluate_saved_runs_filters_strategy_before_loading_runs(tmp_path):
@@ -661,3 +667,143 @@ def test_evaluate_saved_runs_filters_strategy_before_loading_runs(tmp_path):
 
     assert result["summary"]["run_count"] == 1
     assert result["runs"][0]["run_id"] == "run_matching"
+
+
+def test_evaluate_saved_runs_aggregates_data_quality_and_hints(tmp_path):
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="run_clean",
+            created_at="2026-04-01T08:00:00+08:00",
+            snapshot_source="em_datacenter",
+            daily_source_counts={"pack": 1},
+            daily_quality_flag_counts={},
+            picks=[Pick(rank=1, code="000001", name="平安银行", final_score=85, screen_score=85, price=10.0)],
+        ),
+        data_dir=tmp_path,
+    )
+    # Legacy run without top-level counts falls back to pick.daily_source / pick.daily_quality_flags
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="run_degraded",
+            created_at="2026-04-02T08:00:00+08:00",
+            snapshot_source="last_good_cache",
+            source_errors=["em failed"],
+            degradation=["Daily K-line quality flags: stale_cache=1"],
+            picks=[
+                Pick(
+                    rank=1,
+                    code="600000",
+                    name="浦发银行",
+                    final_score=70,
+                    screen_score=70,
+                    price=10.0,
+                    daily_source="akshare",
+                    daily_quality_flags="stale_cache,fetch_failed",
+                )
+            ],
+        ),
+        data_dir=tmp_path,
+    )
+    snapshot = pd.DataFrame([{"code": "000001", "price": 11.0}, {"code": "600000", "price": 9.0}])
+    snapshot.attrs["snapshot_source"] = "test"
+
+    result = evaluate_saved_runs(
+        config=Config(llm_api_key="", data_dir=tmp_path),
+        current_snapshot=snapshot,
+        limit=10,
+        cost_bps=0,
+        with_price_path=False,
+    )
+
+    dq = result["data_quality_review"]
+    assert dq["run_count"] == 2
+    assert dq["clean_run_count"] == 1
+    assert dq["degraded_run_count"] == 1
+    assert dq["snapshot_source_counts"] == {"em_datacenter": 1, "last_good_cache": 1}
+    assert dq["daily_source_counts"] == {"akshare": 1, "pack": 1}
+    assert dq["daily_quality_flag_counts"] == {"fetch_failed": 1, "stale_cache": 1}
+    assert dq["degraded_reason_counts"]["stale_cache"] == 1
+    assert dq["degraded_reason_counts"]["fetch_failed"] == 1
+    assert dq["degraded_reason_counts"]["source_errors"] == 1
+    assert dq["clean_vs_degraded"]["clean"]["average_return_pct"] == 10.0
+    assert dq["clean_vs_degraded"]["degraded"]["average_return_pct"] == -10.0
+    assert dq["clean_vs_degraded"]["return_gap_pct"] == -20.0
+    assert any("underperformed clean runs" in hint for hint in dq["hints"])
+
+    # Invalid OHLC / missing_in_pack flags and malformed numeric strings never misclassify or raise
+    from alphasift.evaluate import _data_quality_review, _extract_run_daily_quality_counts
+    from alphasift.models import EvaluationResult
+
+    bad_src, bad_flags = _extract_run_daily_quality_counts(
+        ScreenResult(strategy="dual_low", market="cn", daily_source_counts={"pack": "unknown"})  # type: ignore[arg-type]
+    )
+    assert bad_src == {} and bad_flags == {}
+    for flag_key, expected_reason in (("invalid_ohlc", "invalid_ohlc"), ("missing_in_pack", "missing_in_pack"), ("fallback_errors", "fetch_failed")):
+        edge_review = _data_quality_review(
+            [EvaluationResult(run_id="e1", strategy="dual_low", market="cn", created_at="", daily_quality_flag_counts={flag_key: 1})]
+        )
+        assert edge_review["clean_run_count"] == 0
+        assert edge_review["degraded_run_count"] == 1
+        assert edge_review["degraded_reason_counts"][expected_reason] == 1
+
+    # Non-finite / bool / pd.NA / null roundtrip hardening & strict JSON compliance
+    import json
+    from alphasift.store import evaluation_from_dict
+
+    nan_review = _data_quality_review([
+        EvaluationResult(
+            run_id="e_bad",
+            strategy="dual_low",
+            market="cn",
+            created_at="",
+            run_degradation="not-a-list",  # type: ignore[arg-type]
+            daily_source_counts={"pack": True, "bad": float("inf")},  # type: ignore[dict-item]
+            daily_quality_flag_counts={"bad_nan": float("nan")},  # type: ignore[dict-item]
+            picks=[],
+        )
+    ])
+    assert nan_review["clean_run_count"] == 1
+    assert nan_review["daily_source_counts"] == {}
+    json.dumps(nan_review, allow_nan=False)
+
+    # pd.NA / inf / nan pick return_pct must never poison averages or break JSON
+    from alphasift.models import PickEvaluation
+
+    na_review = _data_quality_review([
+        EvaluationResult(
+            run_id="e_na",
+            strategy="dual_low",
+            market="cn",
+            created_at="",
+            picks=[
+                PickEvaluation(code="000001", name="a", rank=1, entry_price=10.0, return_pct=pd.NA),  # type: ignore[arg-type]
+                PickEvaluation(code="000002", name="b", rank=2, entry_price=10.0, return_pct=float("inf")),
+                PickEvaluation(code="000003", name="c", rank=3, entry_price=10.0, return_pct=5.0),
+            ],
+        )
+    ])
+    assert na_review["clean_vs_degraded"]["clean"]["average_return_pct"] == 5.0
+    json.dumps(na_review, allow_nan=False)
+
+    roundtrip = evaluation_from_dict({
+        "run_id": "r1",
+        "strategy": "dual_low",
+        "market": "cn",
+        "created_at": "2026-04-01",
+        "picks": None,
+        "run_snapshot_source": None,
+        "run_source_errors": None,
+        "run_degradation": None,
+        "daily_source_counts": {"pack": "bad", "em": True, "tencent": 2},
+        "daily_quality_flag_counts": None,
+    })
+    assert roundtrip.picks == []
+    assert roundtrip.run_snapshot_source == ""
+    assert roundtrip.run_source_errors == []
+    assert roundtrip.run_degradation == []
+    assert roundtrip.daily_source_counts == {"tencent": 2}
+    assert roundtrip.daily_quality_flag_counts == {}

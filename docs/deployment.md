@@ -33,3 +33,18 @@ AlphaSift 当前看板定位为**量化形态观测与回测基准**，仅供研
 - **形态毕业门槛**：在 250 日 A 股数据包上按 `next_open` 口径回放，`T+5 样本 >= 200` 且 `T+5 相对沪深 300 超额 > 0%` 才标记 `active` 进默认日报；其余标记 `experimental` 并置灰提示。
 - **情绪阶段切片**：`冰点 / 启动 / 主升 / 分歧 / 退潮 / 震荡` 仅作报告与切片观察维度；只有当 `形态 × 阶段` 格点样本数 `>= 100` 且长期表现差异稳定时，才会在后续迭代中评估是否引入权重逻辑（看板对样本 `< 100` 的格点强制置灰并标 `*`）。
 - **多模型委员会推迟条件**：单模型 `rules` vs `ai` 双赛道至少积累 `>= 60` 个交易日的同口径后验战绩后再作评估。
+
+## PyPI Trusted Publishing（手动触发）
+
+仓库内置了 [`.github/workflows/publish.yml`](../.github/workflows/publish.yml)（仅 `workflow_dispatch` 手动触发，避免未配置 OIDC 前误报失败），用于发布稳定 wheel / sdist 至 PyPI 或 TestPyPI：
+
+1. 登录 PyPI（或 TestPyPI）→ **Your projects / Publishing → Add a new pending publisher**：
+   - **PyPI Project Name**：`alphasift`
+   - **Owner**：`ZhuLinsen`
+   - **Repository name**：`alphasift`
+   - **Workflow name**：`publish.yml`
+2. 配置完成后执行：
+   ```bash
+   gh workflow run publish.yml --repo ZhuLinsen/alphasift -f target=pypi
+   ```
+   即可免长期 API Token、通过 GitHub OIDC 构建并发布 `alphasift` 到 PyPI。

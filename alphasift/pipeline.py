@@ -291,6 +291,8 @@ def screen(
 
     daily_enriched = False
     daily_enrich_count = 0
+    daily_source_counts: dict[str, int] = {}
+    daily_quality_flag_counts: dict[str, int] = {}
     if daily_needed or daily_requested:
         active_pack = _resolve_cn_daily_pack(
             market=market,
@@ -308,6 +310,16 @@ def screen(
                 )
                 daily_enriched = True
                 daily_enrich_count = matched_count
+                if matched_count > 0:
+                    daily_source_counts = {"pack": matched_count}
+                if "daily_quality_flags" in enriched.columns:
+                    for raw_flags in enriched["daily_quality_flags"]:
+                        if pd.isna(raw_flags):
+                            continue
+                        for part in str(raw_flags).replace(";", ",").replace("|", ",").split(","):
+                            flag = part.strip()
+                            if flag and flag not in {"none", "ok"}:
+                                daily_quality_flag_counts[flag] = daily_quality_flag_counts.get(flag, 0) + 1
                 used_date = quote_date if (quote_date and quote_date < active_pack.trade_date) else active_pack.trade_date
                 enrich_summary = (
                     f"Daily K-line enrichment via CN pack ({used_date}) "
@@ -422,6 +434,16 @@ def screen(
             else:
                 df = enriched
 
+            if not df.empty and active_pack is not None and "daily_quality_flags" in df.columns:
+                daily_quality_flag_counts = {}
+                for raw_flags in df["daily_quality_flags"]:
+                    if pd.isna(raw_flags):
+                        continue
+                    for part in str(raw_flags).replace(";", ",").replace("|", ",").split(","):
+                        flag = part.strip()
+                        if flag and flag not in {"none", "ok"}:
+                            daily_quality_flag_counts[flag] = daily_quality_flag_counts.get(flag, 0) + 1
+
     if df.empty:
         return ScreenResult(
             strategy=strategy,
@@ -438,6 +460,8 @@ def screen(
             post_analyzers=analyzer_names,
             daily_enriched=daily_enriched,
             daily_enrich_count=daily_enrich_count,
+            daily_source_counts=daily_source_counts,
+            daily_quality_flag_counts=daily_quality_flag_counts,
             risk_enabled=config.risk_enabled,
             portfolio_diversity_enabled=config.portfolio_diversity_enabled,
         )
@@ -646,6 +670,8 @@ def screen(
         post_analyzers=analyzer_names,
         daily_enriched=daily_enriched,
         daily_enrich_count=daily_enrich_count,
+        daily_source_counts=daily_source_counts,
+        daily_quality_flag_counts=daily_quality_flag_counts,
         risk_enabled=config.risk_enabled,
         portfolio_diversity_enabled=config.portfolio_diversity_enabled,
         portfolio_concentration_notes=portfolio_concentration_notes,

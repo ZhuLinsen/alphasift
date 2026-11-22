@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, fields
+from math import isfinite
 from pathlib import Path
 
 from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
@@ -40,7 +41,8 @@ def load_screen_result(run_ref: str | Path, *, data_dir: Path) -> ScreenResult:
     """Load a saved screen result by run_id or path."""
     path = resolve_run_path(run_ref, data_dir=data_dir)
     data = json.loads(path.read_text(encoding="utf-8"))
-    pick_items = data.get("picks", [])
+    raw_picks = data.get("picks")
+    pick_items = raw_picks if isinstance(raw_picks, list) else []
     pick_fields = {field.name for field in fields(Pick)}
     result_fields = {field.name for field in fields(ScreenResult)}
     data["picks"] = [
@@ -53,6 +55,8 @@ def load_screen_result(run_ref: str | Path, *, data_dir: Path) -> ScreenResult:
     filtered["market"] = filtered.get("market") or "cn"
     if not filtered.get("track"):
         filtered["track"] = "ai" if filtered.get("llm_ranked") else "rules"
+    filtered["daily_source_counts"] = _int_count_dict(filtered.get("daily_source_counts"))
+    filtered["daily_quality_flag_counts"] = _int_count_dict(filtered.get("daily_quality_flag_counts"))
     loaded = ScreenResult(**filtered)
     loaded.saved_path = str(path)
     return loaded
@@ -128,6 +132,8 @@ def _write_screen_result_metadata(result: ScreenResult, output_path: Path) -> No
         "llm_coverage": result.llm_coverage,
         "daily_enriched": bool(result.daily_enriched),
         "daily_enrich_count": result.daily_enrich_count,
+        "daily_source_counts": _int_count_dict(result.daily_source_counts),
+        "daily_quality_flag_counts": _int_count_dict(result.daily_quality_flag_counts),
         "post_analyzers": list(result.post_analyzers),
         "path": str(output_path),
         "report_path": str(output_path.with_suffix(".md")),
@@ -189,10 +195,31 @@ def _normalize_run_metadata(data: dict, path: Path) -> dict[str, object]:
         "llm_coverage": data.get("llm_coverage"),
         "daily_enriched": bool(data.get("daily_enriched", False)),
         "daily_enrich_count": int(_metadata_value(data, "daily_enrich_count", 0) or 0),
+        "daily_source_counts": _int_count_dict(data.get("daily_source_counts")),
+        "daily_quality_flag_counts": _int_count_dict(data.get("daily_quality_flag_counts")),
         "post_analyzers": _string_list(data.get("post_analyzers", [])),
         "path": str(path),
         "report_path": str(data.get("report_path") or path.with_suffix(".md")),
     }
+
+
+def _int_count_dict(value: object) -> dict[str, int]:
+    if not isinstance(value, dict):
+        return {}
+    result: dict[str, int] = {}
+    for key, count in value.items():
+        name = str(key or "").strip()
+        if not name or isinstance(count, bool):
+            continue
+        if isinstance(count, float) and not isfinite(count):
+            continue
+        try:
+            parsed = int(count)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if parsed > 0:
+            result[name] = parsed
+    return result
 
 
 def _metadata_value(data: dict, key: str, default: object) -> object:
@@ -252,9 +279,16 @@ def evaluation_from_dict(data: dict) -> EvaluationResult:
     pick_fields = {field.name for field in fields(PickEvaluation)}
     result_fields = {field.name for field in fields(EvaluationResult)}
     data = dict(data)
+    raw_picks = data.get("picks")
+    pick_items = raw_picks if isinstance(raw_picks, list) else []
     data["picks"] = [
         PickEvaluation(**{key: value for key, value in item.items() if key in pick_fields})
-        for item in data.get("picks", [])
+        for item in pick_items
         if isinstance(item, dict)
     ]
+    data["run_snapshot_source"] = str(data.get("run_snapshot_source") or "")
+    data["run_source_errors"] = _string_list(data.get("run_source_errors"))
+    data["run_degradation"] = _string_list(data.get("run_degradation"))
+    data["daily_source_counts"] = _int_count_dict(data.get("daily_source_counts"))
+    data["daily_quality_flag_counts"] = _int_count_dict(data.get("daily_quality_flag_counts"))
     return EvaluationResult(**{key: value for key, value in data.items() if key in result_fields})

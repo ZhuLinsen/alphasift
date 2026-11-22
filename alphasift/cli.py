@@ -711,6 +711,7 @@ def main():
             "strategy_summaries": result.get("strategy_summaries", []),
             "event_signal_review": result.get("event_signal_review", {}),
             "failure_review": result.get("failure_review", {}),
+            "data_quality_review": result.get("data_quality_review", {}),
         }
         if result.get("window_reviews"):
             payload["review_window_days"] = result.get("review_window_days")
@@ -1779,6 +1780,13 @@ def _format_evaluation_explain(result) -> str:
         )
     if result.saved_path:
         lines.append(f"saved_path={result.saved_path}")
+    if result.run_snapshot_source or result.daily_source_counts or result.daily_quality_flag_counts:
+        lines.append(
+            "run_data_quality "
+            f"snapshot={result.run_snapshot_source or '-'} "
+            f"daily_sources={result.daily_source_counts or {}} "
+            f"daily_flags={result.daily_quality_flag_counts or {}}"
+        )
     if result.degradation:
         lines.append("degradation=" + " | ".join(result.degradation))
     columns = "rank code name entry current return_pct status shape max_dd max_runup"
@@ -1845,6 +1853,7 @@ def _format_evaluation_batch_explain(result: dict) -> str:
         items = _top_dimension_items(dimensions.get(key, {}))
         if items:
             lines.append(f"{title}=" + " | ".join(items))
+    lines.extend(_format_data_quality_review_explain(result.get("data_quality_review", {})))
     lines.extend(_format_event_signal_review_explain(result.get("event_signal_review", {})))
     lines.extend(_format_failure_review_explain(result.get("failure_review", {})))
     return "\n".join(lines)
@@ -1930,12 +1939,39 @@ def _format_evaluate_strategies_explain(result: dict) -> str:
             if not isinstance(review, dict):
                 continue
             lines.append(f"-- T+{review.get('window_days')} reviews --")
+            lines.extend(_format_data_quality_review_explain(review.get("data_quality_review", {})))
             lines.extend(_format_event_signal_review_explain(review.get("event_signal_review", {}), limit=5))
             lines.extend(_format_failure_review_explain(review.get("failure_review", {}), include_samples=False))
         return "\n".join(lines)
+    lines.extend(_format_data_quality_review_explain(result.get("data_quality_review", {})))
     lines.extend(_format_event_signal_review_explain(result.get("event_signal_review", {}), limit=5))
     lines.extend(_format_failure_review_explain(result.get("failure_review", {}), include_samples=False))
     return "\n".join(lines)
+
+
+def _format_data_quality_review_explain(review: object) -> list[str]:
+    if not isinstance(review, dict) or not review:
+        return []
+    cd = review.get("clean_vs_degraded", {}) if isinstance(review.get("clean_vs_degraded"), dict) else {}
+    clean_avg = (cd.get("clean") or {}).get("average_return_pct") if isinstance(cd.get("clean"), dict) else None
+    deg_avg = (cd.get("degraded") or {}).get("average_return_pct") if isinstance(cd.get("degraded"), dict) else None
+    gap = cd.get("return_gap_pct")
+    lines = [
+        (
+            "data_quality_review "
+            f"runs={review.get('run_count', 0)} "
+            f"clean={review.get('clean_run_count', 0)} "
+            f"degraded={review.get('degraded_run_count', 0)} "
+            f"snapshot_sources={review.get('snapshot_source_counts', {})} "
+            f"daily_sources={review.get('daily_source_counts', {})} "
+            f"daily_flags={review.get('daily_quality_flag_counts', {})} "
+            f"reasons={review.get('degraded_reason_counts', {})} "
+            f"clean_avg={clean_avg} degraded_avg={deg_avg} gap={gap}"
+        )
+    ]
+    for hint in review.get("hints", []) or []:
+        lines.append(f"  data_quality_hint: {hint}")
+    return lines
 
 
 def _format_partial_benchmark(window: dict) -> str:

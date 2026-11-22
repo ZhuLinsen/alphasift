@@ -37,6 +37,8 @@ SCREEN_RESULT_SCHEMA: dict[str, object] = {
         "portfolio_topic_exposure",
         "overconcentrated_topics",
         "replacement_candidates",
+        "daily_source_counts",
+        "daily_quality_flag_counts",
         "created_at",
     ],
     "pick_fields": [
@@ -91,6 +93,8 @@ SCREEN_RESULT_SCHEMA: dict[str, object] = {
             "source_errors",
             "daily_source",
             "daily_quality_flags",
+            "daily_source_counts",
+            "daily_quality_flag_counts",
         ],
         "risk": ["risk_level", "risk_flags", "portfolio_flags", "risk_summary"],
         "topic_alignment": [

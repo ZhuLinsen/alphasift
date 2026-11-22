@@ -1,4 +1,7 @@
 from pathlib import Path
+import json
+import subprocess
+import sys
 import yaml
 
 import alphasift
@@ -60,3 +63,40 @@ def test_root_and_package_strategy_yamls_are_byte_identical() -> None:
     assert root_yamls and root_yamls.keys() == pkg_yamls.keys()
     for name, payload in root_yamls.items():
         assert payload == pkg_yamls[name], f"YAML parity mismatch in {name}"
+
+
+def test_skill_mirror_publish_workflow_and_benchmark_smoke() -> None:
+    root = _repo_root()
+    assert (root / "SKILL.md").read_bytes() == (root / ".github" / "skills" / "alphasift" / "SKILL.md").read_bytes()
+
+    pub = yaml.safe_load((root / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8"))
+    trigger = pub[True] if True in pub else pub["on"]
+    assert "workflow_dispatch" in trigger
+    assert "push" not in trigger
+    assert pub["permissions"] == {"contents": "read"}
+    assert pub["jobs"]["publish"]["permissions"]["id-token"] == "write"
+    assert pub["jobs"]["publish"]["needs"] == "build"
+
+    proc = subprocess.run(
+        [sys.executable, str(root / "scripts" / "benchmark_smoke.py"), "--rows", "120", "--json"],
+        cwd=str(root),
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=True,
+    )
+    payload = json.loads(proc.stdout)
+    timings = payload["timings_ms"]
+    for key in (
+        "doctor_no_live_ms",
+        "apply_hard_filters_ms",
+        "hard_filter_waterfall_ms",
+        "compute_screen_scores_ms",
+        "summarize_portfolio_exposure_ms",
+        "daily_cache_miss_ms",
+        "daily_cache_hit_ms",
+    ):
+        assert timings[key] >= 0.0
+    assert payload["cache_checks"]["hit_source"] == "tencent"
+    assert payload["cache_checks"]["hit_stale"] is False
+    assert payload["cache_checks"]["stale_cache_flagged"] is True

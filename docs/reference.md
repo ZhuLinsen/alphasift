@@ -48,7 +48,7 @@ alphasift/
 
 ## 数据源边界
 
-支持五种 A 股全市场快照数据源，自动按优先级降级。未显式设置 `SNAPSHOT_SOURCE_PRIORITY` 时，无 Tushare token 默认链路是 `sina` -> `efinance` -> `akshare_em` -> `em_datacenter`；有 token 默认链路是 `tushare` -> `sina` -> `efinance` -> `akshare_em` -> `em_datacenter`。
+支持五种 A 股全市场快照数据源，自动按优先级降级。未显式设置 `SNAPSHOT_SOURCE_PRIORITY` 时，无 Tushare token 默认链路是 `em_datacenter` -> `sina` -> `efinance` -> `akshare_em`；有 token 默认链路是 `tushare` -> `em_datacenter` -> `sina` -> `efinance` -> `akshare_em`。
 
 | 数据源 | 接口 | 特点 |
 |--------|------|------|

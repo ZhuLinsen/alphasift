@@ -7,7 +7,7 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
-from math import isclose
+from math import isclose, isfinite
 from pathlib import Path
 import time as _time
 from typing import Any
@@ -249,6 +249,7 @@ def evaluate_saved_run(
             tradability_flags=tradability_flags,
         ))
 
+    run_daily_sources, run_daily_flags = _extract_run_daily_quality_counts(run)
     return EvaluationResult(
         run_id=run.run_id,
         strategy=run.strategy,
@@ -280,6 +281,11 @@ def evaluate_saved_run(
         entry_mode=entry_mode,
         untradable_count=untradable_count,
         untradable_share_pct=_untradable_share_pct(untradable_count, len(evaluations)),
+        run_snapshot_source=run.snapshot_source,
+        run_source_errors=list(run.source_errors),
+        run_degradation=list(run.degradation),
+        daily_source_counts=run_daily_sources,
+        daily_quality_flag_counts=run_daily_flags,
     )
 
 
@@ -351,6 +357,7 @@ def evaluate_result_against_snapshot(
             max_drawdown_pct=path_metrics["max_drawdown_pct"],
             max_runup_pct=path_metrics["max_runup_pct"],
         ))
+    run_daily_sources, run_daily_flags = _extract_run_daily_quality_counts(run)
     return EvaluationResult(
         run_id=run.run_id,
         strategy=run.strategy,
@@ -365,6 +372,11 @@ def evaluate_result_against_snapshot(
         win_rate=_safe_round(sum(1 for item in returns if item > 0) / len(returns) * 100) if returns else None,
         missing_codes=missing,
         degradation=[f"Missing current quote for {code}" for code in missing],
+        run_snapshot_source=run.snapshot_source,
+        run_source_errors=list(run.source_errors),
+        run_degradation=list(run.degradation),
+        daily_source_counts=run_daily_sources,
+        daily_quality_flag_counts=run_daily_flags,
     )
 
 
@@ -450,6 +462,11 @@ def evaluate_saved_runs(
                 source_errors=[str(err) for err in current_snapshot.attrs.get("source_errors", [])],
                 degradation=[f"Failed to evaluate run: {exc}"],
                 entry_mode=entry_mode,
+                run_snapshot_source=str(item.get("snapshot_source", "") or ""),
+                run_source_errors=[str(err) for err in (item.get("source_errors") or [])],
+                run_degradation=[str(deg) for deg in (item.get("degradation") or [])],
+                daily_source_counts=dict(item.get("daily_source_counts") or {}),
+                daily_quality_flag_counts=dict(item.get("daily_quality_flag_counts") or {}),
             ))
 
     summary = _aggregate_evaluations(evaluations)
@@ -496,6 +513,7 @@ def evaluate_saved_runs(
         "portfolio_by_strategy": portfolio_by_strategy,
         "strategy_summaries": strategy_summaries,
         "dimensions": dimensions,
+        "data_quality_review": _data_quality_review(evaluations),
         "event_signal_review": _event_signal_review(evaluations),
         "failure_review": _failure_review(
             evaluations,
@@ -623,6 +641,7 @@ def evaluate_saved_runs_by_windows(
     window_reviews = [
         {
             "window_days": window_days,
+            "data_quality_review": window_results[index].get("data_quality_review", {}),
             "event_signal_review": window_results[index].get("event_signal_review", {}),
             "failure_review": window_results[index].get("failure_review", {}),
         }
@@ -716,7 +735,7 @@ def _snapshot_by_code(snapshot: pd.DataFrame) -> dict[str, float]:
     result = {}
     for _, row in snapshot.iterrows():
         price = pd.to_numeric(row.get("price"), errors="coerce")
-        if pd.notna(price):
+        if pd.notna(price) and isfinite(float(price)):
             code = _normalize_code(row.get("code", ""))
             if code:
                 result[code] = float(price)
@@ -2093,6 +2112,182 @@ def _dedupe_strings(values) -> list[str]:
     return result
 
 
+def _safe_finite_float(value: object) -> float | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        parsed = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return parsed if isfinite(parsed) else None
+
+
+def _safe_positive_int(value: object) -> int:
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, float) and not isfinite(value):
+        return 0
+    try:
+        parsed = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError, OverflowError):
+        return 0
+    return parsed if parsed > 0 else 0
+
+
+def _extract_run_daily_quality_counts(run: ScreenResult) -> tuple[dict[str, int], dict[str, int]]:
+    """Return persisted or pick-derived daily source and quality flag counts."""
+    sources: dict[str, int] = {}
+    if isinstance(run.daily_source_counts, dict) and run.daily_source_counts:
+        for key, count in run.daily_source_counts.items():
+            name = str(key or "").strip()
+            parsed = _safe_positive_int(count)
+            if name and parsed > 0:
+                sources[name] = parsed
+    else:
+        for pick in run.picks:
+            src = str(pick.daily_source or "").strip()
+            if src:
+                sources[src] = sources.get(src, 0) + 1
+
+    flags: dict[str, int] = {}
+    if isinstance(run.daily_quality_flag_counts, dict) and run.daily_quality_flag_counts:
+        for key, count in run.daily_quality_flag_counts.items():
+            name = str(key or "").strip()
+            parsed = _safe_positive_int(count)
+            if name and parsed > 0:
+                flags[name] = parsed
+    else:
+        for pick in run.picks:
+            raw = str(pick.daily_quality_flags or "")
+            for part in raw.replace(";", ",").replace("|", ",").replace("/", ",").split(","):
+                flag = part.strip()
+                if flag and flag not in {"none", "ok"}:
+                    flags[flag] = flags.get(flag, 0) + 1
+
+    return dict(sorted(sources.items())), dict(sorted(flags.items()))
+
+
+def _data_quality_review(evaluations: list[EvaluationResult]) -> dict[str, object]:
+    """Aggregate saved-run source/quality metadata and correlate clean vs degraded returns."""
+    snapshot_source_counts: dict[str, int] = {}
+    daily_source_counts: dict[str, int] = {}
+    daily_quality_flag_counts: dict[str, int] = {}
+    degraded_reason_counts: dict[str, int] = {}
+    clean_runs = 0
+    degraded_runs = 0
+    clean_returns: list[float] = []
+    degraded_returns: list[float] = []
+
+    for evaluation in evaluations:
+        snap_src = str(evaluation.run_snapshot_source or "").strip()
+        if snap_src:
+            snapshot_source_counts[snap_src] = snapshot_source_counts.get(snap_src, 0) + 1
+        src_map = evaluation.daily_source_counts if isinstance(evaluation.daily_source_counts, dict) else {}
+        for src, cnt in src_map.items():
+            src_name = str(src or "").strip()
+            cnt_val = _safe_positive_int(cnt)
+            if src_name and cnt_val > 0:
+                daily_source_counts[src_name] = daily_source_counts.get(src_name, 0) + cnt_val
+        flags = evaluation.daily_quality_flag_counts if isinstance(evaluation.daily_quality_flag_counts, dict) else {}
+        for flag, cnt in flags.items():
+            flag_name = str(flag or "").strip()
+            cnt_val = _safe_positive_int(cnt)
+            if flag_name and cnt_val > 0:
+                daily_quality_flag_counts[flag_name] = daily_quality_flag_counts.get(flag_name, 0) + cnt_val
+
+        reasons: set[str] = set()
+        for flag, cnt in flags.items():
+            flag_name = str(flag or "").strip()
+            if not flag_name or _safe_positive_int(cnt) <= 0:
+                continue
+            if flag_name == "stale_cache":
+                reasons.add("stale_cache")
+            elif flag_name in {"fetch_failed", "fallback_errors"}:
+                reasons.add("fetch_failed")
+            elif flag_name in {"invalid_ohlc", "missing_in_pack"}:
+                reasons.add(flag_name)
+            else:
+                reasons.add("daily_quality_flags")
+        run_src = snap_src.lower()
+        raw_run_deg = evaluation.run_degradation if isinstance(evaluation.run_degradation, (list, tuple)) else []
+        run_deg = " | ".join(str(x) for x in raw_run_deg).lower()
+        if "stale" in run_src or "stale" in run_deg:
+            reasons.add("stale_cache")
+        if "fetch_failed" in run_deg or "enrichment skipped" in run_deg or "row errors" in run_deg:
+            reasons.add("fetch_failed")
+        if "fallback" in run_src or "cache" in run_src or "fallback" in run_deg:
+            reasons.add("fallback_source")
+        raw_run_errs = evaluation.run_source_errors if isinstance(evaluation.run_source_errors, (list, tuple)) else []
+        if raw_run_errs:
+            reasons.add("source_errors")
+        raw_eval_deg = evaluation.degradation if isinstance(evaluation.degradation, (list, tuple)) else []
+        if any(str(deg).startswith("Failed to evaluate run:") for deg in raw_eval_deg):
+            reasons.add("evaluation_error")
+
+        pick_returns = [
+            ret
+            for p in (evaluation.picks or [])
+            if (ret := _safe_finite_float(p.return_pct)) is not None
+        ]
+        if reasons:
+            degraded_runs += 1
+            degraded_returns.extend(pick_returns)
+            for reason in reasons:
+                degraded_reason_counts[reason] = degraded_reason_counts.get(reason, 0) + 1
+        else:
+            clean_runs += 1
+            clean_returns.extend(pick_returns)
+
+    clean_stats = _return_stats(clean_returns)
+    degraded_stats = _return_stats(degraded_returns)
+    clean_avg = clean_stats.get("average_return_pct")
+    degraded_avg = degraded_stats.get("average_return_pct")
+    gap = (
+        _safe_round(float(degraded_avg) - float(clean_avg))
+        if clean_avg is not None and degraded_avg is not None
+        else None
+    )
+
+    hints: list[str] = []
+    if not evaluations:
+        hints.append("No saved runs evaluated yet.")
+    elif degraded_runs == 0:
+        hints.append(
+            "No degraded saved runs detected in this sample; strategy differences reflect rule/universe behavior rather than cached or failed feeds."
+        )
+    else:
+        reasons_text = ", ".join(f"{k}={v}" for k, v in sorted(degraded_reason_counts.items()))
+        if gap is not None and float(gap) < 0:
+            hints.append(
+                f"Degraded saved runs ({degraded_runs}/{len(evaluations)}; {reasons_text}) "
+                f"underperformed clean runs by {abs(float(gap)):.2f}% avg return; inspect feed/cache degradation before retuning rules."
+            )
+        elif clean_avg is not None and float(clean_avg) < 0 and (degraded_avg is None or float(clean_avg) <= float(degraded_avg)):
+            hints.append(
+                f"Clean runs also averaged {float(clean_avg):.2f}% despite {degraded_runs} degraded run(s) ({reasons_text}); negative return reflects strategy/market conditions rather than feed degradation alone."
+            )
+        else:
+            hints.append(
+                f"{degraded_runs}/{len(evaluations)} evaluated runs had data-quality degradation ({reasons_text}); compare clean vs degraded subsets before concluding."
+            )
+
+    return {
+        "run_count": len(evaluations),
+        "clean_run_count": clean_runs,
+        "degraded_run_count": degraded_runs,
+        "snapshot_source_counts": dict(sorted(snapshot_source_counts.items())),
+        "daily_source_counts": dict(sorted(daily_source_counts.items())),
+        "daily_quality_flag_counts": dict(sorted(daily_quality_flag_counts.items())),
+        "degraded_reason_counts": dict(sorted(degraded_reason_counts.items())),
+        "clean_vs_degraded": {
+            "clean": {"run_count": clean_runs, **clean_stats},
+            "degraded": {"run_count": degraded_runs, **degraded_stats},
+            "return_gap_pct": gap,
+        },
+        "hints": hints,
+    }
+
+
 def _aggregate_by_pick_label(
     evaluations: list[EvaluationResult],
     field: str,
@@ -2217,6 +2412,7 @@ def _untradable_share_pct(count: int, pick_count: int) -> float | None:
 
 
 def _safe_round(value: float | None) -> float | None:
-    if value is None:
+    finite = _safe_finite_float(value)
+    if finite is None:
         return None
-    return round(float(value), 4)
+    return round(finite, 4)

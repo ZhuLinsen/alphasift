@@ -29,7 +29,7 @@ description: "全市场选股 Skill。Use when: 用户要按策略筛选 A 股�
 - L3 默认启用本地 `scorecard` 后置评分器，也可追加 `dsa` 或 `external_http`
 - 如需 DSA 后置分析，设置 `DSA_API_URL`，默认调用 `POST /api/v1/analysis/analyze`
 - 依赖日 K 的策略会在 L1 后自动对 Top N 候选做日 K 增强
-- 日 K 数据源 `DAILY_SOURCE` 支持 `akshare`（默认）、`baostock` 或 `auto`，`auto` 会在 akshare 失败时自动降级到 baostock 作为免费兜底
+- 日 K 数据源 `DAILY_SOURCE` 支持 `auto`（默认，优先走 `tushare`（若配置 token）、`tencent`、`sina` 直连源，再降级到 `akshare`、`baostock`）或显式指定单源
 
 ## Operations
 
@@ -54,7 +54,7 @@ alphasift screen volume_breakout --max-output 10
 alphasift screen balanced_alpha --no-llm
 alphasift screen capital_heat
 alphasift screen balanced_alpha --context "今日券商板块放量，低估值金融获得资金回流"
-alphasift --env-file /home/ubuntu/daily_ai_assistant/.env screen balanced_alpha
+alphasift --env-file /path/to/daily_stock_analysis/.env screen balanced_alpha
 alphasift screen balanced_alpha --explain
 alphasift screen balanced_alpha --candidate-context-file candidate_context.csv
 alphasift screen dual_low --no-post-analysis
@@ -102,6 +102,9 @@ evaluate_saved_runs(limit=20)
 - `llm_coverage`
 - `post_analyzers`
 - `daily_enriched`
+- `daily_enrich_count`
+- `daily_source_counts`
+- `daily_quality_flag_counts`
 - `risk_enabled`
 - `portfolio_concentration_notes`
 - `degradation`

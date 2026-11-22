@@ -20,6 +20,8 @@ def test_screen_result_schema_matches_core_dataclass_fields():
     assert "portfolio_topic_exposure" in top_level_fields
     assert "overconcentrated_topics" in top_level_fields
     assert "replacement_candidates" in top_level_fields
+    assert "daily_source_counts" in top_level_fields
+    assert "daily_quality_flag_counts" in top_level_fields
     assert "risk_flags" in pick_schema_fields
     assert "daily_quality_flags" in pick_schema_fields
     assert "post_analysis_status" in pick_schema_fields
@@ -69,6 +71,8 @@ def test_screen_result_contract_fixture_and_legacy_roundtrip(tmp_path):
     cur_file.write_text(json.dumps(result_data, ensure_ascii=False), encoding="utf-8")
     loaded = load_screen_result(cur_file, data_dir=tmp_path)
     assert loaded.overconcentrated_topics == []
+    assert loaded.daily_source_counts == {"pack": 10}
+    assert loaded.daily_quality_flag_counts == {}
     assert loaded.picks[0].topic_alignment_status == "aligned"
     assert loaded.picks[0].matched_topics == ["白酒"]
 
@@ -82,6 +86,8 @@ def test_screen_result_contract_fixture_and_legacy_roundtrip(tmp_path):
     leg_file.write_text(json.dumps(legacy_payload), encoding="utf-8")
     loaded_legacy = load_screen_result(leg_file, data_dir=tmp_path)
     assert loaded_legacy.portfolio_topic_exposure == {}
+    assert loaded_legacy.daily_source_counts == {}
+    assert loaded_legacy.daily_quality_flag_counts == {}
     assert loaded_legacy.picks[0].topic_alignment_status == ""
 
     # Live ScreenResult serialization matches schema metadata + positional saved_path backwards-compatible

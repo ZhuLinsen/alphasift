@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## v0.3.0 (2026-11-22)
+
+- **Issue #34 P1–P7 完整闭环与离线基准**：
+  - `evaluate-strategies --window 5,10,20` 多窗口评估与按窗口复盘、saved run 与 `EvaluationResult` 日线质量统计（`daily_source_counts`、`daily_quality_flag_counts` 及 `data_quality_review` 洁净 vs 降级样本相关性对比提示）、`hard_filter_waterfall(include_quantiles=True)` 阈值分位诊断、`explain_topic_alignment()` 题材归因、`summarize_portfolio_exposure()` 主题暴露与替换候选、`SCREEN_RESULT_SCHEMA` 契约夹具与回归测试，以及可复现离线性能基准脚本 `scripts/benchmark_smoke.py`。
+- **生态接入、打包安全与发布工作流**：
+  - 新增零依赖原生 STDIO JSON-RPC 2.0 MCP 服务器（`alphasift mcp`，10 工具 + 2 资源）、离线安全本地交互式 Web Workbench（`alphasift serve` → `/ui`，`script-src 'sha256-...'` CSP + `Accept` 内容协商）、非 root Dockerfile（`UID 10001`）与 Docker Compose、`.github/workflows/publish.yml` 手动 PyPI Trusted Publishing 工作流、PEP 639 构建元数据修复与 Quant Trio 生态文档。
+- **PR #54 / #56 精选融合（`0.3.0`，零 `litellm` 重依赖）**：
+  - 移除 `litellm` SDK 改用轻量 `requests` OpenAI 兼容客户端（`alphasift/llm_client.py`），支持 `LLM_CHANNELS` / `GEMINI_API_KEYS` 多通道及 Origin 级密钥隔离；融合 `factor_rank_blend` 池内分位融合与美股 `us_momentum_quality` `hard_cap`，同时完整保留 CN 10 策略 `max_same_bucket: 1` 正交分散与 250 日实证基准。
 
 - **1 行极简统一推送、Fork 防护守卫与 AI 情报排雷激活**：
   - `alphasift/notify.py` 与 `alphasift/config.py` 新增 1 行统一 `NOTIFY_URLS` 自动协议嗅探（同时保留分渠道变量），原生零额外依赖支持 **12 种通道**（企微、飞书、钉钉、PushPlus、Server酱/³、Bark、SMTP 邮件、Telegram、Discord、Slack、ntfy、自定义 Webhook）及可选 `apprise` 90+ 通道兜底；简化顶栏界面移除 RSS 按钮（保留 `<link>` 与页脚低存在感 `site/feed.xml`）。
@@ -44,7 +51,6 @@
 - README：其他六个市场标为测试阶段，写明股票池范围（市值下限、按板块查询、最多 4000 行、美股含 ADR）
 - **印度股票不再重复**：同一家公司在 NSE（`.NS`）和 BSE（`.BO`）各有一行，此前 1236 行快照实际只有约 630 家公司，`global_value --market in` 可能同时选中同一家公司的两个上市代码。现在同一代码（去掉 .NS / .BO 后缀后相同）只保留日均成交额更高的那个（通常是 NSE）；这是按代码去重，不是按公司身份识别。实测快照 1236 → 640 行，过滤后 176 → 86 只
 - 日 K 策略（`shrink_pullback`、`volume_breakout`、`low_volatility_quality` 等）选股时复用收盘后已拉取的日 K：收盘 30 分钟后到下一次开盘前，日 K 不会再变，同一台机器上后续运行直接读缓存（`daily_history/`）；盘中不读也不写缓存（是否在盘中按每只股票取数时重新判断，跨过开盘的批次也会切换）。实测 `shrink_pullback` 第二次运行从 279 秒降到 13 秒，结果相同。所有日 K 源都失败时（盘中也一样）会退回最近的缓存并标记 `stale_cache`，而不是丢掉该候选
-- **印度股票不再重复**：同一家公司在 NSE（`.NS`）和 BSE（`.BO`）各有一行，此前 1236 行快照实际只有约 630 家公司，`global_value --market in` 可能同时选中同一家公司的两个上市代码。现在每家公司只保留日均成交额更高的那个（通常是 NSE）。实测快照 1236 → 640 行，过滤后 176 → 86 只
 - 台湾优先股（`2881A.TW`、`2891C.TW` 这类 4 位数字加字母的代码）不再进入股票池
 - 新增硬筛条件 `avg_amount_usd_min`：按 当前价 × 近 10 日平均成交量（缺失时用 3 个月均量）估算日均成交额，再按市场近似汇率折成美元；成交量部分不受盘中时点影响，可跨市场使用同一个流动性下限。Yahoo 快照新增 `avg_amount` / `avg_amount_usd` 两列。`global_value` 升级到 1.1，设为 100 万美元，主要剔除港股、台股、印度里成交清淡的标的
 - `evaluate-strategies --window` 的失败复盘和事件信号复盘改为每个窗口分别输出（`window_reviews`），此前只反映第一个窗口；顶层的复盘与汇总来自最短窗口，并以 `review_window_days` 标明

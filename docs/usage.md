@@ -102,10 +102,10 @@ JSON 输出同时包含原始 `source_health` counters、聚合后的 `health_su
 alphasift screen balanced_alpha
 ```
 
-复用其他项目的 LiteLLM 配置文件：
+复用其他项目的 `.env` 模型与渠道配置（如 `daily_stock_analysis`）：
 
 ```bash
-alphasift --env-file /home/ubuntu/daily_ai_assistant/.env screen balanced_alpha
+alphasift --env-file /path/to/daily_stock_analysis/.env screen balanced_alpha
 ```
 
 带市场、主题或新闻背景的 LLM 排序：

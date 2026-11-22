@@ -19,7 +19,7 @@ Consumers should treat these top-level fields as stable integration points:
 - `llm_ranked`, `llm_coverage`, `llm_parse_errors`
 - `degradation`, `snapshot_source`, `source_errors`
 - `deep_analysis_requested`, `post_analyzers`
-- `daily_enriched`, `daily_enrich_count`
+- `daily_enriched`, `daily_enrich_count`, `daily_source_counts`, `daily_quality_flag_counts`
 - `risk_enabled`, `portfolio_diversity_enabled`, `portfolio_concentration_notes`, `portfolio_topic_exposure`, `overconcentrated_topics`, `replacement_candidates`
 
 ## Stable pick fields
@@ -39,7 +39,7 @@ Important UI/API fields on each pick include:
 
 For upstream UI / DSA / agent integrations, use these field groups:
 
-- source health: `snapshot_source`, `source_errors`, `daily_source`, `daily_quality_flags`
+- source health: `snapshot_source`, `source_errors`, `daily_source`, `daily_quality_flags`, `daily_source_counts`, `daily_quality_flag_counts`
 - filter/source degradation: `degradation`
 - risk flags: `risk_level`, `risk_flags`, `portfolio_flags`, `risk_summary`
 - topic alignment: `topic_alignment_status`, `topic_alignment_role`, `topic_alignment_reason`, `matched_topics`, `unmatched_topics`
@@ -84,7 +84,7 @@ Stable fields include:
 - identity: `run_id`, `strategy`, `market`, `strategy_version`, `strategy_category`, `created_at`
 - counts: `picks`, `snapshot_count`, `after_filter_count`
 - source status: `snapshot_source`, `source_error_count`, `source_errors`, `degradation_count`, `degradation`
-- enrichment status: `llm_ranked`, `llm_coverage`, `daily_enriched`, `daily_enrich_count`, `post_analyzers`
+- enrichment status: `llm_ranked`, `llm_coverage`, `daily_enriched`, `daily_enrich_count`, `daily_source_counts`, `daily_quality_flag_counts`, `post_analyzers`
 - paths: `path`, `report_path`
 
 ## Strategy run summary payload
@@ -126,6 +126,7 @@ The same commands also include `event_signal_review` for success/failure attribu
 - `signals`: one row per combined signal such as `tag:<label>`, `catalyst:<label>`, `risk:<label>`, or `post:<label>`, with sample count, evaluated count, average/median/best/worst returns, win rate, failure count/rate, sample codes, and an `action` of `prefer`, `avoid`, `watch`, or `insufficient_data`.
 - `strategy_patch_suggestions`: per-strategy review items that convert positive/negative signal evidence into reviewable `screening.event_profile.preferred_event_tags` and `avoided_event_tags` append suggestions. Each item includes `field_changes`, compact `evidence`, and a YAML fragment under `yaml_patch`; the command does not modify strategy files automatically.
 - `recommendations`: UI-ready next actions that suggest which signals should be reviewed as preferred or avoided event tags.
+- `data_quality_review` (also included in each `window_reviews[]` item on `evaluate-strategies --window`): aggregates `run_count`, `clean_run_count`, `degraded_run_count`, `snapshot_source_counts`, `daily_source_counts`, `daily_quality_flag_counts`, `degraded_reason_counts`, `clean_vs_degraded` (`clean`/`degraded` pick return stats and `return_gap_pct`), and correlation `hints`; paired per-run fields preserved on `EvaluationResult` include `run_snapshot_source`, `run_source_errors`, `run_degradation`, `daily_source_counts`, and `daily_quality_flag_counts`.
 
 ## Data-source doctor payload
 
