@@ -6,6 +6,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Sequence
 from datetime import datetime, timezone
+import math
 from pathlib import Path
 import time as _time
 from typing import Any
@@ -33,6 +34,8 @@ from alphasift.patterns import (
 
 GRADUATION_MIN_SAMPLES = 200
 GRADUATION_COST_BPS = 25.0
+GRADUATION_BH_FDR_ALPHA = 0.05
+NEWEY_WEST_MIN_LAG = 4
 REGIME_SLICE_WEIGHT_READY_SAMPLES = 100
 STABILITY_MIN_HALF_SAMPLES = 30
 STABILITY_MIN_HALF_DAYS = 15
@@ -90,34 +93,128 @@ def _win_rate_or_none(vals: list[float]) -> float | None:
     return round(float(sum(1 for v in vals if v > 0) / len(vals) * 100.0), 2)
 
 
+def _newey_west_t_stat(
+    daily_vals: list[float],
+    cal_indices: list[int] | None = None,
+    *,
+    max_lag: int = NEWEY_WEST_MIN_LAG,
+) -> float | None:
+    """Bartlett-kernel Newey-West HAC t-statistic aligned to trading-day grid."""
+    m = len(daily_vals)
+    if m < 2:
+        return None
+    mu = float(np.mean(daily_vals))
+    residuals = [float(v) - mu for v in daily_vals]
+    indices = list(cal_indices) if cal_indices is not None and len(cal_indices) == m else list(range(m))
+    min_idx = min(indices)
+    max_idx = max(indices)
+    span = max_idx - min_idx + 1
+    u = np.zeros(span, dtype=np.float64)
+    for idx, resid in zip(indices, residuals):
+        u[idx - min_idx] += resid
+
+    lag_cap = max(0, int(max_lag))
+    s_nw = float(np.dot(u, u))
+    for lag in range(1, min(lag_cap + 1, span)):
+        weight = 1.0 - lag / (lag_cap + 1.0)
+        s_nw += 2.0 * weight * float(np.dot(u[:-lag], u[lag:]))
+    s_nw = max(s_nw, 0.0)
+    se = math.sqrt(s_nw * (m / (m - 1.0))) / m
+    if not math.isfinite(se) or se <= 1e-12:
+        return None
+    return round(mu / se, 2)
+
+
+def _two_sided_p_from_t(t_val: float | None) -> float | None:
+    if t_val is None or not math.isfinite(t_val):
+        return None
+    return float(math.erfc(abs(float(t_val)) / math.sqrt(2.0)))
+
+
+def _positive_gate_p_value(t_val: float | None) -> float:
+    if t_val is None or not math.isfinite(t_val) or float(t_val) <= 0.0:
+        return 1.0
+    p = _two_sided_p_from_t(float(t_val))
+    return 1.0 if p is None else p
+
+
+def _benjamini_hochberg_q_values(p_values: Sequence[float | None]) -> list[float | None]:
+    """Benjamini-Hochberg step-up FDR q-values preserving input ordering."""
+    indexed = [(idx, float(p)) for idx, p in enumerate(p_values) if p is not None and math.isfinite(p)]
+    out: list[float | None] = [None] * len(p_values)
+    if not indexed:
+        return out
+    indexed.sort(key=lambda item: item[1])
+    m = len(indexed)
+    running_min = 1.0
+    for rev_idx in range(m - 1, -1, -1):
+        orig_idx, p_val = indexed[rev_idx]
+        rank = rev_idx + 1
+        q_raw = min(1.0, p_val * m / rank)
+        running_min = min(running_min, q_raw)
+        out[orig_idx] = round(running_min, 6)
+    return out
+
+
+def _naive_daily_t_stat(daily_vals: list[float]) -> float | None:
+    if len(daily_vals) < 2:
+        return None
+    d_std = float(np.std(daily_vals, ddof=1))
+    if d_std <= 1e-12:
+        return None
+    return round(float(np.mean(daily_vals) / (d_std / np.sqrt(len(daily_vals)))), 2)
+
+
 def _summarize_stability(
     obs_list: list[dict[str, Any]],
     *,
     mid_date: str,
     horizon: int = 5,
+    date_to_idx: dict[str, int] | None = None,
 ) -> dict[str, Any]:
-    """Date-clustered split-half sign consistency (H1 vs H2) and t-stat over excess returns."""
+    """Date-clustered split-half sign consistency (H1 vs H2) and Newey-West HAC t-stat."""
     h_key = f"t{horizon}"
     all_vals: list[float] = []
     h1_vals: list[float] = []
     h2_vals: list[float] = []
     by_date: dict[str, list[float]] = defaultdict(list)
 
+    ew_by_date: dict[str, list[float]] = defaultdict(list)
+    ew_all_vals: list[float] = []
+    ew_h1_count = 0
+    ew_h2_count = 0
+    matched_ew_by_date: dict[str, float] = {}
+
     for item in obs_list:
         res = item["horizons"].get(h_key)
         if not isinstance(res, dict) or res.get("status") != "ok":
             continue
-        ex = res.get("excess_return_pct")
-        if ex is None or not np.isfinite(ex):
-            continue
-        val = float(ex)
         day = str(item["date"])
-        all_vals.append(val)
-        by_date[day].append(val)
-        if day < mid_date:
-            h1_vals.append(val)
-        else:
-            h2_vals.append(val)
+        ex = res.get("net_excess_return_pct")
+        if ex is None:
+            ex = res.get("excess_return_pct")
+        if ex is not None and np.isfinite(ex):
+            val = float(ex)
+            all_vals.append(val)
+            by_date[day].append(val)
+            if day < mid_date:
+                h1_vals.append(val)
+            else:
+                h2_vals.append(val)
+
+        ew_ex = res.get("net_over_ew_pct")
+        if ew_ex is not None and np.isfinite(ew_ex):
+            ew_val = float(ew_ex)
+            ew_all_vals.append(ew_val)
+            ew_by_date[day].append(ew_val)
+            if day < mid_date:
+                ew_h1_count += 1
+            else:
+                ew_h2_count += 1
+
+        same_ew = res.get("same_day_ew_gross_excess_pct")
+        if same_ew is not None and np.isfinite(same_ew) and day not in matched_ew_by_date:
+            matched_ew_by_date[day] = float(same_ew)
 
     n = len(all_vals)
     h1_n = len(h1_vals)
@@ -132,6 +229,7 @@ def _summarize_stability(
         if std > 1e-12:
             pooled_t_stat = round(float(np.mean(all_vals) / (std / np.sqrt(n))), 2)
 
+    nw_lag = max(NEWEY_WEST_MIN_LAG, int(horizon) - 1)
     sorted_days = sorted(by_date)
     daily_all = [float(np.mean(by_date[d])) for d in sorted_days]
     h1_daily = [float(np.mean(by_date[d])) for d in sorted_days if d < mid_date]
@@ -144,15 +242,19 @@ def _summarize_stability(
     h1_daily_mean = _mean_or_none(h1_daily)
     h2_daily_mean = _mean_or_none(h2_daily)
 
-    daily_t_stat: float | None = None
-    if signal_days >= 2:
-        d_std = float(np.std(daily_all, ddof=1))
-        if d_std > 1e-12:
-            daily_t_stat = round(float(np.mean(daily_all) / (d_std / np.sqrt(signal_days))), 2)
+    cal_indices = (
+        [date_to_idx[d] for d in sorted_days]
+        if date_to_idx is not None and all(d in date_to_idx for d in sorted_days)
+        else None
+    )
+    daily_t_stat = _newey_west_t_stat(daily_all, cal_indices, max_lag=nw_lag)
+    naive_daily_t_stat = _naive_daily_t_stat(daily_all)
 
     sign_consistent = bool(
-        h1_days >= 10
-        and h2_days >= 10
+        h1_days >= STABILITY_MIN_HALF_DAYS
+        and h2_days >= STABILITY_MIN_HALF_DAYS
+        and h1_n >= STABILITY_MIN_HALF_SAMPLES
+        and h2_n >= STABILITY_MIN_HALF_SAMPLES
         and h1_daily_mean is not None
         and h2_daily_mean is not None
         and (h1_daily_mean * h2_daily_mean > 0)
@@ -174,12 +276,49 @@ def _summarize_stability(
         and daily_t_stat is not None
         and abs(daily_t_stat) >= STABILITY_T_STAT_THRESHOLD
     )
+
+    ew_sorted_days = sorted(ew_by_date)
+    ew_daily_all = [float(np.mean(ew_by_date[d])) for d in ew_sorted_days]
+    ew_h1_daily = [float(np.mean(ew_by_date[d])) for d in ew_sorted_days if d < mid_date]
+    ew_h2_daily = [float(np.mean(ew_by_date[d])) for d in ew_sorted_days if d >= mid_date]
+    ew_signal_days = len(ew_daily_all)
+    ew_h1_days = len(ew_h1_daily)
+    ew_h2_days = len(ew_h2_daily)
+    ew_daily_mean = _mean_or_none(ew_daily_all)
+    ew_h1_daily_mean = _mean_or_none(ew_h1_daily)
+    ew_h2_daily_mean = _mean_or_none(ew_h2_daily)
+    ew_cal_indices = (
+        [date_to_idx[d] for d in ew_sorted_days]
+        if date_to_idx is not None and all(d in date_to_idx for d in ew_sorted_days)
+        else None
+    )
+    ew_t_stat = _newey_west_t_stat(ew_daily_all, ew_cal_indices, max_lag=nw_lag)
+    ew_naive_daily_t_stat = _naive_daily_t_stat(ew_daily_all)
+    ew_sign_consistent = bool(
+        ew_h1_days >= STABILITY_MIN_HALF_DAYS
+        and ew_h2_days >= STABILITY_MIN_HALF_DAYS
+        and ew_h1_count >= STABILITY_MIN_HALF_SAMPLES
+        and ew_h2_count >= STABILITY_MIN_HALF_SAMPLES
+        and ew_h1_daily_mean is not None
+        and ew_h2_daily_mean is not None
+        and (ew_h1_daily_mean * ew_h2_daily_mean > 0)
+    )
+    if ew_sign_consistent and ew_h1_daily_mean is not None and ew_h1_daily_mean > 0:
+        ew_direction = "positive"
+    elif ew_sign_consistent and ew_h1_daily_mean is not None and ew_h1_daily_mean < 0:
+        ew_direction = "negative"
+    else:
+        ew_direction = "mixed_or_insufficient"
+    matched_ew_excess_mean_pct = _mean_or_none([matched_ew_by_date[d] for d in sorted(matched_ew_by_date)])
+
     return {
         "n": n,
         "mean_pct": mean_pct,
         "signal_days": signal_days,
         "daily_mean_pct": daily_mean_pct,
         "t_stat": daily_t_stat,
+        "naive_daily_t_stat": naive_daily_t_stat,
+        "nw_lag": nw_lag,
         "pooled_t_stat": pooled_t_stat,
         "h1_n": h1_n,
         "h1_days": h1_days,
@@ -192,6 +331,20 @@ def _summarize_stability(
         "sign_consistent": sign_consistent,
         "stable_direction": direction,
         "stability_ready": stability_ready,
+        "ew_n": len(ew_all_vals),
+        "ew_signal_days": ew_signal_days,
+        "ew_daily_mean_pct": ew_daily_mean,
+        "ew_t_stat": ew_t_stat,
+        "ew_naive_daily_t_stat": ew_naive_daily_t_stat,
+        "ew_h1_n": ew_h1_count,
+        "ew_h1_days": ew_h1_days,
+        "ew_h1_daily_mean_pct": ew_h1_daily_mean,
+        "ew_h2_n": ew_h2_count,
+        "ew_h2_days": ew_h2_days,
+        "ew_h2_daily_mean_pct": ew_h2_daily_mean,
+        "ew_sign_consistent": ew_sign_consistent,
+        "ew_stable_direction": ew_direction,
+        "matched_ew_excess_mean_pct": matched_ew_excess_mean_pct,
     }
 
 
@@ -261,6 +414,7 @@ def _evaluate_graduation(
     stability: dict[str, Any] | None = None,
     universe_baseline_t5: dict[str, Any] | None = None,
     net_cost_bps: float = GRADUATION_COST_BPS,
+    multiple_testing: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     raw_scored = int(t5_summary.get("scored", 0))
     matched_scored = int(t5_summary.get("excess_scored", 0))
@@ -272,24 +426,61 @@ def _evaluate_graduation(
     samples_ok = matched_scored >= GRADUATION_MIN_SAMPLES
     net_excess_ok = effective_net is not None and float(effective_net) > 0.0
 
-    ew_bench = (universe_baseline_t5 or {}).get("equal_weight_excess_mean_pct")
-    if universe_baseline_t5 is None or ew_bench is None:
-        beats_universe_ok = True
-    else:
-        beats_universe_ok = effective_net is not None and float(effective_net) > float(ew_bench)
-
+    # 1) Fail-closed stability & split-half / Newey-West HAC check
+    stability_missing = stability is None
     if stability is None:
-        stability_ok = True
+        stability_ok = False
     else:
         t_val = stability.get("t_stat")
+        half_days_ok = True
+        if stability.get("h1_days") is not None and stability.get("h2_days") is not None:
+            half_days_ok = (
+                int(stability["h1_days"]) >= STABILITY_MIN_HALF_DAYS
+                and int(stability["h2_days"]) >= STABILITY_MIN_HALF_DAYS
+            )
+        half_n_ok = True
+        if stability.get("h1_n") is not None and stability.get("h2_n") is not None:
+            half_n_ok = (
+                int(stability["h1_n"]) >= STABILITY_MIN_HALF_SAMPLES
+                and int(stability["h2_n"]) >= STABILITY_MIN_HALF_SAMPLES
+            )
+        daily_pos_ok = True
+        if stability.get("daily_mean_pct") is not None:
+            daily_pos_ok = float(stability["daily_mean_pct"]) > 0.0
         stability_ok = bool(
             stability.get("sign_consistent")
             and stability.get("stable_direction") == "positive"
             and t_val is not None
             and float(t_val) >= STABILITY_T_STAT_THRESHOLD
+            and half_days_ok
+            and half_n_ok
+            and daily_pos_ok
         )
 
-    passed = bool(samples_ok and net_excess_ok and beats_universe_ok and stability_ok)
+    # 2) Same-day matched All-A equal-weight alpha check (fallback to aggregate baseline in unit tests; fail-closed if absent)
+    ew_bench = (universe_baseline_t5 or {}).get("equal_weight_excess_mean_pct")
+    matched_ew_mean = stability.get("ew_daily_mean_pct") if stability is not None else None
+    matched_ew_used = matched_ew_mean is not None
+    ew_missing = False
+    if matched_ew_used and stability is not None:
+        ew_t_val = stability.get("ew_t_stat")
+        beats_universe_ok = bool(
+            float(matched_ew_mean) > 0.0
+            and stability.get("ew_sign_consistent")
+            and stability.get("ew_stable_direction") == "positive"
+            and ew_t_val is not None
+            and float(ew_t_val) >= STABILITY_T_STAT_THRESHOLD
+        )
+    elif ew_bench is not None:
+        beats_universe_ok = effective_net is not None and float(effective_net) > float(ew_bench)
+    else:
+        beats_universe_ok = False
+        ew_missing = True
+
+    # 3) Multiple-testing BH-FDR check (applied in full replay across tested patterns)
+    bh_fdr_ok = True if multiple_testing is None else bool(multiple_testing.get("bh_fdr_pass"))
+
+    passed = bool(samples_ok and net_excess_ok and beats_universe_ok and stability_ok and bh_fdr_ok)
     reasons: list[str] = []
     if not samples_ok:
         reasons.append(f"样本 {matched_scored}（总完成 {raw_scored}）< {GRADUATION_MIN_SAMPLES}")
@@ -297,19 +488,42 @@ def _evaluate_graduation(
         reasons.append("缺少基准超额收益数据")
     elif not net_excess_ok:
         reasons.append(f"扣 {float(net_cost_bps):.0f}bp 净超额 {float(effective_net):+.3f}% <= 0%")
-    if not beats_universe_ok and ew_bench is not None:
-        eff_str = "-" if effective_net is None else f"{float(effective_net):+.3f}%"
-        reasons.append(f"净超额 {eff_str} 未跑赢全A等权基线 {float(ew_bench):+.3f}%")
+    if not beats_universe_ok:
+        if ew_missing:
+            reasons.append("缺少全A等权基线数据")
+        elif matched_ew_used and stability is not None:
+            ew_t_txt = "-" if stability.get("ew_t_stat") is None else f"{float(stability['ew_t_stat']):+.2f}"
+            reasons.append(
+                f"同信号日扣 {float(net_cost_bps):.0f}bp 跑赢全A等权未达标"
+                f"（日均 {float(matched_ew_mean):+.3f}%，NW t={ew_t_txt}）"
+            )
+        elif ew_bench is not None:
+            eff_str = "-" if effective_net is None else f"{float(effective_net):+.3f}%"
+            reasons.append(f"净超额 {eff_str} 未跑赢全A等权基线 {float(ew_bench):+.3f}%")
     if not stability_ok:
-        t_txt = "-" if not stability or stability.get("t_stat") is None else f"{float(stability['t_stat']):+.2f}"
-        reasons.append(f"H1/H2 前后半期未同号正超额或聚日 t={t_txt} < {STABILITY_T_STAT_THRESHOLD}")
+        if stability_missing:
+            reasons.append("缺少分半期稳定性与 Newey-West 聚日检验数据")
+        else:
+            t_txt = "-" if stability is None or stability.get("t_stat") is None else f"{float(stability['t_stat']):+.2f}"
+            reasons.append(
+                f"H1/H2（各>={STABILITY_MIN_HALF_DAYS}d且>={STABILITY_MIN_HALF_SAMPLES}样本）未同号正超额"
+                f"或 NW t={t_txt} < {STABILITY_T_STAT_THRESHOLD}"
+            )
+    if not bh_fdr_ok and multiple_testing is not None:
+        q_csi = multiple_testing.get("bh_q_value_csi300")
+        q_ew = multiple_testing.get("bh_q_value_ew")
+        reasons.append(f"多重检验 BH-FDR 未通过（q_csi300={q_csi}, q_ew={q_ew} > {GRADUATION_BH_FDR_ALPHA}）")
 
     if passed:
+        ew_part = (
+            f"同日跑赢全A等权 {float(matched_ew_mean):+.3f}%（t={float(stability['ew_t_stat']):+.2f}）"
+            if matched_ew_used and stability is not None and stability.get("ew_t_stat") is not None
+            else "跑赢全A等权基线"
+        )
         reason = (
             f"达标：样本 {matched_scored} >= {GRADUATION_MIN_SAMPLES}，扣 {float(net_cost_bps):.0f}bp "
-            f"净超额 {float(effective_net):+.3f}% > 0 且跑赢全A等权，H1/H2 同号正超额且 t={float(stability['t_stat']):+.2f}"
-            if stability and stability.get("t_stat") is not None
-            else f"达标：样本 {matched_scored} >= {GRADUATION_MIN_SAMPLES}，净超额 {float(effective_net):+.3f}% > 0"
+            f"净超额 {float(effective_net):+.3f}% > 0 且{ew_part}，"
+            f"H1/H2 同号正超额且 NW t={float(stability['t_stat']):+.2f}"
         )
     else:
         reason = "未达标：" + "；".join(reasons)
@@ -330,7 +544,9 @@ def _evaluate_graduation(
             "net_excess_ok": net_excess_ok,
             "beats_universe_ok": beats_universe_ok,
             "stability_ok": stability_ok,
+            "bh_fdr_ok": bh_fdr_ok,
             "net_cost_bps": float(net_cost_bps),
+            "matched_date_ew_used": matched_ew_used,
         },
         "reason": reason,
     }
@@ -346,7 +562,7 @@ def _overhead_bucket(val: float | None) -> str | None:
     return "high_ge35"
 
 
-def _compute_universe_baseline(
+def _compute_universe_baseline_with_daily(
     *,
     adj_open: np.ndarray,
     adj_close: np.ndarray,
@@ -363,19 +579,22 @@ def _compute_universe_baseline(
     horizons: tuple[int, ...],
     cost_bps: float,
     liquid_proxy_amount_min: float = 80_000_000.0,
-) -> dict[str, dict[str, Any]]:
-    """Equal-weight and liquid-universe ``next_open`` baseline over ``[warmup_days, end_t)``."""
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, dict[str, float]]]]:
+    """Equal-weight and liquid-universe ``next_open`` baseline plus per-day EW maps."""
     proxy_amt = np.asarray(raw_close, dtype=np.float64) * np.asarray(raw_volume, dtype=np.float64)
     cost_pct = float(cost_bps) / 100.0
     baseline: dict[str, dict[str, Any]] = {}
+    daily_ew_by_horizon: dict[str, dict[str, dict[str, float]]] = {}
     t_len = len(dates)
 
     for h in horizons:
         ew_raw: list[float] = []
         ew_ex: list[float] = []
+        ew_gross_ex: list[float] = []
         liq_raw: list[float] = []
         liq_ex: list[float] = []
         bench_rets: list[float] = []
+        daily_ew_map: dict[str, dict[str, float]] = {}
 
         for t in range(warmup_days, end_t):
             t_in = t + 1
@@ -402,11 +621,19 @@ def _compute_universe_baseline(
             if not np.any(tradable):
                 continue
 
-            rets = (adj_close[t_out, tradable] / adj_open[t_in, tradable] - 1.0) * 100.0 - cost_pct
-            mean_ew = float(np.mean(rets))
-            ew_raw.append(mean_ew)
+            gross_rets = (adj_close[t_out, tradable] / adj_open[t_in, tradable] - 1.0) * 100.0
+            mean_ew_gross = float(np.mean(gross_rets))
+            mean_ew_net = mean_ew_gross - cost_pct
+            ew_raw.append(mean_ew_net)
             bench_rets.append(float(bench_ret))
-            ew_ex.append(mean_ew - float(bench_ret))
+            ew_ex.append(mean_ew_net - float(bench_ret))
+            ew_gross_ex.append(mean_ew_gross - float(bench_ret))
+            daily_ew_map[dates[t]] = {
+                "gross_raw_pct": mean_ew_gross,
+                "gross_excess_pct": mean_ew_gross - float(bench_ret),
+                "net_raw_pct": mean_ew_net,
+                "net_excess_pct": mean_ew_net - float(bench_ret),
+            }
 
             liq_mask = tradable & np.isfinite(proxy_amt[t]) & (proxy_amt[t] >= liquid_proxy_amount_min)
             if np.any(liq_mask):
@@ -415,16 +642,57 @@ def _compute_universe_baseline(
                 liq_raw.append(mean_liq)
                 liq_ex.append(mean_liq - float(bench_ret))
 
+        daily_ew_by_horizon[f"t{h}"] = daily_ew_map
         baseline[f"t{h}"] = {
             "horizon_days": h,
             "sessions": len(ew_raw),
             "benchmark_mean_pct": _mean_or_none(bench_rets),
             "equal_weight_raw_mean_pct": _mean_or_none(ew_raw),
             "equal_weight_excess_mean_pct": _mean_or_none(ew_ex),
+            "equal_weight_gross_excess_mean_pct": _mean_or_none(ew_gross_ex),
             "liquid_raw_mean_pct": _mean_or_none(liq_raw),
             "liquid_excess_mean_pct": _mean_or_none(liq_ex),
             "liquid_proxy_amount_min": liquid_proxy_amount_min,
         }
+    return baseline, daily_ew_by_horizon
+
+
+def _compute_universe_baseline(
+    *,
+    adj_open: np.ndarray,
+    adj_close: np.ndarray,
+    raw_close: np.ndarray,
+    raw_volume: np.ndarray,
+    active: np.ndarray,
+    one_lu: np.ndarray,
+    one_ld: np.ndarray,
+    dates: list[str],
+    bench_open: dict[str, float],
+    bench_close: dict[str, float],
+    warmup_days: int,
+    end_t: int,
+    horizons: tuple[int, ...],
+    cost_bps: float,
+    liquid_proxy_amount_min: float = 80_000_000.0,
+) -> dict[str, dict[str, Any]]:
+    """Equal-weight and liquid-universe ``next_open`` baseline over ``[warmup_days, end_t)``."""
+    baseline, _ = _compute_universe_baseline_with_daily(
+        adj_open=adj_open,
+        adj_close=adj_close,
+        raw_close=raw_close,
+        raw_volume=raw_volume,
+        active=active,
+        one_lu=one_lu,
+        one_ld=one_ld,
+        dates=dates,
+        bench_open=bench_open,
+        bench_close=bench_close,
+        warmup_days=warmup_days,
+        end_t=end_t,
+        horizons=horizons,
+        cost_bps=cost_bps,
+        liquid_proxy_amount_min=liquid_proxy_amount_min,
+    )
     return baseline
 
 
@@ -477,7 +745,9 @@ def replay_patterns(
     eval_regimes = regime_series[warmup_days:end_t]
     regime_distribution = summarize_regime_distribution(eval_regimes)
     mid_date = dates[warmup_days + (end_t - warmup_days) // 2]
-    universe_baseline = _compute_universe_baseline(
+    gate_cost_bps = float(cost_bps) if float(cost_bps) > 0.0 else GRADUATION_COST_BPS
+    date_to_idx = {d: i for i, d in enumerate(dates)}
+    universe_baseline, daily_ew_by_horizon = _compute_universe_baseline_with_daily(
         adj_open=adj_open,
         adj_close=adj_close,
         raw_close=daily_pack.matrices["close"],
@@ -494,7 +764,7 @@ def replay_patterns(
         cost_bps=cost_bps,
     )
 
-    pattern_reports: list[dict[str, Any]] = []
+    preliminary_reports: list[dict[str, Any]] = []
     for spec in specs:
         sig_mask, _ = evaluate_pattern_matrix(ctx, spec)
         total_signals = 0
@@ -563,16 +833,30 @@ def replay_patterns(
                     b_close = bench_close.get(exit_date)
                     gross_excess_ret = None
                     excess_ret = None
+                    net_excess_ret = None
                     if b_open is not None and b_close is not None and b_open > 0:
                         bench_ret = (b_close / b_open - 1.0) * 100.0
                         gross_excess_ret = gross_raw_ret - bench_ret
                         excess_ret = raw_ret - bench_ret
+                        net_excess_ret = gross_excess_ret - gate_cost_bps / 100.0
+                    ew_day = (daily_ew_by_horizon.get(f"t{h}") or {}).get(day_str)
+                    same_day_ew_gross_excess_pct = (
+                        float(ew_day["gross_excess_pct"]) if ew_day is not None else None
+                    )
+                    net_over_ew_pct = (
+                        (gross_raw_ret - gate_cost_bps / 100.0) - float(ew_day["gross_raw_pct"])
+                        if ew_day is not None
+                        else None
+                    )
                     h_map[f"t{h}"] = {
                         "status": "ok",
                         "raw_return_pct": raw_ret,
                         "gross_raw_return_pct": gross_raw_ret,
                         "excess_return_pct": excess_ret,
                         "gross_excess_return_pct": gross_excess_ret,
+                        "net_excess_return_pct": net_excess_ret,
+                        "same_day_ew_gross_excess_pct": same_day_ew_gross_excess_pct,
+                        "net_over_ew_pct": net_over_ew_pct,
                         "exit_delayed": bool(k > h - 1),
                     }
 
@@ -585,7 +869,6 @@ def replay_patterns(
                     "horizons": h_map,
                 })
 
-        gate_cost_bps = float(cost_bps) if float(cost_bps) > 0.0 else GRADUATION_COST_BPS
         untradable_share = round((untradable_count / total_signals) * 100.0, 2) if total_signals > 0 else 0.0
         horizons_summary = {
             f"t{h}": _summarize_horizon_obs(
@@ -595,13 +878,11 @@ def replay_patterns(
         }
         primary_t5 = horizons_summary.get("t5") or horizons_summary[f"t{sorted_horizons[0]}"]
         primary_h = int(sorted_horizons[0]) if 5 not in sorted_horizons else 5
-        stability = _summarize_stability(observations, mid_date=mid_date, horizon=primary_h)
-        graduation = _evaluate_graduation(
-            spec,
-            primary_t5,
-            stability=stability,
-            universe_baseline_t5=universe_baseline.get(f"t{primary_h}"),
-            net_cost_bps=gate_cost_bps,
+        stability = _summarize_stability(
+            observations,
+            mid_date=mid_date,
+            horizon=primary_h,
+            date_to_idx=date_to_idx,
         )
 
         by_regime: dict[str, Any] = {}
@@ -611,7 +892,12 @@ def replay_patterns(
             unt_n = regime_untradable_counts.get(stage, 0)
             s_t5 = _summarize_horizon_obs(stage_obs, 5, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)) if 5 in sorted_horizons else None
             s_t10 = _summarize_horizon_obs(stage_obs, 10, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)) if 10 in sorted_horizons else None
-            stage_stab = _summarize_stability(stage_obs, mid_date=mid_date, horizon=primary_h)
+            stage_stab = _summarize_stability(
+                stage_obs,
+                mid_date=mid_date,
+                horizon=primary_h,
+                date_to_idx=date_to_idx,
+            )
             t5_scored = int(s_t5["scored"]) if s_t5 else 0
             t5_excess_scored = int(s_t5["excess_scored"]) if s_t5 else 0
             by_regime[stage] = {
@@ -636,7 +922,12 @@ def replay_patterns(
             b_obs = [o for o in observations if _overhead_bucket(o["overhead"]) == bucket]
             s_t5 = _summarize_horizon_obs(b_obs, 5, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)) if 5 in sorted_horizons else None
             s_t10 = _summarize_horizon_obs(b_obs, 10, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)) if 10 in sorted_horizons else None
-            b_stab = _summarize_stability(b_obs, mid_date=mid_date, horizon=primary_h)
+            b_stab = _summarize_stability(
+                b_obs,
+                mid_date=mid_date,
+                horizon=primary_h,
+                date_to_idx=date_to_idx,
+            )
             by_overhead[bucket] = {
                 "signals": len(b_obs),
                 "t5_scored": int(s_t5["scored"]) if s_t5 else 0,
@@ -663,24 +954,75 @@ def replay_patterns(
                 "t10_excess_mean_pct": s_t10["excess_mean_pct"] if s_t10 else None,
             }
 
-        pattern_reports.append({
-            "pattern": spec.name,
-            "display_name": spec.display_name,
-            "family": spec.family,
-            "mode": spec.mode,
-            "aligned_strategy": spec.aligned_strategy,
+        preliminary_reports.append({
+            "spec": spec,
+            "primary_t5": primary_t5,
+            "primary_h": primary_h,
             "total_signals": total_signals,
             "untradable_count": untradable_count,
             "untradable_share_pct": untradable_share,
             "horizons": horizons_summary,
-            "graduation": graduation,
             "stability": stability,
             "by_regime": by_regime,
             "by_overhead_supply": by_overhead,
             "by_month": by_month,
         })
 
-    gate_cost = float(cost_bps) if float(cost_bps) > 0.0 else GRADUATION_COST_BPS
+    n_tested = len(preliminary_reports)
+    p_csi = [_positive_gate_p_value(item["stability"].get("t_stat")) for item in preliminary_reports]
+    p_ew = [_positive_gate_p_value(item["stability"].get("ew_t_stat")) for item in preliminary_reports]
+    q_csi = _benjamini_hochberg_q_values(p_csi)
+    q_ew = _benjamini_hochberg_q_values(p_ew)
+
+    pattern_reports: list[dict[str, Any]] = []
+    for idx, item in enumerate(preliminary_reports):
+        spec = item["spec"]
+        primary_t5 = item["primary_t5"]
+        primary_h = item["primary_h"]
+        stability = item["stability"]
+        qc = q_csi[idx]
+        qe = q_ew[idx]
+        mt = {
+            "n_patterns_tested": n_tested,
+            "fdr_alpha": GRADUATION_BH_FDR_ALPHA,
+            "p_value_csi300": round(p_csi[idx], 6),
+            "bh_q_value_csi300": qc,
+            "p_value_ew": round(p_ew[idx], 6),
+            "bh_q_value_ew": qe,
+            "bh_fdr_pass": bool(
+                n_tested >= 1
+                and qc is not None
+                and qc <= GRADUATION_BH_FDR_ALPHA
+                and qe is not None
+                and qe <= GRADUATION_BH_FDR_ALPHA
+            ),
+        }
+        graduation = _evaluate_graduation(
+            spec,
+            primary_t5,
+            stability=stability,
+            universe_baseline_t5=universe_baseline.get(f"t{primary_h}"),
+            net_cost_bps=gate_cost_bps,
+            multiple_testing=mt,
+        )
+        pattern_reports.append({
+            "pattern": spec.name,
+            "display_name": spec.display_name,
+            "family": spec.family,
+            "mode": spec.mode,
+            "aligned_strategy": spec.aligned_strategy,
+            "total_signals": item["total_signals"],
+            "untradable_count": item["untradable_count"],
+            "untradable_share_pct": item["untradable_share_pct"],
+            "horizons": item["horizons"],
+            "graduation": graduation,
+            "stability": stability,
+            "multiple_testing": mt,
+            "by_regime": item["by_regime"],
+            "by_overhead_supply": item["by_overhead_supply"],
+            "by_month": item["by_month"],
+        })
+
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "entry_mode": "next_open",
@@ -688,11 +1030,15 @@ def replay_patterns(
         "cost_bps": float(cost_bps),
         "graduation_rule": {
             "min_samples": GRADUATION_MIN_SAMPLES,
-            "net_cost_bps": gate_cost,
+            "net_cost_bps": gate_cost_bps,
             "t5_net_excess_mean_pct_gt": 0.0,
-            "beats_universe_equal_weight": True,
+            "beats_same_day_universe_equal_weight": True,
             "split_half_positive_consistent": True,
+            "min_half_days": STABILITY_MIN_HALF_DAYS,
+            "min_half_samples": STABILITY_MIN_HALF_SAMPLES,
             "min_clustered_t_stat": STABILITY_T_STAT_THRESHOLD,
+            "newey_west_min_lag": NEWEY_WEST_MIN_LAG,
+            "bh_fdr_alpha": GRADUATION_BH_FDR_ALPHA,
         },
         "regime_weight_policy": "reporting_and_slice_only",
         "pack_summary": {
@@ -736,7 +1082,7 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
         f"- 评估区间: `{ps['eval_start_date']}` .. `{ps['eval_end_date']}` ({ps['eval_sessions']} 交易日, 股票池 {ps['codes_total']} 只, 包截止 `{ps['pack_end_date']}`)",
         f"- 口径: `{report['entry_mode']}` 入场（一字涨停不可成交剔除，退出一字跌停顺延），基准 `{report['benchmark']}` 同期开盘→收盘，回放已计入 `{float(report.get('cost_bps', 0.0)):.0f}bp` 成本",
         *baseline_line,
-        f"- 毕业门槛: `T+5 基准匹配样本 >= {GRADUATION_MIN_SAMPLES}` 且扣 `{gate_bps:.0f}bp` 成本 `净超额 > 0%`、跑赢全A等权基线、H1/H2 同号正超额且聚日 `t >= {STABILITY_T_STAT_THRESHOLD}`（否则标 `experimental`）",
+        f"- 毕业门槛: `T+5 基准匹配样本 >= {GRADUATION_MIN_SAMPLES}` 且扣 `{gate_bps:.0f}bp` 成本 `净超额 > 0%`、同信号日跑赢全A等权基线、H1/H2（各 `>= {STABILITY_MIN_HALF_DAYS}d` 且 `>= {STABILITY_MIN_HALF_SAMPLES}`）同号正超额、Newey-West HAC 聚日 `t >= {STABILITY_T_STAT_THRESHOLD}`（`lag >= {NEWEY_WEST_MIN_LAG}`）且多重检验 BH-FDR `q <= {GRADUATION_BH_FDR_ALPHA}`（否则标 `experimental`）",
         "",
         "## 形态总览与毕业判定",
         "",
@@ -804,15 +1150,25 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
         "",
         f"## 时间前后半段稳定性检验（按交易日分组，切分日 `{ps.get('eval_mid_date', '-')}`，防过拟合检查）",
         "",
-        "| 形态 | H1 日数/日均超额 | H2 日数/日均超额 | 按日 t-stat (样本t) | 前后半段方向 | 达标稳定切片 |",
+        "| 形态 | H1 日数/日均超额 | H2 日数/日均超额 | NW t-stat (naive / EW / q) | 前后半段方向 | 达标稳定切片 |",
         "|---|---:|---:|---:|---|---|",
     ])
     stable_slices: list[str] = []
     for item in report["patterns"]:
         st = item.get("stability") or {}
+        mt = item.get("multiple_testing") or {}
         t_str = "-" if st.get("t_stat") is None else f"{st['t_stat']:+.2f}"
-        if st.get("pooled_t_stat") is not None:
-            t_str = f"{t_str} ({st['pooled_t_stat']:+.2f})"
+        parts: list[str] = []
+        if st.get("naive_daily_t_stat") is not None:
+            parts.append(f"naive={st['naive_daily_t_stat']:+.2f}")
+        elif st.get("pooled_t_stat") is not None:
+            parts.append(f"pooled={st['pooled_t_stat']:+.2f}")
+        if st.get("ew_t_stat") is not None:
+            parts.append(f"EW={st['ew_t_stat']:+.2f}")
+        if mt.get("bh_q_value_csi300") is not None:
+            parts.append(f"q={mt['bh_q_value_csi300']:.3f}")
+        if parts:
+            t_str = f"{t_str} ({', '.join(parts)})"
         h1_pct = st.get("h1_daily_excess_mean_pct", st.get("h1_excess_mean_pct"))
         h2_pct = st.get("h2_daily_excess_mean_pct", st.get("h2_excess_mean_pct"))
         pos_cells = [

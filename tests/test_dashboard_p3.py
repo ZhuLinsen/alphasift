@@ -174,7 +174,21 @@ def test_scorecard_untradable_share_and_pattern_board_replay_klines(tmp_path: Pa
     assert summary["artifacts"]["daily_report_html"]["exists"] is False
     assert summary["integrity"]["algorithm"] == "sha256"
     assert len(summary["integrity"]["runs_sha256"]) == 64
-    assert (tmp_path / "site" / "manifest.sha256").is_file()
+    manifest_file = tmp_path / "site" / "manifest.sha256"
+    assert manifest_file.is_file()
+    manifest_text = manifest_file.read_text(encoding="utf-8")
+    assert "summary.json" in manifest_text
+    assert "patterns.json" in manifest_text
+    if shutil.which("sha256sum") is not None:
+        proc_sum = subprocess.run(
+            ["sha256sum", "-c", "manifest.sha256"],
+            cwd=tmp_path / "site",
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc_sum.returncode == 0, proc_sum.stderr
+    assert summary["artifacts"]["patterns"]["pack_is_stale"] is False
     site_patterns = json.loads((tmp_path / "site" / "patterns.json").read_text(encoding="utf-8"))
     assert site_patterns["replay"]["cost_bps"] == 0.0 or "graduation_rule" in site_patterns["replay"]
 
@@ -267,19 +281,26 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
         assert 'echo "$TICKPLUS_API_KEY"' not in text
         loaded[name] = (data, text)
 
-    # data-pack.yml exposes workflow_call with strictly string inputs and uses private Actions cache.
+    # data-pack.yml exposes workflow_call with strictly string inputs, explicit secrets, and uses private Actions cache.
     dp_data, dp_text = loaded["data-pack.yml"]
     dp_on = dp_data.get("on") if "on" in dp_data else dp_data[True]
     wf_call_inputs = dp_on["workflow_call"]["inputs"]
     assert all(spec["type"] == "string" for spec in wf_call_inputs.values())
+    assert "TICKPLUS_API_KEY" in (dp_on["workflow_call"].get("secrets") or {})
+    assert "persist-credentials: false" in dp_text
+    assert "${{ inputs." not in dp_text.split("run:")[-1]
     assert "gh release create" not in dp_text and "gh release upload" not in dp_text
     assert "actions/cache" in dp_text
     assert "alphasift pack pull" not in dp_text
 
-    # track-record.yml chains pack -> record via private Actions cache, evaluates with --pack-dir, and builds after daily-report.
+    # track-record.yml chains pack -> record with explicit secret scope, freshness gate, and zero expression injection in run blocks.
     tr_data, tr_text = loaded["track-record.yml"]
     assert "pack" in tr_data["jobs"]
     assert tr_data["jobs"]["pack"]["uses"] == "./.github/workflows/data-pack.yml"
+    assert "secrets: inherit" not in tr_text
+    assert "persist-credentials: false" in tr_text
+    assert "CN_TRADE_DATE" in tr_text and "pat_fresh" in tr_text and "rep_fresh" in tr_text
+    assert "${{ github.repository }}" not in tr_text.split("name: Build site data")[1].split("Commit to track-record")[0].split("run:")[-1]
     assert tr_data["jobs"]["record"]["needs"] == ["pack"]
     deploy_if = str(tr_data["jobs"]["deploy"].get("if") or "")
     assert "needs.record.result == 'success'" in deploy_if and "!cancelled()" in deploy_if

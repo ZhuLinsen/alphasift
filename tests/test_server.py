@@ -651,16 +651,57 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
         with urllib.request.urlopen(req_fmt, timeout=5) as resp:
             assert "application/json" in resp.headers.get("Content-Type", "")
 
-        # 4. Live /daily-report.html safely strips dangerous detail_url schemes & closes no script tags
+        # 4. Live /daily-report.html enforces static script-src 'none' & strips dangerous detail_url schemes
         req_dr = urllib.request.Request(
             f"http://127.0.0.1:{port}/daily-report.html?detail_url=javascript:alert(1)",
         )
         try:
             with urllib.request.urlopen(req_dr, timeout=5) as resp:
+                assert "script-src 'none'" in resp.headers.get("Content-Security-Policy", "")
                 body_dr = resp.read().decode("utf-8")
                 assert "javascript:alert(1)" not in body_dr
         except urllib.error.HTTPError as err_dr:
             assert err_dr.code in {400, 503}
+            assert "script-src 'none'" in err_dr.headers.get("Content-Security-Policy", "")
+
+        # 5. /daily-report.html 200 HTML also keeps script-src 'none'
+        from dataclasses import replace
+        import numpy as np
+        import pandas as _pd
+        from alphasift.pack import DailyPack, FIELDS, save_pack
+        from alphasift.server import build_html_response
+
+        assert build_html_response(cfg, "/daily-report.html")[0] in {200, 400, 503}
+        n_d = 25
+        mat = {f: np.full((n_d, 1), 10.0, dtype=np.float32) for f in FIELDS}
+        mat["open"][:, 0] = 10.0
+        mat["high"][:, 0] = 10.2
+        mat["low"][:, 0] = 9.9
+        mat["close"][:, 0] = 10.1
+        mat["volume"][:, 0] = 5_000_000.0
+        mat["amount"][:, 0] = 50_000_000.0
+        pack_dir_ok = tmp_path / "ok_pack"
+        save_pack(
+            pack_dir_ok,
+            DailyPack(
+                dates=np.asarray([d.strftime("%Y-%m-%d") for d in _pd.bdate_range("2026-10-01", periods=n_d)], dtype=str),
+                codes=np.asarray(["000001"], dtype=str),
+                matrices=mat,
+                meta=_pd.DataFrame([{"code": "000001", "name": "平安", "industry": "银行", "pe_ratio": 5.0, "pb_ratio": 0.6, "total_mv": 1e11, "circ_mv": 9e10, "list_date": "1991-04-03", "is_st": False}]),
+                sources=("test",),
+            ),
+        )
+        cfg_ok = replace(cfg, daily_pack_dir=pack_dir_ok)
+        srv_ok = ThreadingHTTPServer(("127.0.0.1", 0), _handler_for_config(cfg_ok))
+        t_ok = threading.Thread(target=srv_ok.serve_forever, daemon=True)
+        t_ok.start()
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{srv_ok.server_address[1]}/daily-report.html?include_announcements=false", timeout=5) as resp_ok:
+                assert resp_ok.status == 200
+                assert "script-src 'none'" in resp_ok.headers.get("Content-Security-Policy", "")
+        finally:
+            srv_ok.shutdown()
+            srv_ok.server_close()
     finally:
         server.shutdown()
         server.server_close()

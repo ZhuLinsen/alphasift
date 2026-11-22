@@ -1068,17 +1068,18 @@ def build_site(track: Path) -> dict[str, Any]:
     runs_sha256 = runs_hasher.hexdigest()
 
     integrity_files: dict[str, str] = {}
-    manifest_lines: list[str] = [f"{runs_sha256}  data/runs/*.json ({len(run_files)} files)"]
-    for rel, path in (
-        ("site/evaluation.json", site / "evaluation.json"),
-        ("site/patterns.json", site / "patterns.json"),
-        ("site/report.json", report_file),
-    ):
+    pre_summary_candidates: list[tuple[str, Path]] = [
+        ("evaluation.json", site / "evaluation.json"),
+        ("patterns.json", site / "patterns.json"),
+        ("report.json", report_file),
+        ("daily_report.html", report_html_file),
+    ]
+    for dp in sorted((site / "days").glob("*.json")):
+        pre_summary_candidates.append((dp.relative_to(site).as_posix(), dp))
+    for rel, path in pre_summary_candidates:
         if path.is_file() and not path.is_symlink():
-            f_digest = hashlib.sha256(path.read_bytes()).hexdigest()
-            integrity_files[rel] = f_digest
-            manifest_lines.append(f"{f_digest}  {rel}")
-    (site / "manifest.sha256").write_text("\n".join(manifest_lines) + "\n", encoding="utf-8")
+            integrity_files[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
+
     integrity = {
         "algorithm": "sha256",
         "runs_count": len(run_files),
@@ -1091,6 +1092,8 @@ def build_site(track: Path) -> dict[str, Any]:
             "exists": pb is not None,
             "path": "site/patterns.json",
             "trade_date": pb["latest"].get("trade_date") if pb else None,
+            "expected_trade_date": pb["latest"].get("expected_trade_date") if pb else None,
+            "pack_is_stale": bool(pb["latest"].get("pack_is_stale", False)) if pb else False,
             "has_replay": bool(pb and pb.get("replay")),
             "reason": None if pb is not None else "cn_daily_pack_unavailable",
         },
@@ -1098,12 +1101,16 @@ def build_site(track: Path) -> dict[str, Any]:
             "exists": report_file.is_file(),
             "path": "site/report.json",
             "trade_date": latest_report.get("trade_date") if latest_report else None,
+            "expected_trade_date": latest_report.get("expected_trade_date") if latest_report else None,
+            "pack_is_stale": bool(latest_report.get("pack_is_stale", False)) if latest_report else False,
             "reason": None if report_file.is_file() else "cn_daily_pack_unavailable",
         },
         "daily_report_html": {
             "exists": report_html_file.is_file(),
             "path": "site/daily_report.html",
             "trade_date": latest_report.get("trade_date") if latest_report else None,
+            "expected_trade_date": latest_report.get("expected_trade_date") if latest_report else None,
+            "pack_is_stale": bool(latest_report.get("pack_is_stale", False)) if latest_report else False,
             "reason": None if report_html_file.is_file() else "cn_daily_pack_unavailable",
         },
     }
@@ -1130,6 +1137,16 @@ def build_site(track: Path) -> dict[str, Any]:
     }
     (site / "summary.json").write_text(json.dumps(summary, ensure_ascii=False), encoding="utf-8")
     (site / "feed.xml").write_text(render_atom_feed(summary), encoding="utf-8")
+
+    # Emit standard `sha256sum -c` manifest relative to `site/` covering all published site files.
+    manifest_path = site / "manifest.sha256"
+    manifest_entries: list[str] = []
+    for fpath in sorted(p for p in site.rglob("*") if p.is_file() and not p.is_symlink() and p != manifest_path):
+        rel = fpath.relative_to(site).as_posix()
+        digest = integrity_files.get(rel) or hashlib.sha256(fpath.read_bytes()).hexdigest()
+        manifest_entries.append(f"{digest}  {rel}")
+    manifest_path.write_text("\n".join(manifest_entries) + ("\n" if manifest_entries else ""), encoding="utf-8")
+
     (track / "README.md").write_text(render_readme(summary), encoding="utf-8")
     return summary
 

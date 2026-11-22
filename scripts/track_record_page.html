@@ -581,7 +581,7 @@ footer {
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
         <span class="btn-lbl" data-i18n="nav_report">今日研报</span>
       </a>
-      <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener" data-i18n-title="nav_ledger_title" title="查看不可篡改原始运行日志">
+      <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener" data-i18n-title="nav_ledger_title" title="查看 track-record 分支 Git 可审计原始运行日志">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         <span class="btn-lbl" data-i18n="nav_ledger">原始账本</span>
       </a>
@@ -739,7 +739,7 @@ footer {
     <details class="sec-details" id="details-patterns">
       <summary class="sec-summary"><span data-i18n="details_pat_title">A 股无状态形态雷达命中（20 日迷你 K 线）</span></summary>
       <div class="sec-body">
-        <p class="sec-hint" style="margin:0 0 12px;" data-i18n-html="details_pat_hint">未通过 250 日 <code>next_open</code> 毕业门槛（基准匹配样本 ≥ 200 且 T+5 超额 &gt; 0%）的形态一律置灰标 <code>experimental</code>，仅作研究观察。</p>
+        <p class="sec-hint" style="margin:0 0 12px;" data-i18n-html="details_pat_hint">未通过 250 日 <code>next_open</code> 严苛门槛（N ≥ 200、扣 25bp 净超额 &gt; 0%、同日跑赢全A等权、H1/H2 ≥15d 同号正超额、Newey-West t ≥ 1.96 且 BH-FDR q ≤ 0.05）的形态一律置灰标 <code>experimental</code>，仅作研究观察。</p>
         <div id="pattern-hits-wrap"><div class="empty" data-i18n="loading_pat">加载形态命中…</div></div>
       </div>
     </details>
@@ -788,7 +788,7 @@ const I18N = {
     nav_rss: "RSS",
     nav_rss_title: "订阅 Atom 1.0 RSS 每日更新",
     nav_ledger: "原始账本",
-    nav_ledger_title: "查看不可篡改原始运行日志",
+    nav_ledger_title: "查看 track-record 分支 Git 可审计原始运行日志",
     theme_aria: "切换明暗主题",
     theme_light: "亮色",
     theme_dark: "暗色",
@@ -828,7 +828,7 @@ const I18N = {
     sec5_title: "规则榜 vs AI 榜同日配对归因",
     sec5_hint: "仅针对同一策略在同一交易日的双轨运行严格配对对比（同日配对 < 10 日时隐藏差值，单列 AI 缺失率与重合度）。",
     details_pat_title: "A 股无状态形态雷达命中（20 日迷你 K 线）",
-    details_pat_hint: "未通过 250 日 <code>next_open</code> 毕业门槛（基准匹配样本 ≥ 200 且 T+5 超额 > 0%）的形态一律置灰标 <code>experimental</code>，仅作研究观察。",
+    details_pat_hint: "未通过 250 日 <code>next_open</code> 严苛门槛（N ≥ 200、扣 25bp 净超额 > 0%、同日跑赢全A等权、H1/H2 ≥15d 同号正超额、Newey-West t ≥ 1.96 且 BH-FDR q ≤ 0.05）的形态一律置灰标 <code>experimental</code>，仅作研究观察。",
     details_replay_title: "250 日 next_open 形态回放、聚日稳定性与切片验证",
     footer_note: "<strong>AlphaSift</strong> · 开源量化形态观测与回测基准（Apache-2.0 License）· 公开纸面跟踪，非投资建议，历史统计不含分红；低于样本门槛（成绩单 &lt; 20、AI 配对 &lt; 10 日、切片 &lt; 100、形态毕业 &lt; 200）统一置灰或隐藏差值。",
     footer_repo: "GitHub 源码仓库",
@@ -860,6 +860,7 @@ const I18N = {
     hl_rep_lbl: "盘后日报",
     hl_rep_ok: "{d}",
     hl_rep_pend: "待生成",
+    hl_stale_suffix: "{d} (陈旧)",
     pat_f_all: "全部 ({n})",
     pat_f_active: "active ({n})",
     pat_f_exp: "experimental ({n})",
@@ -965,7 +966,7 @@ const I18N = {
     ub_bench: "· 沪深300 {ret}",
     ub_t10: "· T+10 等权超额 {ex}",
     rep_subhead: "250 日 next_open 回放门槛评估（{start} .. {end}，{sess} 个信号日）",
-    rep_cols: ["形态", "谱系/模式", "总信号", "不可成交", "T+5 基准匹配", "T+5 毛超额", "T+5 净超额 (-25bp)", "T+5 胜率", "聚日 t 值", "前半 H1 / 后半 H2", "T+10 超额", "门槛状态"],
+    rep_cols: ["形态", "谱系/模式", "总信号", "不可成交", "T+5 基准匹配", "T+5 毛超额", "T+5 净超额 (-25bp)", "T+5 胜率", "NW t 值", "前半 H1 / 后半 H2", "T+10 超额", "门槛状态"],
     pat_card_meta: "T+5 毛 {g} / 净 {n} · t={t} · N={cnt}",
     pat_card_spark: "近15日",
     footer_manifest: "SHA-256 账本校验",
@@ -1029,7 +1030,7 @@ const I18N = {
     nav_rss: "RSS",
     nav_rss_title: "Subscribe to Atom 1.0 daily feed",
     nav_ledger: "Raw Ledger",
-    nav_ledger_title: "View immutable run logs on track-record branch",
+    nav_ledger_title: "View Git-auditable raw run logs on track-record branch",
     theme_aria: "Toggle light/dark theme",
     theme_light: "Light",
     theme_dark: "Dark",
@@ -1069,7 +1070,7 @@ const I18N = {
     sec5_title: "Rules vs AI Same-Day Paired Attribution",
     sec5_hint: "Strict same-date, same-strategy paired comparison between rules and AI tracks (delta hidden when paired sessions < 10).",
     details_pat_title: "CN Stateless Pattern Radar Hits (20-Day Mini K-Line)",
-    details_pat_hint: "Patterns below the 250-day <code>next_open</code> graduation gate (matched N ≥ 200 and T+5 excess > 0%) stay muted as <code>experimental</code>.",
+    details_pat_hint: "Patterns below the strict 250-day <code>next_open</code> graduation gate (matched N ≥ 200, net excess > 0% after 25bp, matched-day alpha over All-A EW, H1/H2 ≥15d positive, Newey-West t ≥ 1.96, and BH-FDR q ≤ 0.05) stay muted as <code>experimental</code>.",
     details_replay_title: "250-Day next_open Replay, Clustered Stability & Regime Slices",
     footer_note: "<strong>AlphaSift</strong> · Open-Source Quantitative Discovery & Benchmark (Apache-2.0 License) · Research only, not investment advice; excludes dividends. Under-threshold cells (scorecard &lt; 20, AI pairs &lt; 10d, slices &lt; 100, pattern gate &lt; 200) are muted or hidden.",
     footer_repo: "GitHub Repository",
@@ -1101,6 +1102,7 @@ const I18N = {
     hl_rep_lbl: "Daily Report",
     hl_rep_ok: "{d}",
     hl_rep_pend: "Pending",
+    hl_stale_suffix: "{d} (stale)",
     pat_f_all: "All ({n})",
     pat_f_active: "active ({n})",
     pat_f_exp: "experimental ({n})",
@@ -1206,7 +1208,7 @@ const I18N = {
     ub_bench: "· CSI 300 {ret}",
     ub_t10: "· T+10 EW Excess {ex}",
     rep_subhead: "250-Day next_open Graduation Gate ({start} .. {end}, {sess} signal days)",
-    rep_cols: ["Pattern", "Family / Mode", "Signals", "Untradable", "T+5 Matched", "T+5 Gross", "T+5 Net (-25bp)", "T+5 Win", "Clustered t", "H1 / H2 Excess", "T+10 Excess", "Status"],
+    rep_cols: ["Pattern", "Family / Mode", "Signals", "Untradable", "T+5 Matched", "T+5 Gross", "T+5 Net (-25bp)", "T+5 Win", "NW t", "H1 / H2 Excess", "T+10 Excess", "Status"],
     pat_card_meta: "T+5 {g} / Net {n} · t={t} · N={cnt}",
     pat_card_spark: "15D hits",
     footer_manifest: "SHA-256 Manifest",
@@ -1270,7 +1272,7 @@ const I18N = {
     nav_rss: "RSS",
     nav_rss_title: "Atom 1.0 RSS フィードを購読",
     nav_ledger: "生ログ",
-    nav_ledger_title: "track-record ブランチの改ざん不能ログを表示",
+    nav_ledger_title: "track-record ブランチの Git 監査可能な生ログを表示",
     theme_aria: "ライト／ダーク切替",
     theme_light: "ライト",
     theme_dark: "ダーク",
@@ -1310,7 +1312,7 @@ const I18N = {
     sec5_title: "ルール vs AI 同日ペア帰属分析",
     sec5_hint: "同一戦略・同一営業日の両トラック実行のみを厳密にペア比較します（ペア日数 < 10 日の場合、差分は非表示）。",
     details_pat_title: "中国 A 株 ステートレスパターン検出（20日ミニローソク足）",
-    details_pat_hint: "250日 <code>next_open</code> 卒業基準（一致サンプル ≥ 200 かつ T+5 超過 > 0%）未達のパターンは <code>experimental</code> としてグレー表示されます。",
+    details_pat_hint: "250日 <code>next_open</code> 厳格基準（一致標本 ≥ 200、25bp 控除後純超過 > 0%、同日全A等重超過、H1/H2 ≥15日同符号正超過、Newey-West t ≥ 1.96 かつ BH-FDR q ≤ 0.05）未達のパターンは <code>experimental</code> としてグレー表示されます。",
     details_replay_title: "250日 next_open リプレイ・日別安定性・局面別スライス検証",
     footer_note: "<strong>AlphaSift</strong> · オープンソース銘柄発掘＆検証ベンチマーク（Apache-2.0 License）· 投資助言ではありません（配当除く）。閾値未満（成績表 &lt; 20、AI ペア &lt; 10日、スライス &lt; 100、パターン &lt; 200）はグレーまたは非表示。",
     footer_repo: "GitHub リポジトリ",
@@ -1342,6 +1344,7 @@ const I18N = {
     hl_rep_lbl: "日次レポート",
     hl_rep_ok: "{d}",
     hl_rep_pend: "未生成",
+    hl_stale_suffix: "{d} (期限切れ)",
     pat_f_all: "すべて ({n})",
     pat_f_active: "active ({n})",
     pat_f_exp: "experimental ({n})",
@@ -1447,7 +1450,7 @@ const I18N = {
     ub_bench: "· CSI 300 {ret}",
     ub_t10: "· T+10 等重超過 {ex}",
     rep_subhead: "250日 next_open 卒業基準検証（{start} .. {end}、{sess} 営業日）",
-    rep_cols: ["パターン", "系統 / 方式", "総数", "取引不可", "T+5 一致", "T+5 粗超過", "T+5 純超過 (-25bp)", "T+5 勝率", "日次 t値", "前半 H1 / 後半 H2", "T+10 超過", "判定"],
+    rep_cols: ["パターン", "系統 / 方式", "総数", "取引不可", "T+5 一致", "T+5 粗超過", "T+5 純超過 (-25bp)", "T+5 勝率", "NW t値", "前半 H1 / 後半 H2", "T+10 超過", "判定"],
     pat_card_meta: "T+5 粗 {g} / 純 {n} · t={t} · N={cnt}",
     pat_card_spark: "15日推移",
     footer_manifest: "SHA-256 検証",
@@ -2161,15 +2164,29 @@ function renderMetaAndKpis() {
   const hs = $("health-strip");
   if (hs) {
     const aiCnt = (s.track_comparison || []).length;
-    const patOk = Boolean(patLatest && patLatest.trade_date);
-    const repOk = Boolean(state.reportReady || (rep && rep.trade_date));
-    const repDate = (rep && rep.trade_date) || "";
+    const latestCnDate = ((s.latest || []).find((r) => r.market === "cn") || {}).date || "";
     const art = s.artifacts || {};
+    const artPat = art.patterns || {};
+    const artRep = art.report || {};
+    const patDate = (patLatest && patLatest.trade_date) || artPat.trade_date || "";
+    const patOk = Boolean(patDate);
+    const patStale = Boolean(patOk && (artPat.pack_is_stale || patLatest.pack_is_stale || (latestCnDate && patDate < latestCnDate)));
+    const repDate = (rep && rep.trade_date) || artRep.trade_date || "";
+    const repOk = Boolean(state.reportReady || repDate);
+    const repStale = Boolean(repOk && (artRep.pack_is_stale || rep.pack_is_stale || (latestCnDate && repDate && repDate < latestCnDate)));
+    const patVal = !patOk ? t("hl_pat_pend") : patStale ? t("hl_stale_suffix", { d: patDate }) : t("hl_pat_ok", { d: patDate });
+    const repVal = !repOk ? t("hl_rep_pend") : repStale ? t("hl_stale_suffix", { d: repDate }) : t("hl_rep_ok", { d: repDate || "ready" });
+    const patTip = patStale
+      ? (patLatest.stale_reason || artPat.reason || (latestCnDate ? `${patDate} < ${latestCnDate}` : "stale"))
+      : (artPat.reason || "");
+    const repTip = repStale
+      ? (rep.stale_reason || artRep.reason || (latestCnDate && repDate ? `${repDate} < ${latestCnDate}` : "stale"))
+      : (artRep.reason || "");
     const items = [
       { cls: totalFailures ? "pend" : "ok", lbl: t("hl_rules_lbl"), val: t("hl_rules_ok", { d: (s.days || []).length, r: s.run_count }), tip: "" },
       { cls: aiCnt > 0 ? "ok" : "pend", lbl: t("hl_ai_lbl"), val: aiCnt > 0 ? t("hl_ai_ok", { n: aiCnt }) : t("hl_ai_pend"), tip: "" },
-      { cls: patOk ? "ok" : "pend", lbl: t("hl_pat_lbl"), val: patOk ? t("hl_pat_ok", { d: patLatest.trade_date }) : t("hl_pat_pend"), tip: ((art.patterns || {}).reason) || "" },
-      { cls: repOk ? "ok" : "pend", lbl: t("hl_rep_lbl"), val: repOk ? t("hl_rep_ok", { d: repDate || "ready" }) : t("hl_rep_pend"), tip: ((art.report || {}).reason) || "" },
+      { cls: patOk && !patStale ? "ok" : "pend", lbl: t("hl_pat_lbl"), val: patVal, tip: patTip },
+      { cls: repOk && !repStale ? "ok" : "pend", lbl: t("hl_rep_lbl"), val: repVal, tip: repTip },
     ];
     hs.innerHTML = items.map((it) => `<span class="health-item" title="${esc(it.tip)}"><span class="health-dot ${it.cls}"></span><strong>${esc(it.lbl)}</strong><span>${esc(it.val)}</span></span>`).join("");
   }
@@ -2207,8 +2224,8 @@ function renderMetaAndKpis() {
   const kpi3 = reg
     ? `<div class="kpi-cell">
          <div class="kpi-label"><span>${esc(t("kpi3_temp_lbl"))} (${esc((reg.trade_date || "").slice(5))})</span><span class="badge accent">${esc(rname(reg.regime_stage, reg.regime_stage_label))}</span></div>
-         <div class="kpi-val">${Number(reg.advance_ratio_pct || 0).toFixed(1)}% <span class="small dim" style="font-weight:500;">${esc(t("kpi3_up_suffix"))}</span></div>
-         <div class="kpi-foot">${t("kpi3_temp_foot", { med: pct(reg.median_return_pct), lu: reg.non_st_limit_up_count ?? 0, ld: reg.non_st_limit_down_count ?? 0 })}</div>
+         <div class="kpi-val">${esc(Number(reg.advance_ratio_pct || 0).toFixed(1))}% <span class="small dim" style="font-weight:500;">${esc(t("kpi3_up_suffix"))}</span></div>
+         <div class="kpi-foot">${t("kpi3_temp_foot", { med: pct(reg.median_return_pct), lu: esc(String(reg.non_st_limit_up_count ?? 0)), ld: esc(String(reg.non_st_limit_down_count ?? 0)) })}</div>
        </div>`
     : topConsensus
       ? `<div class="kpi-cell">
@@ -2764,28 +2781,37 @@ function renderPatternRadar() {
       const h10 = (p.horizons || {}).t10 || {};
       const grad = p.graduation || {};
       const stab = p.stability || {};
+      const mt = p.multiple_testing || {};
       const status = grad.recommended_status || "experimental";
-      const t5ExcessN = h5.excess_scored ?? h5.scored ?? 0;
+      const t5ExcessN = Number(h5.excess_scored ?? h5.scored ?? 0);
+      const totalSigN = Number(h5.scored ?? 0) + Number(p.untradable_count || 0);
       const muted = status !== "active" || t5ExcessN < MIN_PATTERN_GRAD_SAMPLE;
       const badge = status === "active"
         ? `<span class="badge active">${esc(t("pat_status_active"))}</span>`
         : `<span class="badge exp">${esc(t("pat_status_exp"))}</span>`;
       const tStat = stab.t_stat !== null && stab.t_stat !== undefined ? `${Number(stab.t_stat).toFixed(2)}` : "–";
+      const tTipParts = [];
+      if (stab.naive_daily_t_stat !== null && stab.naive_daily_t_stat !== undefined) tTipParts.push(`naive t=${Number(stab.naive_daily_t_stat).toFixed(2)}`);
+      if (stab.ew_t_stat !== null && stab.ew_t_stat !== undefined) tTipParts.push(`EW NW t=${Number(stab.ew_t_stat).toFixed(2)}`);
+      if (mt.bh_q_value_csi300 !== null && mt.bh_q_value_csi300 !== undefined) tTipParts.push(`BH q=${Number(mt.bh_q_value_csi300).toFixed(3)}`);
+      const tTip = tTipParts.join(" · ");
+      const h1d = Number(stab.h1_days ?? 0);
+      const h2d = Number(stab.h2_days ?? 0);
       const h1h2 = (stab.h1_days || stab.h2_days)
-        ? `<div>${pct(stab.h1_daily_excess_mean_pct ?? stab.h1_excess_mean_pct)} <span class="dim">(${stab.h1_days ?? 0}d)</span></div><div>${pct(stab.h2_daily_excess_mean_pct ?? stab.h2_excess_mean_pct)} <span class="dim">(${stab.h2_days ?? 0}d)</span></div>`
+        ? `<div>${pct(stab.h1_daily_excess_mean_pct ?? stab.h1_excess_mean_pct)} <span class="dim">(${esc(String(h1d))}d)</span></div><div>${pct(stab.h2_daily_excess_mean_pct ?? stab.h2_excess_mean_pct)} <span class="dim">(${esc(String(h2d))}d)</span></div>`
         : '<span class="dim">–</span>';
       const grossEx = h5.gross_excess_mean_pct ?? h5.excess_mean_pct;
       const netEx = grad.t5_net_excess_mean_pct ?? h5.net_excess_mean_pct;
       return `<tr class="${muted ? "low-sample" : ""}">
         <td class="l"><strong>${esc(pname(p.pattern, p.display_name))}</strong><div class="mono dim small">${esc(p.pattern)}</div></td>
         <td class="l dim">${esc(p.family)}<div class="small">${esc(p.mode)}</div></td>
-        <td class="mono">${(h5.scored ?? 0) + (p.untradable_count || 0)}</td>
+        <td class="mono">${esc(String(totalSigN))}</td>
         <td class="mono">${sharePct(p.untradable_share_pct)}</td>
-        <td class="mono">${t5ExcessN}${t5ExcessN < MIN_PATTERN_GRAD_SAMPLE ? '<span class="tag">&lt;200</span>' : ""}</td>
+        <td class="mono">${esc(String(t5ExcessN))}${t5ExcessN < MIN_PATTERN_GRAD_SAMPLE ? '<span class="tag">&lt;200</span>' : ""}</td>
         <td class="mono">${pct(grossEx)}</td>
         <td class="mono">${pct(netEx)}</td>
         <td class="mono">${sharePct(h5.excess_win_rate_pct ?? h5.win_rate_pct)}</td>
-        <td class="mono">${tStat}</td>
+        <td class="mono" title="${esc(tTip)}">${esc(tStat)}</td>
         <td class="mono">${h1h2}</td>
         <td class="mono">${pct(h10.excess_mean_pct)}</td>
         <td title="${esc(grad.reason || "")}">${badge}</td>

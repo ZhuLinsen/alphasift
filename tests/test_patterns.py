@@ -14,7 +14,9 @@ import pytest
 from alphasift.cli import main as cli_main
 from alphasift.pack import DailyPack, FIELDS, save_pack
 from alphasift.pattern_replay import (
+    _benjamini_hochberg_q_values,
     _evaluate_graduation,
+    _newey_west_t_stat,
     _summarize_horizon_obs,
     _summarize_stability,
     load_cn_benchmark,
@@ -563,3 +565,64 @@ def test_strict_graduation_checks_net_cost_baseline_and_stability() -> None:
     g4 = _evaluate_graduation(dummy_spec, t5_strong, stability=ok_stab, universe_baseline_t5=beatable_base)
     assert g4["passed"] is True and g4["recommended_status"] == "active"
     assert all(g4["checks"][k] for k in ("samples_ok", "net_excess_ok", "beats_universe_ok", "stability_ok"))
+
+    # 5) Fail-closed when stability or equal-weight baseline are missing
+    g_no_stab = _evaluate_graduation(dummy_spec, t5_strong, stability=None, universe_baseline_t5=beatable_base)
+    assert g_no_stab["passed"] is False and g_no_stab["checks"]["stability_ok"] is False
+    g_no_ew = _evaluate_graduation(dummy_spec, t5_strong, stability=ok_stab, universe_baseline_t5=None)
+    assert g_no_ew["passed"] is False and g_no_ew["checks"]["beats_universe_ok"] is False
+
+    # 6) Matched-day EW check overrides aggregate baseline and rejects small-cap timing bias
+    ew_fail_stab = {
+        "sign_consistent": True,
+        "stable_direction": "positive",
+        "t_stat": 2.6,
+        "h1_days": 16,
+        "h2_days": 16,
+        "h1_n": 120,
+        "h2_n": 130,
+        "daily_mean_pct": 0.65,
+        "ew_daily_mean_pct": -0.05,
+        "ew_sign_consistent": False,
+        "ew_stable_direction": "mixed_or_insufficient",
+        "ew_t_stat": -0.2,
+    }
+    g_ew_fail = _evaluate_graduation(dummy_spec, t5_strong, stability=ew_fail_stab, universe_baseline_t5=beatable_base)
+    assert g_ew_fail["passed"] is False
+    assert g_ew_fail["checks"]["beats_universe_ok"] is False
+    assert g_ew_fail["checks"]["matched_date_ew_used"] is True
+
+    # 7) Half-sample day threshold enforces >= 15 days per half
+    short_half_stab = {
+        "sign_consistent": True,
+        "stable_direction": "positive",
+        "t_stat": 2.6,
+        "h1_days": 12,
+        "h2_days": 16,
+        "h1_n": 100,
+        "h2_n": 150,
+    }
+    g_short = _evaluate_graduation(dummy_spec, t5_strong, stability=short_half_stab, universe_baseline_t5=beatable_base)
+    assert g_short["passed"] is False and g_short["checks"]["stability_ok"] is False
+
+    # 8) BH-FDR gate rejects discovery when q > 0.05
+    g_fdr = _evaluate_graduation(
+        dummy_spec,
+        t5_strong,
+        stability=ok_stab,
+        universe_baseline_t5=beatable_base,
+        multiple_testing={"bh_q_value_csi300": 0.12, "bh_q_value_ew": 0.02, "bh_fdr_pass": False},
+    )
+    assert g_fdr["passed"] is False and g_fdr["checks"]["bh_fdr_ok"] is False
+
+
+def test_newey_west_deflates_autocorrelation_and_bh_fdr() -> None:
+    # Positively autocorrelated overlapping 5d series yields smaller HAC |t| than IID naive t
+    series = [0.6 + 0.5 * np.sin(i / 4.0) for i in range(40)]
+    cal = list(range(40))
+    naive_t = float(np.mean(series) / (np.std(series, ddof=1) / np.sqrt(len(series))))
+    nw_t = _newey_west_t_stat(series, cal, max_lag=4)
+    assert nw_t is not None and 0.0 < nw_t < naive_t
+
+    q_vals = _benjamini_hochberg_q_values([0.004, 0.04, 0.25])
+    assert q_vals == [pytest.approx(0.012), pytest.approx(0.06), pytest.approx(0.25)]

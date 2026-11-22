@@ -27,6 +27,9 @@ on:
         required: false
         type: string
         default: "auto"
+    secrets:
+      TICKPLUS_API_KEY:
+        required: false
   workflow_dispatch:
     inputs:
       mode:
@@ -65,6 +68,8 @@ jobs:
       ALPHASIFT_PACK_DIR: ${{ github.workspace }}/pack
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -83,12 +88,16 @@ jobs:
       - name: Build or update CN daily pack
         env:
           TICKPLUS_API_KEY: ${{ secrets.TICKPLUS_API_KEY }}
+          INPUT_MODE: ${{ inputs.mode || 'update' }}
+          INPUT_DAYS: ${{ inputs.days || '250' }}
+          INPUT_SOURCE: ${{ inputs.source || 'auto' }}
+          INPUT_TRADE_DATE: ${{ inputs.trade_date || '' }}
         run: |
           set -euo pipefail
-          mode="${{ inputs.mode || 'update' }}"
-          days="${{ inputs.days || '250' }}"
-          source="${{ inputs.source || 'auto' }}"
-          trade_date="${{ inputs.trade_date || '' }}"
+          mode="$INPUT_MODE"
+          days="$INPUT_DAYS"
+          source="$INPUT_SOURCE"
+          trade_date="$INPUT_TRADE_DATE"
           if [ "$mode" = "update" ] && [ ! -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
             mode="backfill"
           fi

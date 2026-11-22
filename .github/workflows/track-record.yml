@@ -47,7 +47,8 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/data-pack.yml
-    secrets: inherit
+    secrets:
+      TICKPLUS_API_KEY: ${{ secrets.TICKPLUS_API_KEY }}
     with:
       mode: "update"
       days: "250"
@@ -83,6 +84,8 @@ jobs:
       LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES: "12"
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/checkout@v7
         continue-on-error: true
         with:
@@ -278,9 +281,12 @@ jobs:
           fi
 
       - name: Build site data
+        env:
+          REPO_NAME: ${{ github.repository }}
+          ENABLE_PAGES: ${{ vars.ALPHASIFT_ENABLE_PAGES }}
         run: |
           python scripts/track_record.py build --track track
-          if [ "${{ github.repository }}" = "ZhuLinsen/alphasift" ] || [ "${{ vars.ALPHASIFT_ENABLE_PAGES }}" = "true" ]; then
+          if [ "$REPO_NAME" = "ZhuLinsen/alphasift" ] || [ "$ENABLE_PAGES" = "true" ]; then
             cp scripts/track_record_page.html track/index.html
           fi
 
@@ -322,6 +328,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           SESSION: ${{ steps.session.outputs.session }}
           REPO_NAME: ${{ github.repository }}
+          CN_TRADE_DATE: ${{ steps.cn_date.outputs.cn_trade_date }}
         run: |
           python3 - <<'PY'
           import json, os, pathlib
@@ -329,6 +336,7 @@ jobs:
           repo = os.environ.get("REPO_NAME", "")
           session = os.environ.get("SESSION", "")
           event_name = os.environ.get("EVENT_NAME", "")
+          cn_trade_date = os.environ.get("CN_TRADE_DATE", "").strip()
           summary_path = pathlib.Path("track/site/summary.json")
           state_dir = pathlib.Path(os.environ.get("STATE", "state"))
           state_dir.mkdir(parents=True, exist_ok=True)
@@ -341,12 +349,36 @@ jobs:
           tc = summary.get("track_comparison") or []
           integ = summary.get("integrity") or {}
 
+          pat_date = str(pat.get("trade_date") or "").strip()
+          rep_date = str(rep.get("trade_date") or "").strip()
+          pat_fresh = bool(
+              pat.get("exists")
+              and pat_date
+              and (not cn_trade_date or pat_date == cn_trade_date)
+              and not pat.get("pack_is_stale")
+          )
+          rep_fresh = bool(
+              rep.get("exists")
+              and rep_date
+              and (not cn_trade_date or rep_date == cn_trade_date)
+              and not rep.get("pack_is_stale")
+          )
+
+          def _art_status(info: dict, date_val: str, is_fresh: bool) -> str:
+              if not info.get("exists"):
+                  return f"MISSING ({info.get('reason') or '-'})"
+              if is_fresh:
+                  return f"fresh ({date_val})"
+              exp = cn_trade_date or info.get("expected_trade_date") or "-"
+              stale_flag = "stale" if info.get("pack_is_stale") else "date_mismatch"
+              return f"STALE:{stale_flag} ({date_val or '-'} vs expected {exp})"
+
           lines = [
               "### AlphaSift Track Record Health",
-              f"- Session: `{session}` (`{event_name}`) · Runs: `{summary.get('run_count', 0)}` · Days: `{len(summary.get('days') or [])}`",
+              f"- Session: `{session}` (`{event_name}`) · Runs: `{summary.get('run_count', 0)}` · Days: `{len(summary.get('days') or [])}` · CN target: `{cn_trade_date or '-'}`",
               f"- AI paired strategies: `{len(tc)}`",
-              f"- Patterns artifact: `{'ok' if pat.get('exists') else 'MISSING'}` ({pat.get('trade_date') or pat.get('reason') or '-'})",
-              f"- Daily report artifact: `{'ok' if rep.get('exists') else 'MISSING'}` ({rep.get('trade_date') or rep.get('reason') or '-'})",
+              f"- Patterns artifact: `{_art_status(pat, pat_date, pat_fresh)}`",
+              f"- Daily report artifact: `{_art_status(rep, rep_date, rep_fresh)}`",
           ]
           if integ.get("runs_sha256"):
               lines.append(f"- SHA-256 ledger digest: `{integ['runs_sha256'][:16]}...` ({integ.get('runs_count', 0)} runs)")
@@ -357,7 +389,7 @@ jobs:
           print("\n".join(lines))
 
           if repo == "ZhuLinsen/alphasift" and session == "asia":
-              if pat.get("exists") and rep.get("exists"):
+              if pat_fresh and rep_fresh:
                   streak_file.write_text("0\n", encoding="utf-8")
               else:
                   prev = 0
@@ -368,7 +400,7 @@ jobs:
                           prev = 0
                   cur = prev + 1
                   streak_file.write_text(f"{cur}\n", encoding="utf-8")
-                  msg = f"CN pattern/report artifacts missing (consecutive asia sessions: {cur})"
+                  msg = f"CN pattern/report artifacts missing or stale for {cn_trade_date or 'session'} (consecutive asia sessions: {cur})"
                   if event_name == "schedule" and cur >= 2:
                       print(f"::error::{msg}")
                       raise SystemExit(1)

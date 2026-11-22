@@ -452,6 +452,9 @@ def _script_src_csp(html_content: str) -> str:
     return " ".join(hashes)
 
 
+_WORKBENCH_SCRIPT_CSP = _script_src_csp(render_workbench_html())
+
+
 def serve_api(
     config: Config,
     *,
@@ -479,7 +482,13 @@ def _handler_for_config(config: Config):
                 parsed.path == "/" and _prefers_html(self.headers.get("Accept", ""), parsed.query)
             ):
                 status, html_body = build_html_response(config, parsed.path, query=parsed.query)
-                self._send_html(status, html_body, vary_accept=vary_accept)
+                is_workbench = parsed.path in {"/ui", "/"} and status == 200
+                self._send_html(
+                    status,
+                    html_body,
+                    vary_accept=vary_accept,
+                    script_csp=_WORKBENCH_SCRIPT_CSP if is_workbench else "'none'",
+                )
                 return
             status, payload = build_api_response(config, parsed.path, query=parsed.query)
             self._send_json(status, payload, vary_accept=vary_accept)
@@ -487,9 +496,15 @@ def _handler_for_config(config: Config):
         def log_message(self, format: str, *args) -> None:  # noqa: A002 - stdlib signature.
             return
 
-        def _send_html(self, status: int, content: str, *, vary_accept: bool = False) -> None:
+        def _send_html(
+            self,
+            status: int,
+            content: str,
+            *,
+            vary_accept: bool = False,
+            script_csp: str = "'none'",
+        ) -> None:
             body = content.encode("utf-8")
-            script_csp = _script_src_csp(content)
             self.send_response(status)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
