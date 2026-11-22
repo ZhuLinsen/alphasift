@@ -269,3 +269,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 [使い方](docs/usage.md) · [設定](docs/configuration.md) · [エコシステム＆MCP](docs/ecosystem.md) · [デプロイガイド](docs/deployment.md) · [戦略ガイド](docs/strategy-guide.md) · [スコアリング](docs/scoring.md) · [出力スキーマ](docs/result-schema.md) · [リファレンス](docs/reference.md) · [コントリビュート](CONTRIBUTING.md) · [セキュリティ](SECURITY.md) · [変更履歴](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
 [Apache License 2.0](LICENSE) の下で公開されています。
+
+## コミュニティ
+
+[LINUX DO](https://linux.do/) コミュニティのサポートに感謝します。

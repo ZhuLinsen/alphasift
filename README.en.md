@@ -270,3 +270,7 @@ See [docs/ecosystem.md](docs/ecosystem.md) for MCP tool schemas and Docker detai
 [Usage](docs/usage.md) · [Configuration](docs/configuration.md) · [Ecosystem & MCP](docs/ecosystem.md) · [Deployment & Mirror](docs/deployment.md) · [Strategy Guide](docs/strategy-guide.md) · [Scoring](docs/scoring.md) · [Result Schema](docs/result-schema.md) · [Reference](docs/reference.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
 Licensed under the [Apache License 2.0](LICENSE).
+
+## Community
+
+Thanks to the [LINUX DO](https://linux.do/) community.

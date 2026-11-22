@@ -272,3 +272,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 [使用指南](docs/usage.md) · [配置参考](docs/configuration.md) · [生态与 MCP](docs/ecosystem.md) · [部署与镜像](docs/deployment.md) · [策略指南](docs/strategy-guide.md) · [评分体系](docs/scoring.md) · [输出契约](docs/result-schema.md) · [参考资料](docs/reference.md) · [参与贡献](CONTRIBUTING.md) · [安全策略](SECURITY.md) · [更新记录](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
 基于 [Apache License 2.0](LICENSE) 开源。
+
+## 友情链接
+
+感谢 [LINUX DO](https://linux.do/) 社区的支持。
