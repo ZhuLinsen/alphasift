@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://zhulinsen.github.io/alphasift/?lang=zh">
+<a href="https://alphasift.zhulinsen.tech/?lang=zh">
   <img src="docs/assets/alphasift-logo.svg" alt="AlphaSift Logo" width="480">
 </a>
 
@@ -13,12 +13,12 @@
 *A股 / 美股 / 港股 / 日韩台印全市场多因子筛选 → AI 情报复核与排雷 → 公开 T+N 纸面跟踪验证*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
-[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://zhulinsen.github.io/alphasift/?lang=zh)
+[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://alphasift.zhulinsen.tech/?lang=zh)
 [![MCP Ready](https://img.shields.io/badge/MCP-STDIO%20Ready-8b5cf6.svg)](docs/ecosystem.md)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3b82f6.svg)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-10b981.svg)](LICENSE)
 
-[**在线看板**](https://zhulinsen.github.io/alphasift/?lang=zh) · [**核心亮点**](#-为什么用-alphasift) · [**30 秒上手**](#-30-秒极速上手) · [**硬核实证**](#-硬核实证与系统架构) · [**量化铁三角**](#-quant-trio-开源量化铁三角) · [**Agent Skill**](SKILL.md)
+[**在线看板**](https://alphasift.zhulinsen.tech/?lang=zh) · [**核心亮点**](#-为什么用-alphasift) · [**30 秒上手**](#-30-秒极速上手) · [**硬核实证**](#-硬核实证与系统架构) · [**量化铁三角**](#-quant-trio-开源量化铁三角) · [**Agent Skill**](SKILL.md)
 
 </div>
 
@@ -29,10 +29,10 @@
 
 ## 🖥️ 无需安装，在线直看今日选股与公开纸面战绩
 
-👉 **[点击打开公开在线看板（zhulinsen.github.io/alphasift）](https://zhulinsen.github.io/alphasift/?lang=zh)** — 每交易日盘后自动更新 7 大市场多策略共识精选、`T+5 / T+10 / T+20` 收益榜，以及可选 **AI 复核 vs 纯规则** 同日对照赛道。
+👉 **[点击打开公开在线看板（alphasift.zhulinsen.tech）](https://alphasift.zhulinsen.tech/?lang=zh)** — 每交易日盘后自动更新 7 大市场多策略共识精选、`T+5 / T+10 / T+20` 收益榜，以及可选 **AI 复核 vs 纯规则** 同日对照赛道。
 
 <p align="center">
-  <a href="https://zhulinsen.github.io/alphasift/?lang=zh">
+  <a href="https://alphasift.zhulinsen.tech/?lang=zh">
     <img src="docs/assets/dashboard-preview.gif" alt="AlphaSift 在线看板交互演示（深/浅主题与多语言实时切换）" width="840">
   </a>
   <br><sub>点击动图直达在线看板 · 支持 Dark / Light 主题及 <code>中 | EN | 日</code> 一键切换</sub>
@@ -44,13 +44,13 @@
 <table>
   <tr>
     <td width="50%" align="center">
-      <a href="https://zhulinsen.github.io/alphasift/?lang=zh&theme=dark">
+      <a href="https://alphasift.zhulinsen.tech/?lang=zh&theme=dark">
         <img src="docs/assets/dashboard-zh.png" alt="AlphaSift 在线看板（暗色 · 中文）" width="100%">
       </a>
       <br><sub><b>Obsidian Dark 终端</b> — 跨策略共识精选、A 股宽度与 7 市场领跑榜</sub>
     </td>
     <td width="50%" align="center">
-      <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=light">
+      <a href="https://alphasift.zhulinsen.tech/?lang=en&theme=light">
         <img src="docs/assets/dashboard-light.png" alt="AlphaSift 在线看板（亮色 · 多语言）" width="100%">
       </a>
       <br><sub><b>Editorial Paper Light</b> — 中/英/日实时切换与审计账本</sub>
@@ -232,7 +232,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 | **ntfy** | `ntfy://topic` 或 `https://ntfy.sh/topic` | `NTFY_URL` |
 | **自定义 Webhook / Apprise** | `custom://https://...` 或任意 Apprise Scheme | `CUSTOM_WEBHOOK_URL`, `CUSTOM_WEBHOOK_TOKEN` |
 
-公开看板页脚同时输出 Atom 1.0 RSS：[`site/feed.xml`](https://zhulinsen.github.io/alphasift/site/feed.xml)。本地可通过 `alphasift notify status` 与 `alphasift notify test --dry-run` 检查配置。
+公开看板页脚同时输出 Atom 1.0 RSS：[`site/feed.xml`](https://alphasift.zhulinsen.tech/site/feed.xml)。本地可通过 `alphasift notify status` 与 `alphasift notify test --dry-run` 检查配置。
 
 </details>
 

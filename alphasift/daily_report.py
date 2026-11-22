@@ -40,7 +40,7 @@ IM_CARD_MAX_CHARS = 1199
 _ANNOUNCEMENT_TIMEOUT_SEC = 25.0
 _MARKET_NEWS_TIMEOUT_SEC = 8.0
 _STOCK_NEWS_TIMEOUT_SEC = 15.0
-DEFAULT_DASHBOARD_URL = "https://zhulinsen.github.io/alphasift/"
+DEFAULT_DASHBOARD_URL = "https://alphasift.zhulinsen.tech/"
 _FACTOR_CN_LABELS = {
     "value": "估值",
     "quality": "质量",

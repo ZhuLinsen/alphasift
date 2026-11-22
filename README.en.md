@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://zhulinsen.github.io/alphasift/?lang=en">
+<a href="https://alphasift.zhulinsen.tech/?lang=en">
   <img src="docs/assets/alphasift-logo.svg" alt="AlphaSift Logo" width="480">
 </a>
 
@@ -13,12 +13,12 @@
 *Full-market YAML screening across 7 markets -> Red-flag AI re-ranking -> Public `next_open` T+N paper benchmark*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
-[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://zhulinsen.github.io/alphasift/?lang=en)
+[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://alphasift.zhulinsen.tech/?lang=en)
 [![MCP Ready](https://img.shields.io/badge/MCP-STDIO%20Ready-8b5cf6.svg)](docs/ecosystem.md)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3b82f6.svg)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-10b981.svg)](LICENSE)
 
-[**Live Dashboard**](https://zhulinsen.github.io/alphasift/?lang=en) · [**Why AlphaSift**](#-why-alphasift) · [**30s Quickstart**](#-30-second-quickstart) · [**Benchmarks & Architecture**](#-verified-benchmarks--architecture) · [**Quant Trio**](#-quant-trio-ecosystem) · [**Agent Skill**](SKILL.md)
+[**Live Dashboard**](https://alphasift.zhulinsen.tech/?lang=en) · [**Why AlphaSift**](#-why-alphasift) · [**30s Quickstart**](#-30-second-quickstart) · [**Benchmarks & Architecture**](#-verified-benchmarks--architecture) · [**Quant Trio**](#-quant-trio-ecosystem) · [**Agent Skill**](SKILL.md)
 
 </div>
 
@@ -29,10 +29,10 @@
 
 ## 🖥️ Zero-Install Live Dashboard & Public Ledger
 
-👉 **[Open the Live Benchmark (zhulinsen.github.io/alphasift)](https://zhulinsen.github.io/alphasift/?lang=en)** — updated every trading day with 7-market consensus signals, `T+5 / T+10 / T+20` leaderboards, and side-by-side **AI vs Rules** paired attribution.
+👉 **[Open the Live Benchmark (alphasift.zhulinsen.tech)](https://alphasift.zhulinsen.tech/?lang=en)** — updated every trading day with 7-market consensus signals, `T+5 / T+10 / T+20` leaderboards, and side-by-side **AI vs Rules** paired attribution.
 
 <p align="center">
-  <a href="https://zhulinsen.github.io/alphasift/?lang=en">
+  <a href="https://alphasift.zhulinsen.tech/?lang=en">
     <img src="docs/assets/dashboard-preview.gif" alt="AlphaSift Live Dashboard Interactive Preview" width="840">
   </a>
   <br><sub>Click the preview to explore the live terminal (Dark / Light themes + instant <code>ZH | EN | JA</code> switcher)</sub>
@@ -44,13 +44,13 @@
 <table>
   <tr>
     <td width="50%" align="center">
-      <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=dark">
+      <a href="https://alphasift.zhulinsen.tech/?lang=en&theme=dark">
         <img src="docs/assets/dashboard-dark.png" alt="AlphaSift Live Dashboard (Dark)" width="100%">
       </a>
       <br><sub><b>Obsidian Dark Terminal</b> — Consensus Signals, CN Microstructure Breadth &amp; 7-Market T+N Leaderboard</sub>
     </td>
     <td width="50%" align="center">
-      <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=light">
+      <a href="https://alphasift.zhulinsen.tech/?lang=en&theme=light">
         <img src="docs/assets/dashboard-light.png" alt="AlphaSift Live Dashboard (Light)" width="100%">
       </a>
       <br><sub><b>Editorial Paper Light</b> — Multilingual Switcher (<code>ZH | EN | JA</code>) &amp; Audited Track Record</sub>
@@ -230,7 +230,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 | **ntfy** | `ntfy://topic` or `https://ntfy.sh/topic` | `NTFY_URL` |
 | **Custom JSON / Apprise** | `custom://https://...` or Apprise scheme | `CUSTOM_WEBHOOK_URL`, `CUSTOM_WEBHOOK_TOKEN` |
 
-Atom 1.0 RSS feed: [`site/feed.xml`](https://zhulinsen.github.io/alphasift/site/feed.xml). Verify locally via `alphasift notify status` and `alphasift notify test --dry-run`.
+Atom 1.0 RSS feed: [`site/feed.xml`](https://alphasift.zhulinsen.tech/site/feed.xml). Verify locally via `alphasift notify status` and `alphasift notify test --dry-run`.
 
 </details>
 

@@ -1555,7 +1555,7 @@ def render_readme(summary: dict[str, Any]) -> str:
         "the git history is the timestamped record. Each pick is then measured at T+5 / T+10 / T+20 "
         "trading days against its market benchmark.",
         "",
-        "**Dashboard:** https://zhulinsen.github.io/alphasift/ · Code: "
+        "**Dashboard:** https://alphasift.zhulinsen.tech/ · Code: "
         "[ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift) · "
         f"Updated {summary['generated_at']} · {summary['run_count']} saved runs",
         "",
@@ -1599,8 +1599,8 @@ def render_atom_feed(
 ) -> str:
     """Render an Atom 1.0 RSS feed (zero external dependencies) for static Pages subscriptions."""
     base = (
-        str(dashboard_url or os.getenv("ALPHASIFT_DASHBOARD_URL") or "https://zhulinsen.github.io/alphasift/").strip()
-        or "https://zhulinsen.github.io/alphasift/"
+        str(dashboard_url or os.getenv("ALPHASIFT_DASHBOARD_URL") or "https://alphasift.zhulinsen.tech/").strip()
+        or "https://alphasift.zhulinsen.tech/"
     )
     if not base.endswith("/"):
         base += "/"

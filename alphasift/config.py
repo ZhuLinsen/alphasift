@@ -549,7 +549,7 @@ def _resolve_dashboard_url() -> str:
     gh_repo = os.getenv("GITHUB_REPOSITORY", "").strip()
     if gh_repo:
         if gh_repo == "ZhuLinsen/alphasift":
-            return "https://zhulinsen.github.io/alphasift/"
+            return "https://alphasift.zhulinsen.tech/"
         if _parse_bool_env("ALPHASIFT_ENABLE_PAGES", False) and "/" in gh_repo:
             owner, repo = gh_repo.split("/", 1)
             return f"https://{owner.lower()}.github.io/{repo}/"

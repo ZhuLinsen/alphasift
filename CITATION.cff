@@ -5,7 +5,7 @@ version: "0.3.0"
 date-released: "2026-11-21"
 license: "Apache-2.0"
 repository-code: "https://github.com/ZhuLinsen/alphasift"
-url: "https://zhulinsen.github.io/alphasift/"
+url: "https://alphasift.zhulinsen.tech/"
 authors:
   - alias: "ZhuLinsen"
     name: "ZhuLinsen"

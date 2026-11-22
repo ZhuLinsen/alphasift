@@ -369,7 +369,7 @@ def test_config_resolves_fork_safe_dashboard_url_and_search_keys(monkeypatch):
 
     # 2. Upstream ZhuLinsen/alphasift resolves canonical site
     monkeypatch.setenv("GITHUB_REPOSITORY", "ZhuLinsen/alphasift")
-    assert Config.from_env().dashboard_url == "https://zhulinsen.github.io/alphasift/"
+    assert Config.from_env().dashboard_url == "https://alphasift.zhulinsen.tech/"
 
     # 3. Fork without ALPHASIFT_ENABLE_PAGES=true omits author's URL
     monkeypatch.setenv("GITHUB_REPOSITORY", "SomeUser/alphasift")

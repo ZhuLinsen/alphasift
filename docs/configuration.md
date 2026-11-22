@@ -196,7 +196,7 @@ TickPlus `updatedaykline` 约提供最近一周的不复权日线，接口使用
 | `CUSTOM_WEBHOOK_URL` / `CUSTOM_WEBHOOK_TOKEN` | 自定义 Webhook | POST 结构化 JSON（含 `trade_date`、`markdown`、`summary`），可选 Bearer Token |
 | `ALPHASIFT_NOTIFY_STATE_PATH` / `ALPHASIFT_NOTIFY_TIMEOUT_SEC` | 账本与超时 | 默认 `<data_dir>/notify_state.json`，超时 `10s` |
 | `ALPHASIFT_CANDIDATE_CONTEXT_CACHE_DIR` | 情报缓存目录 | 覆盖 L2 新闻/公告上下文缓存目录（CI 中指向临时 `state/`） |
-| `ALPHASIFT_DASHBOARD_URL` | 卡片跳转基址 | 覆盖推送消息中的看板 URL（默认 `https://zhulinsen.github.io/alphasift/`） |
+| `ALPHASIFT_DASHBOARD_URL` | 卡片跳转基址 | 覆盖推送消息中的看板 URL（默认 `https://alphasift.zhulinsen.tech/`） |
 
 可用 `alphasift notify status` 检查已就绪渠道（不打印任何密钥），用 `alphasift notify test` 验证连通性。公开看板同时在 `site/feed.xml` 提供零配置 Atom 1.0 RSS 订阅源。
 

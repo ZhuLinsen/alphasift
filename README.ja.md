@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://zhulinsen.github.io/alphasift/?lang=ja">
+<a href="https://alphasift.zhulinsen.tech/?lang=ja">
   <img src="docs/assets/alphasift-logo.svg" alt="AlphaSift Logo" width="480">
 </a>
 
@@ -13,12 +13,12 @@
 *世界7市場（中国A株・米国・香港・日本・韓国・台湾・インド）のマルチファクター選定 → AI 開示リスク再評価 → 公開 T+N 検証*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
-[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://zhulinsen.github.io/alphasift/?lang=ja)
+[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://alphasift.zhulinsen.tech/?lang=ja)
 [![MCP Ready](https://img.shields.io/badge/MCP-STDIO%20Ready-8b5cf6.svg)](docs/ecosystem.md)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3b82f6.svg)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-10b981.svg)](LICENSE)
 
-[**ライブダッシュボード**](https://zhulinsen.github.io/alphasift/?lang=ja) · [**特長**](#-なぜ-alphasift-なのか) · [**30秒スタート**](#-30秒ゼロ摩擦スタート) · [**検証データ＆構成**](#-実証データとシステムアーキテクチャ) · [**Quant Trio**](#-quant-trio関連プロジェクト) · [**Agent Skill**](SKILL.md)
+[**ライブダッシュボード**](https://alphasift.zhulinsen.tech/?lang=ja) · [**特長**](#-なぜ-alphasift-なのか) · [**30秒スタート**](#-30秒ゼロ摩擦スタート) · [**検証データ＆構成**](#-実証データとシステムアーキテクチャ) · [**Quant Trio**](#-quant-trio関連プロジェクト) · [**Agent Skill**](SKILL.md)
 
 </div>
 
@@ -29,10 +29,10 @@
 
 ## 🖥️ インストール不要・本日の選定銘柄＆公開実績を見る
 
-👉 **[公開ダッシュボードを開く（zhulinsen.github.io/alphasift）](https://zhulinsen.github.io/alphasift/?lang=ja)** — 毎営業日の大引け後に自動更新される 7市場コンセンサス銘柄、`T+5 / T+10 / T+20` 成績表、および **AI vs ルール同日対照結果** を確認できます。
+👉 **[公開ダッシュボードを開く（alphasift.zhulinsen.tech）](https://alphasift.zhulinsen.tech/?lang=ja)** — 毎営業日の大引け後に自動更新される 7市場コンセンサス銘柄、`T+5 / T+10 / T+20` 成績表、および **AI vs ルール同日対照結果** を確認できます。
 
 <p align="center">
-  <a href="https://zhulinsen.github.io/alphasift/?lang=ja">
+  <a href="https://alphasift.zhulinsen.tech/?lang=ja">
     <img src="docs/assets/dashboard-preview.gif" alt="AlphaSift ライブダッシュボード操作プレビュー" width="840">
   </a>
   <br><sub>画像クリックで公開ダッシュボードへ（Dark / Light テーマ・<code>中 | EN | 日</code> 即時切替対応）</sub>
@@ -44,13 +44,13 @@
 <table>
   <tr>
     <td width="50%" align="center">
-      <a href="https://zhulinsen.github.io/alphasift/?lang=ja&theme=dark">
+      <a href="https://alphasift.zhulinsen.tech/?lang=ja&theme=dark">
         <img src="docs/assets/dashboard-ja.png" alt="AlphaSift ライブダッシュボード（ダーク・日本語）" width="100%">
       </a>
       <br><sub><b>Obsidian Dark ターミナル（日本語）</b> — 複数戦略コンセンサス、A 株7段階騰落分布、7市場ランキング</sub>
     </td>
     <td width="50%" align="center">
-      <a href="https://zhulinsen.github.io/alphasift/?lang=en&theme=light">
+      <a href="https://alphasift.zhulinsen.tech/?lang=en&theme=light">
         <img src="docs/assets/dashboard-light.png" alt="AlphaSift ライブダッシュボード（ライト）" width="100%">
       </a>
       <br><sub><b>Editorial Paper Light</b> — ヘッダーの <code>中 | EN | 日</code> 言語切替＆検証台帳</sub>
@@ -230,7 +230,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 | **ntfy** | `ntfy://topic` / `https://ntfy.sh/topic` | `NTFY_URL` |
 | **Custom JSON / Apprise** | `custom://https://...` / Apprise スキーム | `CUSTOM_WEBHOOK_URL`, `CUSTOM_WEBHOOK_TOKEN` |
 
-確認コマンド：`alphasift notify status` / `alphasift notify test --dry-run`。フッターで Atom 1.0 RSS [`site/feed.xml`](https://zhulinsen.github.io/alphasift/site/feed.xml) も配信しています。
+確認コマンド：`alphasift notify status` / `alphasift notify test --dry-run`。フッターで Atom 1.0 RSS [`site/feed.xml`](https://alphasift.zhulinsen.tech/site/feed.xml) も配信しています。
 
 </details>
 
