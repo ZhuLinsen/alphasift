@@ -259,7 +259,7 @@ def test_render_and_write_daily_report_html_and_cli(tmp_path: Path, monkeypatch,
         proc = subprocess.run([node, "--check", str(js_file)], capture_output=True, text=True, check=False)
         assert proc.returncode == 0, proc.stderr
 
-    # CLI --output-html and --ai-brief off smoke
+    # CLI --output-html and --ai-brief off smoke (offline deterministic with --no-news)
     cli_html = tmp_path / "cli_report.html"
     monkeypatch.setattr(
         sys,
@@ -270,6 +270,7 @@ def test_render_and_write_daily_report_html_and_cli(tmp_path: Path, monkeypatch,
             "--pack-dir",
             str(pack_dir),
             "--no-announcements",
+            "--no-news",
             "--ai-brief",
             "off",
             "--output-html",
@@ -282,3 +283,55 @@ def test_render_and_write_daily_report_html_and_cli(tmp_path: Path, monkeypatch,
     assert cli_html.is_file()
     assert cli_payload["ai_brief"]["mode"] == "rule_fallback"
     assert render_daily_report_html(cli_payload).startswith("<!doctype html>")
+
+
+def test_brief_think_stripping_degradation_logging_and_html_jargon_cleanup() -> None:
+    pack = _pack()
+    runs = _sample_runs()
+    # 1. Closed <think> block with misleading {brace} is stripped before parsing real JSON
+    think_payload = {
+        "headline": "低波价值共振领跑",
+        "regime_interpretation": "市场温和修复。",
+        "consensus_and_ai_edge": "双低选股与稳健价值共同覆盖 000001。",
+        "risk_warnings": ["注意缩量分歧"],
+        "watch_points": ["跟踪次日开盘承接"],
+    }
+    think_raw = "<think>draft {invalid: 1</think>\n" + json.dumps(think_payload, ensure_ascii=False)
+    rep_think = build_daily_report(
+        pack,
+        strategy_runs=runs,
+        include_announcements=False,
+        ai_brief_mode="auto",
+        config=Config(llm_api_key="k", llm_model="test-think"),
+        llm_caller=lambda _p: think_raw,
+    )
+    assert rep_think["ai_brief"]["mode"] == "llm"
+    assert rep_think["ai_brief"]["headline"] == "低波价值共振领跑"
+
+    # 2. Truncated unclosed <think> fails cleanly and records fallback in degradation[]
+    rep_err = build_daily_report(
+        pack,
+        strategy_runs=runs,
+        include_announcements=False,
+        include_news=True,
+        market_news_collector=lambda **_kw: (
+            [{"category": "宏观政策", "title": "盘后稳增长政策落地", "source": "东方财富7x24", "published_at": "11-20 17:30"}],
+            ["东方财富7x24"],
+            [],
+        ),
+        stock_news_collector=lambda df, **_kw: ([], []),
+        ai_brief_mode="auto",
+        config=Config(llm_api_key="k", llm_model="test-think"),
+        llm_caller=lambda _p: "<think>cut off mid thought without closing",
+        warn_if_no_runs=True,
+    )
+    assert rep_err["ai_brief"]["mode"] == "rule_fallback"
+    assert any("AI brief fallback:" in d for d in rep_err["degradation"])
+    assert "[仅切片]" not in rep_err["ai_brief"]["regime_interpretation"]
+    assert "(" not in rep_err["ai_brief"]["headline"].split("阶段")[0]
+    assert rep_err["market_news"]["items"][0]["title"] == "盘后稳增长政策落地"
+
+    html_out = render_daily_report_html(rep_err)
+    assert "[仅切片]" not in html_out
+    assert "盘后稳增长政策落地" in html_out
+    assert "双低选股" in html_out

@@ -355,5 +355,35 @@ def test_default_gemini_model_and_hydrogen_fallback(monkeypatch):
     monkeypatch.setenv("LLM_PRIMARY_PROTOCOL", "openai")
     monkeypatch.setenv("LLM_PRIMARY_MODELS", "deepseek-chat")
     monkeypatch.setenv("LLM_PRIMARY_BASE_URL", "https://api.deepseek.com")
+    monkeypatch.setenv("LLM_PRIMARY_API_KEY", "")
     cfg_keyless = Config.from_env()
     assert cfg_keyless.has_usable_llm_config() is False
+
+
+def test_config_resolves_fork_safe_dashboard_url_and_search_keys(monkeypatch):
+    for var in ("ALPHASIFT_DASHBOARD_URL", "GITHUB_REPOSITORY", "ALPHASIFT_ENABLE_PAGES", "TAVILY_API_KEYS", "SERPAPI_API_KEYS"):
+        monkeypatch.delenv(var, raising=False)
+
+    # 1. Local default (no explicit URL) omits author's public site
+    assert Config.from_env().dashboard_url == ""
+
+    # 2. Upstream ZhuLinsen/alphasift resolves canonical site
+    monkeypatch.setenv("GITHUB_REPOSITORY", "ZhuLinsen/alphasift")
+    assert Config.from_env().dashboard_url == "https://zhulinsen.github.io/alphasift/"
+
+    # 3. Fork without ALPHASIFT_ENABLE_PAGES=true omits author's URL
+    monkeypatch.setenv("GITHUB_REPOSITORY", "SomeUser/alphasift")
+    assert Config.from_env().dashboard_url == ""
+
+    # 4. Fork with ALPHASIFT_ENABLE_PAGES=true derives fork Pages URL automatically
+    monkeypatch.setenv("ALPHASIFT_ENABLE_PAGES", "true")
+    assert Config.from_env().dashboard_url == "https://someuser.github.io/alphasift/"
+
+    # 5. Explicit ALPHASIFT_DASHBOARD_URL=none disables URL and reads search keys
+    monkeypatch.setenv("ALPHASIFT_DASHBOARD_URL", "none")
+    monkeypatch.setenv("TAVILY_API_KEYS", "tvly-a, tvly-b")
+    monkeypatch.setenv("SERPAPI_API_KEYS", "serp-1")
+    cfg = Config.from_env()
+    assert cfg.dashboard_url == ""
+    assert cfg.tavily_api_keys == ["tvly-a", "tvly-b"]
+    assert cfg.serpapi_api_keys == ["serp-1"]

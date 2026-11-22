@@ -32,6 +32,21 @@ _BASE_URL_ENV = {
     "aihubmix": "AIHUBMIX_BASE_URL",
 }
 _CHANNEL_PROTOCOLS = _GATEWAYS.keys() - {"anthropic"}
+_NATIVE_PROVIDER_HOSTS: dict[str, str] = {
+    (urlsplit(info[0]).hostname or "").lower(): ("dashscope" if prov == "qwen" else prov)
+    for prov, info in _GATEWAYS.items()
+    if prov not in {"openai", "openrouter", "aihubmix"} and urlsplit(info[0]).hostname
+}
+
+
+def _is_foreign_gateway_url(url: str, provider: str) -> bool:
+    """Return True when ``url`` is a different vendor's native gateway hostname."""
+    host = (urlsplit(str(url or "").strip()).hostname or "").lower()
+    owner = _NATIVE_PROVIDER_HOSTS.get(host) if host else None
+    if not owner:
+        return False
+    norm_prov = "dashscope" if provider == "qwen" else provider
+    return owner != norm_prov
 _SECRET_LIKE = re.compile(
     r"(?i)(?:bearer\s+\S+"
     r"|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"
@@ -143,6 +158,10 @@ def build_attempts(
         provider, name = split_model(candidate)
         same_provider = provider == primary_provider
         url = gateway_base_url(provider, base_url if same_provider else "")
+        # Never forward an OpenAI fallback model (e.g. gpt-4o) to OPENAI_BASE_URL when
+        # OPENAI_BASE_URL points at a non-OpenAI native gateway (e.g. api.deepseek.com).
+        if not same_provider and provider == "openai" and _is_foreign_gateway_url(url, provider):
+            return []
         keys = primary_keys if same_provider else gateway_api_keys(provider)
         if not keys and (provider == "ollama" or (same_provider and base_url)):
             keys = [""]
@@ -191,6 +210,15 @@ def _validated_endpoint(base_url: str) -> str:
     return cleaned.rstrip("/")
 
 
+def supports_reasoning_effort(attempt: LLMAttempt) -> bool:
+    """Return True when endpoint/model expects or supports OpenAI ``reasoning_effort``."""
+    url_l = str(attempt.base_url or "").lower()
+    model_l = str(attempt.model or "").lower()
+    if "generativelanguage.googleapis.com" in url_l and ("gemini-2.5" in model_l or "gemini-3" in model_l):
+        return True
+    return model_l.startswith(("o1", "o3", "o4", "gpt-5"))
+
+
 def complete(
     attempt: LLMAttempt,
     *,
@@ -198,6 +226,7 @@ def complete(
     temperature: float,
     max_tokens: int | None = None,
     response_format: dict[str, str] | None = None,
+    reasoning_effort: str | None = None,
     timeout: float = 60.0,
     silent: bool = True,
 ) -> str:
@@ -205,7 +234,12 @@ def complete(
     endpoint_base = _validated_endpoint(attempt.base_url)
     payload: dict[str, object] = {"model": attempt.model, "messages": messages, "temperature": temperature}
     if max_tokens is not None and int(max_tokens) > 0:
-        payload["max_tokens"] = int(max_tokens)
+        eff_tokens = int(max_tokens)
+        if reasoning_effort and supports_reasoning_effort(attempt):
+            eff_tokens = max(eff_tokens, 8192)
+        payload["max_tokens"] = eff_tokens
+    if reasoning_effort and supports_reasoning_effort(attempt):
+        payload["reasoning_effort"] = str(reasoning_effort)
     if response_format is not None:
         payload["response_format"] = response_format
     headers = {"Authorization": f"Bearer {attempt.api_key}"} if attempt.api_key else {}

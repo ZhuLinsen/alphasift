@@ -175,6 +175,26 @@ jobs:
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_DEEPSEEK_ENABLED: ${{ secrets.LLM_DEEPSEEK_ENABLED || vars.LLM_DEEPSEEK_ENABLED }}
+          LLM_DEEPSEEK_PROTOCOL: ${{ secrets.LLM_DEEPSEEK_PROTOCOL || vars.LLM_DEEPSEEK_PROTOCOL }}
+          LLM_DEEPSEEK_BASE_URL: ${{ secrets.LLM_DEEPSEEK_BASE_URL || vars.LLM_DEEPSEEK_BASE_URL }}
+          LLM_DEEPSEEK_API_KEY: ${{ secrets.LLM_DEEPSEEK_API_KEY }}
+          LLM_DEEPSEEK_API_KEYS: ${{ secrets.LLM_DEEPSEEK_API_KEYS }}
+          LLM_DEEPSEEK_MODELS: ${{ secrets.LLM_DEEPSEEK_MODELS || vars.LLM_DEEPSEEK_MODELS }}
+          LLM_GEMINI_ENABLED: ${{ secrets.LLM_GEMINI_ENABLED || vars.LLM_GEMINI_ENABLED }}
+          LLM_GEMINI_PROTOCOL: ${{ secrets.LLM_GEMINI_PROTOCOL || vars.LLM_GEMINI_PROTOCOL }}
+          LLM_GEMINI_BASE_URL: ${{ secrets.LLM_GEMINI_BASE_URL || vars.LLM_GEMINI_BASE_URL }}
+          LLM_GEMINI_API_KEY: ${{ secrets.LLM_GEMINI_API_KEY }}
+          LLM_GEMINI_API_KEYS: ${{ secrets.LLM_GEMINI_API_KEYS }}
+          LLM_GEMINI_MODELS: ${{ secrets.LLM_GEMINI_MODELS || vars.LLM_GEMINI_MODELS }}
+          LLM_OPENAI_ENABLED: ${{ secrets.LLM_OPENAI_ENABLED || vars.LLM_OPENAI_ENABLED }}
+          LLM_OPENAI_PROTOCOL: ${{ secrets.LLM_OPENAI_PROTOCOL || vars.LLM_OPENAI_PROTOCOL }}
+          LLM_OPENAI_BASE_URL: ${{ secrets.LLM_OPENAI_BASE_URL || vars.LLM_OPENAI_BASE_URL }}
+          LLM_OPENAI_API_KEY: ${{ secrets.LLM_OPENAI_API_KEY }}
+          LLM_OPENAI_API_KEYS: ${{ secrets.LLM_OPENAI_API_KEYS }}
+          LLM_OPENAI_MODELS: ${{ secrets.LLM_OPENAI_MODELS || vars.LLM_OPENAI_MODELS }}
+          TAVILY_API_KEYS: ${{ secrets.TAVILY_API_KEYS }}
+          SERPAPI_API_KEYS: ${{ secrets.SERPAPI_API_KEYS }}
         run: |
           if [ -z "${LITELLM_FALLBACK_MODELS:-}" ]; then unset LITELLM_FALLBACK_MODELS; fi
           python scripts/track_record.py screen --track track \
@@ -249,6 +269,8 @@ jobs:
         if: steps.session.outputs.session == 'asia' && steps.cn_date.outputs.cn_market_state != 'holiday'
         env:
           CN_TRADE_DATE: ${{ steps.cn_date.outputs.cn_trade_date }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ALPHASIFT_ENABLE_PAGES: ${{ vars.ALPHASIFT_ENABLE_PAGES }}
           ALPHASIFT_DASHBOARD_URL: ${{ vars.ALPHASIFT_DASHBOARD_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -264,6 +286,26 @@ jobs:
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_DEEPSEEK_ENABLED: ${{ secrets.LLM_DEEPSEEK_ENABLED || vars.LLM_DEEPSEEK_ENABLED }}
+          LLM_DEEPSEEK_PROTOCOL: ${{ secrets.LLM_DEEPSEEK_PROTOCOL || vars.LLM_DEEPSEEK_PROTOCOL }}
+          LLM_DEEPSEEK_BASE_URL: ${{ secrets.LLM_DEEPSEEK_BASE_URL || vars.LLM_DEEPSEEK_BASE_URL }}
+          LLM_DEEPSEEK_API_KEY: ${{ secrets.LLM_DEEPSEEK_API_KEY }}
+          LLM_DEEPSEEK_API_KEYS: ${{ secrets.LLM_DEEPSEEK_API_KEYS }}
+          LLM_DEEPSEEK_MODELS: ${{ secrets.LLM_DEEPSEEK_MODELS || vars.LLM_DEEPSEEK_MODELS }}
+          LLM_GEMINI_ENABLED: ${{ secrets.LLM_GEMINI_ENABLED || vars.LLM_GEMINI_ENABLED }}
+          LLM_GEMINI_PROTOCOL: ${{ secrets.LLM_GEMINI_PROTOCOL || vars.LLM_GEMINI_PROTOCOL }}
+          LLM_GEMINI_BASE_URL: ${{ secrets.LLM_GEMINI_BASE_URL || vars.LLM_GEMINI_BASE_URL }}
+          LLM_GEMINI_API_KEY: ${{ secrets.LLM_GEMINI_API_KEY }}
+          LLM_GEMINI_API_KEYS: ${{ secrets.LLM_GEMINI_API_KEYS }}
+          LLM_GEMINI_MODELS: ${{ secrets.LLM_GEMINI_MODELS || vars.LLM_GEMINI_MODELS }}
+          LLM_OPENAI_ENABLED: ${{ secrets.LLM_OPENAI_ENABLED || vars.LLM_OPENAI_ENABLED }}
+          LLM_OPENAI_PROTOCOL: ${{ secrets.LLM_OPENAI_PROTOCOL || vars.LLM_OPENAI_PROTOCOL }}
+          LLM_OPENAI_BASE_URL: ${{ secrets.LLM_OPENAI_BASE_URL || vars.LLM_OPENAI_BASE_URL }}
+          LLM_OPENAI_API_KEY: ${{ secrets.LLM_OPENAI_API_KEY }}
+          LLM_OPENAI_API_KEYS: ${{ secrets.LLM_OPENAI_API_KEYS }}
+          LLM_OPENAI_MODELS: ${{ secrets.LLM_OPENAI_MODELS || vars.LLM_OPENAI_MODELS }}
+          TAVILY_API_KEYS: ${{ secrets.TAVILY_API_KEYS }}
+          SERPAPI_API_KEYS: ${{ secrets.SERPAPI_API_KEYS }}
           NOTIFY_URLS: ${{ secrets.NOTIFY_URLS }}
           WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
@@ -282,6 +324,8 @@ jobs:
           EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_RECEIVERS: ${{ secrets.EMAIL_RECEIVERS }}
+          EMAIL_SMTP_HOST: ${{ secrets.EMAIL_SMTP_HOST || vars.EMAIL_SMTP_HOST }}
+          EMAIL_SMTP_PORT: ${{ secrets.EMAIL_SMTP_PORT || vars.EMAIL_SMTP_PORT }}
           CUSTOM_WEBHOOK_URL: ${{ secrets.CUSTOM_WEBHOOK_URL }}
           CUSTOM_WEBHOOK_TOKEN: ${{ secrets.CUSTOM_WEBHOOK_TOKEN }}
         run: |
@@ -299,6 +343,44 @@ jobs:
               --push \
               --explain || echo "::warning::daily-report skipped"
           fi
+
+      - name: US market digest push
+        if: steps.session.outputs.session == 'us'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ALPHASIFT_ENABLE_PAGES: ${{ vars.ALPHASIFT_ENABLE_PAGES }}
+          ALPHASIFT_DASHBOARD_URL: ${{ vars.ALPHASIFT_DASHBOARD_URL }}
+          TAVILY_API_KEYS: ${{ secrets.TAVILY_API_KEYS }}
+          SERPAPI_API_KEYS: ${{ secrets.SERPAPI_API_KEYS }}
+          NOTIFY_URLS: ${{ secrets.NOTIFY_URLS }}
+          WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
+          DINGTALK_WEBHOOK_URL: ${{ secrets.DINGTALK_WEBHOOK_URL }}
+          DINGTALK_WEBHOOK_SECRET: ${{ secrets.DINGTALK_WEBHOOK_SECRET }}
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          PUSHPLUS_TOPIC: ${{ secrets.PUSHPLUS_TOPIC }}
+          SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+          BARK_URL: ${{ secrets.BARK_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          NTFY_URL: ${{ secrets.NTFY_URL }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVERS: ${{ secrets.EMAIL_RECEIVERS }}
+          EMAIL_SMTP_HOST: ${{ secrets.EMAIL_SMTP_HOST || vars.EMAIL_SMTP_HOST }}
+          EMAIL_SMTP_PORT: ${{ secrets.EMAIL_SMTP_PORT || vars.EMAIL_SMTP_PORT }}
+          CUSTOM_WEBHOOK_URL: ${{ secrets.CUSTOM_WEBHOOK_URL }}
+          CUSTOM_WEBHOOK_TOKEN: ${{ secrets.CUSTOM_WEBHOOK_TOKEN }}
+        run: |
+          alphasift daily-report \
+            --markets us \
+            --runs-dir track/data/runs \
+            --output-json track/site/us_report.json \
+            --push \
+            --explain || echo "::warning::US market digest skipped"
 
       - name: Build site data
         env:

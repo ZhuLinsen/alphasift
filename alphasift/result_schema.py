@@ -155,6 +155,7 @@ DAILY_REPORT_SCHEMA: dict[str, object] = {
         "ai_brief",
         "patterns",
         "announcement_risks",
+        "market_news",
         "degradation",
         "im_card_markdown",
         "im_card_chars",

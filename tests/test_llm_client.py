@@ -435,3 +435,82 @@ def test_round9_key_origin_isolation_empty_content_fallback_and_userinfo_block(m
         "gemini-3.8-flash",
         "gemini-4-hydrogen",
     ]
+
+
+def test_foreign_gateway_guard_and_structured_validator_fallback(monkeypatch):
+    from alphasift.ranker import _call_llm_with_metadata
+
+    # 1. DSA-style env: OPENAI_BASE_URL=https://api.deepseek.com/v1 + openai/gpt-4o fallback must NOT hit DeepSeek
+    monkeypatch.setenv("LLM_CHANNELS", "deepseek")
+    monkeypatch.setenv("LLM_DEEPSEEK_PROTOCOL", "deepseek")
+    monkeypatch.setenv("LLM_DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    monkeypatch.setenv("LLM_DEEPSEEK_API_KEY", "ds-key")
+    monkeypatch.setenv("LLM_DEEPSEEK_MODELS", "deepseek-chat")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://api.deepseek.com/v1")
+    monkeypatch.setenv("OPENAI_API_KEY", "ds-key")
+    monkeypatch.setenv("GEMINI_API_KEY", "gem-key")
+    monkeypatch.setenv("LITELLM_FALLBACK_MODELS", "gemini/gemini-2.5-flash,openai/gpt-4o")
+
+    cfg = Config.from_env()
+    attempts = _attempts(cfg)
+    assert not any(
+        a.model == "gpt-4o" and "api.deepseek.com" in a.base_url
+        for a in attempts
+    )
+    assert any(a.model == "gemini-2.5-flash" for a in attempts)
+
+    # 2. Validator failure (e.g., truncated JSON from attempt 0) falls through to attempt 1 and returns actual model
+    bad_json_resp = requests.Response()
+    bad_json_resp.status_code = 200
+    bad_json_resp._content = b'{"choices": [{"message": {"content": "{\\"headline\\": \\"cut off"}}]}'
+    good_resp = requests.Response()
+    good_resp.status_code = 200
+    good_resp._content = b'{"choices": [{"message": {"content": "{\\"headline\\": \\"ok\\"}"}}]}'
+    post = Mock(side_effect=[bad_json_resp, good_resp])
+    monkeypatch.setattr("alphasift.llm_client.requests.post", post)
+
+    import json as _json
+
+    text, used_model = _call_llm_with_metadata(
+        "prompt",
+        cfg.llm_api_key,
+        cfg.llm_model,
+        cfg.llm_base_url,
+        channels=cfg.llm_channels,
+        fallback_models=cfg.llm_fallback_models,
+        validator=lambda s: _json.loads(s),
+    )
+    assert _json.loads(text) == {"headline": "ok"}
+    assert used_model == "gemini-2.5-flash"
+
+
+def test_reasoning_effort_only_sent_to_thinking_models(monkeypatch):
+    seen_payloads: list[dict] = []
+
+    def ok_post(url: str, *, headers: dict, json: dict, timeout: float, allow_redirects: bool):
+        seen_payloads.append(json)
+        r = requests.Response()
+        r.status_code = 200
+        r._content = b'{"choices": [{"message": {"content": "ok"}}]}'
+        return r
+
+    monkeypatch.setattr("alphasift.llm_client.requests.post", ok_post)
+
+    complete(
+        LLMAttempt("https://generativelanguage.googleapis.com/v1beta/openai", "gemini-3-flash-preview", "k"),
+        messages=[{"role": "user", "content": "hi"}],
+        temperature=0.2,
+        max_tokens=2048,
+        reasoning_effort="low",
+    )
+    complete(
+        LLMAttempt("https://api.deepseek.com", "deepseek-chat", "k"),
+        messages=[{"role": "user", "content": "hi"}],
+        temperature=0.2,
+        max_tokens=2048,
+        reasoning_effort="low",
+    )
+    assert seen_payloads[0]["reasoning_effort"] == "low"
+    assert seen_payloads[0]["max_tokens"] >= 8192
+    assert "reasoning_effort" not in seen_payloads[1]
+    assert seen_payloads[1]["max_tokens"] == 2048

@@ -286,9 +286,12 @@ class Config:
     email_smtp_port: int = 0
     custom_webhook_url: str = ""
     custom_webhook_token: str = ""
+    # Notification safety caps & UX URL
     notify_state_path: Path = _PROJECT_ROOT / "data" / "notify_state.json"
     notify_timeout_sec: float = 10.0
-    dashboard_url: str = "https://zhulinsen.github.io/alphasift/"
+    dashboard_url: str = ""
+    tavily_api_keys: list[str] = field(default_factory=list)
+    serpapi_api_keys: list[str] = field(default_factory=list)
 
     # Optional guardrail for last-good snapshot fallback freshness.
     snapshot_fallback_max_age_hours: float | None = None
@@ -529,11 +532,29 @@ class Config:
                 or (data_dir / "notify_state.json")
             ),
             notify_timeout_sec=max(1.0, _parse_float_env("ALPHASIFT_NOTIFY_TIMEOUT_SEC", 10.0)),
-            dashboard_url=(
-                os.getenv("ALPHASIFT_DASHBOARD_URL") or "https://zhulinsen.github.io/alphasift/"
-            ).strip()
-            or "https://zhulinsen.github.io/alphasift/",
+            dashboard_url=_resolve_dashboard_url(),
+            tavily_api_keys=_parse_csv_env("TAVILY_API_KEYS", []) or _parse_csv_env("TAVILY_API_KEY", []),
+            serpapi_api_keys=_parse_csv_env("SERPAPI_API_KEYS", []) or _parse_csv_env("SERPAPI_API_KEY", []),
         )
+
+
+def _resolve_dashboard_url() -> str:
+    """Resolve user/Fork-safe dashboard URL without leaking upstream URL to third-party pushes."""
+    explicit = os.getenv("ALPHASIFT_DASHBOARD_URL")
+    if explicit is not None:
+        cleaned = explicit.strip()
+        if cleaned.lower() in {"", "none", "off", "false"}:
+            return ""
+        return cleaned
+    gh_repo = os.getenv("GITHUB_REPOSITORY", "").strip()
+    if gh_repo:
+        if gh_repo == "ZhuLinsen/alphasift":
+            return "https://zhulinsen.github.io/alphasift/"
+        if _parse_bool_env("ALPHASIFT_ENABLE_PAGES", False) and "/" in gh_repo:
+            owner, repo = gh_repo.split("/", 1)
+            return f"https://{owner.lower()}.github.io/{repo}/"
+        return ""
+    return ""
 
 
 def _parse_float_env(name: str, default: float) -> float:

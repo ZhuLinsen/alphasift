@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 import json
+from pathlib import Path
 import re
 from typing import Any
 
@@ -12,9 +13,70 @@ from alphasift.config import Config
 
 BRIEF_DISCLAIMER = "仅供量化研究与复盘观察，不构成投资建议。"
 
+BUILTIN_STRATEGY_DISPLAY_NAMES: dict[str, str] = {
+    "balanced_alpha": "均衡多因子",
+    "blue_chip_income": "蓝筹收益质量",
+    "capital_heat": "资金热度",
+    "dual_low": "双低选股",
+    "global_value": "全球低估值",
+    "low_volatility_quality": "低波质量",
+    "momentum_quality": "趋势质量",
+    "oversold_reversal": "超跌反转",
+    "quality_value": "稳健价值",
+    "shrink_pullback": "缩量回踩",
+    "us_momentum_quality": "美股趋势质量",
+    "volume_breakout": "放量突破",
+}
+_STRATEGY_NAMES_CACHE: dict[Path | None, dict[str, str]] = {}
+_THINK_CLOSED_RE = re.compile(r"<think>.*?</think>", flags=re.IGNORECASE | re.DOTALL)
+_THINK_UNCLOSED_TAIL_RE = re.compile(r"<think>.*$", flags=re.IGNORECASE | re.DOTALL)
 
-def build_cross_strategy_synthesis(report: dict[str, Any]) -> dict[str, Any]:
+
+def resolve_strategy_display_names(
+    strategies_dir: Path | None = None,
+    *,
+    overrides: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Return mapping of strategy slug -> localized display name."""
+    cache_key = strategies_dir.resolve() if isinstance(strategies_dir, Path) else None
+    base = _STRATEGY_NAMES_CACHE.get(cache_key)
+    if base is None:
+        merged = dict(BUILTIN_STRATEGY_DISPLAY_NAMES)
+        try:
+            from alphasift.strategy import list_strategies
+
+            for info in list_strategies(strategies_dir):
+                if info.name and info.display_name:
+                    # Keep clean Chinese label for us_momentum_quality when YAML uses ASCII title
+                    if info.name in BUILTIN_STRATEGY_DISPLAY_NAMES and info.display_name.isascii():
+                        continue
+                    merged[info.name] = str(info.display_name).strip()
+        except Exception:  # noqa: BLE001
+            pass
+        _STRATEGY_NAMES_CACHE[cache_key] = merged
+        base = merged
+    out = dict(base)
+    if isinstance(overrides, dict):
+        for k, v in overrides.items():
+            if k and v:
+                out[str(k)] = str(v)
+    return out
+
+
+def build_cross_strategy_synthesis(
+    report: dict[str, Any],
+    *,
+    strategy_names: dict[str, str] | None = None,
+) -> dict[str, Any]:
     """Build deterministic cross-strategy consensus, sector concentration, resonance, and risk spotlight."""
+    display_map = resolve_strategy_display_names(
+        overrides=(strategy_names or report.get("strategy_display_names"))
+    )
+    cand_news = (
+        (report.get("market_news") or {}).get("candidate_news") or {}
+        if isinstance(report.get("market_news"), dict)
+        else {}
+    )
     strategies = report.get("strategies") or []
     by_code: dict[str, dict[str, Any]] = {}
     sector_counts: dict[str, dict[str, Any]] = {}
@@ -36,6 +98,7 @@ def build_cross_strategy_synthesis(report: dict[str, Any]) -> dict[str, Any]:
             industry = str(pk.get("industry") or "").strip()
             score = pk.get("final_score")
             chg = pk.get("change_pct")
+            reason = str(pk.get("ranking_reason") or "").strip()
             ann_flags = [str(f) for f in (pk.get("announcement_risk_flags") or []) if f]
             risk_flags = [str(f) for f in (pk.get("risk_flags") or []) if f]
             risk_level = str(pk.get("risk_level") or "").strip()
@@ -50,6 +113,11 @@ def build_cross_strategy_synthesis(report: dict[str, Any]) -> dict[str, Any]:
                     "tracks": set(),
                     "scores": [],
                     "change_pct": chg,
+                    "price": pk.get("price"),
+                    "pe_ratio": pk.get("pe_ratio"),
+                    "pb_ratio": pk.get("pb_ratio"),
+                    "market_cap_yi": pk.get("market_cap_yi"),
+                    "reasons": [],
                     "announcement_risk_flags": set(),
                     "risk_flags": set(),
                     "risk_level": risk_level,
@@ -66,6 +134,11 @@ def build_cross_strategy_synthesis(report: dict[str, Any]) -> dict[str, Any]:
                 entry["scores"].append(float(score))
             if entry["change_pct"] is None and chg is not None:
                 entry["change_pct"] = chg
+            for fld in ("price", "pe_ratio", "pb_ratio", "market_cap_yi"):
+                if entry[fld] is None and pk.get(fld) is not None:
+                    entry[fld] = pk.get(fld)
+            if reason and reason not in entry["reasons"] and len(entry["reasons"]) < 2:
+                entry["reasons"].append(reason)
             entry["announcement_risk_flags"].update(ann_flags)
             entry["risk_flags"].update(risk_flags)
             if not entry["risk_level"] and risk_level:
@@ -85,17 +158,35 @@ def build_cross_strategy_synthesis(report: dict[str, Any]) -> dict[str, Any]:
         if len(item["strategies"]) < 2:
             continue
         avg_score = round(sum(item["scores"]) / len(item["scores"]), 2) if item["scores"] else 0.0
-        consensus_picks.append({
+        sorted_strats = sorted(item["strategies"])
+        news_list = cand_news.get(code) if isinstance(cand_news, dict) else None
+        first_news = ""
+        if isinstance(news_list, list) and news_list:
+            first_item = news_list[0]
+            if isinstance(first_item, dict):
+                first_news = str(first_item.get("title") or "").strip()[:100]
+            else:
+                first_news = str(first_item).strip()[:100]
+        rec: dict[str, Any] = {
             "code": code,
             "name": item["name"],
             "industry": item["industry"],
-            "strategy_count": len(item["strategies"]),
-            "strategies": sorted(item["strategies"]),
+            "strategy_count": len(sorted_strats),
+            "strategies": sorted_strats,
+            "strategy_display_names": [display_map.get(s, s) for s in sorted_strats],
             "tracks": sorted(item["tracks"]),
             "avg_final_score": avg_score,
             "change_pct": item["change_pct"],
             "announcement_risk_flags": sorted(item["announcement_risk_flags"]),
-        })
+        }
+        for fld in ("price", "pe_ratio", "pb_ratio", "market_cap_yi"):
+            if item[fld] is not None:
+                rec[fld] = item[fld]
+        if item["reasons"]:
+            rec["reasons"] = item["reasons"]
+        if first_news:
+            rec["news_headline"] = first_news
+        consensus_picks.append(rec)
     consensus_picks.sort(key=lambda x: (-x["strategy_count"], -x["avg_final_score"], x["code"]))
 
     sector_concentration: list[dict[str, Any]] = []
@@ -186,7 +277,8 @@ def build_cross_strategy_synthesis(report: dict[str, Any]) -> dict[str, Any]:
 
 
 def _strip_json_fences(raw: str) -> str:
-    cleaned = (raw or "").strip()
+    cleaned = _THINK_CLOSED_RE.sub("", str(raw or "")).strip()
+    cleaned = _THINK_UNCLOSED_TAIL_RE.sub("", cleaned).strip()
     if cleaned.startswith("```"):
         cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"\s*```$", "", cleaned)
@@ -239,7 +331,6 @@ def _build_rule_daily_brief(
 ) -> dict[str, Any]:
     reg = report.get("market_regime") or {}
     stage_label = str(reg.get("regime_stage_label") or "-")
-    stage = str(reg.get("regime_stage") or "-")
     adv = float(reg.get("advance_ratio_pct") or 0.0)
     med = reg.get("median_return_pct")
     med_txt = f"中位数 {float(med):+.2f}%" if med is not None else "中位数待统计"
@@ -262,16 +353,16 @@ def _build_rule_daily_brief(
     stale_prefix = "【旧包降级】" if report.get("pack_is_stale") else ""
 
     headline = (
-        f"{stale_prefix}市场处于{stage_label}({stage})，上涨 {adv:.1f}%（{med_txt}），"
+        f"{stale_prefix}盘面处于{stage_label}阶段，上涨 {adv:.1f}%（{med_txt}），"
         f"涨跌停 {lu}/{ld}（封板率 {seal_txt}）"
     )
     if flagged:
-        headline += f"，公告排雷命中 {len(flagged)} 只高风险"
+        headline += f"，公告排雷命中 {len(flagged)} 只预警"
     elif consensus:
         headline += f"，跨策略共识 {len(consensus)} 只"
 
     regime_interpretation = (
-        f"{report.get('trade_date', '-')} 盘面阶段判定为 {stage_label}({stage})（仅切片参考）："
+        f"{report.get('trade_date', '-')} 全市场情绪处于「{stage_label}」阶段："
         f"全市场上涨占比 {adv:.1f}%、{med_txt}，成交额 {amt_txt}；"
         f"非 ST 涨停 {lu} 只 / 跌停 {ld} 只，首板封板率 {seal_txt}，连板最高 {max_streak} 板，昨涨停今日均表现 {prev_txt}。"
     )
@@ -341,10 +432,23 @@ def _build_brief_prompt(
     track_comparison: Sequence[dict[str, Any]] | None = None,
 ) -> str:
     reg = report.get("market_regime") or {}
-    compact_context = {
+    mnews = report.get("market_news") or {}
+    strat_names = report.get("strategy_display_names") or resolve_strategy_display_names()
+    compact_news = [
+        {
+            "category": n.get("category"),
+            "source": n.get("source"),
+            "time": n.get("published_at"),
+            "title": n.get("title"),
+        }
+        for n in (mnews.get("items") or [])[:5]
+        if isinstance(n, dict) and n.get("title")
+    ]
+    compact_context: dict[str, Any] = {
         "trade_date": report.get("trade_date"),
         "pack_trade_date": report.get("pack_trade_date"),
         "pack_is_stale": bool(report.get("pack_is_stale", False)),
+        "strategy_display_names": strat_names,
         "market_regime": {
             "stage": reg.get("regime_stage"),
             "stage_label": reg.get("regime_stage_label"),
@@ -376,17 +480,20 @@ def _build_brief_prompt(
             if item.get("market") == "cn"
         ][:4],
     }
+    if compact_news:
+        compact_context["market_news"] = compact_news
     payload_json = json.dumps(compact_context, ensure_ascii=False)
     return (
         "你是 AlphaSift A 股量化观测系统的盘后投研编辑。请仅基于下面提供的结构化观测数据，"
         "用克制、客观、信息密度高的专业中文撰写盘后简报。\n"
         "严格约束：\n"
-        "1. 禁止编造任何数据中不存在的股票代码、价格、涨跌幅、公告内容或目标价；\n"
-        "2. 不给出任何买卖建议或收益承诺；\n"
-        "3. 仅返回纯 JSON 对象（不要 Markdown 解释），包含字段：\n"
+        "1. 禁止编造任何数据中不存在的股票代码、价格、涨跌幅、公告或新闻内容、目标价；\n"
+        "2. 用中文策略名描述策略（使用 strategy_display_names），不输出系统内部英文代号；\n"
+        "3. 不给出任何买卖建议或收益承诺；\n"
+        "4. 仅返回纯 JSON 对象（不要输出思考过程或 Markdown 解释），包含字段：\n"
         '   {"headline": "不超过80字核心结论", '
-        '"regime_interpretation": "120-240字盘面宽度与情绪结构解读", '
-        '"consensus_and_ai_edge": "100-220字跨策略共识、行业集中与AI调仓对比解读", '
+        '"regime_interpretation": "120-240字盘面宽度、情绪结构与市场快讯催化解读", '
+        '"consensus_and_ai_edge": "100-220字跨策略共识、行业集中与个股/AI观察解读", '
         '"risk_warnings": ["风险提示1", "风险提示2"], '
         '"watch_points": ["次日客观观察指标1", "次日客观观察指标2"]}\n\n'
         f"结构化数据：\n{payload_json}\n"
@@ -400,7 +507,7 @@ def generate_ai_daily_brief(
     track_comparison: Sequence[dict[str, Any]] | None = None,
     use_llm: str = "auto",
     llm_caller: Callable[..., str] | None = None,
-    timeout_sec: float = 20.0,
+    timeout_sec: float = 45.0,
 ) -> dict[str, Any]:
     """Generate structured AI daily brief with grounded deterministic fallback."""
     mode = (use_llm or "auto").strip().lower()
@@ -434,15 +541,18 @@ def generate_ai_daily_brief(
     synthesis = report.get("cross_strategy_synthesis") or build_cross_strategy_synthesis(report)
     prompt = _build_brief_prompt(report, synthesis=synthesis, track_comparison=track_comparison)
     model_name = config.llm_model if config is not None else "custom"
+    used_model = model_name
 
     try:
         if llm_caller is not None:
             raw_text = llm_caller(prompt)
+            parsed = _parse_brief_json(raw_text)
         else:
-            from alphasift.ranker import _call_llm
+            from alphasift.ranker import _call_llm_with_metadata
 
             assert config is not None
-            raw_text = _call_llm(
+            brief_max_tokens = min(max(4096, int(getattr(config, "llm_max_tokens", 2048) or 2048)), 8192)
+            raw_text, used_model = _call_llm_with_metadata(
                 prompt,
                 api_key=config.llm_api_key,
                 model=config.llm_model,
@@ -454,9 +564,11 @@ def generate_ai_daily_brief(
                 channels=config.llm_channels,
                 config_path=str(config.llm_config_path or ""),
                 timeout_sec=min(float(timeout_sec), float(config.llm_timeout_sec)),
-                max_tokens=900,
+                max_tokens=brief_max_tokens,
+                reasoning_effort="low",
+                validator=_parse_brief_json,
             )
-        parsed = _parse_brief_json(raw_text)
+            parsed = _parse_brief_json(raw_text)
     except Exception as exc:  # noqa: BLE001
         return _build_rule_daily_brief(
             report,
@@ -466,7 +578,7 @@ def generate_ai_daily_brief(
 
     return {
         "mode": "llm",
-        "model": model_name,
+        "model": used_model or model_name,
         "headline": parsed["headline"],
         "regime_interpretation": parsed["regime_interpretation"],
         "consensus_and_ai_edge": parsed["consensus_and_ai_edge"],

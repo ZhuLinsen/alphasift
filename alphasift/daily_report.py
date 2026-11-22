@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import json
 from pathlib import Path
 import re
@@ -16,10 +16,16 @@ import pandas as pd
 from alphasift.candidate_context import (
     classify_announcement_categories,
     classify_negative_events,
+    classify_negative_text,
     collect_candidate_context,
 )
 from alphasift.config import Config
-from alphasift.daily_brief import build_cross_strategy_synthesis, generate_ai_daily_brief
+from alphasift.daily_brief import (
+    build_cross_strategy_synthesis,
+    generate_ai_daily_brief,
+    resolve_strategy_display_names,
+)
+from alphasift.market_news import fetch_cn_market_news
 from alphasift.markets import get_market, latest_settled_close
 from alphasift.models import ScreenResult
 from alphasift.normalize import normalize_code
@@ -31,8 +37,31 @@ from alphasift.store import load_screen_result
 from alphasift.timeutil import parse_timestamp
 
 IM_CARD_MAX_CHARS = 1199
-_ANNOUNCEMENT_TIMEOUT_SEC = 15.0
+_ANNOUNCEMENT_TIMEOUT_SEC = 25.0
+_MARKET_NEWS_TIMEOUT_SEC = 8.0
+_STOCK_NEWS_TIMEOUT_SEC = 15.0
 DEFAULT_DASHBOARD_URL = "https://zhulinsen.github.io/alphasift/"
+_FACTOR_CN_LABELS = {
+    "value": "估值",
+    "quality": "质量",
+    "dividend": "红利",
+    "momentum": "动量",
+    "reversal": "超跌反转",
+    "growth": "成长",
+    "low_volatility": "低波",
+    "volatility": "低波",
+    "stability": "低波稳健",
+    "size": "市值规模",
+    "activity": "活跃度",
+    "theme_heat": "板块热度",
+    "liquidity": "流动性",
+    "capital_flow": "资金",
+    "technical": "技术",
+    "trend": "趋势",
+    "sentiment": "情绪",
+}
+_RECENCY_RANK = {"recent": 0, "mid": 1, "unknown": 2, "old": 3}
+_DATE_PREFIX_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:[T\s]\d{2}:\d{2}(?::\d{2})?)?\s*")
 
 
 def _collect_announcements_default(
@@ -53,12 +82,57 @@ def _collect_announcements_default(
     )
 
 
+def _parse_announcement_match(
+    ann_text: str,
+    *,
+    trade_date: str | None = None,
+) -> tuple[str | None, int | None, str, str]:
+    """Isolate the specific triggering disclosure, its date, and recency relative to trade_date."""
+    items = [part.strip() for part in str(ann_text or "").split("|") if part.strip()]
+    matched_raw = ""
+    for item in items:
+        if classify_negative_text(item):
+            matched_raw = item
+            break
+    if not matched_raw and items:
+        matched_raw = items[0]
+    if not matched_raw:
+        return None, None, "unknown", ""
+
+    m = _DATE_PREFIX_RE.match(matched_raw)
+    ann_date = m.group(1) if m else None
+    days_ago: int | None = None
+    recency = "unknown"
+    if ann_date:
+        try:
+            ref_date = (
+                date.fromisoformat(str(trade_date).strip()[:10])
+                if trade_date and len(str(trade_date).strip()) >= 10
+                else datetime.now().date()
+            )
+            days_ago = max(0, (ref_date - date.fromisoformat(ann_date)).days)
+            if days_ago <= 7:
+                recency = "recent"
+            elif days_ago <= 21:
+                recency = "mid"
+            else:
+                recency = "old"
+        except ValueError:
+            days_ago = None
+            recency = "unknown"
+
+    cleaned = _clean_announcement_snippet(matched_raw, max_len=160)
+    return ann_date, days_ago, recency, cleaned
+
+
 def screen_announcement_risks(
     candidates: Sequence[dict[str, Any]],
     *,
-    max_codes: int = 12,
+    max_codes: int = 20,
     cache_dir: Path | None = None,
     collector: Callable[..., tuple[list[dict[str, object]], list[str]]] | None = None,
+    trade_date: str | None = None,
+    priority_counts: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     """Best-effort announcement risk check over shortlisted CN candidates."""
     deduped: list[dict[str, str]] = []
@@ -100,6 +174,7 @@ def screen_announcement_risks(
     by_code: dict[str, dict[str, Any]] = {}
     flagged_items: list[dict[str, Any]] = []
     name_map = {item["code"]: item["name"] for item in deduped}
+    prio = priority_counts or {}
 
     for row in rows or []:
         code = normalize_code(row.get("code"), allow_ticker=False)
@@ -108,16 +183,34 @@ def screen_announcement_risks(
         neg_flags = list(row.get("negative_event_flags") or classify_negative_events(row))
         ann_cats = list(row.get("announcement_categories") or classify_announcement_categories(row))
         ann_text = str(row.get("announcement") or row.get("announcements") or "").strip()
+        ann_date, days_ago, recency, matched_clean = _parse_announcement_match(
+            ann_text,
+            trade_date=trade_date,
+        )
         info = {
             "code": code,
             "name": str(row.get("name") or name_map.get(code, "")),
             "negative_event_flags": neg_flags,
             "announcement_categories": ann_cats,
             "announcement_summary": ann_text[:200],
+            "matched_announcement": matched_clean,
+            "announcement_date": ann_date,
+            "days_ago": days_ago,
+            "recency": recency,
+            "consensus_count": int(prio.get(code, 0)),
         }
         by_code[code] = info
         if neg_flags:
             flagged_items.append(info)
+
+    flagged_items.sort(
+        key=lambda x: (
+            _RECENCY_RANK.get(str(x.get("recency") or "unknown"), 2),
+            -int(x.get("consensus_count") or 0),
+            int(x["days_ago"]) if x.get("days_ago") is not None else 999,
+            str(x.get("code") or ""),
+        )
+    )
 
     return {
         "checked_count": len(deduped),
@@ -194,26 +287,71 @@ def load_daily_report_runs(
     return loaded
 
 
-def _format_strategy_entry(run: ScreenResult) -> dict[str, Any]:
+def _derive_pick_reason(p: Any) -> str:
+    explicit = str(getattr(p, "ranking_reason", "") or "").strip()
+    if explicit:
+        return explicit[:120]
+    fscores = getattr(p, "factor_scores", None)
+    if isinstance(fscores, dict) and fscores:
+        ranked_f = sorted(
+            ((k, float(v)) for k, v in fscores.items() if v is not None),
+            key=lambda kv: -kv[1],
+        )
+        labels = [_FACTOR_CN_LABELS.get(k, k) for k, _ in ranked_f[:2]]
+        if labels:
+            return f"{'+'.join(labels)}因子靠前"
+    bits: list[str] = []
+    pe = getattr(p, "pe_ratio", None)
+    pb = getattr(p, "pb_ratio", None)
+    if pe is not None and float(pe) > 0:
+        bits.append(f"PE {float(pe):.1f}")
+    if pb is not None and float(pb) > 0:
+        bits.append(f"PB {float(pb):.2f}")
+    return " · ".join(bits)
+
+
+def _format_strategy_entry(
+    run: ScreenResult,
+    *,
+    display_names: dict[str, str] | None = None,
+) -> dict[str, Any]:
     track = run.track or ("ai" if run.llm_ranked else "rules")
+    names_map = display_names or resolve_strategy_display_names()
     picks = []
     for p in run.picks[:5]:
+        raw_price = getattr(p, "price", None)
+        price_val = round(float(raw_price), 2) if raw_price is not None and float(raw_price) > 0 else None
+        raw_pe = getattr(p, "pe_ratio", None)
+        pe_val = round(float(raw_pe), 1) if raw_pe is not None else None
+        raw_pb = getattr(p, "pb_ratio", None)
+        pb_val = round(float(raw_pb), 2) if raw_pb is not None else None
+        raw_mv = getattr(p, "total_mv", None)
+        mv_yi = (
+            round(float(raw_mv) / 1e8, 1)
+            if raw_mv is not None and float(raw_mv) >= 1e6
+            else None
+        )
         picks.append({
             "rank": int(p.rank),
             "code": str(p.code),
             "name": str(p.name),
             "industry": str(p.industry),
+            "price": price_val,
+            "pe_ratio": pe_val,
+            "pb_ratio": pb_val,
+            "market_cap_yi": mv_yi,
             "final_score": round(float(p.final_score), 2),
             "screen_score": round(float(p.screen_score), 2),
             "change_pct": round(float(p.change_pct), 2) if p.change_pct is not None else None,
             "risk_level": str(p.risk_level),
             "risk_flags": list(p.risk_flags),
-            "ranking_reason": str(getattr(p, "ranking_reason", "") or "")[:120],
+            "ranking_reason": _derive_pick_reason(p),
             "announcement_risk_flags": [],
         })
     return {
         "run_id": run.run_id,
         "strategy": run.strategy,
+        "display_name": names_map.get(run.strategy, run.strategy),
         "market": run.market,
         "track": track,
         "llm_ranked": bool(run.llm_ranked),
@@ -283,6 +421,113 @@ def _build_ai_highlights(strategy_runs: Sequence[ScreenResult]) -> list[dict[str
     return highlights
 
 
+def _extract_strategy_track_stats(
+    track_summary: dict[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    if not isinstance(track_summary, dict):
+        return {}
+    out: dict[str, dict[str, Any]] = {}
+    for row in track_summary.get("scorecard") or []:
+        if not isinstance(row, dict) or str(row.get("market") or "").lower() != "cn":
+            continue
+        strat = str(row.get("strategy") or "").strip()
+        if not strat:
+            continue
+        track_name = str(row.get("track") or "rules")
+        w5 = ((row.get("windows") or {}).get("5") or {}) if isinstance(row.get("windows"), dict) else {}
+        matched = int(w5.get("matched") or 0)
+        ex = w5.get("average_excess_return_pct")
+        beat = w5.get("beat_rate")
+        if matched <= 0 and ex is None:
+            continue
+        # Prefer rules baseline row unless only ai track exists for that strategy
+        if strat in out and track_name != "rules":
+            continue
+        out[strat] = {
+            "track": track_name,
+            "t5_matched": matched,
+            "t5_avg_excess_pct": round(float(ex), 2) if ex is not None else None,
+            "t5_beat_rate_pct": round(float(beat) * 100.0, 1) if beat is not None else None,
+        }
+    return out
+
+
+def _extract_pattern_replay_map(
+    pattern_replay: dict[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    if not isinstance(pattern_replay, dict):
+        return {}
+    replay_obj = pattern_replay.get("replay") if isinstance(pattern_replay.get("replay"), dict) else pattern_replay
+    if not isinstance(replay_obj, dict):
+        return {}
+    items = replay_obj.get("patterns")
+    if isinstance(items, dict):
+        iter_items = [{"pattern": k, **(v if isinstance(v, dict) else {})} for k, v in items.items()]
+    elif isinstance(items, list):
+        iter_items = [x for x in items if isinstance(x, dict)]
+    else:
+        return {}
+    cost_pct = float(replay_obj.get("cost_bps") or 0.0) / 100.0
+    out: dict[str, dict[str, Any]] = {}
+    for p in iter_items:
+        pname = str(p.get("pattern") or "").strip()
+        if not pname:
+            continue
+        h5 = ((p.get("horizons") or {}).get("t5") or {}) if isinstance(p.get("horizons"), dict) else {}
+        grad = p.get("graduation") if isinstance(p.get("graduation"), dict) else {}
+        net_val = grad.get("t5_net_excess_mean_pct")
+        if net_val is None:
+            net_val = h5.get("net_excess_mean_pct")
+        if net_val is None:
+            gross_val = h5.get("gross_excess_mean_pct")
+            if gross_val is None:
+                gross_val = h5.get("excess_mean_pct")
+            if gross_val is not None:
+                net_val = float(gross_val) - cost_pct
+        win_val = h5.get("excess_win_rate_pct")
+        if win_val is None:
+            win_val = h5.get("win_rate_pct")
+        samples = h5.get("excess_scored")
+        if samples is None:
+            samples = h5.get("scored")
+        out[pname] = {
+            "replay_t5_net_excess_pct": round(float(net_val), 2) if net_val is not None else None,
+            "replay_t5_win_rate_pct": round(float(win_val), 1) if win_val is not None else None,
+            "replay_samples": int(samples) if samples is not None else None,
+        }
+    return out
+
+
+def _collect_candidate_stock_news(
+    df: pd.DataFrame,
+    *,
+    cache_dir: Path | None,
+) -> tuple[list[dict[str, object]], list[str]]:
+    return call_with_timeout(
+        collect_candidate_context,
+        df,
+        max_rows=len(df),
+        providers=["news"],
+        news_limit=2,
+        cache_dir=cache_dir,
+        timeout_sec=_STOCK_NEWS_TIMEOUT_SEC,
+        label="candidate stock news",
+    )
+
+
+def _parse_piped_stock_news(raw_text: str) -> list[dict[str, str]]:
+    out: list[dict[str, str]] = []
+    for chunk in str(raw_text or "").split("|"):
+        cleaned = " ".join(chunk.split()).strip()
+        if not cleaned:
+            continue
+        m = _DATE_PREFIX_RE.match(cleaned)
+        pub = m.group(1)[5:] if m else ""
+        title = _DATE_PREFIX_RE.sub("", cleaned, count=1).strip()
+        out.append({"title": title[:110], "published_at": pub})
+    return out[:2]
+
+
 def build_daily_report(
     daily_pack: DailyPack,
     *,
@@ -293,15 +538,23 @@ def build_daily_report(
     strategy_runs: Sequence[ScreenResult] | None = None,
     include_experimental_patterns: bool = True,
     include_announcements: bool = True,
-    announcement_max_codes: int = 12,
+    announcement_max_codes: int = 20,
     announcement_cache_dir: Path | None = None,
     announcement_collector: Callable[..., tuple[list[dict[str, object]], list[str]]] | None = None,
+    include_news: bool = False,
+    news_max_items: int = 6,
+    news_cache_dir: Path | None = None,
+    market_news_collector: Callable[..., tuple[list[dict[str, Any]], list[str], list[str]]] | None = None,
+    stock_news_collector: Callable[..., tuple[list[dict[str, object]], list[str]]] | None = None,
     patterns_dir: Path | None = None,
     max_card_chars: int = 1150,
     max_signals_per_pattern: int = 10,
     ai_brief_mode: str = "off",
     config: Config | None = None,
     track_comparison: Sequence[dict[str, Any]] | None = None,
+    track_summary: dict[str, Any] | None = None,
+    pattern_replay: dict[str, Any] | None = None,
+    warn_if_no_runs: bool = False,
     llm_caller: Callable[..., str] | None = None,
 ) -> dict[str, Any]:
     """Build machine-readable CN ``DailyReport`` payload and <1200 char IM card."""
@@ -326,6 +579,22 @@ def build_daily_report(
         spec.name: spec
         for spec in list_patterns(include_experimental=True, patterns_dir=patterns_dir)
     }
+    replay_map = _extract_pattern_replay_map(pattern_replay)
+    summary_names = (
+        track_summary.get("strategy_names")
+        if isinstance(track_summary, dict) and isinstance(track_summary.get("strategy_names"), dict)
+        else None
+    )
+    display_names = resolve_strategy_display_names(
+        config.strategies_dir if config is not None else None,
+        overrides=summary_names,
+    )
+    track_stats = _extract_strategy_track_stats(track_summary)
+    effective_track_cmp = (
+        track_comparison
+        if track_comparison is not None
+        else (track_summary.get("track_comparison") if isinstance(track_summary, dict) else None)
+    )
 
     active_patterns: list[dict[str, Any]] = []
     experimental_patterns: list[dict[str, Any]] = []
@@ -336,42 +605,99 @@ def build_daily_report(
         family = spec.family if spec is not None else "unknown"
         mode = spec.mode if spec is not None else "direct"
         hits = scan.signals_by_pattern.get(pat_name, [])
-        entry = {
+        rep_stats = replay_map.get(pat_name) or {}
+        net_ex = rep_stats.get("replay_t5_net_excess_pct")
+        if status == "active":
+            exp_tier = "active"
+        elif net_ex is not None:
+            exp_tier = "positive_watch" if float(net_ex) >= 0 else "negative_watch"
+        else:
+            exp_tier = "unrated"
+        entry: dict[str, Any] = {
             "pattern": pat_name,
             "display_name": display_name,
             "family": family,
             "mode": mode,
             "status": status,
+            "expectancy_tier": exp_tier,
             "aligned_strategy": spec.aligned_strategy if spec is not None else None,
             "hit_count": len(hits),
             "signals": [sig.to_dict() for sig in hits[: max(1, int(max_signals_per_pattern))]],
         }
+        if rep_stats:
+            entry.update(rep_stats)
         if status == "active":
             active_patterns.append(entry)
         else:
             experimental_patterns.append(entry)
 
-    strategy_entries = [_format_strategy_entry(run) for run in (strategy_runs or [])]
+    strategy_entries = [_format_strategy_entry(run, display_names=display_names) for run in (strategy_runs or [])]
+    ai_highlights = _build_ai_highlights(strategy_runs or [])
 
-    # Candidate pool for announcement check: strategy picks -> active patterns -> experimental hits.
-    ann_candidates: list[dict[str, str]] = []
+    # Consensus-first candidate prioritization for announcement checks & stock news:
+    # 1) Multi-strategy consensus >= 2, 2) AI-added picks, 3) Round-robin picks rank 1..5 across all strategies,
+    # 4) Active patterns -> positive/unrated experimental patterns -> remaining patterns.
+    code_strats: dict[str, set[str]] = {}
+    code_scores: dict[str, list[float]] = {}
+    code_names: dict[str, str] = {}
     for st in strategy_entries:
+        sname = str(st.get("strategy") or "")
         for pk in st["picks"]:
-            ann_candidates.append({"code": pk["code"], "name": pk["name"]})
+            norm_c = normalize_code(pk["code"], allow_ticker=False)
+            if not norm_c:
+                continue
+            code_strats.setdefault(norm_c, set()).add(sname)
+            if pk.get("final_score") is not None:
+                code_scores.setdefault(norm_c, []).append(float(pk["final_score"]))
+            if not code_names.get(norm_c) and pk.get("name"):
+                code_names[norm_c] = str(pk["name"]).strip()
+    priority_counts = {c: len(s) for c, s in code_strats.items()}
+    consensus_codes = sorted(
+        (c for c, cnt in priority_counts.items() if cnt >= 2),
+        key=lambda c: (
+            -priority_counts[c],
+            -(sum(code_scores[c]) / len(code_scores[c]) if code_scores.get(c) else 0.0),
+            c,
+        ),
+    )
+
+    ann_candidates: list[dict[str, str]] = [
+        {"code": c, "name": code_names.get(c, "")} for c in consensus_codes
+    ]
+    for hl in ai_highlights:
+        for item in hl.get("added_by_ai") or []:
+            c = normalize_code(item.get("code"), allow_ticker=False)
+            if c:
+                ann_candidates.append({"code": c, "name": str(item.get("name") or "")})
+    max_picks_len = max((len(st["picks"]) for st in strategy_entries), default=0)
+    for rank_idx in range(max_picks_len):
+        for st in strategy_entries:
+            if rank_idx < len(st["picks"]):
+                pk = st["picks"][rank_idx]
+                ann_candidates.append({"code": pk["code"], "name": pk["name"]})
     for pat in active_patterns:
         for sig in pat["signals"][:5]:
             ann_candidates.append({"code": sig["code"], "name": sig["name"]})
-    for pat in experimental_patterns:
+    ordered_exp = sorted(
+        experimental_patterns,
+        key=lambda p: 0 if p.get("expectancy_tier") != "negative_watch" else 1,
+    )
+    for pat in ordered_exp:
         for sig in pat["signals"][:3]:
             ann_candidates.append({"code": sig["code"], "name": sig["name"]})
 
     degradation: list[str] = []
+    if warn_if_no_runs and not strategy_entries:
+        degradation.append(f"No CN strategy runs matched trade_date={scan.trade_date}")
+
     if include_announcements:
         ann_risks = screen_announcement_risks(
             ann_candidates,
             max_codes=announcement_max_codes,
             cache_dir=announcement_cache_dir,
             collector=announcement_collector,
+            trade_date=scan.trade_date,
+            priority_counts=priority_counts,
         )
         for err in ann_risks["errors"]:
             degradation.append(f"Announcement screening: {err}")
@@ -383,6 +709,77 @@ def build_daily_report(
             "flagged_items": [],
             "errors": [],
         }
+
+    market_news_section: dict[str, Any] = {
+        "items": [],
+        "sources": [],
+        "candidate_news": {},
+        "errors": [],
+    }
+    if include_news:
+        try:
+            if market_news_collector is not None:
+                m_items, m_sources, m_errs = market_news_collector(
+                    limit=news_max_items,
+                    trade_date=scan.trade_date,
+                    cache_dir=news_cache_dir or announcement_cache_dir,
+                )
+            else:
+                m_items, m_sources, m_errs = call_with_timeout(
+                    fetch_cn_market_news,
+                    limit=news_max_items,
+                    trade_date=scan.trade_date,
+                    cache_dir=news_cache_dir or announcement_cache_dir,
+                    tavily_keys=config.tavily_api_keys if config is not None else None,
+                    serpapi_keys=config.serpapi_api_keys if config is not None else None,
+                    timeout_sec=_MARKET_NEWS_TIMEOUT_SEC,
+                    label="cn market news",
+                )
+            market_news_section["items"] = list(m_items or [])
+            market_news_section["sources"] = list(m_sources or [])
+            market_news_section["errors"].extend(str(e) for e in (m_errs or []))
+        except Exception as exc:  # noqa: BLE001
+            market_news_section["errors"].append(f"market news skipped: {exc}")
+
+        # Fetch catalyst news only for top 5 priority candidates (consensus first, then top strategy picks).
+        news_focus: list[dict[str, str]] = []
+        news_seen: set[str] = set()
+        for item in ann_candidates:
+            c = normalize_code(item.get("code"), allow_ticker=False)
+            if not c or c in news_seen:
+                continue
+            news_seen.add(c)
+            news_focus.append({"code": c, "name": str(item.get("name") or "")})
+            if len(news_focus) >= 5:
+                break
+        if news_focus:
+            try:
+                news_df = pd.DataFrame(news_focus)
+                if stock_news_collector is not None:
+                    s_rows, s_errs = stock_news_collector(
+                        news_df,
+                        max_rows=len(news_focus),
+                        cache_dir=announcement_cache_dir,
+                    )
+                else:
+                    s_rows, s_errs = _collect_candidate_stock_news(
+                        news_df,
+                        cache_dir=announcement_cache_dir,
+                    )
+                for row in s_rows or []:
+                    rc = normalize_code(row.get("code"), allow_ticker=False)
+                    raw_n = str(row.get("news") or "").strip()
+                    if rc and raw_n:
+                        parsed_n = _parse_piped_stock_news(raw_n)
+                        if parsed_n:
+                            market_news_section["candidate_news"][rc] = parsed_n
+                for e in s_errs or []:
+                    market_news_section["errors"].append(str(e))
+            except Exception as exc:  # noqa: BLE001
+                market_news_section["errors"].append(f"candidate news skipped: {exc}")
+
+        if market_news_section["errors"] and not market_news_section["items"] and not market_news_section["candidate_news"]:
+            degradation.append(f"News enrichment: {market_news_section['errors'][0]}")
 
     sig_codes: list[str] = []
     seen_sig_codes: set[str] = set()
@@ -411,7 +808,6 @@ def build_daily_report(
                 )
                 sig["kline"] = kline_map.get(str(sig.get("code") or ""), [])
 
-    ai_highlights = _build_ai_highlights(strategy_runs or [])
     if pack_is_stale and stale_reason:
         degradation.append(f"Stale pack: {stale_reason}")
     resolved_detail_url = (
@@ -430,6 +826,8 @@ def build_daily_report(
         "market": "cn",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "usage_policy": "cn_only_regime_slice_only",
+        "strategy_display_names": display_names,
+        "strategy_track_stats": track_stats,
         "market_regime": scan.market_regime.to_dict(),
         "strategies": strategy_entries,
         "ai_highlights": ai_highlights,
@@ -438,18 +836,25 @@ def build_daily_report(
             "experimental": experimental_patterns,
         },
         "announcement_risks": ann_risks,
+        "market_news": market_news_section,
         "degradation": degradation,
         "non_goals": list(DAILY_REPORT_SCHEMA["non_goals"]),
     }
 
-    report["cross_strategy_synthesis"] = build_cross_strategy_synthesis(report)
+    report["cross_strategy_synthesis"] = build_cross_strategy_synthesis(
+        report,
+        strategy_names=display_names,
+    )
     report["ai_brief"] = generate_ai_daily_brief(
         report,
         config=config,
-        track_comparison=track_comparison,
+        track_comparison=effective_track_cmp,
         use_llm=ai_brief_mode,
         llm_caller=llm_caller,
     )
+    fb_reason = str((report["ai_brief"] or {}).get("fallback_reason") or "")
+    if ai_brief_mode in {"auto", "on"} and fb_reason.startswith("llm_error:"):
+        report["degradation"].append(f"AI brief fallback: {fb_reason}")
 
     card = render_daily_im_card(report, max_chars=min(int(max_card_chars), IM_CARD_MAX_CHARS))
     report["im_card_markdown"] = card
@@ -579,8 +984,11 @@ def render_daily_im_card(
         shown = 0
         for item in flagged[:5]:
             flags = "/".join(str(x) for x in (item.get("negative_event_flags") or [])[:2])
-            bullet = f"- {item.get('code', '')} {str(item.get('name', ''))[:8]} [{flags}]"
-            snip = _clean_announcement_snippet(item.get("announcement_summary"), max_len=36)
+            date_tag = f"{str(item.get('announcement_date'))[5:]}·" if item.get("announcement_date") else ""
+            rec_tag = "旧·" if item.get("recency") == "old" else ""
+            bullet = f"- {item.get('code', '')} {str(item.get('name', ''))[:8]} [{date_tag}{rec_tag}{flags}]"
+            raw_ann = item.get("matched_announcement") or item.get("announcement_summary")
+            snip = _clean_announcement_snippet(raw_ann, max_len=34)
             if snip and len(bullet) + len(snip) + 2 <= 82:
                 bullet += f": {snip}"
             if shown > 0 and used_ann + len(bullet) + 1 > bullet_budget:
@@ -643,7 +1051,7 @@ def render_daily_im_card(
     elif brief.get("headline"):
         lines.append(f"**盘后摘要**：{str(brief['headline'])[:72]}")
 
-    # Compact pattern radar summary with top triggered pattern samples when available.
+    # Compact pattern radar summary: positive/active expectations first; collapse negative-expectancy patterns.
     pat_sec = report.get("patterns") or {}
     active = pat_sec.get("active") or []
     experimental = pat_sec.get("experimental") or []
@@ -653,10 +1061,16 @@ def render_daily_im_card(
         p for p in (*active, *experimental)
         if int(p.get("hit_count") or 0) > 0
     ]
-    top_hit_pats.sort(key=lambda p: -int(p.get("hit_count") or 0))
-    if top_hit_pats:
+    top_hit_pats.sort(
+        key=lambda p: (
+            0 if p.get("status") == "active" else (1 if p.get("expectancy_tier") != "negative_watch" else 2),
+            -int(p.get("hit_count") or 0),
+        )
+    )
+    preferred_pats = [p for p in top_hit_pats if p.get("expectancy_tier") != "negative_watch"] or top_hit_pats
+    if preferred_pats:
         pat_parts = []
-        for p in top_hit_pats[:3]:
+        for p in preferred_pats[:3]:
             dname = str(p.get("display_name") or p.get("pattern") or "")
             sigs = "、".join(str(s.get("name") or s.get("code") or "")[:6] for s in (p.get("signals") or [])[:2])
             tag = "" if p.get("status") == "active" else "·观察期"
@@ -668,6 +1082,12 @@ def render_daily_im_card(
             f"**形态雷达**：active {len(active)} 组({active_hits}只) / "
             f"观察期 {len(experimental)} 组({exp_hits}只)"
         )
+
+    mnews_items = ((report.get("market_news") or {}).get("items") or []) if isinstance(report.get("market_news"), dict) else []
+    if mnews_items:
+        top_title = str(mnews_items[0].get("title") or "").strip()[:48]
+        if top_title:
+            lines.append(f"**盘后要闻**：{top_title}")
 
     detail_url = (
         DEFAULT_DASHBOARD_URL

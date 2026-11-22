@@ -299,6 +299,7 @@ def test_doctor_radar_and_cli_smoke(tmp_path: Path, monkeypatch, capsys) -> None
             "--pack-dir",
             str(pack_dir),
             "--no-announcements",
+            "--no-news",
             "--output-json",
             str(out_json),
             "--output-card",
@@ -325,6 +326,7 @@ def test_doctor_radar_and_cli_smoke(tmp_path: Path, monkeypatch, capsys) -> None
             "--pack-dir",
             str(pack_dir),
             "--no-announcements",
+            "--no-news",
             "--push",
             "--json",
         ],
@@ -1131,3 +1133,121 @@ def test_channel_renderers_feishu_telegram_email_and_snippet(tmp_path: Path) -> 
     assert "<script>alert(1)</script>" not in html_part
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html_part
     assert "中国建筑" in html_part and "底部倍量阳" in html_part
+    assert "均衡多因子" in html_part
+    assert "AlphaSift" in email_msg["From"]
+
+
+def test_consensus_announcement_prioritization_pattern_tiering_and_multi_market_digest(tmp_path: Path, monkeypatch) -> None:
+    from alphasift.market_digest import build_markets_digest, load_multi_market_runs
+
+    pack = _make_pack()
+    # Create 5 strategies so max_codes=4 forces prioritization of consensus pick 000003 over early noise
+    runs = [
+        ScreenResult(
+            strategy="balanced_alpha",
+            market="cn",
+            run_id="r_ba",
+            track="rules",
+            picks=[
+                Pick(rank=1, code="000001", name="唯一一", industry="银行", price=10.5, pe_ratio=6.2, pb_ratio=0.7, total_mv=5e10, final_score=80.0, screen_score=80.0, factor_scores={"value": 90, "quality": 85}),
+                Pick(rank=2, code="000003", name="共识三", industry="半导体", price=25.0, pe_ratio=30.0, pb_ratio=3.2, total_mv=2e10, final_score=95.0, screen_score=92.0),
+            ],
+        ),
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="r_dl",
+            track="rules",
+            picks=[
+                Pick(rank=1, code="000002", name="唯一二", industry="化工", price=8.2, final_score=82.0, screen_score=82.0),
+                Pick(rank=2, code="000003", name="共识三", industry="半导体", price=25.0, pe_ratio=30.0, pb_ratio=3.2, total_mv=2e10, final_score=93.0, screen_score=91.0),
+            ],
+        ),
+    ]
+    checked_order: list[str] = []
+
+    def fake_ann(df, *, max_rows: int, cache_dir=None):
+        checked_order.extend(df["code"].tolist())
+        return [
+            {
+                "code": "000003",
+                "name": "共识三",
+                "announcement": "2026-10-01 控股股东涉诉进展 | 2026-11-18 日常经营公告",
+                "negative_event_flags": ["诉讼风险"],
+                "announcement_categories": ["诉讼担保"],
+            }
+        ], []
+
+    replay_mock = {
+        "cost_bps": 25.0,
+        "patterns": [
+            {"pattern": "box_breakout", "horizons": {"t5": {"gross_excess_mean_pct": -0.31, "net_excess_mean_pct": -0.56, "win_rate_pct": 41.0, "scored": 320}}},
+            {"pattern": "bottom_volume_yang", "horizons": {"t5": {"gross_excess_mean_pct": 0.45, "net_excess_mean_pct": 0.20, "win_rate_pct": 51.0, "scored": 280}}},
+        ],
+    }
+    report = build_daily_report(
+        pack,
+        strategy_runs=runs,
+        announcement_max_codes=3,
+        announcement_collector=fake_ann,
+        pattern_replay=replay_mock,
+        detail_url="",
+    )
+    assert checked_order[0] == "000003"
+    assert len(checked_order) <= 3
+    flagged0 = report["announcement_risks"]["flagged_items"][0]
+    assert flagged0["announcement_date"] == "2026-10-01"
+    assert flagged0["recency"] in {"mid", "old"}
+    assert "控股股东涉诉进展" in flagged0["matched_announcement"]
+    cons0 = report["cross_strategy_synthesis"]["consensus_picks"][0]
+    assert cons0["price"] == 25.0 and cons0["pe_ratio"] == 30.0
+    assert cons0["strategy_display_names"] == ["均衡多因子", "双低选股"]
+    assert "均衡多因子" in cons0["strategy_display_names"]
+    # Negative-expectancy box_breakout still marked negative_watch
+    exp_map = {p["pattern"]: p for p in report["patterns"]["experimental"]}
+    assert exp_map["box_breakout"]["expectancy_tier"] == "negative_watch"
+
+    # Multi-market digest & isolated ledger keys (us vs cn)
+    cfg = Config(
+        data_dir=tmp_path / "data",
+        wecom_webhook_url="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=WECOM_SEC",
+        discord_webhook_url="https://discord.com/api/webhooks/1/DC_SEC",
+        slack_webhook_url="https://hooks.slack.com/services/T/B/SL_SEC",
+        notify_state_path=tmp_path / "notify_state.json",
+    )
+    us_run = ScreenResult(
+        strategy="us_momentum_quality",
+        market="us",
+        run_id="2026-11-20_us",
+        track="rules",
+        created_at="2026-11-20T22:00:00Z",
+        picks=[Pick(rank=1, code="NVDA", name="NVIDIA", industry="Semis", price=140.5, change_pct=2.1, final_score=91.0, screen_score=91.0)],
+    )
+    save_screen_result(us_run, data_dir=cfg.data_dir)
+    loaded_multi = load_multi_market_runs(cfg, markets=["us", "hk"])
+    assert len(loaded_multi["us"]) == 1 and loaded_multi["hk"] == []
+    digest = build_markets_digest(loaded_multi, markets=["us", "hk"], detail_url="")
+    assert digest["object"] == "MarketDigest"
+    assert "NVDA" in digest["im_card_markdown"]
+    assert "http" not in digest["im_card_markdown"]
+
+    calls: list[tuple[str, dict]] = []
+
+    def ok_post(url: str, *, json: dict, timeout: float):
+        calls.append((url, json))
+        return _DummyResponse(200, {"errcode": 0} if "qyapi" in url else {"ok": True})
+
+    res_cn = push_daily_report(report, config=cfg, post_fn=ok_post)
+    assert res_cn["status"] == "ok" and sorted(res_cn["sent"]) == ["discord", "slack", "wecom"]
+    # detail_url == "" suppresses embed.url on Discord and URLs on WeCom/Slack
+    dc_call = next(j for u, j in calls if "discord" in u)
+    assert "url" not in dc_call["embeds"][0]
+    assert dc_call["embeds"][0]["fields"]
+    sl_call = next(j for u, j in calls if "slack" in u)
+    assert sl_call["blocks"][0]["type"] == "header"
+
+    calls.clear()
+    res_us = push_daily_report(digest, config=cfg, post_fn=ok_post)
+    assert res_us["status"] == "ok" and sorted(res_us["sent"]) == ["discord", "slack", "wecom"]
+    ledger = json.loads(cfg.notify_state_path.read_text(encoding="utf-8"))
+    assert f"{digest['trade_date']}:us+hk:wecom" in ledger

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-from alphasift.daily_brief import BRIEF_DISCLAIMER
+from alphasift.daily_brief import BRIEF_DISCLAIMER, resolve_strategy_display_names
 
 _DIST_BUCKETS: tuple[tuple[str, str, str], ...] = (
     ("le_neg7", "≤-7%", "down"),
@@ -242,7 +242,9 @@ def render_daily_report_html(
     ai_hl = report.get("ai_highlights") or []
     pat_sec = report.get("patterns") or {}
     degradation = report.get("degradation") or []
-    strategy_names = (track_summary.get("strategy_names") or {}) if isinstance(track_summary, dict) else {}
+    summary_names = (track_summary.get("strategy_names") or {}) if isinstance(track_summary, dict) else {}
+    report_names = report.get("strategy_display_names") if isinstance(report.get("strategy_display_names"), dict) else {}
+    strategy_names = resolve_strategy_display_names(overrides={**report_names, **summary_names})
 
     def _sname_span(key: object) -> str:
         raw = "" if key is None else str(key)
@@ -291,7 +293,7 @@ def render_daily_report_html(
     max_streak = int(reg.get("max_consecutive_limit_up") or 0)
     reg_code = str(reg.get("regime_stage") or "-")
     reg_label = str(reg.get("regime_stage_label") or "-")
-    stage_txt = f"{_esc(reg_label)} ({_esc(reg_code)}) [仅切片]"
+    stage_txt = f"盘面 · {_esc(reg_label)}"
 
     panorama_block = f"""
     <section class="panel" style="padding:0;overflow:hidden;">
@@ -319,12 +321,20 @@ def render_daily_report_html(
     spotlight = syn.get("risk_spotlight") or []
     checked = int(ann.get("checked_count") or 0)
     if flagged:
-        flag_cards = "".join(
-            f'<div class="alert-card"><b>{_esc(x.get("code"))} {_esc(x.get("name"))}</b> '
-            f'<span class="badge bad">{_esc("/".join(x.get("negative_event_flags") or []))}</span>'
-            f'<div class="small dim" style="margin-top:3px;">{_esc(x.get("announcement_summary") or "触发公告负面关键词")}</div></div>'
-            for x in flagged
-        )
+        flag_cards_parts: list[str] = []
+        for x in flagged:
+            ann_date = str(x.get("announcement_date") or "").strip()
+            recency = str(x.get("recency") or "").strip()
+            date_chip = f'<span class="badge">{_esc(ann_date)}</span> ' if ann_date else ""
+            old_chip = f'<span class="badge warn" {_i18n("ann_old")}>历史进展</span> ' if recency == "old" else ""
+            snip = x.get("matched_announcement") or x.get("announcement_summary") or "触发公告负面关键词"
+            flag_cards_parts.append(
+                f'<div class="alert-card"><b>{_esc(x.get("code"))} {_esc(x.get("name"))}</b> '
+                f'{date_chip}{old_chip}'
+                f'<span class="badge bad">{_esc("/".join(x.get("negative_event_flags") or []))}</span>'
+                f'<div class="small dim" style="margin-top:3px;">{_esc(snip)}</div></div>'
+            )
+        flag_cards = "".join(flag_cards_parts)
     elif checked > 0:
         flag_cards = f'<div class="ok-box" {_i18n("ann_ok", n=checked)}>✓ 已核验 {checked} 只重点候选，暂未发现减持 / 立案 / 退市等负面关键词。</div>'
     else:
@@ -345,6 +355,30 @@ def render_daily_report_html(
     </section>
     """
 
+    # 3b. Market News & Catalysts (when collected)
+    mnews = report.get("market_news") or {}
+    news_items = mnews.get("items") or []
+    news_sources = " · ".join(str(s) for s in (mnews.get("sources") or []) if s)
+    if news_items:
+        n_rows = "".join(
+            f'<li><span class="badge">{_esc(it.get("category") or "要闻")}</span> '
+            f'<b>{_esc(it.get("title"))}</b> '
+            f'<span class="dim small">{_esc(it.get("source") or "")} {_esc(it.get("published_at") or "")}</span></li>'
+            for it in news_items[:6]
+            if isinstance(it, dict) and it.get("title")
+        )
+        news_block = f"""
+    <section class="panel">
+      <div class="sec-head">
+        <h2 {_i18n("sec_news")}>📰 市场热点与政策快讯</h2>
+        {f'<span class="badge">{_esc(news_sources)}</span>' if news_sources else ""}
+      </div>
+      <ul class="bullet-list">{n_rows}</ul>
+    </section>
+    """
+    else:
+        news_block = ""
+
     # 4. Cross-strategy Consensus, Sector Concentration & AI Attribution
     consensus = syn.get("consensus_picks") or []
     if consensus:
@@ -355,9 +389,20 @@ def render_daily_report_html(
             strat_badges = "".join(f'<span class="badge">{_sname_span(st)}</span>' for st in strat_list[:3])
             if len(strat_list) > 3:
                 strat_badges += f' <span class="dim small">+{len(strat_list) - 3}</span>'
+            val_parts: list[str] = []
+            if c.get("price") is not None:
+                val_parts.append(f'¥{float(c["price"]):.2f}')
+            if c.get("pe_ratio") is not None:
+                val_parts.append(f'PE {float(c["pe_ratio"]):.1f}')
+            if c.get("pb_ratio") is not None:
+                val_parts.append(f'PB {float(c["pb_ratio"]):.2f}')
+            val_sub = f'<div class="small dim mono">{" · ".join(val_parts)}</div>' if val_parts else ""
+            reason_sub = ""
+            if c.get("reasons"):
+                reason_sub = f'<div class="small dim">{_esc("；".join(str(r) for r in c["reasons"][:1]))}</div>'
             c_rows_parts.append(
                 f'<tr><td><span class="rank-num {"top" if idx <= 3 else ""}">{idx}</span></td>'
-                f'<td class="l"><strong>{_esc(c.get("name"))}</strong> <span class="mono dim small">{_esc(c.get("code"))}</span></td>'
+                f'<td class="l"><strong>{_esc(c.get("name"))}</strong> <span class="mono dim small">{_esc(c.get("code"))}</span>{val_sub}{reason_sub}</td>'
                 f'<td class="l dim">{_esc(c.get("industry"))}</td>'
                 f'<td><span class="badge accent" {_i18n("n_strats", n=int(c.get("strategy_count") or 0))}>{int(c.get("strategy_count") or 0)} 策略</span></td>'
                 f'<td class="l">{strat_badges}</td>'
@@ -480,13 +525,32 @@ def render_daily_report_html(
     </section>
     """
 
-    # 6. Pattern Radar Cards (active + muted experimental)
+    # 6. Pattern Radar Cards (active + expectancy-tiered experimental)
     pat_cards = []
     for bucket, is_active in (("active", True), ("experimental", False)):
-        for pat in pat_sec.get(bucket) or []:
+        pats_list = list(pat_sec.get(bucket) or [])
+        if not is_active:
+            pats_list.sort(
+                key=lambda p: (
+                    0 if p.get("expectancy_tier") == "positive_watch" else (1 if p.get("expectancy_tier") != "negative_watch" else 2),
+                    -int(p.get("hit_count") or 0),
+                )
+            )
+        for pat in pats_list:
             pkey = str(pat.get("pattern") or "")
             dname = str(pat.get("display_name") or pkey)
-            badge = '<span class="badge active">active</span>' if is_active else '<span class="badge">experimental</span>'
+            exp_tier = str(pat.get("expectancy_tier") or "")
+            badge = '<span class="badge active">active</span>' if is_active else (
+                '<span class="badge warn">负期望·观察</span>'
+                if exp_tier == "negative_watch"
+                else '<span class="badge">观察期</span>'
+            )
+            net_ex = pat.get("replay_t5_net_excess_pct")
+            replay_note = (
+                f' · T+5净超额 {float(net_ex):+.2f}%'
+                if net_ex is not None
+                else ""
+            )
             sigs = pat.get("signals") or []
             if sigs:
                 s_rows = "".join(
@@ -508,7 +572,7 @@ def render_daily_report_html(
             hits_n = int(pat.get("hit_count") or 0)
             pat_cards.append(
                 f'<div class="card {"muted-card" if not is_active else ""}"><div class="card-top"><h3><span data-pattern="{_esc(pkey)}">{_esc(dname)}</span>{badge}</h3>'
-                f'<div class="sub" {_i18n("pat_hits_cnt", n=hits_n)}>命中 {hits_n} 只</div></div>{body}</div>'
+                f'<div class="sub"><span {_i18n("pat_hits_cnt", n=hits_n)}>命中 {hits_n} 只</span>{replay_note}</div></div>{body}</div>'
             )
     pat_block = f"""
     <section class="panel">
@@ -749,6 +813,7 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
   {deg_html}
   {brief_block}
   {panorama_block}
+  {news_block}
   {ann_block}
   {synthesis_block}
   {strat_block}
@@ -793,8 +858,10 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       no_dist: "暂无涨跌幅分布统计",
       ladder_empty: "今日无非 ST 连板或首板分布",
       sec_ann: "⚠️ 公告排雷与风险聚焦",
+      ann_old: "历史进展",
       ann_skipped: "本期日报跳过公告抽检或无候选股。",
       ann_extra: "候选附加风控标签：",
+      sec_news: "📰 市场热点与政策快讯",
       sec_syn: "跨策略共识、行业分布与 AI 归因",
       sub_multi_cons: "多策略共识标的",
       col_stock: "股票",
@@ -882,10 +949,12 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       ladder_board: "{{b}}d",
       ladder_cnt: "{{n}}",
       sec_ann: "⚠️ Announcement Risk Screening",
+      ann_old: "Earlier Update",
       ann_badge: "{{c}} checked · {{f}} flagged",
       ann_ok: "✓ Screened {{n}} shortlisted candidates — no negative filing keywords detected.",
       ann_skipped: "Announcement screening skipped or no shortlisted candidates.",
       ann_extra: "Additional candidate risk flags:",
+      sec_news: "📰 Market Headlines & Catalysts",
       sec_syn: "Cross-Strategy Consensus, Sector Mix & AI Attribution",
       sub_multi_cons: "Multi-Strategy Consensus",
       col_stock: "Security",
@@ -980,10 +1049,12 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       ladder_board: "{{b}}連続",
       ladder_cnt: "{{n}} 社",
       sec_ann: "⚠️ 適時開示リスク検査",
+      ann_old: "過去の続報",
       ann_badge: "検査 {{c}} · 高リスク {{f}}",
       ann_ok: "✓ 主要候補 {{n}} 銘柄の適時開示を確認済み（持株売却・調査等の警戒語なし）。",
       ann_skipped: "開示検査スキップまたは候補銘柄なし。",
       ann_extra: "追加のリスクタグ：",
+      sec_news: "📰 市場トピックス・ニュース",
       sec_syn: "複数戦略コンセンサス・業種分布・AI帰属",
       sub_multi_cons: "複数戦略コンセンサス銘柄",
       col_stock: "銘柄",
@@ -1127,7 +1198,7 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       if (el.dataset.zhText === undefined) el.dataset.zhText = el.textContent;
       var k = el.getAttribute("data-regime");
       if (lang === "zh") el.textContent = el.dataset.zhText;
-      else el.textContent = ((REGIME_MAP[lang] && REGIME_MAP[lang][k]) || el.getAttribute("data-regime-raw") || k) + " [slice]";
+      else el.textContent = (REGIME_MAP[lang] && REGIME_MAP[lang][k]) || el.getAttribute("data-regime-raw") || k;
     }});
     document.querySelectorAll("[data-dist-flat]").forEach(function (el) {{
       el.textContent = dict.dist_flat || "平盘";

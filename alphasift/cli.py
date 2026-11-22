@@ -439,27 +439,30 @@ def main():
     pat_replay.add_argument("--output-md", default=None, help="写出 Markdown 回放报告")
     pat_replay.add_argument("--json", action="store_true", help="以 JSON 输出")
 
-    # daily-report (CN daily report + IM card + idempotent push)
-    drpt = sub.add_parser("daily-report", help="生成 A 股结构化日报 report.json、<1200 字卡片并支持幂等 IM 推送")
+    # daily-report (CN daily report + multi-market digest + IM card + idempotent push)
+    drpt = sub.add_parser("daily-report", help="生成盘后结构化日报 report.json、<1200 字卡片并支持多通道幂等推送")
+    drpt.add_argument("--markets", default="cn", help="目标市场列表（逗号分隔；默认 cn，支持 us,hk,jp,kr,tw,in 海外简报）")
     drpt.add_argument("--pack-dir", default=None, help="A 股日线包目录，默认读取 ALPHASIFT_PACK_DIR")
     drpt.add_argument("--trade-date", default=None, help="指定交易日 YYYY-MM-DD")
     drpt.add_argument("--run-id", action="append", default=None, help="附加已保存策略运行 ID/路径，可重复")
-    drpt.add_argument("--runs-dir", default=None, help="从目录自动附带该日保存的 CN 策略运行")
+    drpt.add_argument("--runs-dir", default=None, help="从目录自动附带该日保存的策略运行")
+    drpt.add_argument("--patterns-json", default=None, help="可选 patterns.json / replay.json 路径，补充形态历史期望标注")
     drpt.add_argument("--no-announcements", action="store_true", help="跳过候选股近期公告负面关键词排雷")
+    drpt.add_argument("--no-news", action="store_true", help="跳过市场热点快讯与焦点个股新闻催化抓取")
     drpt.add_argument("--expected-trade-date", default=None, help="目标 A 股交易日 YYYY-MM-DD；旧包将标记降级且默认不推送")
     drpt.add_argument(
         "--allow-stale-pack",
         action="store_true",
         help="允许使用落后于 expected-trade-date 的日线包生成带旧包标记的降级日报",
     )
-    drpt.add_argument("--detail-url", default=None, help="覆盖 IM 卡片里的看板详情链接")
+    drpt.add_argument("--detail-url", default=None, help="覆盖 IM 卡片里的看板详情链接（传空字符串隐藏）")
     drpt.add_argument(
         "--ai-brief",
         choices=["auto", "on", "off"],
         default="auto",
         help="生成 AI 盘后综述简报模式：auto(有 LLM Key 时启用)、on、off",
     )
-    drpt.add_argument("--announcement-max-codes", type=int, default=12, help="公告排雷最多抽检前 N 只候选，默认 12")
+    drpt.add_argument("--announcement-max-codes", type=int, default=20, help="公告排雷最多抽检前 N 只候选，默认 20")
     drpt.add_argument("--output-json", default=None, help="写出 DailyReport report.json 路径")
     drpt.add_argument("--output-card", default=None, help="额外写出 <1200 字 IM Markdown 卡片路径")
     drpt.add_argument("--output-html", default=None, help="额外写出可打印独立 HTML 研报路径")
@@ -1125,69 +1128,127 @@ def main():
             write_daily_report,
         )
         from alphasift.daily_report_html import write_daily_report_html
+        from alphasift.market_digest import build_markets_digest, load_multi_market_runs
         from alphasift.markets import latest_settled_close
         from alphasift.notify import push_daily_report
 
         config = Config.from_env()
-        directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
+        req_markets = [m.strip().lower() for m in str(getattr(args, "markets", "cn") or "cn").split(",") if m.strip()] or ["cn"]
+        resolved_detail_url = args.detail_url if args.detail_url is not None else config.dashboard_url
+        runs_dir_path = Path(args.runs_dir).expanduser() if args.runs_dir else None
+
+        track_summary = None
+        summary_candidates = []
+        if args.output_html:
+            summary_candidates.append(Path(args.output_html).expanduser().parent / "summary.json")
+        if args.output_json:
+            summary_candidates.append(Path(args.output_json).expanduser().parent / "summary.json")
+        if runs_dir_path is not None:
+            summary_candidates.append(runs_dir_path.parent.parent / "site" / "summary.json")
+        for cand in summary_candidates:
+            if cand.is_file():
+                try:
+                    track_summary = json.loads(cand.read_text(encoding="utf-8"))
+                    break
+                except (OSError, ValueError):
+                    pass
+
+        pattern_replay = None
+        replay_candidates = []
+        if getattr(args, "patterns_json", None):
+            replay_candidates.append(Path(args.patterns_json).expanduser())
+        if runs_dir_path is not None:
+            replay_candidates.append(runs_dir_path.parent / "patterns" / "replay.json")
+            replay_candidates.append(runs_dir_path.parent.parent / "site" / "patterns.json")
+        if args.output_json:
+            replay_candidates.append(Path(args.output_json).expanduser().parent / "patterns.json")
+        for cand in replay_candidates:
+            if cand.is_file():
+                try:
+                    pattern_replay = json.loads(cand.read_text(encoding="utf-8"))
+                    break
+                except (OSError, ValueError):
+                    pass
+
         try:
-            daily_pack = pack.load_pack(directory)
-            runs = load_daily_report_runs(
-                config,
-                run_refs=args.run_id,
-                runs_dir=Path(args.runs_dir).expanduser() if args.runs_dir else None,
-                trade_date=args.trade_date or daily_pack.trade_date,
-            )
-            explicit_expected_date = args.expected_trade_date
-            resolved_expected_date = explicit_expected_date
-            if not resolved_expected_date and args.push and not args.force_push and not args.trade_date:
-                settled = latest_settled_close("cn")
-                if settled is not None:
-                    resolved_expected_date = settled[0].isoformat()
-            allow_stale = True if not explicit_expected_date else bool(args.allow_stale_pack)
-            track_summary = None
-            summary_candidates = []
-            if args.output_html:
-                summary_candidates.append(Path(args.output_html).expanduser().parent / "summary.json")
-            if args.runs_dir:
-                summary_candidates.append(Path(args.runs_dir).expanduser().parent.parent / "site" / "summary.json")
-            for cand in summary_candidates:
-                if cand.is_file():
-                    try:
-                        track_summary = json.loads(cand.read_text(encoding="utf-8"))
-                        break
-                    except (OSError, ValueError):
-                        pass
-            report = build_daily_report(
-                daily_pack,
-                trade_date=args.trade_date,
-                expected_trade_date=resolved_expected_date,
-                allow_stale_pack=allow_stale,
-                detail_url=args.detail_url or config.dashboard_url,
-                strategy_runs=runs,
-                include_announcements=not args.no_announcements,
-                announcement_max_codes=args.announcement_max_codes,
-                announcement_cache_dir=(
-                    config.llm_candidate_context_cache_dir or (config.data_dir / "candidate_context_cache")
-                ),
-                ai_brief_mode=args.ai_brief,
-                config=config,
-                track_comparison=(track_summary or {}).get("track_comparison") if isinstance(track_summary, dict) else None,
-            )
-            if args.output_json:
-                write_daily_report(args.output_json, report)
-            if args.output_card:
-                write_daily_card(args.output_card, report["im_card_markdown"])
-            if args.output_html:
-                write_daily_report_html(args.output_html, report, track_summary=track_summary)
-            if args.push or args.dry_run_push:
-                report["push"] = push_daily_report(
-                    report,
-                    config=config,
-                    channels=args.channel,
-                    force=args.force_push,
-                    dry_run=args.dry_run_push,
+            if req_markets != ["cn"]:
+                runs_by_mkt = load_multi_market_runs(
+                    config,
+                    markets=req_markets,
+                    runs_dir=runs_dir_path,
+                    trade_date=args.trade_date,
                 )
+                report = build_markets_digest(
+                    runs_by_mkt,
+                    markets=req_markets,
+                    trade_date=args.trade_date,
+                    detail_url=resolved_detail_url,
+                    include_news=not getattr(args, "no_news", False),
+                    config=config,
+                    track_summary=track_summary if isinstance(track_summary, dict) else None,
+                )
+                if args.output_json:
+                    write_daily_report(args.output_json, report)
+                if args.output_card:
+                    write_daily_card(args.output_card, report["im_card_markdown"])
+                if args.push or args.dry_run_push:
+                    report["push"] = push_daily_report(
+                        report,
+                        config=config,
+                        channels=args.channel,
+                        force=args.force_push,
+                        dry_run=args.dry_run_push,
+                    )
+            else:
+                directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
+                daily_pack = pack.load_pack(directory)
+                runs = load_daily_report_runs(
+                    config,
+                    run_refs=args.run_id,
+                    runs_dir=runs_dir_path,
+                    trade_date=args.trade_date or daily_pack.trade_date,
+                )
+                explicit_expected_date = args.expected_trade_date
+                resolved_expected_date = explicit_expected_date
+                if not resolved_expected_date and args.push and not args.force_push and not args.trade_date:
+                    settled = latest_settled_close("cn")
+                    if settled is not None:
+                        resolved_expected_date = settled[0].isoformat()
+                allow_stale = True if not explicit_expected_date else bool(args.allow_stale_pack)
+                cache_root = config.llm_candidate_context_cache_dir or (config.data_dir / "candidate_context_cache")
+                report = build_daily_report(
+                    daily_pack,
+                    trade_date=args.trade_date,
+                    expected_trade_date=resolved_expected_date,
+                    allow_stale_pack=allow_stale,
+                    detail_url=resolved_detail_url,
+                    strategy_runs=runs,
+                    include_announcements=not args.no_announcements,
+                    announcement_max_codes=args.announcement_max_codes,
+                    announcement_cache_dir=cache_root,
+                    include_news=not getattr(args, "no_news", False),
+                    news_cache_dir=cache_root,
+                    ai_brief_mode=args.ai_brief,
+                    config=config,
+                    track_comparison=(track_summary or {}).get("track_comparison") if isinstance(track_summary, dict) else None,
+                    track_summary=track_summary if isinstance(track_summary, dict) else None,
+                    pattern_replay=pattern_replay if isinstance(pattern_replay, dict) else None,
+                    warn_if_no_runs=bool(args.runs_dir or args.run_id),
+                )
+                if args.output_json:
+                    write_daily_report(args.output_json, report)
+                if args.output_card:
+                    write_daily_card(args.output_card, report["im_card_markdown"])
+                if args.output_html:
+                    write_daily_report_html(args.output_html, report, track_summary=track_summary)
+                if args.push or args.dry_run_push:
+                    report["push"] = push_daily_report(
+                        report,
+                        config=config,
+                        channels=args.channel,
+                        force=args.force_push,
+                        dry_run=args.dry_run_push,
+                    )
         except (OSError, RuntimeError, ValueError, IndexError) as exc:
             parser.error(str(exc))
         if args.explain and not args.json:

@@ -281,3 +281,96 @@ def test_classify_announcement_categories_from_announcement_text():
 
     assert "业绩" in categories
     assert "回购增持" in categories
+
+
+def test_classify_negative_events_disambiguates_false_positives_and_falls_back_to_search(monkeypatch):
+    # Benign routine filings must NOT trigger false alarms
+    benign_cases = [
+        "2026-10-30 关于计提资产减值准备的公告",
+        "2026-10-28 2026年度第一期科技创新债券发行结果公告",
+        "2026-11-15 关于控股股东部分股份解除质押的公告",
+        "2026-11-18 关于股东承诺不减持及提前终止减持计划的公告",
+        "2026-11-12 关于收到诉讼胜诉判决及结案的公告",
+        "2026-11-14 FIRST BEST STOCK LISTING announcement",
+    ]
+    for title in benign_cases:
+        assert classify_negative_events({"announcement": title}) == [], f"false positive for: {title}"
+
+    # Genuine severe or mixed cases MUST still trigger
+    assert "财务风险" in classify_negative_events({"announcement": "关于大额计提资产减值准备并预计亏损的公告"})
+    assert "业绩压力" in classify_negative_events({"announcement": "关于大额计提资产减值准备并预计亏损的公告"})
+    assert "减持" in classify_negative_events({"announcement": "部分股东承诺不减持 | 实控人拟减持3%"})
+    assert "退市风险" in classify_negative_events({"announcement": "关于公司股票被实施*ST退市风险警示的公告"})
+    assert "诉讼风险" in classify_negative_events({"announcement": "2026-11-10 关于控股股东涉诉进展公告"})
+    assert "质押冻结" in classify_negative_events({"announcement": "2026-11-07 华友钴业关于控股股东部分股份质押的公告"})
+    assert "诉讼风险" not in classify_negative_events({"announcement": "2026-11-07 华友钴业关于控股股东部分股份质押的公告"})
+
+    # fetch_stock_news_summary falls back to web search when akshare stock_news_em is empty
+    class EmptyAkshare:
+        @staticmethod
+        def stock_news_em(symbol):
+            return pd.DataFrame()
+
+    monkeypatch.setitem(__import__("sys").modules, "akshare", EmptyAkshare)
+    monkeypatch.setattr(
+        "alphasift.market_news.search_stock_news_via_web",
+        lambda query, *, limit=3: [{"published_at": "11-20", "source": "Tavily", "title": "601668 签重大工程合同"}],
+    )
+    out = candidate_context.fetch_stock_news_summary("601668", limit=2)
+    assert "签重大工程合同" in out
+
+
+def test_fetch_cn_market_news_dedupes_filters_noise_and_falls_back(monkeypatch, tmp_path):
+    from alphasift.market_news import fetch_cn_market_news, search_stock_news_via_web
+
+    class _Resp:
+        def __init__(self, status_code: int, body: dict):
+            self.status_code = status_code
+            self._body = body
+
+        def raise_for_status(self) -> None:
+            if self.status_code >= 400:
+                raise RuntimeError(f"HTTP {self.status_code} api_key=tvly-secret-12345")
+
+        def json(self) -> dict:
+            return self._body
+
+    def fake_get(url: str, **kwargs):
+        if "eastmoney.com" in url:
+            return _Resp(200, {
+                "data": {
+                    "fastNewsList": [
+                        {"title": "互动平台：某公司回复投资者提问", "summary": "", "showTime": "2026-11-20 15:05:00"},
+                        {"title": "央行开展逆回购操作呵护月末流动性", "summary": "政策信号", "showTime": "2026-11-20 15:30:00"},
+                        {"title": "证监会发布市值管理新规指引", "summary": "", "showTime": "2026-11-20 16:10:00"},
+                    ]
+                }
+            })
+        if "10jqka.com.cn" in url:
+            return _Resp(200, {
+                "data": {
+                    "list": [
+                        {"title": "央行开展逆回购操作呵护月末流动性", "digest": "dup", "rtime": "2026-11-20 15:31:00"},
+                        {"title": "半导体国产替代板块尾盘异动", "digest": "板块拉升", "rtime": "2026-11-20 14:55:00"},
+                    ]
+                }
+            })
+        raise RuntimeError("offline")
+
+    monkeypatch.setattr("alphasift.market_news.requests.get", fake_get)
+    items, sources, errs = fetch_cn_market_news(limit=3, trade_date="2026-11-20", cache_dir=tmp_path)
+    assert not errs
+    assert "东方财富7x24" in sources
+    titles = [x["title"] for x in items]
+    # Duplicate excluded, low-signal 互动平台 deprioritized when sufficient clean headlines exist
+    assert len(titles) == 3
+    assert "互动平台：某公司回复投资者提问" not in titles
+    assert "央行开展逆回购操作呵护月末流动性" in titles
+
+    # Error redaction on Tavily web fallback
+    def broken_post(url: str, **kwargs):
+        raise RuntimeError("boom key=tvly-super-secret-xyz")
+
+    monkeypatch.setattr("alphasift.market_news.requests.post", broken_post)
+    monkeypatch.setenv("TAVILY_API_KEYS", "tvly-super-secret-xyz")
+    assert search_stock_news_via_web("test query") == []

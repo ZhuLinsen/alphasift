@@ -4,8 +4,10 @@
 import json
 import logging
 import re
+from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
+from typing import Any
 
 from alphasift.llm_client import LLMClientError, build_attempts, complete, configuration_error
 from alphasift.models import Pick
@@ -70,7 +72,7 @@ _NEGATED_RISK_RE = re.compile(
     r"(?:investigation|adverse filing|delisting|penalty)\b",
     re.I,
 )
-_SEVERE_CONTEXT_FLAGS = frozenset({"监管", "退市风险", "财务风险", "业绩压力", "减持", "诉讼风险"})
+_SEVERE_CONTEXT_FLAGS = frozenset({"监管", "退市风险", "财务风险", "业绩压力", "减持", "诉讼风险", "质押冻结"})
 _LLM_RED_FLAG_MAX_SCORE = 35.0
 
 
@@ -618,7 +620,7 @@ def _truncate_text(value: str, limit: int) -> str:
     return text[: max(limit - 1, 0)] + "…"
 
 
-def _call_llm(
+def _call_llm_with_metadata(
     prompt: str,
     api_key: str,
     model: str,
@@ -632,8 +634,10 @@ def _call_llm(
     config_path: str = "",
     timeout_sec: float = 60.0,
     max_tokens: int | None = 2048,
-) -> str:
-    """Try configured OpenAI-compatible endpoints for one LLM prompt."""
+    reasoning_effort: str | None = None,
+    validator: Callable[[str], Any] | None = None,
+) -> tuple[str, str]:
+    """Try configured OpenAI-compatible endpoints and return (content, used_model)."""
     if error := configuration_error(channels or [], config_path):
         raise LLMClientError(error)
 
@@ -655,12 +659,13 @@ def _call_llm(
     for attempt in attempts:
         for requested_format in formats:
             try:
-                return complete(
+                text = complete(
                     attempt,
                     messages=messages,
                     temperature=temperature,
                     max_tokens=max_tokens,
                     response_format=requested_format,
+                    reasoning_effort=reasoning_effort,
                     timeout=timeout_sec,
                     silent=silent,
                 )
@@ -673,10 +678,50 @@ def _call_llm(
                 if requested_format is not None and exc.json_mode_rejected:
                     continue
                 break
+            if validator is not None:
+                try:
+                    validator(text)
+                except (ValueError, KeyError, TypeError) as exc:
+                    last_error = LLMClientError(f"Invalid LLM structured output: {exc}")
+                    break
+            return text, attempt.model
 
     if last_error is not None:
         raise last_error
     raise RuntimeError("No LLM model configured")
+
+
+def _call_llm(
+    prompt: str,
+    api_key: str,
+    model: str,
+    base_url: str,
+    *,
+    fallback_models: list[str] | None = None,
+    temperature: float = 0.2,
+    json_mode: bool = True,
+    silent: bool = True,
+    channels: list[dict[str, object]] | None = None,
+    config_path: str = "",
+    timeout_sec: float = 60.0,
+    max_tokens: int | None = 2048,
+) -> str:
+    """Try configured OpenAI-compatible endpoints for one LLM prompt."""
+    text, _ = _call_llm_with_metadata(
+        prompt,
+        api_key,
+        model,
+        base_url,
+        fallback_models=fallback_models,
+        temperature=temperature,
+        json_mode=json_mode,
+        silent=silent,
+        channels=channels,
+        config_path=config_path,
+        timeout_sec=timeout_sec,
+        max_tokens=max_tokens,
+    )
+    return text
 
 
 def _parse_ranking_response(response: str, candidates: list[Pick]) -> list[Pick]:
