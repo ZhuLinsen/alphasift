@@ -1,0 +1,72 @@
+name: three_white_soldiers
+display_name: 红三兵
+family: trend_continuation
+status: experimental
+version: "1.0"
+description: 60日相对低中位止跌后连续三根稳健推进阳线，剔除一字/涨停板接力与上影受阻（250日观察对照基线）
+tags: [trend_continuation, multi_bar, candlestick]
+market_scope: [cn]
+min_history_days: 60
+cooldown_days: 3
+
+universe:
+  exclude_st: true
+  proxy_amount_min: 80000000
+  close_min: 2.0
+
+mode: direct
+conditions:
+  - feature: valid_streak
+    min: 4
+  - feature: bull_streak
+    min: 3
+  - feature: close_higher_streak
+    min: 2
+  - feature: pos_in_60d
+    lag: 2
+    max: 0.65
+  - feature: is_limit_up
+    equals: false
+  - feature: is_limit_up
+    lag: 1
+    equals: false
+  - feature: is_limit_up
+    lag: 2
+    equals: false
+  - feature: body_limit_ratio
+    min: 0.08
+    max: 0.55
+  - feature: body_limit_ratio
+    lag: 1
+    min: 0.08
+    max: 0.55
+  - feature: body_limit_ratio
+    lag: 2
+    min: 0.08
+    max: 0.55
+  - feature: ret_3d_limit_ratio
+    min: 0.30
+    max: 1.05
+  - feature: open_in_prev_body
+    equals: true
+  - feature: open_in_prev_body
+    lag: 1
+    equals: true
+  - feature: upper_shadow_to_range
+    max: 0.35
+  - feature: upper_shadow_to_range
+    lag: 1
+    max: 0.35
+  - feature: upper_shadow_to_range
+    lag: 2
+    max: 0.35
+  - feature: body_ratio_vs_prev
+    min: 0.50
+  - feature: body_ratio_vs_prev
+    lag: 1
+    min: 0.50
+  - feature: vol_ratio_20d
+    min: 0.8
+    max: 2.8
+  - feature: pullback_to_ma20_atr
+    max: 2.5

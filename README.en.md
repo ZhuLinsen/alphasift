@@ -10,7 +10,7 @@
 
 **AI Quantitative Stock Screener**
 
-*Full-market YAML screening across 7 markets -> Red-flag AI re-ranking -> Public `next_open` T+N live benchmark*
+*Full-market YAML screening across 7 markets -> Red-flag AI re-ranking -> Public `next_open` T+N paper benchmark*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://zhulinsen.github.io/alphasift/?lang=en)
@@ -155,7 +155,7 @@ alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html
 | **Post-Trade Audit** | None | Manual review | **Public `track-record` ledger (`next_open` T+5/10/20 + limit-up blocks)** |
 
 - **Orthogonal CN Strategy Suite**: Restructuring all 10 CN strategies with 8-bucket hard sector caps (`max_same_bucket: 1`) cut mean pairwise strategy overlap across 3 local 250D snapshots from **8.0%–24.9% -> 0.9%–1.8%** (`max` **100% -> 20%**) and bank concentration from **22%–31.1% -> 4.0%–9.1%**.
-- **Empirically Audited 250D Pattern Radar**: Across `2026-02-05 .. 2026-11-06` (`180` sessions, `5,218` A-shares, `next_open` entry vs CSI 300), only **`ma20_shrink_pullback` (+0.158% T+5 / +0.905% T+10)** and **`steady_trend_breakout` (+0.271% T+5 / +0.560% T+10)** met the `N >= 200 & excess > 0%` graduation bar (`active`); 5 classic patterns stay muted as `experimental`.
+- **Empirically Audited 250D Pattern Radar**: Across `2026-02-05 .. 2026-11-06` (`180` sessions, `5,218` A-shares, `next_open` entry vs CSI 300, **9** stateless YAMLs), **`ma20_shrink_pullback` (+0.158% T+5 / +0.905% T+10)** and **`steady_trend_breakout` (+0.271% T+5 / +0.560% T+10)** hold `active` status; newly added **`three_white_soldiers` (+0.414% T+5 / 50.7% win)** and **`three_white_soldiers_pullback` (+0.451% T+5)** stay in `experimental` alongside 5 classic patterns pending split-half stability (`t = 0.03 / 0.12`).
 
 ```
 +-------------------------------------------------------------------+
@@ -179,7 +179,7 @@ alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html
                  |                                |
                  v                                v
 +---------------------------------+  +------------------------------+
-|  L3 Analyzers (scorecard / DSA) |  |  Immutable track-record Log  |
+|  L3 Analyzers (scorecard / DSA) |  |  Auditable track-record Log  |
 |  Printable HTML & NOTIFY_URLS   |  |  next_open T+5/10/20 Audit   |
 +---------------------------------+  +------------------------------+
 ```

@@ -169,6 +169,9 @@ def test_scorecard_untradable_share_and_pattern_board_replay_klines(tmp_path: Pa
     (tmp_path / "site" / "evaluation.json").write_text(json.dumps({"runs": evaluation}), encoding="utf-8")
     summary = track_record.build_site(tmp_path)
     assert summary["pattern_board"]["has_replay"] is True
+    assert summary["artifacts"]["patterns"]["exists"] is True
+    assert summary["artifacts"]["report"]["exists"] is False
+    assert summary["artifacts"]["daily_report_html"]["exists"] is False
 
     site_patterns = json.loads((tmp_path / "site" / "patterns.json").read_text(encoding="utf-8"))
     box_hits = site_patterns["latest"]["signals_by_pattern"]["box_breakout"]
@@ -214,6 +217,10 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
         "lang-switch",
         "SUPPORTED_LANGS",
         "Quantitative Discovery",
+        "health-strip",
+        "status-ok",
+        "chart-crosshair",
+        "three_white_soldiers",
     ):
         assert marker in html
 

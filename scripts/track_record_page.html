@@ -31,6 +31,10 @@
   --down-soft: rgba(52, 211, 153, 0.12);
   --warn: #fbbf24;
   --warn-soft: rgba(251, 191, 36, 0.14);
+  --status-ok: #38bdf8;
+  --status-ok-soft: rgba(56, 189, 248, 0.13);
+  --status-err: #f43f5e;
+  --status-err-soft: rgba(244, 63, 94, 0.14);
   --chip: rgba(255, 255, 255, 0.06);
   --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px -15px rgba(0, 0, 0, 0.65);
   --grid-dot: rgba(255, 255, 255, 0.035);
@@ -66,6 +70,10 @@
   --down-soft: rgba(5, 150, 105, 0.1);
   --warn: #b45309;
   --warn-soft: rgba(180, 83, 9, 0.1);
+  --status-ok: #0284c7;
+  --status-ok-soft: rgba(2, 132, 199, 0.1);
+  --status-err: #e11d48;
+  --status-err-soft: rgba(225, 29, 72, 0.1);
   --chip: rgba(9, 9, 11, 0.055);
   --shadow: 0 1px 2px rgba(9, 9, 11, 0.04), 0 8px 24px -16px rgba(9, 9, 11, 0.08);
   --grid-dot: rgba(9, 9, 11, 0.045);
@@ -215,6 +223,24 @@ main { max-width: 1280px; margin: 0 auto; padding: 24px 20px 72px; }
   color: var(--ink); font-size: 12.5px;
 }
 .stale-banner.show { display: block; }
+
+.health-strip {
+  margin-top: 14px; padding: 8px 12px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 12px;
+}
+.health-item {
+  display: inline-flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap;
+}
+.health-item strong { color: var(--ink-2); font-weight: 600; }
+.health-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--muted); }
+.health-dot.ok { background: var(--status-ok); box-shadow: 0 0 6px var(--status-ok-soft); }
+.health-dot.pend { background: var(--warn); }
+.health-dot.err { background: var(--status-err); }
+.status-ok { color: var(--status-ok); }
+.status-err { color: var(--status-err); }
+.badge.ok-neutral { color: var(--status-ok); border-color: rgba(56, 189, 248, 0.35); background: var(--status-ok-soft); }
+.badge.pending { color: var(--warn); border-color: rgba(251, 191, 36, 0.35); background: var(--warn-soft); }
 
 /* Unified 4-Col Hairline KPI Strip */
 .kpi-strip {
@@ -536,7 +562,8 @@ footer {
       <a href="#leaderboard" data-i18n="nav_leaderboard">策略排行</a>
       <a href="#trend-section" data-i18n="nav_trend">超额走势</a>
       <a href="#explorer" data-i18n="nav_explorer">选股浏览</a>
-      <a href="#radar-section" data-i18n="nav_radar">AI 与形态</a>
+      <a href="#track-comparison-section" data-i18n="nav_ai">AI 归因</a>
+      <a href="#radar-section" data-i18n="nav_patterns">形态雷达</a>
     </div>
 
     <div class="top-actions">
@@ -585,6 +612,7 @@ footer {
   </header>
 
   <div class="stale-banner" id="stale-banner"></div>
+  <div class="health-strip" id="health-strip"></div>
 
   <div class="kpi-strip" id="kpi-strip">
     <div class="kpi-cell"><div class="kpi-label" data-i18n="loading">加载中</div><div class="kpi-val">–</div><div class="kpi-foot" data-i18n="loading_sub">读取公开战绩与盘面统计…</div></div>
@@ -742,7 +770,8 @@ const I18N = {
     nav_leaderboard: "策略排行",
     nav_trend: "超额走势",
     nav_explorer: "选股浏览",
-    nav_radar: "AI 与形态",
+    nav_ai: "AI 归因",
+    nav_patterns: "形态雷达",
     nav_report: "今日研报",
     nav_report_title: "可打印盘后投研日报",
     nav_rss: "RSS",
@@ -771,8 +800,8 @@ const I18N = {
     sort_beat: "按跑赢基准率",
     sort_return: "按绝对收益",
     sort_evaluated: "按样本数",
-    sec3_title: "分赛道累计超额收益走势",
-    sec3_hint: "纯规则赛道（实线）与 AI 重排赛道（虚线）分离展示；点击底部图例可单独聚焦某条策略曲线，悬停查看单日明细。",
+    sec3_title: "分赛道扩展均值超额走势",
+    sec3_hint: "纯规则赛道（实线）与 AI 重排赛道（虚线）分离展示；默认聚焦 Top 3，点击底部图例可单独锁定曲线，悬停或轻触查看单日明细。",
     track_both: "双赛道",
     track_rules: "仅规则",
     track_ai: "仅 AI",
@@ -790,7 +819,7 @@ const I18N = {
     details_pat_title: "A 股无状态形态雷达命中（20 日迷你 K 线）",
     details_pat_hint: "未通过 250 日 <code>next_open</code> 毕业门槛（基准匹配样本 ≥ 200 且 T+5 超额 > 0%）的形态一律置灰标 <code>experimental</code>，仅作研究观察。",
     details_replay_title: "250 日 next_open 形态回放、聚日稳定性与切片验证",
-    footer_note: "<strong>AlphaSift</strong> · 开源量化形态观测与回测基准（Apache-2.0 License）· 非投资建议，历史统计不含分红；低于样本门槛（成绩单 &lt; 20、AI 配对 &lt; 10 日、切片 &lt; 100、形态毕业 &lt; 200）统一置灰或隐藏差值。",
+    footer_note: "<strong>AlphaSift</strong> · 开源量化形态观测与回测基准（Apache-2.0 License）· 公开纸面跟踪，非投资建议，历史统计不含分红；低于样本门槛（成绩单 &lt; 20、AI 配对 &lt; 10 日、切片 &lt; 100、形态毕业 &lt; 200）统一置灰或隐藏差值。",
     footer_repo: "GitHub 源码仓库",
     footer_ledger: "track-record 原始账本",
     footer_report: "每日投研日报",
@@ -807,6 +836,22 @@ const I18N = {
     kpi1_foot: "{strat} · 跑赢基准 {beat} ({n}只)",
     kpi1_empty_val: "待到期",
     kpi1_empty_foot: "首日运行满 5 个交易日后披露",
+    kpi1_low_n_val: "样本不足 (<{min})",
+    kpi1_low_n_foot: "当前最高已到期 {max} 只 · 达 {min} 只后披露冠军",
+    hl_rules_lbl: "规则账本",
+    hl_rules_ok: "{d} 日 · {r} 次",
+    hl_ai_lbl: "AI 对照",
+    hl_ai_ok: "已配对 ({n} 策略)",
+    hl_ai_pend: "0/10 配对日 · 待积累",
+    hl_pat_lbl: "形态雷达",
+    hl_pat_ok: "{d}",
+    hl_pat_pend: "待构建日线包",
+    hl_rep_lbl: "盘后日报",
+    hl_rep_ok: "{d}",
+    hl_rep_pend: "待生成",
+    pat_f_all: "全部 ({n})",
+    pat_f_active: "active ({n})",
+    pat_f_exp: "experimental ({n})",
     kpi2_lbl: "全策略 T+5 样本加权均值",
     kpi2_badge: "{n} 组有效",
     kpi2_foot: "已到期 {eval} 股次 · 累计 {runs} 次选股",
@@ -879,7 +924,7 @@ const I18N = {
     sc_low_sample_title: "少于 {n} 只，样本偏小",
     sc_unassessed: "未评估",
     sc_unassessed_title: "切换前收盘口径，未评估开盘一字涨停",
-    tc_empty_all: "暂无成对「规则 vs AI」战绩记录 — 在 GitHub Secrets 配置 <code>DEEPSEEK_API_KEY</code> / <code>GEMINI_API_KEY</code> / <code>OPENAI_API_KEY</code> 后，系统将在每交易日自动并行运行双赛道并积累同日归因。",
+    tc_empty_all: "AI 对照赛道尚未积累成对交易日（当前 0/10 配对日），满足 10 个同日配对后将自动披露 AI vs 规则归因差值 · 自部署接入说明见 <a href=\"https://github.com/ZhuLinsen/alphasift/blob/main/docs/deployment.md\" target=\"_blank\" rel=\"noopener\">部署文档</a>。",
     tc_empty_pending: "暂无到期的规则 vs AI 同日配对样本。",
     tc_cols: ["市场", "策略", "配对日/总共", "AI 缺失率", "选股重合度", "规则同日超额", "AI 同日超额", "AI − 规则 (T+{w})", "AI 独选超额", "AI 剔除超额"],
     tc_win_days: "胜出 {w}/{n}日",
@@ -896,7 +941,7 @@ const I18N = {
     case_adds: "AI 独选高光：",
     case_avoids: "AI 避坑剔除：",
     case_misses: "AI 错杀遗憾：",
-    pat_not_built: "尚未生成 A 股形态雷达快照（当 GitHub Actions 私有日线缓存构建完毕后自动扫描并附带 20 日 K 线）。",
+    pat_not_built: "A 股形态雷达快照将在下一交易日盘后包构建完成后自动更新命中与 20 日迷你 K 线；全部 9 套无状态形态定义见仓库 patterns/ 目录。",
     pat_no_replay: "尚未生成 250 日形态回放结果。",
     pat_no_entries: "最新快照暂无形态统计条目。",
     pat_hit_zero: "{d} · 命中 0 只",
@@ -963,7 +1008,8 @@ const I18N = {
     nav_leaderboard: "Leaderboard",
     nav_trend: "Trend",
     nav_explorer: "Explorer",
-    nav_radar: "AI & Patterns",
+    nav_ai: "AI Delta",
+    nav_patterns: "Patterns",
     nav_report: "Daily Report",
     nav_report_title: "Printable post-close quantitative brief",
     nav_rss: "RSS",
@@ -992,8 +1038,8 @@ const I18N = {
     sort_beat: "Sort by Beat Rate",
     sort_return: "Sort by Raw Return",
     sort_evaluated: "Sort by Sample Size",
-    sec3_title: "Cumulative Excess Return by Track",
-    sec3_hint: "Solid lines represent deterministic rules; dashed lines show AI re-ranked track. Click legend items to isolate a strategy and hover points for daily details.",
+    sec3_title: "Expanding Mean Excess Return by Track",
+    sec3_hint: "Solid lines represent deterministic rules; dashed lines show AI re-ranked track. Top 3 latest leaders stay highlighted; click legend to isolate or hover/touch for daily details.",
     track_both: "Both Tracks",
     track_rules: "Rules Only",
     track_ai: "AI Only",
@@ -1028,6 +1074,22 @@ const I18N = {
     kpi1_foot: "{strat} · Beat {beat} ({n} picks)",
     kpi1_empty_val: "Pending",
     kpi1_empty_foot: "Disclosed after 5 matured sessions",
+    kpi1_low_n_val: "Low N (<{min})",
+    kpi1_low_n_foot: "Max {max} matured picks so far · leader shown at ≥{min}",
+    hl_rules_lbl: "Rules Ledger",
+    hl_rules_ok: "{d}d · {r} runs",
+    hl_ai_lbl: "AI Track",
+    hl_ai_ok: "Paired ({n} strats)",
+    hl_ai_pend: "0/10 paired days · pending",
+    hl_pat_lbl: "Pattern Radar",
+    hl_pat_ok: "{d}",
+    hl_pat_pend: "Pack pending",
+    hl_rep_lbl: "Daily Report",
+    hl_rep_ok: "{d}",
+    hl_rep_pend: "Pending",
+    pat_f_all: "All ({n})",
+    pat_f_active: "active ({n})",
+    pat_f_exp: "experimental ({n})",
     kpi2_lbl: "Sample-Weighted T+5 Excess",
     kpi2_badge: "{n} active",
     kpi2_foot: "{eval} matured picks · {runs} total runs",
@@ -1100,7 +1162,7 @@ const I18N = {
     sc_low_sample_title: "Below {n} samples (noisy)",
     sc_unassessed: "Unassessed",
     sc_unassessed_title: "Legacy close entry before next_open switchover",
-    tc_empty_all: "No paired Rules vs AI sessions yet — configure <code>DEEPSEEK_API_KEY</code>, <code>GEMINI_API_KEY</code>, or <code>OPENAI_API_KEY</code> in GitHub Secrets to enable dual-track tracking.",
+    tc_empty_all: "AI benchmark track has not accumulated paired sessions yet (0/10 paired days). Attribution delta unlocks automatically at ≥10 same-day pairs · see <a href=\"https://github.com/ZhuLinsen/alphasift/blob/main/docs/deployment.md\" target=\"_blank\" rel=\"noopener\">Deployment Docs</a> for self-hosting.",
     tc_empty_pending: "No matured Rules vs AI paired samples yet.",
     tc_cols: ["Market", "Strategy", "Paired/Common", "AI Missing", "Overlap", "Rules Excess", "AI Excess", "AI − Rules (T+{w})", "AI Added Excess", "AI Dropped Excess"],
     tc_win_days: "Won {w}/{n}d",
@@ -1117,7 +1179,7 @@ const I18N = {
     case_adds: "Top AI Adds: ",
     case_avoids: "AI Avoided Losses: ",
     case_misses: "Missed by AI: ",
-    pat_not_built: "No CN pattern snapshot generated yet (auto-scans with 20-day mini K-lines once private pack cache is populated).",
+    pat_not_built: "CN pattern radar hits and 20D mini K-lines will appear automatically after the next post-close pack build; inspect all 9 YAML pattern specs in patterns/.",
     pat_no_replay: "No 250-day replay report yet.",
     pat_no_entries: "No pattern stats in latest snapshot.",
     pat_hit_zero: "{d} · 0 hits",
@@ -1184,7 +1246,8 @@ const I18N = {
     nav_leaderboard: "戦略ランキング",
     nav_trend: "超過推移",
     nav_explorer: "銘柄ブラウザ",
-    nav_radar: "AI・チャート",
+    nav_ai: "AI 比較",
+    nav_patterns: "形態レーダー",
     nav_report: "日次レポート",
     nav_report_title: "印刷対応の引け後リサーチレポート",
     nav_rss: "RSS",
@@ -1213,8 +1276,8 @@ const I18N = {
     sort_beat: "ベンチマーク勝率順",
     sort_return: "絶対リターン順",
     sort_evaluated: "評価銘柄数順",
-    sec3_title: "トラック別 累積超過リターン推移",
-    sec3_hint: "実線がルールのみ、破線が AI 再ランクを示します。凡例クリックで戦略をフォーカス、点にホバーで詳細を表示します。",
+    sec3_title: "トラック別 拡張平均超過リターン推移",
+    sec3_hint: "実線がルール・破線が AI 再ランクです。上位 3 戦略を強調表示し、凡例クリックで固定・ホバーやタップで詳細表示します。",
     track_both: "両トラック",
     track_rules: "ルールのみ",
     track_ai: "AI のみ",
@@ -1249,6 +1312,22 @@ const I18N = {
     kpi1_foot: "{strat} · 対指数勝率 {beat} ({n}件)",
     kpi1_empty_val: "集計待ち",
     kpi1_empty_foot: "初回実行から 5 営業日後に公開",
+    kpi1_low_n_val: "標本不足 (<{min})",
+    kpi1_low_n_foot: "最多 {max} 件評価済 · {min} 件到達で首位公開",
+    hl_rules_lbl: "ルール台帳",
+    hl_rules_ok: "{d} 営業日 · {r} 回",
+    hl_ai_lbl: "AI 比較",
+    hl_ai_ok: "ペア済 ({n} 戦略)",
+    hl_ai_pend: "0/10 ペア日 · 蓄積中",
+    hl_pat_lbl: "形態レーダー",
+    hl_pat_ok: "{d}",
+    hl_pat_pend: "日足パック待ち",
+    hl_rep_lbl: "日次レポート",
+    hl_rep_ok: "{d}",
+    hl_rep_pend: "未生成",
+    pat_f_all: "すべて ({n})",
+    pat_f_active: "active ({n})",
+    pat_f_exp: "experimental ({n})",
     kpi2_lbl: "全戦略 T+5 加重平均超過",
     kpi2_badge: "{n} 戦略有効",
     kpi2_foot: "評価済 {eval} 銘柄 · 累計 {runs} 回実行",
@@ -1321,7 +1400,7 @@ const I18N = {
     sc_low_sample_title: "{n} 件未満のため参考値",
     sc_unassessed: "未評価",
     sc_unassessed_title: "next_open 切替前の終値基準",
-    tc_empty_all: "ルール vs AI のペア記録はまだありません — GitHub Secrets に <code>DEEPSEEK_API_KEY</code> / <code>GEMINI_API_KEY</code> / <code>OPENAI_API_KEY</code> を設定すると両トラックを並行実行します。",
+    tc_empty_all: "AI ベンチマークは現在ペア営業日を蓄積中です（0/10 ペア日）。同日ペアが 10 日以上に達すると差分を自動表示します · 自前設定は <a href=\"https://github.com/ZhuLinsen/alphasift/blob/main/docs/deployment.md\" target=\"_blank\" rel=\"noopener\">デプロイガイド</a> をご参照ください。",
     tc_empty_pending: "満期到来のルール vs AI ペア標本はまだありません。",
     tc_cols: ["市場", "戦略", "ペア/共通日", "AI 欠損率", "重複率", "ルール超過", "AI 超過", "AI − ルール (T+{w})", "AI 独自超過", "AI 除外超過"],
     tc_win_days: "勝 {w}/{n}日",
@@ -1338,7 +1417,7 @@ const I18N = {
     case_adds: "AI 独自選定ハイライト：",
     case_avoids: "AI 回避成功：",
     case_misses: "AI 見逃し：",
-    pat_not_built: "A 株パターンスナップショットはまだありません（日足キャッシュ構築後に 20 日ミニ K 線付きで表示されます）。",
+    pat_not_built: "A 株パターンレーダーは次営業日の引け後パック構築完了時に 20 日ミニローソク足付きで自動更新されます（全 9 パターン定義は patterns/ を参照）。",
     pat_no_replay: "250日リプレイ結果はまだありません。",
     pat_no_entries: "最新スナップショットにパターン統計がありません。",
     pat_hit_zero: "{d} · 0 件",
@@ -1459,6 +1538,8 @@ const PATTERN_I18N = {
     shooting_star_confirm: "Upper-Wick Confirm",
     single_yang_hold: "Single Bullish Hold",
     steady_trend_breakout: "Steady Trend Breakout",
+    three_white_soldiers: "Three White Soldiers",
+    three_white_soldiers_pullback: "Three Soldiers Pullback",
   },
   ja: {
     bottom_volume_yang: "底値倍増陽線",
@@ -1468,6 +1549,8 @@ const PATTERN_I18N = {
     shooting_star_confirm: "上ヒゲ確認",
     single_yang_hold: "大陽線ホールド",
     steady_trend_breakout: "低ボラ堅調突破",
+    three_white_soldiers: "赤三兵",
+    three_white_soldiers_pullback: "赤三兵押し目確認",
   },
 };
 
@@ -1554,6 +1637,7 @@ const state = {
   trendFocus: null,
   latestMarket: null,
   explorerMode: "latest",
+  patFilter: "all",
   searchQuery: "",
   dayCache: {},
   currentDay: null,
@@ -1986,8 +2070,10 @@ function renderMetaAndKpis() {
 
   const sc = s.scorecard || [];
   const t5Rows = sc.filter((r) => ((r.windows || {})["5"] || {}).average_excess_return_pct !== null && ((r.windows || {})["5"] || {}).average_excess_return_pct !== undefined);
-  const sortedT5 = [...t5Rows].sort((a, b) => b.windows["5"].average_excess_return_pct - a.windows["5"].average_excess_return_pct);
+  const qualifiedT5 = t5Rows.filter((r) => Number(((r.windows || {})["5"] || {}).evaluated || 0) >= MIN_SAMPLE);
+  const sortedT5 = [...qualifiedT5].sort((a, b) => b.windows["5"].average_excess_return_pct - a.windows["5"].average_excess_return_pct);
   const bestT5 = sortedT5[0] || null;
+  const maxEval = t5Rows.reduce((mx, r) => Math.max(mx, Number(((r.windows || {})["5"] || {}).evaluated || 0)), 0);
 
   let evalTot = 0, exSum = 0;
   for (const r of t5Rows) {
@@ -2000,13 +2086,30 @@ function renderMetaAndKpis() {
   }
   const avgEx = evalTot > 0 ? exSum / evalTot : null;
 
+  const hs = $("health-strip");
+  if (hs) {
+    const aiCnt = (s.track_comparison || []).length;
+    const patOk = Boolean(patLatest && patLatest.trade_date);
+    const repOk = Boolean(state.reportReady || (rep && rep.trade_date));
+    const repDate = (rep && rep.trade_date) || "";
+    const items = [
+      { cls: totalFailures ? "pend" : "ok", lbl: t("hl_rules_lbl"), val: t("hl_rules_ok", { d: (s.days || []).length, r: s.run_count }) },
+      { cls: aiCnt > 0 ? "ok" : "pend", lbl: t("hl_ai_lbl"), val: aiCnt > 0 ? t("hl_ai_ok", { n: aiCnt }) : t("hl_ai_pend") },
+      { cls: patOk ? "ok" : "pend", lbl: t("hl_pat_lbl"), val: patOk ? t("hl_pat_ok", { d: patLatest.trade_date }) : t("hl_pat_pend") },
+      { cls: repOk ? "ok" : "pend", lbl: t("hl_rep_lbl"), val: repOk ? t("hl_rep_ok", { d: repDate || "ready" }) : t("hl_rep_pend") },
+    ];
+    hs.innerHTML = items.map((it) => `<span class="health-item"><span class="health-dot ${it.cls}"></span><strong>${esc(it.lbl)}</strong><span>${esc(it.val)}</span></span>`).join("");
+  }
+
   const kpi1 = bestT5
     ? `<div class="kpi-cell">
          <div class="kpi-label"><span>${esc(t("kpi1_lbl"))}</span><span class="badge active">${esc(mname(bestT5.market))}</span></div>
          <div class="kpi-val">${pct(bestT5.windows["5"].average_excess_return_pct)}</div>
          <div class="kpi-foot">${t("kpi1_foot", { strat: sname(bestT5.strategy), beat: rate(bestT5.windows["5"].beat_rate), n: bestT5.windows["5"].evaluated })}</div>
        </div>`
-    : `<div class="kpi-cell"><div class="kpi-label">${esc(t("kpi1_lbl"))}</div><div class="kpi-val dim">${esc(t("kpi1_empty_val"))}</div><div class="kpi-foot">${esc(t("kpi1_empty_foot"))}</div></div>`;
+    : t5Rows.length > 0
+      ? `<div class="kpi-cell"><div class="kpi-label"><span>${esc(t("kpi1_lbl"))}</span><span class="badge pending">&lt;${MIN_SAMPLE}</span></div><div class="kpi-val dim">${esc(t("kpi1_low_n_val", { min: MIN_SAMPLE }))}</div><div class="kpi-foot">${esc(t("kpi1_low_n_foot", { max: maxEval, min: MIN_SAMPLE }))}</div></div>`
+      : `<div class="kpi-cell"><div class="kpi-label">${esc(t("kpi1_lbl"))}</div><div class="kpi-val dim">${esc(t("kpi1_empty_val"))}</div><div class="kpi-foot">${esc(t("kpi1_empty_foot"))}</div></div>`;
 
   const kpi2 = `<div class="kpi-cell">
     <div class="kpi-label"><span>${esc(t("kpi2_lbl"))}</span><span class="badge">${esc(t("kpi2_badge", { n: t5Rows.length }))}</span></div>
@@ -2037,13 +2140,13 @@ function renderMetaAndKpis() {
   const checkedCount = Number(ann.checked_count || 0);
   const kpi4 = checkedCount > 0
     ? `<div class="kpi-cell">
-         <div class="kpi-label"><span>${esc(t("kpi4_ann_lbl"))}</span><span class="badge ${flaggedCount ? "bad" : "active"}">${esc(flaggedCount ? t("kpi4_ann_bad", { n: flaggedCount }) : t("kpi4_ann_ok"))}</span></div>
-         <div class="kpi-val">${flaggedCount > 0 ? `<span class="up">${esc(t("kpi4_ann_bad_val", { n: flaggedCount }))}</span>` : `<span class="down">${esc(t("kpi4_ann_ok_val"))}</span>`}</div>
+         <div class="kpi-label"><span>${esc(t("kpi4_ann_lbl"))}</span><span class="badge ${flaggedCount ? "bad" : "ok-neutral"}">${esc(flaggedCount ? t("kpi4_ann_bad", { n: flaggedCount }) : t("kpi4_ann_ok"))}</span></div>
+         <div class="kpi-val">${flaggedCount > 0 ? `<span class="status-err">${esc(t("kpi4_ann_bad_val", { n: flaggedCount }))}</span>` : `<span class="status-ok">${esc(t("kpi4_ann_ok_val"))}</span>`}</div>
          <div class="kpi-foot">${esc(t("kpi4_ann_foot", { n: checkedCount, tail: flaggedCount ? ((ann.flagged_items[0] || {}).name || "") : t("kpi4_ann_clean") }))}</div>
        </div>`
     : `<div class="kpi-cell">
-         <div class="kpi-label"><span>${esc(t("kpi4_ops_lbl"))}</span><span class="badge ${totalFailures ? "bad" : "active"}">${esc(totalFailures ? t("kpi4_ops_bad", { n: totalFailures }) : t("kpi4_ops_ok"))}</span></div>
-         <div class="kpi-val"><span class="${totalFailures ? "up" : "down"}">${totalOk} / ${totalRuns}</span></div>
+         <div class="kpi-label"><span>${esc(t("kpi4_ops_lbl"))}</span><span class="badge ${totalFailures ? "bad" : "ok-neutral"}">${esc(totalFailures ? t("kpi4_ops_bad", { n: totalFailures }) : t("kpi4_ops_ok"))}</span></div>
+         <div class="kpi-val"><span class="${totalFailures ? "status-err" : "status-ok"}">${totalOk} / ${totalRuns}</span></div>
          <div class="kpi-foot">${esc(t("kpi4_ops_foot", { m: (s.markets || []).length, d: (s.days || []).length }))}</div>
        </div>`;
 
@@ -2469,8 +2572,12 @@ function renderPatternRadar() {
     $("overhead-slice-wrap").innerHTML = "";
     return;
   }
+  const dpEl = $("details-patterns");
+  if (dpEl) dpEl.open = true;
+  const drEl = $("details-replay");
   const latest = pb.latest;
   const replay = pb.replay;
+  if (drEl && replay && Array.isArray(replay.patterns) && replay.patterns.length) drEl.open = true;
   const sigMap = latest.signals_by_pattern || {};
   const counts = latest.counts_by_pattern || {};
   const patNames = Object.keys(counts);
@@ -2483,10 +2590,21 @@ function renderPatternRadar() {
     $("pattern-hits-wrap").innerHTML = `<div class="empty">${esc(t("pat_no_entries"))}</div>`;
   } else {
     const pcols = t("pat_cols");
-    const cards = patNames.map((name) => {
+    const patMeta = patNames.map((name) => {
       const items = sigMap[name] || [];
       const total = counts[name] || items.length;
       const st = items[0] ? items[0].status : (replayStatus[name] || "experimental");
+      return { name, items, total, st };
+    });
+    const actCnt = patMeta.filter((x) => x.st === "active").length;
+    const expCnt = patMeta.length - actCnt;
+    const filterBar = `<div class="controls" id="pat-filter-bar" style="margin-bottom:10px;"><div class="seg">
+      <button type="button" data-pf="all" aria-pressed="${state.patFilter === "all"}">${esc(t("pat_f_all", { n: patMeta.length }))}</button>
+      <button type="button" data-pf="active" aria-pressed="${state.patFilter === "active"}">${esc(t("pat_f_active", { n: actCnt }))}</button>
+      <button type="button" data-pf="experimental" aria-pressed="${state.patFilter === "experimental"}">${esc(t("pat_f_exp", { n: expCnt }))}</button>
+    </div></div>`;
+    const visible = patMeta.filter((x) => state.patFilter === "all" || x.st === state.patFilter);
+    const cards = visible.map(({ name, items, total, st }) => {
       const badge = st === "active"
         ? `<span class="badge active">${esc(t("pat_status_active"))}</span>`
         : `<span class="badge exp">${esc(t("pat_status_exp"))}</span>`;
@@ -2508,7 +2626,17 @@ function renderPatternRadar() {
         <div class="scroll"><table><thead><tr><th class="l">${esc(pcols[0])}</th><th>${esc(pcols[1])}</th><th>${esc(pcols[2])}</th><th>${esc(pcols[3])}</th></tr></thead><tbody>${rows}</tbody></table></div>
       </div>`;
     }).join("");
-    $("pattern-hits-wrap").innerHTML = `<div class="cards">${cards}</div>`;
+    $("pattern-hits-wrap").innerHTML = `${filterBar}${cards ? `<div class="cards">${cards}</div>` : `<div class="empty">${esc(t("pat_no_sig"))}</div>`}`;
+    const pfBar = $("pat-filter-bar");
+    if (pfBar) {
+      pfBar.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        const pf = btn && btn.dataset && btn.dataset.pf;
+        if (!pf) return;
+        state.patFilter = pf;
+        renderPatternRadar();
+      });
+    }
   }
 
   if (replay && Array.isArray(replay.patterns) && replay.patterns.length) {
@@ -2646,34 +2774,77 @@ function renderChart() {
       parts.push(`<text x="${x(d)}" y="${H - 8}" text-anchor="middle" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">${d.slice(5)}</text>`);
   });
 
+  let top3Ids = null;
+  if (!state.trendFocus && lines.length > 5) {
+    top3Ids = new Set(
+      [...lines]
+        .filter((l) => Array.isArray(l.pts) && l.pts.length)
+        .sort((a, b) => Number(b.pts[b.pts.length - 1][1]) - Number(a.pts[a.pts.length - 1][1]))
+        .slice(0, 3)
+        .map((l) => l.id)
+    );
+  }
+
   lines.forEach((l, i) => {
     const color = `var(--s${(i % 12) + 1})`;
-    const isDim = state.trendFocus && state.trendFocus !== l.id;
-    const sw = state.trendFocus === l.id ? "2.8" : "2";
-    const op = isDim ? "0.18" : "0.95";
+    const isDim = state.trendFocus ? state.trendFocus !== l.id : (top3Ids && !top3Ids.has(l.id));
+    const sw = state.trendFocus === l.id ? "2.8" : (top3Ids && top3Ids.has(l.id) ? "2.4" : "1.8");
+    const op = state.trendFocus ? (isDim ? "0.18" : "0.95") : (isDim ? "0.35" : "0.95");
     const dashAttr = l.track === "ai" ? ' stroke-dasharray="5 3"' : "";
     parts.push(`<polyline fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" stroke-linecap="round" stroke-linejoin="round"${dashAttr} points="${l.pts.map((p) => `${x(p[0])},${y(p[1])}`).join(" ")}"/>`);
     for (const p of l.pts) {
-      parts.push(`<circle class="pt" data-label="${l.label}" data-date="${p[0]}" data-val="${p[1]}" data-n="${p[2]}" data-col="${color}" cx="${x(p[0])}" cy="${y(p[1])}" r="${state.trendFocus === l.id ? 4 : 3}" fill="${color}" fill-opacity="${op}"/>`);
+      parts.push(`<circle class="pt" data-id="${esc(l.id)}" data-label="${esc(l.label)}" data-date="${esc(p[0])}" data-val="${p[1]}" data-n="${p[2]}" data-col="${color}" cx="${x(p[0])}" cy="${y(p[1])}" r="${state.trendFocus === l.id ? 4 : 3}" fill="${color}" fill-opacity="${op}"/>`);
     }
   });
+  parts.push(`<line class="chart-crosshair" id="chart-crosshair" x1="${L}" x2="${L}" y1="${T}" y2="${H - B}" stroke="var(--accent-hi)" stroke-width="1" stroke-dasharray="3 3" style="display:none;pointer-events:none"/>`);
+  parts.push(`<rect class="chart-hit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" style="cursor:crosshair;touch-action:none"/>`);
 
   $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img">${parts.join("")}</svg>`;
 
   const svg = $("chart").querySelector("svg");
+  const hitRect = svg && svg.querySelector("rect.chart-hit");
+  const xhair = svg && svg.querySelector("#chart-crosshair");
   if (svg && tip) {
+    const showTipFor = (c) => {
+      const val = Number(c.dataset.val);
+      tip.innerHTML = `<b>${esc(c.dataset.label)}</b><br>${esc(c.dataset.date)} · ${esc(t("chart_tip_excess"))} <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${esc(t("chart_tip_picks", { n: c.dataset.n }))}`;
+      tip.style.display = "block";
+      const wrapBox = $("chart").parentElement.getBoundingClientRect();
+      const cBox = c.getBoundingClientRect();
+      tip.style.left = `${Math.min(wrapBox.width - 210, Math.max(8, cBox.left - wrapBox.left + 10))}px`;
+      tip.style.top = `${Math.max(8, cBox.top - wrapBox.top - 48)}px`;
+      if (xhair) {
+        const cx = c.getAttribute("cx");
+        xhair.setAttribute("x1", cx);
+        xhair.setAttribute("x2", cx);
+        xhair.style.display = "";
+      }
+    };
     svg.querySelectorAll("circle.pt").forEach((c) => {
-      c.addEventListener("mouseenter", () => {
-        const val = Number(c.dataset.val);
-        tip.innerHTML = `<b>${esc(c.dataset.label)}</b><br>${esc(c.dataset.date)} · ${esc(t("chart_tip_excess"))} <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${esc(t("chart_tip_picks", { n: c.dataset.n }))}`;
-        tip.style.display = "block";
-        const wrapBox = $("chart").parentElement.getBoundingClientRect();
-        const cBox = c.getBoundingClientRect();
-        tip.style.left = `${Math.min(wrapBox.width - 210, Math.max(8, cBox.left - wrapBox.left + 10))}px`;
-        tip.style.top = `${Math.max(8, cBox.top - wrapBox.top - 48)}px`;
-      });
-      c.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+      c.addEventListener("mouseenter", () => showTipFor(c));
+      c.addEventListener("mouseleave", () => { tip.style.display = "none"; if (xhair) xhair.style.display = "none"; });
     });
+    if (hitRect) {
+      const pts = [...svg.querySelectorAll("circle.pt")].filter((c) => !state.trendFocus || c.dataset.id === state.trendFocus);
+      const handlePtr = (e) => {
+        if (!pts.length) return;
+        const svgBox = svg.getBoundingClientRect();
+        if (!svgBox.width || !svgBox.height) return;
+        const mx = ((e.clientX - svgBox.left) / svgBox.width) * W;
+        const my = ((e.clientY - svgBox.top) / svgBox.height) * H;
+        let best = null, bestDist = Infinity;
+        for (const c of pts) {
+          const dx = Number(c.getAttribute("cx")) - mx;
+          const dy = Number(c.getAttribute("cy")) - my;
+          const d2 = dx * dx * 1.4 + dy * dy;
+          if (d2 < bestDist) { bestDist = d2; best = c; }
+        }
+        if (best) showTipFor(best);
+      };
+      hitRect.addEventListener("pointermove", handlePtr);
+      hitRect.addEventListener("pointerdown", handlePtr);
+      hitRect.addEventListener("pointerleave", () => { tip.style.display = "none"; if (xhair) xhair.style.display = "none"; });
+    }
   }
 
   $("legend").innerHTML = lines.map((l, i) => {
@@ -2821,18 +2992,22 @@ async function init() {
     document.querySelector("main").insertAdjacentHTML("beforeend", `<div class="panel empty">${esc(t("load_fatal", { msg: err.message }))}</div>`);
     return;
   }
+  const art = (state.summary && state.summary.artifacts) || null;
+  const needPat = !art || !art.patterns || art.patterns.exists;
+  const needRep = !art || !art.report || art.report.exists;
+  const needRepHtml = !art || !art.daily_report_html || art.daily_report_html.exists;
   const [patOutcome, repOutcome, repHtmlOutcome] = await Promise.allSettled([
-    fetch("site/patterns.json", { cache: "no-cache" }),
-    fetch("site/report.json", { cache: "no-cache" }),
-    fetch("site/daily_report.html", { method: "HEAD", cache: "no-cache" }),
+    needPat ? fetch("site/patterns.json", { cache: "no-cache" }) : Promise.resolve(null),
+    needRep ? fetch("site/report.json", { cache: "no-cache" }) : Promise.resolve(null),
+    needRepHtml ? fetch("site/daily_report.html", { method: "HEAD", cache: "no-cache" }) : Promise.resolve(null),
   ]);
-  if (patOutcome.status === "fulfilled" && patOutcome.value.ok) {
+  if (patOutcome.status === "fulfilled" && patOutcome.value && patOutcome.value.ok) {
     try { state.patterns = await patOutcome.value.json(); } catch (_) { state.patterns = null; }
   }
-  if (repOutcome.status === "fulfilled" && repOutcome.value.ok) {
+  if (repOutcome.status === "fulfilled" && repOutcome.value && repOutcome.value.ok) {
     try { state.report = await repOutcome.value.json(); } catch (_) { state.report = null; }
   }
-  state.reportReady = repHtmlOutcome.status === "fulfilled" && repHtmlOutcome.value.ok;
+  state.reportReady = Boolean(repHtmlOutcome.status === "fulfilled" && repHtmlOutcome.value && repHtmlOutcome.value.ok);
   ["report-top-link", "footer-report-link"].forEach((id) => {
     const el = $(id);
     if (el) el.style.display = state.reportReady ? "" : "none";

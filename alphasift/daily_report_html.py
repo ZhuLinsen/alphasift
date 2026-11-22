@@ -1044,8 +1044,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
     ja: {{ balanced_alpha: "バランス・アルファ", blue_chip_income: "優良高配当株", capital_heat: "資金モメンタム", dual_low: "低PER・低PBR", global_value: "グローバル・バリュー", low_volatility_quality: "低ボラ・クオリティ", momentum_quality: "モメンタム・クオリティ", oversold_reversal: "売られ過ぎ反発", quality_value: "クオリティ・バリュー", shrink_pullback: "出来高縮小押し目", us_momentum_quality: "米国モメンタム", volume_breakout: "出来高ブレイク" }},
   }};
   var PAT_MAP = {{
-    en: {{ bottom_volume_yang: "Bottom Volume Surge", box_breakout: "Box Breakout", double_bottom_breakout: "Double Bottom Breakout", ma20_shrink_pullback: "MA20 Low-Vol Pullback", shooting_star_confirm: "Upper-Wick Confirm", single_yang_hold: "Single Bullish Hold", steady_trend_breakout: "Steady Trend Breakout" }},
-    ja: {{ bottom_volume_yang: "底値倍増陽線", box_breakout: "ボックス圏ブレイク", double_bottom_breakout: "ダブルボトム突破", ma20_shrink_pullback: "20日線低ボラ押し目", shooting_star_confirm: "上ヒゲ確認", single_yang_hold: "大陽線ホールド", steady_trend_breakout: "低ボラ堅調突破" }},
+    en: {{ bottom_volume_yang: "Bottom Volume Surge", box_breakout: "Box Breakout", double_bottom_breakout: "Double Bottom Breakout", ma20_shrink_pullback: "MA20 Low-Vol Pullback", shooting_star_confirm: "Upper-Wick Confirm", single_yang_hold: "Single Bullish Hold", steady_trend_breakout: "Steady Trend Breakout", three_white_soldiers: "Three White Soldiers", three_white_soldiers_pullback: "Three Soldiers Pullback" }},
+    ja: {{ bottom_volume_yang: "底値倍増陽線", box_breakout: "ボックス圏ブレイク", double_bottom_breakout: "ダブルボトム突破", ma20_shrink_pullback: "20日線低ボラ押し目", shooting_star_confirm: "上ヒゲ確認", single_yang_hold: "大陽線ホールド", steady_trend_breakout: "低ボラ堅調突破", three_white_soldiers: "赤三兵", three_white_soldiers_pullback: "赤三兵押し目確認" }},
   }};
 
   var lang = "zh";

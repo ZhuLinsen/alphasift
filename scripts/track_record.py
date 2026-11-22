@@ -1054,6 +1054,29 @@ def build_site(track: Path) -> dict[str, Any]:
         pb_summary = None
 
     latest_report = _load_latest_report_summary(site / "report.json")
+    report_file = site / "report.json"
+    report_html_file = site / "daily_report.html"
+    artifacts = {
+        "patterns": {
+            "exists": pb is not None,
+            "path": "site/patterns.json",
+            "trade_date": pb["latest"].get("trade_date") if pb else None,
+            "has_replay": bool(pb and pb.get("replay")),
+            "reason": None if pb is not None else "cn_daily_pack_unavailable",
+        },
+        "report": {
+            "exists": report_file.is_file(),
+            "path": "site/report.json",
+            "trade_date": latest_report.get("trade_date") if latest_report else None,
+            "reason": None if report_file.is_file() else "cn_daily_pack_unavailable",
+        },
+        "daily_report_html": {
+            "exists": report_html_file.is_file(),
+            "path": "site/daily_report.html",
+            "trade_date": latest_report.get("trade_date") if latest_report else None,
+            "reason": None if report_html_file.is_file() else "cn_daily_pack_unavailable",
+        },
+    }
     summary = {
         "generated_at": _now(),
         "windows": WINDOWS,
@@ -1067,6 +1090,7 @@ def build_site(track: Path) -> dict[str, Any]:
         "track_comparison": tc,
         "pattern_board": pb_summary,
         "latest_report": latest_report,
+        "artifacts": artifacts,
         "trend": trend(runs, evaluation, track_filter="rules"),
         "trend_ai": trend(runs, evaluation, track_filter="ai"),
         "latest": _latest_runs(runs),

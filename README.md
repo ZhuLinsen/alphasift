@@ -10,7 +10,7 @@
 
 **AI 量化选股引擎**
 
-*A股 / 美股 / 港股 / 日韩台印全市场多因子筛选 → AI 情报复核与排雷 → 公开 T+N 实盘验证*
+*A股 / 美股 / 港股 / 日韩台印全市场多因子筛选 → AI 情报复核与排雷 → 公开 T+N 纸面跟踪验证*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://zhulinsen.github.io/alphasift/?lang=zh)
@@ -27,9 +27,9 @@
 
 ---
 
-## 🖥️ 无需安装，在线直看今日选股与实盘战绩
+## 🖥️ 无需安装，在线直看今日选股与公开纸面战绩
 
-👉 **[点击打开公开在线看板（zhulinsen.github.io/alphasift）](https://zhulinsen.github.io/alphasift/?lang=zh)** — 每交易日盘后自动更新 7 大市场多策略共识精选、`T+5 / T+10 / T+20` 收益榜，以及 **AI 复核 vs 纯规则** 同日真实对照。
+👉 **[点击打开公开在线看板（zhulinsen.github.io/alphasift）](https://zhulinsen.github.io/alphasift/?lang=zh)** — 每交易日盘后自动更新 7 大市场多策略共识精选、`T+5 / T+10 / T+20` 收益榜，以及可选 **AI 复核 vs 纯规则** 同日对照赛道。
 
 <p align="center">
   <a href="https://zhulinsen.github.io/alphasift/?lang=zh">
@@ -157,7 +157,7 @@ alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html
 | **事后真实性** | 无持续记录 | 需人工回看 | **公开 `track-record` 账本（`next_open` 扣除一字涨停）** |
 
 - **策略正交分散实证**：A 股 10 套策略经 8 行业桶硬上限重构后（`hard_cap` / `max_same_bucket: 1`），250 日 3 时点回测策略两两平均重合度由 **8.0%–24.9% 降至 0.9%–1.8%**（最大单对 `100% → 20%`），银行单板块占比由 **22%–31.1% 降至 4.0%–9.1%**。
-- **250 日实证形态雷达（`next_open` vs 沪深 300）**：在 `2026-02-05 .. 2026-11-06`（180 交易日、5,218 只 A 股、`next_open` 排除开盘一字涨停）回放中，仅 **`ma20_shrink_pullback`（+0.158% T+5 / +0.905% T+10）** 与 **`steady_trend_breakout`（+0.271% T+5 / +0.560% T+10）** 跨过 `样本 ≥ 200 且超额 > 0%` 毕业门槛并标记为 `active`，其余 5 个经典形态均以 `experimental` 置灰隔离。
+- **250 日实证形态雷达（`next_open` vs 沪深 300）**：在 `2026-02-05 .. 2026-11-06`（180 交易日、5,218 只 A 股、`next_open` 排除开盘一字涨停，共内置 **9 套**无状态形态）回放中，**`ma20_shrink_pullback`（+0.158% T+5 / +0.905% T+10）** 与 **`steady_trend_breakout`（+0.271% T+5 / +0.560% T+10）** 已通过门槛标为 `active`；新加入的 **`红三兵`（+0.414% T+5 / 胜率 50.7%）** 与 **`红三兵回踩确认`（+0.451% T+5）** 因 H1/H2 前后半段稳定性仍在观察（`t = 0.03 / 0.12`），随其余 5 个经典形态暂列 `experimental`。
 
 ```
 +-------------------------------------------------------------------+
@@ -181,7 +181,7 @@ alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html
                  |                                |
                  v                                v
 +---------------------------------+  +------------------------------+
-|  L3 后置分析 (scorecard / DSA)  |  |  track-record 不可篡改账本   |
+|  L3 后置分析 (scorecard / DSA)  |  |  track-record 公开可审计账本 |
 |  独立 HTML 研报 & 12 通道推送   |  |  next_open T+5/10/20 验收    |
 +---------------------------------+  +------------------------------+
 ```

@@ -44,6 +44,7 @@ _TOP_LEVEL_KEYS = {
     "tags",
     "market_scope",
     "min_history_days",
+    "cooldown_days",
     "universe",
     "mode",
     "conditions",
@@ -59,7 +60,7 @@ _UNIVERSE_KEYS = {
     "proxy_amount_min",
     "close_min",
 }
-_CONDITION_KEYS = {"feature", "min", "max", "equals", "params"}
+_CONDITION_KEYS = {"feature", "min", "max", "equals", "lag", "params"}
 _INVALIDATION_KEYS = {"rule", "tolerance_atr"}
 _INVALIDATION_RULES = {
     "none",
@@ -71,8 +72,14 @@ _INVALIDATION_RULES = {
 
 _STATIC_FEATURES = {
     "valid_bars",
+    "valid_streak",
+    "bull_streak",
+    "close_higher_streak",
+    "open_in_prev_body",
+    "body_ratio_vs_prev",
     "is_bull_bar",
     "is_bear_bar",
+    "is_limit_up",
     "not_one_price_limit_up",
     "ma_bullish",
     "ma20_above_ma60",
@@ -85,6 +92,7 @@ _STATIC_FEATURES = {
     "prior_60d_decline_pct",
     "change_pct",
     "ret_limit_ratio",
+    "ret_3d_limit_ratio",
     "body_pct",
     "body_atr",
     "body_limit_ratio",
@@ -140,6 +148,7 @@ class PatternSpec:
     lookback_days: int = 5
     min_wait_days: int = 1
     invalidation: dict[str, Any] = field(default_factory=lambda: {"rule": "none", "tolerance_atr": 0.0})
+    cooldown_days: int = 0
 
 
 @dataclass
@@ -281,6 +290,9 @@ def _validate_condition_list(
         has_bound = any(k in entry for k in ("min", "max", "equals"))
         if not has_bound:
             raise ValueError(f"Condition {feat!r} in {section}[{idx}] of {filepath.name} needs min/max/equals")
+        lag = entry.get("lag")
+        if lag is not None and (not isinstance(lag, int) or isinstance(lag, bool) or lag < 0 or lag > 10):
+            raise ValueError(f"lag in {section}[{idx}] of {filepath.name} must be an int in 0..10")
         params = entry.get("params")
         if params is not None and not isinstance(params, dict):
             raise ValueError(f"params in {section}[{idx}] of {filepath.name} must be a mapping")
@@ -333,6 +345,9 @@ def load_pattern(name_or_path: str | Path, *, patterns_dir: Path | None = None) 
     min_hist = int(data.get("min_history_days", 60))
     if min_hist < 2:
         raise ValueError(f"min_history_days must be >= 2 in {filepath.name}")
+    cooldown_days = int(data.get("cooldown_days", 0))
+    if cooldown_days < 0 or cooldown_days > 20:
+        raise ValueError(f"cooldown_days must be in 0..20 in {filepath.name}")
 
     universe = data.get("universe") or {}
     if not isinstance(universe, dict):
@@ -398,6 +413,7 @@ def load_pattern(name_or_path: str | Path, *, patterns_dir: Path | None = None) 
         lookback_days=lookback_days,
         min_wait_days=min_wait_days,
         invalidation={"rule": inv_rule, "tolerance_atr": float(inv.get("tolerance_atr", 0.0))},
+        cooldown_days=cooldown_days,
     )
 
 
@@ -660,10 +676,59 @@ def build_pattern_context(
         np.isfinite(prev_valid_close) & np.isfinite(ma20_lag1) & (prev_valid_close >= ma20_lag1)
     ).astype(np.float64)
 
+    valid_lag1 = _shift_rows(valid.astype(np.float64), 1, fill=0.0) > 0.5
+    open_lag1 = _shift_rows(open_, 1)
+    close_lag1 = _shift_rows(close, 1)
+    valid_lag3 = _shift_rows(valid.astype(np.float64), 3, fill=0.0) > 0.5
+    close_lag3 = _shift_rows(close, 3)
+
+    valid_streak = np.zeros((t_len, n_codes), dtype=np.float64)
+    bull_streak = np.zeros((t_len, n_codes), dtype=np.float64)
+    close_higher_streak = np.zeros((t_len, n_codes), dtype=np.float64)
+    bull_bar = valid & (close > open_)
+    higher_bar = valid & valid_lag1 & (close > close_lag1)
+    for t in range(t_len):
+        if t == 0:
+            valid_streak[t] = np.where(valid[t], 1.0, 0.0)
+            bull_streak[t] = np.where(bull_bar[t], 1.0, 0.0)
+            close_higher_streak[t] = 0.0
+        else:
+            valid_streak[t] = np.where(valid[t], valid_streak[t - 1] + 1.0, 0.0)
+            bull_streak[t] = np.where(bull_bar[t], bull_streak[t - 1] + 1.0, 0.0)
+            close_higher_streak[t] = np.where(higher_bar[t], close_higher_streak[t - 1] + 1.0, 0.0)
+
+    body_lo_prev = np.minimum(open_lag1, close_lag1) - 0.10 * atr_pos
+    body_hi_prev = np.maximum(open_lag1, close_lag1) + 0.10 * atr_pos
+    open_in_prev_body = np.where(
+        valid & valid_lag1 & np.isfinite(atr_pos),
+        ((open_ >= body_lo_prev) & (open_ <= body_hi_prev)).astype(np.float64),
+        np.nan,
+    )
+    body_cur = close - open_
+    body_prev = close_lag1 - open_lag1
+    body_ratio_vs_prev = np.divide(
+        body_cur,
+        body_prev,
+        out=np.full_like(close, np.nan),
+        where=valid & valid_lag1 & (body_cur > 0) & (body_prev > 0),
+    )
+    is_limit_up_feat = np.where(valid, limit_masks["is_limit_up"].astype(np.float64), np.nan)
+    ret_3d_limit_ratio = np.where(
+        (valid_streak >= 3.0) & valid_lag3 & (close_lag3 > 0),
+        (close / close_lag3 - 1.0) / limit_pct[None, :],
+        np.nan,
+    )
+
     features: dict[str, np.ndarray] = {
         "valid_bars": valid_count.astype(np.float64),
+        "valid_streak": valid_streak,
+        "bull_streak": bull_streak,
+        "close_higher_streak": close_higher_streak,
+        "open_in_prev_body": open_in_prev_body,
+        "body_ratio_vs_prev": body_ratio_vs_prev,
         "is_bull_bar": (valid & (close > open_)).astype(np.float64),
         "is_bear_bar": (valid & (close < open_)).astype(np.float64),
+        "is_limit_up": is_limit_up_feat,
         "not_one_price_limit_up": (~limit_masks["is_one_price_limit_up"]).astype(np.float64),
         "ma_bullish": ma_bullish,
         "ma20_above_ma60": ma20_above_ma60,
@@ -676,6 +741,7 @@ def build_pattern_context(
         "prior_60d_decline_pct": prior_60d_decline_pct,
         "change_pct": change_pct,
         "ret_limit_ratio": ret_limit_ratio,
+        "ret_3d_limit_ratio": ret_3d_limit_ratio,
         "body_pct": body_pct,
         "body_atr": body_atr,
         "body_limit_ratio": body_limit_ratio,
@@ -811,6 +877,10 @@ def _eval_static_condition(ctx: PatternMatrixContext, cond: dict[str, Any]) -> n
     else:
         arr = ctx.features[feat]
 
+    lag = int(cond.get("lag") or 0)
+    if lag > 0:
+        arr = _shift_rows(arr, lag)
+
     mask = np.isfinite(arr)
     if "equals" in cond:
         eq = cond["equals"]
@@ -877,6 +947,26 @@ def _eval_observe_relative(
     return mask
 
 
+def _apply_cooldown(
+    signal_mask: np.ndarray,
+    observe_idx: np.ndarray,
+    cooldown_days: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    if cooldown_days <= 0:
+        return signal_mask, observe_idx
+    t_len, n_codes = signal_mask.shape
+    out_mask = signal_mask.copy()
+    out_obs = observe_idx.copy()
+    last_fire = np.full(n_codes, -(cooldown_days + 1), dtype=np.int64)
+    for t in range(t_len):
+        keep = out_mask[t] & ((t - last_fire) > cooldown_days)
+        out_mask[t] = keep
+        out_obs[t] = np.where(keep, out_obs[t], -1)
+        if keep.any():
+            last_fire = np.where(keep, t, last_fire)
+    return out_mask, out_obs
+
+
 def evaluate_pattern_matrix(
     ctx: PatternMatrixContext,
     spec: PatternSpec,
@@ -890,7 +980,7 @@ def evaluate_pattern_matrix(
         sig = uni_mask.copy()
         for cond in spec.conditions:
             sig &= _eval_static_condition(ctx, cond)
-        return sig, observe_idx
+        return _apply_cooldown(sig, observe_idx, spec.cooldown_days)
 
     # Stateless observe/confirm lookback
     obs_mask = ctx.valid & (ctx.valid_count >= spec.min_history_days)
@@ -963,7 +1053,7 @@ def evaluate_pattern_matrix(
             obs_rows = np.arange(t_len - lag, dtype=np.int32)[:, None]
             observe_idx[cur_slice] = np.where(new_hits, obs_rows, observe_idx[cur_slice])
 
-    return signal_mask, observe_idx
+    return _apply_cooldown(signal_mask, observe_idx, spec.cooldown_days)
 
 
 def compute_overhead_supply_10pct_row(

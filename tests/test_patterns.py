@@ -97,14 +97,14 @@ def test_pattern_yaml_mirror_sync_and_schema_validation(tmp_path: Path) -> None:
     repo_dir = Path("patterns")
     bundled_dir = Path("alphasift/patterns")
     repo_files = sorted(repo_dir.glob("*.yaml"))
-    assert len(repo_files) == 7
+    assert len(repo_files) == 9
     for rf in repo_files:
         bf = bundled_dir / rf.name
         assert bf.is_file(), f"Missing bundled mirror {bf}"
         assert rf.read_bytes() == bf.read_bytes()
 
     specs = list_patterns(include_experimental=True)
-    assert len(specs) == 7
+    assert len(specs) == 9
     assert len(list_patterns(include_experimental=False)) >= 2
     assert all(spec.family in {"bottom_reversal", "trend_continuation", "breakout"} for spec in specs)
     assert all(spec.market_scope == ("cn",) for spec in specs)
@@ -185,6 +185,22 @@ def test_all_six_patterns_trigger_on_synthetic_fixtures() -> None:
         r_stb.append((px - 0.02, px + 0.15, px - 0.15, px, 11_000_000.0))
     r_stb.append((15.62, 15.98, 15.60, 15.94, 22_000_000.0))
 
+    # 8) three_white_soldiers: decline -> base -> 3 steady bullish bars on idx=72..74
+    r_tws = [(12.5 - 0.045 * i, 12.62 - 0.045 * i, 12.38 - 0.045 * i, 12.5 - 0.045 * i, 10_000_000.0) for i in range(56)]
+    r_tws += [(10.0, 10.12, 9.88, 10.0, 10_000_000.0) for _ in range(16)]
+    r_tws.append((10.02, 10.22, 10.00, 10.20, 14_000_000.0))
+    r_tws.append((10.12, 10.36, 10.10, 10.34, 16_000_000.0))
+    r_tws.append((10.24, 10.52, 10.22, 10.50, 18_000_000.0))
+
+    # 9) three_white_soldiers_pullback: 3 soldiers on idx=70..72, hold on 73, confirm on 74
+    r_twsp = [(12.5 - 0.046 * i, 12.62 - 0.046 * i, 12.38 - 0.046 * i, 12.5 - 0.046 * i, 10_000_000.0) for i in range(54)]
+    r_twsp += [(10.0, 10.12, 9.88, 10.0, 10_000_000.0) for _ in range(16)]
+    r_twsp.append((10.02, 10.22, 10.00, 10.20, 14_000_000.0))
+    r_twsp.append((10.12, 10.36, 10.10, 10.34, 16_000_000.0))
+    r_twsp.append((10.24, 10.52, 10.22, 10.50, 18_000_000.0))
+    r_twsp.append((10.48, 10.50, 10.38, 10.42, 8_000_000.0))
+    r_twsp.append((10.40, 10.60, 10.39, 10.58, 12_000_000.0))
+
     pack = _make_ohlcv_pack({
         "000001": _to_pack_bars(r_bvy),
         "000002": _to_pack_bars(r_dbb),
@@ -193,6 +209,8 @@ def test_all_six_patterns_trigger_on_synthetic_fixtures() -> None:
         "000005": _to_pack_bars(r_box),
         "000006": _to_pack_bars(r_ss),
         "000007": _to_pack_bars(r_stb),
+        "000008": _to_pack_bars(r_tws),
+        "000009": _to_pack_bars(r_twsp),
     })
 
     scan = scan_patterns(pack, include_experimental=True)
@@ -207,6 +225,10 @@ def test_all_six_patterns_trigger_on_synthetic_fixtures() -> None:
     assert [s.code for s in ss_hits] == ["000006"]
     assert ss_hits[0].observe_lag_days == 2
     assert "000007" in [s.code for s in scan.signals_by_pattern["steady_trend_breakout"]]
+    assert "000008" in [s.code for s in scan.signals_by_pattern["three_white_soldiers"]]
+    twsp_hits = scan.signals_by_pattern["three_white_soldiers_pullback"]
+    assert [s.code for s in twsp_hits] == ["000009"]
+    assert twsp_hits[0].observe_lag_days == 2
 
 
 def test_observe_confirm_invalidation_and_zero_lookahead_with_future_split() -> None:
@@ -359,7 +381,7 @@ def test_replay_next_open_tradability_limit_down_roll_and_graduation(
     monkeypatch.setattr(sys, "argv", ["alphasift", "patterns", "list", "--include-experimental", "--json"])
     cli_main()
     listed = json.loads(capsys.readouterr().out)
-    assert len(listed) == 7
+    assert len(listed) == 9
 
 
 def test_cli_patterns_scan_json(tmp_path: Path, monkeypatch, capsys) -> None:
@@ -375,7 +397,7 @@ def test_cli_patterns_scan_json(tmp_path: Path, monkeypatch, capsys) -> None:
     cli_main()
     payload = json.loads(capsys.readouterr().out)
     assert payload["trade_date"] == pack.trade_date
-    assert len(payload["patterns_evaluated"]) == 7
+    assert len(payload["patterns_evaluated"]) == 9
     assert payload["usage_policy"] == "cn_only_regime_slice_only"
 
 
@@ -464,3 +486,46 @@ def test_graduation_requires_benchmark_matched_samples_and_benchmark_fallback(mo
     )
     bench = load_cn_benchmark(lookback_days=30)
     assert len(bench) == 1 and bench.loc[0, "close"] == 4020.0
+
+
+def test_three_white_soldiers_suspension_gap_cooldown_and_lookahead() -> None:
+    # Clean 3 soldiers firing on idx=74 and a 4th soldier on idx=75 (must be suppressed by cooldown_days=3)
+    base = [(12.5 - 0.045 * i, 12.62 - 0.045 * i, 12.38 - 0.045 * i, 12.5 - 0.045 * i, 10_000_000.0) for i in range(56)]
+    base += [(10.0, 10.12, 9.88, 10.0, 10_000_000.0) for _ in range(16)]
+    soldiers = [
+        (10.02, 10.22, 10.00, 10.20, 14_000_000.0),  # idx 72
+        (10.12, 10.36, 10.10, 10.34, 16_000_000.0),  # idx 73
+        (10.24, 10.52, 10.22, 10.50, 18_000_000.0),  # idx 74 -> fires
+        (10.38, 10.70, 10.36, 10.68, 20_000_000.0),  # idx 75 -> 4th soldier suppressed by cooldown
+    ]
+    clean_bars = _to_pack_bars(base + soldiers)
+
+    # Stock 000002 has a 1-day zero-volume suspension at idx=71 right before soldier #1 (or between #1 and #2 at idx=73)
+    susp_bars = list(clean_bars)
+    susp_bars[72] = (10.20, 10.20, 10.20, 10.20, susp_bars[71][3], 0.0)  # suspended gap
+
+    # Appending ex-rights future splits must not perturb earlier as_of_index evaluation
+    clean_with_split = list(clean_bars[:4] + clean_bars[4:])
+    clean_with_split.append((5.34, 5.45, 5.28, 5.40, 5.34, 12_000_000.0))  # idx 76 50% split
+    susp_with_split = list(susp_bars)
+    susp_with_split.append((5.34, 5.45, 5.28, 5.40, 5.34, 12_000_000.0))
+
+    pack = _make_ohlcv_pack({"000001": clean_with_split, "000002": susp_with_split})
+    spec = load_pattern("three_white_soldiers")
+    ctx = build_pattern_context(pack, end_index=75)
+    mask, _ = evaluate_pattern_matrix(ctx, spec)
+    assert bool(mask[74, 0]) is True
+    assert bool(mask[75, 0]) is False  # cooldown suppresses day-4 consecutive fire
+    assert bool(mask[74, 1]) is False and bool(mask[75, 1]) is False  # suspension breaks valid_streak
+
+    trunc = DailyPack(
+        dates=pack.dates[:75],
+        codes=pack.codes,
+        matrices={k: v[:75] for k, v in pack.matrices.items()},
+        meta=pack.meta,
+        sources=pack.sources,
+    )
+    scan_as_of = scan_patterns(pack, patterns=["three_white_soldiers"], as_of_index=74)
+    scan_trunc = scan_patterns(trunc, patterns=["three_white_soldiers"], as_of_index=-1)
+    assert [s.code for s in scan_as_of.signals_by_pattern["three_white_soldiers"]] == ["000001"]
+    assert scan_as_of.signals_by_pattern["three_white_soldiers"] == scan_trunc.signals_by_pattern["three_white_soldiers"]
