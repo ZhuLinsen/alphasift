@@ -1,7 +1,7 @@
 name: steady_trend_breakout
 display_name: 低波趋势稳健突破
 family: breakout
-status: active
+status: experimental
 version: "1.0"
 description: 多头趋势且前期低波窄幅整理后，温和放量突破20日高点（拒绝追高大阳与次日一字接盘，与 volume_breakout 策略对齐）
 aligned_strategy: volume_breakout

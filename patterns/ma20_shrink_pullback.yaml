@@ -1,7 +1,7 @@
 name: ma20_shrink_pullback
 display_name: 20日线低波缩量回踩
 family: trend_continuation
-status: active
+status: experimental
 version: "2.0"
 description: 多头趋势（MA20>MA60 且斜率稳健）中低波动缩量回踩20日均线附近，过滤高波情绪股与追高阳线（与 shrink_pullback 策略对齐）
 aligned_strategy: shrink_pullback

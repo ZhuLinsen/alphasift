@@ -376,6 +376,8 @@ def main():
     rdp.add_argument("--trade-date", default=None, help="预期交易日 YYYY-MM-DD")
     rdp.add_argument("--json", action="store_true", help="以 JSON 输出")
     rdp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
+    rdp.add_argument("--strict-pack", action="store_true", help="若日线包无效或为空则以非零退出码失败")
+    rdp.add_argument("--require-fresh", action="store_true", help="若日线包未达到预期交易日则以非零退出码失败")
 
     pp = sub.add_parser("pack", help="管理 A 股离线日线包")
     pack_sub = pp.add_subparsers(dest="pack_command", required=True)
@@ -975,6 +977,15 @@ def main():
                 print(_format_radar_doctor_explain(result))
             else:
                 print(json.dumps(result, ensure_ascii=False, indent=2))
+            pack_info = result.get("pack") or {}
+            if args.strict_pack and (
+                not pack_info.get("valid")
+                or int(pack_info.get("dates") or 0) <= 0
+                or int(pack_info.get("codes") or 0) <= 0
+            ):
+                raise SystemExit(1)
+            if args.require_fresh and not pack_info.get("fresh"):
+                raise SystemExit(1)
         else:
             parser.error("doctor requires a subcommand, e.g. doctor data-sources")
 

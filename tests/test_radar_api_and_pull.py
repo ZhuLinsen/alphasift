@@ -99,7 +99,7 @@ def test_pull_with_wait_polls_until_fresh_or_timeout(tmp_path: Path, monkeypatch
         pack_mod.pull_with_wait(tmp_path, expected_trade_date="2026-11-20", max_wait_sec=0.0)
 
 
-def test_server_radar_endpoints_and_top_level_exports(tmp_path: Path) -> None:
+def test_server_radar_endpoints_and_top_level_exports(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     for sym in (
         "compute_market_regime",
         "compute_market_regime_series",
@@ -202,3 +202,32 @@ def test_server_radar_endpoints_and_top_level_exports(tmp_path: Path) -> None:
     assert s_html_503 == 503 and "503" in html_err
     s_html_404, _ = build_html_response(ok_cfg, "/missing.html")
     assert s_html_404 == 404
+
+    # CLI doctor radar --strict-pack / --require-fresh exit non-zero on missing/stale pack and zero when valid
+    import sys
+    from alphasift.cli import main as cli_main
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["alphasift", "doctor", "radar", "--pack-dir", str(tmp_path / "missing_pack"), "--strict-pack", "--json"],
+    )
+    with pytest.raises(SystemExit) as exc_strict:
+        cli_main()
+    assert exc_strict.value.code == 1
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["alphasift", "doctor", "radar", "--pack-dir", str(pack_dir), "--strict-pack", "--require-fresh", "--trade-date", pack.trade_date, "--json"],
+    )
+    cli_main()
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["alphasift", "doctor", "radar", "--pack-dir", str(pack_dir), "--strict-pack", "--require-fresh", "--trade-date", "2099-01-01", "--json"],
+    )
+    with pytest.raises(SystemExit) as exc_fresh:
+        cli_main()
+    assert exc_fresh.value.code == 1

@@ -107,7 +107,9 @@ def test_pattern_yaml_mirror_sync_and_schema_validation(tmp_path: Path) -> None:
 
     specs = list_patterns(include_experimental=True)
     assert len(specs) == 9
-    assert len(list_patterns(include_experimental=False)) >= 2
+    active_specs = list_patterns(include_experimental=False)
+    assert all(spec.status == "active" for spec in active_specs)
+    assert len(active_specs) == 0
     assert all(spec.family in {"bottom_reversal", "trend_continuation", "breakout"} for spec in specs)
     assert all(spec.market_scope == ("cn",) for spec in specs)
 

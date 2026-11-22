@@ -1185,6 +1185,6 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
         )
     if not stable_slices:
         lines.append("")
-        lines.append("_注：当前暂无同时满足基准匹配样本 >= 100、前后半段各 >= 15 交易日同号且按交易日聚类 |t| >= 1.96 的稳定正超额切片，保持情绪阶段不调权重。_")
+        lines.append("_注：当前暂无同时满足基准匹配样本 >= 100、前后半段各 >= 15 交易日且 >= 30 样本同号，并满足 Newey-West HAC |t| >= 1.96 的稳定正超额切片，保持情绪阶段不调权重。_")
 
     return "\n".join(lines) + "\n"

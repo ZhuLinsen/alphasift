@@ -155,7 +155,7 @@ def test_scorecard_untradable_share_and_pattern_board_replay_klines(tmp_path: Pa
     fake_replay.write_text(
         json.dumps({
             "pack_summary": {"eval_start_date": "2026-09-25", "eval_end_date": "2026-10-08", "eval_sessions": 10},
-            "patterns": [{"pattern": "box_breakout", "display_name": "箱体突破", "graduation": {"recommended_status": "experimental"}}],
+            "patterns": [{"pattern": "box_breakout", "display_name": "箱体突破", "graduation": {"recommended_status": "experimental"}, "multiple_testing": {"n_patterns_tested": 9, "bh_q_value_csi300": 0.42, "bh_q_value_ew": 0.51, "bh_fdr_pass": False}}],
         }),
         encoding="utf-8",
     )
@@ -196,6 +196,7 @@ def test_scorecard_untradable_share_and_pattern_board_replay_klines(tmp_path: Pa
     box_hits = site_patterns["latest"]["signals_by_pattern"]["box_breakout"]
     assert box_hits and len(box_hits[0]["kline"]) == 20
     assert site_patterns["replay"]["patterns"][0]["pattern"] == "box_breakout"
+    assert site_patterns["replay"]["patterns"][0]["multiple_testing"]["bh_q_value_csi300"] == 0.42
 
     # 3) Valid Atom 1.0 RSS feed written alongside summary.json
     import xml.etree.ElementTree as ET
@@ -281,24 +282,27 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
         assert 'echo "$TICKPLUS_API_KEY"' not in text
         loaded[name] = (data, text)
 
-    # data-pack.yml exposes workflow_call with strictly string inputs, explicit secrets, and uses private Actions cache.
+    # data-pack.yml exposes workflow_call with strictly string inputs, explicit secrets, strict doctor gates, and uses private Actions cache.
     dp_data, dp_text = loaded["data-pack.yml"]
     dp_on = dp_data.get("on") if "on" in dp_data else dp_data[True]
     wf_call_inputs = dp_on["workflow_call"]["inputs"]
     assert all(spec["type"] == "string" for spec in wf_call_inputs.values())
     assert "TICKPLUS_API_KEY" in (dp_on["workflow_call"].get("secrets") or {})
     assert "persist-credentials: false" in dp_text
+    assert "--strict-pack" in dp_text and "--require-fresh" in dp_text
     assert "${{ inputs." not in dp_text.split("run:")[-1]
     assert "gh release create" not in dp_text and "gh release upload" not in dp_text
     assert "actions/cache" in dp_text
     assert "alphasift pack pull" not in dp_text
 
-    # track-record.yml chains pack -> record with explicit secret scope, freshness gate, and zero expression injection in run blocks.
+    # track-record.yml chains pack -> record with explicit secret scope, holiday-aware freshness gate before staging, and zero persisted tokens.
     tr_data, tr_text = loaded["track-record.yml"]
     assert "pack" in tr_data["jobs"]
     assert tr_data["jobs"]["pack"]["uses"] == "./.github/workflows/data-pack.yml"
     assert "secrets: inherit" not in tr_text
-    assert "persist-credentials: false" in tr_text
+    assert tr_text.count("persist-credentials: false") >= 2
+    assert "cn_market_state" in tr_text and "skipped_holiday" in tr_text
+    assert "logs[-1]" not in tr_text
     assert "CN_TRADE_DATE" in tr_text and "pat_fresh" in tr_text and "rep_fresh" in tr_text
     assert "${{ github.repository }}" not in tr_text.split("name: Build site data")[1].split("Commit to track-record")[0].split("run:")[-1]
     assert tr_data["jobs"]["record"]["needs"] == ["pack"]
@@ -314,6 +318,7 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
     assert "alphasift pack pull" not in tr_text
     step_names = [s.get("name", "") for s in tr_data["jobs"]["record"]["steps"]]
     assert step_names.index("Daily report and optional IM push") < step_names.index("Build site data")
+    assert step_names.index("Publish health & artifact gate") < step_names.index("Stage the dashboard")
     assert "evaluate --track track --markets" in tr_text and '--pack-dir "$ALPHASIFT_PACK_DIR"' in tr_text
     assert "--output-html track/site/daily_report.html" in tr_text
     assert "--ai-brief auto" in tr_text
@@ -331,6 +336,7 @@ def test_dashboard_page_i18n_race_guard_url_sync_and_js_syntax(tmp_path) -> None
 
     # 1. Race guard and query-param history.replaceState sync exist
     assert "dayReqId: 0" in html_text
+    assert 'replayStatus[name] || (items[0] ? items[0].status : "experimental")' in html_text
     assert "const reqId = ++state.dayReqId" in html_text
     assert "if (reqId !== state.dayReqId) return;" in html_text
     assert "window.history.replaceState" in html_text

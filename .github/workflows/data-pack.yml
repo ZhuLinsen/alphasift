@@ -107,4 +107,8 @@ jobs:
           fi
           python scripts/build_pack.py "$mode" "${extra_args[@]}"
           rm -rf "$ALPHASIFT_PACK_DIR/.backfill"
-          alphasift doctor radar --pack-dir "$ALPHASIFT_PACK_DIR" --explain
+          doc_args=(--pack-dir "$ALPHASIFT_PACK_DIR" --explain --strict-pack)
+          if [ -n "$trade_date" ]; then
+            doc_args+=(--trade-date "$trade_date" --require-fresh)
+          fi
+          alphasift doctor radar "${doc_args[@]}"

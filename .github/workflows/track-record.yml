@@ -91,6 +91,7 @@ jobs:
         with:
           ref: track-record
           path: track
+          persist-credentials: false
       - name: Ensure track workspace
         run: mkdir -p track/data/runs track/data/logs track/site
       - uses: actions/setup-python@v7
@@ -184,30 +185,49 @@ jobs:
         id: cn_date
         if: steps.session.outputs.session == 'asia'
         run: |
-          cn_date=$(python3 - <<'PY'
-          import glob, json, re
-          logs = sorted(glob.glob("track/data/logs/*-asia.json"))
-          val = ""
-          if logs:
+          eval "$(python3 - <<'PY'
+          import datetime as _dt
+          import json
+          import pathlib
+          import re
+          import zoneinfo
+
+          today_cn = _dt.datetime.now(zoneinfo.ZoneInfo("Asia/Shanghai")).date().isoformat()
+          log_path = pathlib.Path(f"track/data/logs/{today_cn}-asia.json")
+          market_state = "missing_log"
+          cn_date = today_cn
+          if log_path.is_file():
               try:
-                  with open(logs[-1], encoding="utf-8") as fh:
-                      data = json.load(fh)
+                  data = json.loads(log_path.read_text(encoding="utf-8"))
                   raw = str((data.get("effective_dates") or {}).get("cn") or "").strip()
+                  cn_entries = [
+                      e for e in (data.get("entries") or [])
+                      if isinstance(e, dict) and e.get("market") == "cn"
+                  ]
                   if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
-                      val = raw
+                      market_state = "open"
+                      cn_date = raw
+                  elif cn_entries and all(e.get("status") == "skipped_holiday" for e in cn_entries):
+                      market_state = "holiday"
+                      cn_date = ""
+                  else:
+                      market_state = "screen_failed"
+                      cn_date = today_cn
               except Exception:
-                  val = ""
-          print(val)
+                  market_state = "screen_failed"
+                  cn_date = today_cn
+          print(f"cn_market_state={market_state}")
+          print(f"cn_trade_date={cn_date}")
           PY
-          )
-          if [ -z "$cn_date" ]; then
-            cn_date=$(TZ=Asia/Shanghai date +%F)
-          fi
-          echo "cn_trade_date=$cn_date" >> "$GITHUB_OUTPUT"
-          echo "cn_trade_date=$cn_date"
+          )"
+          {
+            echo "cn_market_state=$cn_market_state"
+            echo "cn_trade_date=$cn_trade_date"
+          } >> "$GITHUB_OUTPUT"
+          echo "cn_market_state=$cn_market_state cn_trade_date=$cn_trade_date"
 
       - name: Record CN pattern board
-        if: steps.session.outputs.session == 'asia'
+        if: steps.session.outputs.session == 'asia' && steps.cn_date.outputs.cn_market_state != 'holiday'
         env:
           CN_TRADE_DATE: ${{ steps.cn_date.outputs.cn_trade_date }}
         run: |
@@ -226,7 +246,7 @@ jobs:
           python scripts/track_record.py evaluate --track track --markets "$MARKETS" --pack-dir "$ALPHASIFT_PACK_DIR"
 
       - name: Daily report and optional IM push
-        if: steps.session.outputs.session == 'asia'
+        if: steps.session.outputs.session == 'asia' && steps.cn_date.outputs.cn_market_state != 'holiday'
         env:
           CN_TRADE_DATE: ${{ steps.cn_date.outputs.cn_trade_date }}
           ALPHASIFT_DASHBOARD_URL: ${{ vars.ALPHASIFT_DASHBOARD_URL }}
@@ -296,6 +316,7 @@ jobs:
         env:
           SESSION: ${{ steps.session.outputs.session }}
           IS_PAGES_ENABLED: ${{ github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true' }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ ! -d .git ]; then echo "track-record branch checkout absent; skip commit"; exit 0; fi
           git config user.name "github-actions[bot]"
@@ -309,18 +330,8 @@ jobs:
           tz="Asia/Shanghai"
           if [ "$SESSION" = "us" ]; then tz="America/New_York"; fi
           git commit -q -m "track: $SESSION $(TZ=$tz date +%F)"
-          git push origin HEAD:track-record
-
-      - name: Stage the dashboard
-        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
-        run: |
-          mkdir -p _site
-          cp track/index.html _site/
-          cp -r track/site _site/site
-      - uses: actions/upload-pages-artifact@v5
-        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
-        with:
-          path: _site
+          auth_b64=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth_b64}" push origin HEAD:track-record
 
       - name: Publish health & artifact gate
         if: steps.session.outputs.session != ''
@@ -329,6 +340,7 @@ jobs:
           SESSION: ${{ steps.session.outputs.session }}
           REPO_NAME: ${{ github.repository }}
           CN_TRADE_DATE: ${{ steps.cn_date.outputs.cn_trade_date }}
+          CN_MARKET_STATE: ${{ steps.cn_date.outputs.cn_market_state }}
         run: |
           python3 - <<'PY'
           import json, os, pathlib
@@ -337,6 +349,7 @@ jobs:
           session = os.environ.get("SESSION", "")
           event_name = os.environ.get("EVENT_NAME", "")
           cn_trade_date = os.environ.get("CN_TRADE_DATE", "").strip()
+          cn_market_state = os.environ.get("CN_MARKET_STATE", "").strip()
           summary_path = pathlib.Path("track/site/summary.json")
           state_dir = pathlib.Path(os.environ.get("STATE", "state"))
           state_dir.mkdir(parents=True, exist_ok=True)
@@ -351,6 +364,7 @@ jobs:
 
           pat_date = str(pat.get("trade_date") or "").strip()
           rep_date = str(rep.get("trade_date") or "").strip()
+          is_cn_holiday = session == "asia" and cn_market_state == "holiday"
           pat_fresh = bool(
               pat.get("exists")
               and pat_date
@@ -365,6 +379,8 @@ jobs:
           )
 
           def _art_status(info: dict, date_val: str, is_fresh: bool) -> str:
+              if is_cn_holiday:
+                  return f"holiday-skipped (latest {date_val or '-'})"
               if not info.get("exists"):
                   return f"MISSING ({info.get('reason') or '-'})"
               if is_fresh:
@@ -375,7 +391,7 @@ jobs:
 
           lines = [
               "### AlphaSift Track Record Health",
-              f"- Session: `{session}` (`{event_name}`) · Runs: `{summary.get('run_count', 0)}` · Days: `{len(summary.get('days') or [])}` · CN target: `{cn_trade_date or '-'}`",
+              f"- Session: `{session}` (`{event_name}`) · Runs: `{summary.get('run_count', 0)}` · Days: `{len(summary.get('days') or [])}` · CN state: `{cn_market_state or '-'} ({cn_trade_date or '-'})`",
               f"- AI paired strategies: `{len(tc)}`",
               f"- Patterns artifact: `{_art_status(pat, pat_date, pat_fresh)}`",
               f"- Daily report artifact: `{_art_status(rep, rep_date, rep_fresh)}`",
@@ -389,7 +405,9 @@ jobs:
           print("\n".join(lines))
 
           if repo == "ZhuLinsen/alphasift" and session == "asia":
-              if pat_fresh and rep_fresh:
+              if is_cn_holiday:
+                  print("CN exchange holiday — artifact freshness gate skipped")
+              elif pat_fresh and rep_fresh:
                   streak_file.write_text("0\n", encoding="utf-8")
               else:
                   prev = 0
@@ -406,6 +424,17 @@ jobs:
                       raise SystemExit(1)
                   print(f"::warning::{msg}")
           PY
+
+      - name: Stage the dashboard
+        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
+        run: |
+          mkdir -p _site
+          cp track/index.html _site/
+          cp -r track/site _site/site
+      - uses: actions/upload-pages-artifact@v5
+        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
+        with:
+          path: _site
 
   deploy:
     needs: record

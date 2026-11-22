@@ -1477,6 +1477,7 @@ def _build_pattern_board(track: Path) -> dict[str, Any] | None:
                     "horizons": item.get("horizons"),
                     "graduation": item.get("graduation"),
                     "stability": item.get("stability"),
+                    "multiple_testing": item.get("multiple_testing"),
                     "by_regime": item.get("by_regime"),
                     "by_overhead_supply": item.get("by_overhead_supply"),
                 }
