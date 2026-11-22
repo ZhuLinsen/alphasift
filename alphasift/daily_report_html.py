@@ -598,6 +598,7 @@ def render_daily_report_html(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23090d16'/%3E%3Cpath d='M6 8h20l-7.5 8.8v6.6l-5 2.4V16.8L6 8z' fill='%233b82f6' fill-opacity='.25' stroke='%2360a5fa' stroke-width='2.2' stroke-linejoin='round'/%3E%3Ccircle cx='23' cy='23' r='2.5' fill='%2334d399'/%3E%3C/svg%3E">
 <title>AlphaSift · A 股盘后投研日报 ({trade_date})</title>
 <style>
 :root {{

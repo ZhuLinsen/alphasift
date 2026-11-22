@@ -932,6 +932,7 @@ def load_runs(track: Path) -> list[dict[str, Any]]:
             "after_filter_count": data.get("after_filter_count"),
             "snapshot_source": data.get("snapshot_source", ""),
             "degradation": len(data.get("degradation") or []),
+            "degradation_notes": [str(item)[:140] for item in (data.get("degradation") or [])[:4] if str(item).strip()],
             "picks": [
                 {
                     **{
@@ -985,6 +986,36 @@ def _load_latest_report_summary(path: Path) -> dict[str, Any] | None:
         else None
     )
     ai_brief = data.get("ai_brief") if isinstance(data.get("ai_brief"), dict) else None
+    raw_news = data.get("market_news") if isinstance(data.get("market_news"), dict) else {}
+    compact_news = (
+        {
+            "items": [
+                {
+                    "title": str(it.get("title") or "")[:140],
+                    "source": str(it.get("source") or ""),
+                    "time": str(it.get("time") or ""),
+                    "url": str(it.get("url") or ""),
+                }
+                for it in (raw_news.get("items") or [])[:5]
+                if isinstance(it, dict) and str(it.get("title") or "").strip()
+            ],
+            "sources": [str(s) for s in (raw_news.get("sources") or [])[:4] if str(s).strip()],
+            "candidate_news": {
+                str(code): [
+                    {
+                        "title": str(n.get("title") or "")[:120],
+                        "source": str(n.get("source") or ""),
+                        "date": str(n.get("date") or ""),
+                    }
+                    for n in (items or [])[:2]
+                    if isinstance(n, dict) and str(n.get("title") or "").strip()
+                ]
+                for code, items in list((raw_news.get("candidate_news") or {}).items())[:8]
+            },
+        }
+        if (raw_news.get("items") or raw_news.get("candidate_news"))
+        else None
+    )
     return {
         "trade_date": data.get("trade_date"),
         "pack_trade_date": data.get("pack_trade_date"),
@@ -994,6 +1025,7 @@ def _load_latest_report_summary(path: Path) -> dict[str, Any] | None:
         "ai_highlights": list(data.get("ai_highlights") or []),
         "cross_strategy_synthesis": compact_syn,
         "ai_brief": ai_brief,
+        "market_news": compact_news,
         "announcement_risks": {
             "checked_count": int(ann.get("checked_count") or 0),
             "flagged_count": len(flagged),
@@ -1547,6 +1579,7 @@ def _latest_logs(track: Path) -> dict[str, Any]:
 
 def render_readme(summary: dict[str, Any]) -> str:
     names = summary["strategy_names"]
+    switch_d = summary.get("entry_mode_switch_date") or NEXT_OPEN_SWITCH_DATE
     lines = [
         "# AlphaSift track record",
         "",
@@ -1559,8 +1592,9 @@ def render_readme(summary: dict[str, Any]) -> str:
         "[ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift) · "
         f"Updated {summary['generated_at']} · {summary['run_count']} saved runs",
         "",
-        "> For research only, not investment advice. Returns are close-to-close after a round-trip "
-        "cost, ignore dividends, and small samples are noisy.",
+        f"> For research only, not investment advice. From {switch_d}, entry uses `next_open` "
+        "(explicitly tracking one-price limit-up untradable blocks); legacy pre-switch runs used signal-day `close`. "
+        "Returns deduct round-trip costs, ignore dividends, and small samples are noisy.",
         "",
         "## Scorecard (T+5 / T+20)",
         "",

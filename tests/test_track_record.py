@@ -536,3 +536,47 @@ def test_cn_session_validates_snapshot_quote_date_and_clears_tushare_override(tm
     assert os.environ.get("TUSHARE_TRADE_DATE") == "20261111"
     assert [e["status"] for e in log["entries"]] == ["failed"]
     assert list((tmp_path / "data" / "runs").glob("*.json")) == []
+
+
+def test_load_runs_and_build_preserve_degradation_notes_and_market_news(tmp_path):
+    runs_dir = tmp_path / "data" / "runs"
+    runs_dir.mkdir(parents=True)
+    run_payload = {
+        "run_id": "r_deg",
+        "market": "cn",
+        "strategy": "dual_low",
+        "created_at": "2026-11-21T18:30:00+08:00",
+        "degradation": ["Daily fetch timeout on 3 symbols", "Industry backfill skipped"],
+        "picks": [{"rank": 1, "code": "000001", "name": "平安银行", "price": 12.0, "final_score": 80.0}],
+    }
+    (runs_dir / "r_deg.json").write_text(json.dumps(run_payload, ensure_ascii=False), encoding="utf-8")
+
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    report_payload = {
+        "object": "DailyReport",
+        "trade_date": "2026-11-21",
+        "market_news": {
+            "items": [
+                {"title": "央行发布流动性支持工具", "source": "东方财富7x24", "time": "17:45", "url": "https://example.com/news/1"},
+            ],
+            "sources": ["东方财富7x24"],
+            "candidate_news": {
+                "000001": [{"title": "平安银行公告最新业绩", "source": "东财", "date": "2026-11-21"}],
+            },
+        },
+        "ai_brief": {"mode": "llm", "headline": "盘面修复"},
+    }
+    (site_dir / "report.json").write_text(json.dumps(report_payload, ensure_ascii=False), encoding="utf-8")
+
+    loaded = track_record.load_runs(tmp_path)
+    assert loaded[0]["degradation"] == 2
+    assert loaded[0]["degradation_notes"] == ["Daily fetch timeout on 3 symbols", "Industry backfill skipped"]
+
+    summary = track_record.build_site(tmp_path)
+    rep_sum = summary["latest_report"]
+    assert rep_sum["market_news"]["items"][0]["title"] == "央行发布流动性支持工具"
+    assert rep_sum["market_news"]["candidate_news"]["000001"][0]["source"] == "东财"
+    readme_text = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert "next_open" in readme_text
+    assert "alphasift.zhulinsen.tech" in readme_text

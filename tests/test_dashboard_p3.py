@@ -245,6 +245,12 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
         "restoreQueryState",
         "footer-manifest-link",
         "t5_net_excess_mean_pct",
+        "data:image/svg+xml",
+        "og:image",
+        "twitter:card",
+        "trend-density",
+        "news-strip",
+        "degradation_notes",
     ):
         assert marker in html
 
@@ -325,6 +331,9 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
     assert "Publish health & artifact gate" in tr_text
     assert "GITHUB_STEP_SUMMARY" in tr_text
     assert "missing_pack_streak" in tr_text
+    assert "social-preview.png" in tr_text
+    assert "session == 'rebuild'" in tr_text
+    assert "push_flag" in tr_text
 
 
 def test_dashboard_page_i18n_race_guard_url_sync_and_js_syntax(tmp_path) -> None:

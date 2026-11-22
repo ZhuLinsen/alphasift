@@ -1,7 +1,7 @@
 # AlphaSift 推广运营与开源增长手册（Promotion & Growth Playbook）
 
 - **Repo**: [https://github.com/ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift)
-- **Live Benchmark**: [https://zhulinsen.github.io/alphasift/](https://zhulinsen.github.io/alphasift/)
+- **Live Benchmark**: [https://alphasift.zhulinsen.tech/](https://alphasift.zhulinsen.tech/)
 - **Baseline Snapshot**: 14 天内 `2,789` views / `1,314` unique visitors（Search referrals: `Google: 34`、`Bing: 17`、`Baidu: 2`），对比同作者生态项目 `ZhuLinsen/daily_stock_analysis`（`73.6k★`）与 `ZhuLinsen/alphaevo`（`233★`）存在巨大内外部引流杠杆空间。
 
 ---
@@ -70,7 +70,7 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 > - **Paired attribution**: CN sessions log both deterministic `rules` and `ai` tracks side-by-side (when LLM credentials are configured and non-degraded) so you can measure whether AI actually adds excess return over rules (`T+5 / T+10 / T+20` vs index benchmark at `next_open`).
 > - **MCP + Local Workbench**: `alphasift mcp` speaks zero-dependency STDIO JSON-RPC 2.0 (10 tools, 2 resources; read-only `scorecard` post-analysis without outbound pushes); `alphasift serve --port 8765` launches an offline-safe local Web UI at `/ui`. Install from source with `pip install -e .` (PyPI package publish queued in Week 1).
 >
-> Live verifiable ledger: https://zhulinsen.github.io/alphasift/?lang=en
+> Live verifiable ledger: https://alphasift.zhulinsen.tech/?lang=en
 > Happy to answer questions on `next_open` entry timing and limit-up accounting, non-saturating factor curves, or MCP safety boundaries!
 
 ### 3.2 Reddit — `r/algotrading` & `r/LocalLLaMA`
@@ -86,7 +86,7 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 ### 3.3 X / Twitter 6-Post Thread（英文/双语高密度）
 
 1. **1/6 (Hook + `promo-card-1-overview.png`)**: Most AI stock tools fail at two basic engineering checks: booking fake gains on untradable limit-up opens, and letting LLM vibes override regulatory probe filings. Introducing **AlphaSift v0.3** (Apache-2.0): 7 markets, 12 auditable YAML strategies, zero-SDK LLM guardrails, STDIO MCP, and a public `T+5/10/20` ledger.
-2. **2/6 (`dashboard-dark.png`)**: Every session logs real picks publicly on GitHub Pages (`zhulinsen.github.io/alphasift/?lang=en`). No cherry-picked screenshots: `next_open` entry pricing, matched index benchmarks (CSI 300 / S&P 500 / Nikkei / Hang Seng), and explicit `untradable_limit_up` tracking.
+2. **2/6 (`dashboard-dark.png`)**: Every session logs real picks publicly on GitHub Pages (`alphasift.zhulinsen.tech/?lang=en`). No cherry-picked screenshots: `next_open` entry pricing, matched index benchmarks (CSI 300 / S&P 500 / Nikkei / Hang Seng), and explicit `untradable_limit_up` tracking.
 3. **3/6 (`promo-card-3-benchmark.png`)**: Does LLM re-ranking actually add alpha—or subtract it? AlphaSift runs Rules and AI tracks in parallel on identical dates/strategies so you can inspect `AI - Rules` paired delta, `AI Added`, and `AI Dropped` case studies.
 4. **4/6**: Why prompts alone aren't safety: in AlphaSift, adverse regulatory/delisting/stake-sale keywords are capped at `35.0` in Python (`_LLM_RED_FLAG_MAX_SCORE`), with negated-phrase filtering (`"无立案调查"`). Zero `litellm` bloat—just clean `requests` + retry/redaction.
 5. **5/6**: Connects straight into Claude Code, Cursor, Codex, and OpenClaw via `alphasift mcp` (10 tools) or local `alphasift serve --port 8765` (`/ui` Workbench, zero external CDN, hashed script CSP) + 1-line Docker Compose.

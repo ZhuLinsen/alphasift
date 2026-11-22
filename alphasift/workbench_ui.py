@@ -11,6 +11,7 @@ def render_workbench_html() -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%278%27%20fill%3D%27%23090d16%27%2F%3E%3Cpath%20d%3D%27M6%208h20l-7.5%208.8v6.6l-5%202.4V16.8L6%208z%27%20fill%3D%27%233b82f6%27%20fill-opacity%3D%27.25%27%20stroke%3D%27%2360a5fa%27%20stroke-width%3D%272.2%27%20stroke-linejoin%3D%27round%27%2F%3E%3Ccircle%20cx%3D%2723%27%20cy%3D%2723%27%20r%3D%272.5%27%20fill%3D%27%2334d399%27%2F%3E%3C%2Fsvg%3E">
 <title>AlphaSift · Local Quantitative Workbench</title>
 <style>
   :root {

@@ -203,15 +203,19 @@ jobs:
 
       - name: Resolve CN target trade date
         id: cn_date
-        if: steps.session.outputs.session == 'asia'
+        if: steps.session.outputs.session == 'asia' || steps.session.outputs.session == 'rebuild'
+        env:
+          SESSION: ${{ steps.session.outputs.session }}
         run: |
           eval "$(python3 - <<'PY'
           import datetime as _dt
           import json
+          import os
           import pathlib
           import re
           import zoneinfo
 
+          session = os.environ.get("SESSION", "asia").strip()
           today_cn = _dt.datetime.now(zoneinfo.ZoneInfo("Asia/Shanghai")).date().isoformat()
           log_path = pathlib.Path(f"track/data/logs/{today_cn}-asia.json")
           market_state = "missing_log"
@@ -236,6 +240,12 @@ jobs:
               except Exception:
                   market_state = "screen_failed"
                   cn_date = today_cn
+          elif session == "rebuild":
+              from scripts.track_record import load_runs
+              cn_runs = [r for r in load_runs(pathlib.Path("track")) if r.get("market") == "cn" and r.get("date")]
+              if cn_runs:
+                  market_state = "open"
+                  cn_date = str(cn_runs[-1]["date"])
           print(f"cn_market_state={market_state}")
           print(f"cn_trade_date={cn_date}")
           PY
@@ -247,7 +257,7 @@ jobs:
           echo "cn_market_state=$cn_market_state cn_trade_date=$cn_trade_date"
 
       - name: Record CN pattern board
-        if: steps.session.outputs.session == 'asia' && steps.cn_date.outputs.cn_market_state != 'holiday'
+        if: (steps.session.outputs.session == 'asia' || steps.session.outputs.session == 'rebuild') && steps.cn_date.outputs.cn_market_state != 'holiday'
         env:
           CN_TRADE_DATE: ${{ steps.cn_date.outputs.cn_trade_date }}
         run: |
@@ -266,8 +276,9 @@ jobs:
           python scripts/track_record.py evaluate --track track --markets "$MARKETS" --pack-dir "$ALPHASIFT_PACK_DIR"
 
       - name: Daily report and optional IM push
-        if: steps.session.outputs.session == 'asia' && steps.cn_date.outputs.cn_market_state != 'holiday'
+        if: (steps.session.outputs.session == 'asia' || steps.session.outputs.session == 'rebuild') && steps.cn_date.outputs.cn_market_state != 'holiday'
         env:
+          SESSION: ${{ steps.session.outputs.session }}
           CN_TRADE_DATE: ${{ steps.cn_date.outputs.cn_trade_date }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           ALPHASIFT_ENABLE_PAGES: ${{ vars.ALPHASIFT_ENABLE_PAGES }}
@@ -331,6 +342,10 @@ jobs:
         run: |
           if [ -z "${LITELLM_FALLBACK_MODELS:-}" ]; then unset LITELLM_FALLBACK_MODELS; fi
           if [ -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
+            push_flag=()
+            if [ "${SESSION:-asia}" = "asia" ]; then
+              push_flag+=(--push)
+            fi
             alphasift daily-report \
               --pack-dir "$ALPHASIFT_PACK_DIR" \
               --runs-dir track/data/runs \
@@ -340,7 +355,7 @@ jobs:
               --output-json track/site/report.json \
               --output-card track/site/daily_card.md \
               --output-html track/site/daily_report.html \
-              --push \
+              "${push_flag[@]}" \
               --explain || echo "::warning::daily-report skipped"
           fi
 
@@ -386,10 +401,14 @@ jobs:
         env:
           REPO_NAME: ${{ github.repository }}
           ENABLE_PAGES: ${{ vars.ALPHASIFT_ENABLE_PAGES }}
+          DASHBOARD_URL: ${{ vars.ALPHASIFT_DASHBOARD_URL }}
         run: |
           python scripts/track_record.py build --track track
           if [ "$REPO_NAME" = "ZhuLinsen/alphasift" ] || [ "$ENABLE_PAGES" = "true" ]; then
             cp scripts/track_record_page.html track/index.html
+            if [ "$REPO_NAME" != "ZhuLinsen/alphasift" ]; then
+              python3 -c 'import os, pathlib; repo = os.environ.get("REPO_NAME", "").strip(); custom = os.environ.get("DASHBOARD_URL", "").strip(); target = (custom if custom.endswith("/") else f"{custom}/") if custom else (f"https://{repo.split(\"/\", 1)[0].lower()}.github.io/{repo.split(\"/\", 1)[1]}/" if "/" in repo else ""); p = pathlib.Path("track/index.html"); target and p.write_text(p.read_text(encoding="utf-8").replace("https://alphasift.zhulinsen.tech/", target), encoding="utf-8")'
+            fi
           fi
 
       - name: Commit to track-record
@@ -513,6 +532,7 @@ jobs:
           mkdir -p _site
           cp track/index.html _site/
           cp -r track/site _site/site
+          if [ -f docs/assets/social-preview.png ]; then cp docs/assets/social-preview.png _site/social-preview.png; fi
       - uses: actions/upload-pages-artifact@v5
         if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
         with:

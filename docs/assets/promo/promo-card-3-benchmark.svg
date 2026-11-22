@@ -21,7 +21,7 @@
     <text x="26" y="190" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Delayed exit when limit-down locked</text>
     <text x="26" y="222" fill="#cbd5e1" font-family="-apple-system,sans-serif" font-size="16">• Matched CSI300 / S&amp;P500 / Nikkei bench</text>
     <rect x="26" y="252" width="316" height="40" rx="8" fill="#1e293b"/>
-    <text x="42" y="277" fill="#fbbf24" font-family="ui-monospace,monospace" font-size="13">606+ pytest tests · public JSON logs</text>
+    <text x="42" y="277" fill="#fbbf24" font-family="ui-monospace,monospace" font-size="13">620+ pytest tests · public JSON logs</text>
   </g>
 
   <g transform="translate(456,218)">
@@ -48,6 +48,6 @@
     <text x="42" y="277" fill="#34d399" font-family="ui-monospace,monospace" font-size="13">EN / 中文 / 日本語 Live Dashboard</text>
   </g>
 
-  <text x="64" y="592" fill="#64748b" font-family="ui-monospace,monospace" font-size="14">Live Verification Dashboard: https://zhulinsen.github.io/alphasift/</text>
+  <text x="64" y="592" fill="#64748b" font-family="ui-monospace,monospace" font-size="14">Live Verification Dashboard: https://alphasift.zhulinsen.tech/</text>
   <text x="1216" y="592" text-anchor="end" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="14">github.com/ZhuLinsen/alphasift</text>
 </svg>
