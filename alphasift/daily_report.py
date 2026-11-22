@@ -7,6 +7,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import re
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -526,6 +527,18 @@ def ensure_im_card_length(text: str, *, max_chars: int = IM_CARD_MAX_CHARS) -> s
     return result
 
 
+_LEADING_TS_RE = re.compile(r"(?:^|(\|\s*))\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2})?)?\s*")
+
+
+def _clean_announcement_snippet(text: object, *, max_len: int = 44) -> str:
+    cleaned = re.sub(r"\s+", " ", str(text or "")).strip()
+    cleaned = _LEADING_TS_RE.sub(lambda m: " · " if m.group(1) else "", cleaned).strip(" :：-—·")
+    cleaned = re.sub(r"\s*\|\s*", " · ", cleaned)
+    if max_len > 0 and len(cleaned) > max_len:
+        return cleaned[: max(1, max_len - 1)].rstrip() + "…"
+    return cleaned
+
+
 def render_daily_im_card(
     report: dict[str, Any],
     *,
@@ -538,21 +551,21 @@ def render_daily_im_card(
     prev_ret = reg.get("prev_limit_up_avg_return_pct")
     prev_str = "-" if prev_ret is None else f"{float(prev_ret):+.2f}%"
     amt = reg.get("total_amount_yi")
-    amt_str = "-" if amt is None else f"{float(amt):.0f}亿"
+    amt_str = "-" if amt is None else f"{float(amt):,.0f}亿"
     med = reg.get("median_return_pct")
-    med_part = "" if med is None else f"(中位 {float(med):+.2f}%)"
+    med_part = "" if med is None else f" · 中位 {float(med):+.2f}%"
 
-    lines = [f"**AlphaSift A股量化观测日报 ({report.get('trade_date', '-')})**"]
+    lines = [f"**AlphaSift A股盘后观察 ({report.get('trade_date', '-')})**"]
     if report.get("pack_is_stale"):
         lines.append(
             f"> ⚠️ **旧包降级**：数据包日期 {report.get('pack_trade_date', '-')} 落后于目标交易日 "
             f"{report.get('expected_trade_date', '-')}，仅供参考"
         )
     lines.append(
-        f"> 盘面 **{reg.get('regime_stage_label', '-')}({reg.get('regime_stage', '-')})**[仅切片]｜"
+        f"> 盘面 **{reg.get('regime_stage_label', '-')}**｜"
         f"上涨 {float(reg.get('advance_ratio_pct', 0.0)):.1f}%{med_part}｜"
-        f"涨跌停 {reg.get('non_st_limit_up_count', 0)}/{reg.get('non_st_limit_down_count', 0)}(封板 {seal_str})｜"
-        f"连板最高 {reg.get('max_consecutive_limit_up', 0)}板｜昨涨停 {prev_str}｜成交 {amt_str}"
+        f"涨跌停 {reg.get('non_st_limit_up_count', 0)}/{reg.get('non_st_limit_down_count', 0)}（封板 {seal_str}）｜"
+        f"最高 {reg.get('max_consecutive_limit_up', 0)}板 · 昨涨停 {prev_str} · 成交 {amt_str}"
     )
 
     # Alert-first block: announcement risks BEFORE strategies and patterns, with reserved budget.
@@ -560,15 +573,15 @@ def render_daily_im_card(
     flagged = ann.get("flagged_items") or []
     checked = int(ann.get("checked_count") or 0)
     if flagged:
-        lines.append(f"**⚠️ 公告排雷预警({checked}检/{len(flagged)}中)**")
+        lines.append(f"**⚠️ 公告排雷预警（{checked}检/{len(flagged)}中）**")
         bullet_budget = 340
         used_ann = 0
         shown = 0
         for item in flagged[:5]:
             flags = "/".join(str(x) for x in (item.get("negative_event_flags") or [])[:2])
-            bullet = f"- {item.get('code', '')} {str(item.get('name', ''))[:8]}[{flags}]"
-            snip = str(item.get("announcement_summary") or "").replace("\n", " ").strip()[:24]
-            if snip and len(bullet) + len(snip) + 2 <= 68:
+            bullet = f"- {item.get('code', '')} {str(item.get('name', ''))[:8]} [{flags}]"
+            snip = _clean_announcement_snippet(item.get("announcement_summary"), max_len=36)
+            if snip and len(bullet) + len(snip) + 2 <= 82:
                 bullet += f": {snip}"
             if shown > 0 and used_ann + len(bullet) + 1 > bullet_budget:
                 break
@@ -612,32 +625,49 @@ def render_daily_im_card(
             f"[AI] {len(ai_runs)} 组({ai_picks}只){delta_part}{view_part}"
         )
     elif rules_runs:
-        lines.append(f"**策略概览**：规则 {len(rules_runs)} 组({rules_picks}只，完整候选见看板)")
+        lines.append(f"**策略概览**：规则 {len(rules_runs)} 组共 {rules_picks} 只候选")
     else:
-        lines.append("**策略概览**：今日暂无已保存 CN 策略运行")
+        lines.append("**策略概览**：当日未附带 CN 策略选股（仅输出盘面与形态雷达）")
 
     syn = report.get("cross_strategy_synthesis") or {}
     consensus = syn.get("consensus_picks") or []
     if consensus:
         top_c = "、".join(
-            f"{c['code']}{str(c.get('name') or '')[:6]}({c['strategy_count']}策略)"
-            for c in consensus[:2]
+            f"{c['code']} {str(c.get('name') or '')[:6]}({c['strategy_count']}策略)"
+            for c in consensus[:4]
         )
         lines.append(f"**多策略共识({len(consensus)})**：{top_c}")
     brief = report.get("ai_brief") or {}
     if brief.get("mode") == "llm" and brief.get("headline"):
-        lines.append(f"**[AI] 简评**：{str(brief['headline'])[:64]}")
+        lines.append(f"**[AI] 简评**：{str(brief['headline'])[:72]}")
+    elif brief.get("headline"):
+        lines.append(f"**盘后摘要**：{str(brief['headline'])[:72]}")
 
-    # Compact pattern radar summary (counts only, experimental lists live in web dashboard).
+    # Compact pattern radar summary with top triggered pattern samples when available.
     pat_sec = report.get("patterns") or {}
     active = pat_sec.get("active") or []
     experimental = pat_sec.get("experimental") or []
     active_hits = sum(int(p.get("hit_count") or 0) for p in active)
     exp_hits = sum(int(p.get("hit_count") or 0) for p in experimental)
-    lines.append(
-        f"**形态雷达**：正式(active) {len(active)} 组({active_hits}只) / "
-        f"观察期(experimental) {len(experimental)} 组({exp_hits}只，详见看板)"
-    )
+    top_hit_pats = [
+        p for p in (*active, *experimental)
+        if int(p.get("hit_count") or 0) > 0
+    ]
+    top_hit_pats.sort(key=lambda p: -int(p.get("hit_count") or 0))
+    if top_hit_pats:
+        pat_parts = []
+        for p in top_hit_pats[:3]:
+            dname = str(p.get("display_name") or p.get("pattern") or "")
+            sigs = "、".join(str(s.get("name") or s.get("code") or "")[:6] for s in (p.get("signals") or [])[:2])
+            tag = "" if p.get("status") == "active" else "·观察期"
+            sig_txt = f"：{sigs}" if sigs else ""
+            pat_parts.append(f"{dname}({int(p.get('hit_count') or 0)}只{tag}{sig_txt})")
+        lines.append("**形态雷达**：" + "；".join(pat_parts))
+    else:
+        lines.append(
+            f"**形态雷达**：active {len(active)} 组({active_hits}只) / "
+            f"观察期 {len(experimental)} 组({exp_hits}只)"
+        )
 
     detail_url = (
         DEFAULT_DASHBOARD_URL

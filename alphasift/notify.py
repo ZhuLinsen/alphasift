@@ -11,6 +11,7 @@ from email.message import EmailMessage
 import fcntl
 import hashlib
 import hmac
+import html as html_lib
 import importlib
 import json
 import os
@@ -26,7 +27,13 @@ from urllib.parse import parse_qs, quote, quote_plus, unquote, urlencode, urlspl
 import requests
 
 from alphasift.config import Config
-from alphasift.daily_report import IM_CARD_MAX_CHARS, ensure_im_card_length, render_daily_im_card
+from alphasift.daily_report import (
+    DEFAULT_DASHBOARD_URL,
+    IM_CARD_MAX_CHARS,
+    _clean_announcement_snippet,
+    ensure_im_card_length,
+    render_daily_im_card,
+)
 from alphasift.timeutil import parse_timestamp
 
 SUPPORTED_CHANNELS: tuple[str, ...] = (
@@ -732,21 +739,645 @@ def _send_wecom(webhook_url: str, content: str, *, timeout_sec: float, post_fn=r
         raise RuntimeError(f"wecom errcode={payload.get('errcode')} errmsg={payload.get('errmsg', '')}")
 
 
+def _safe_http_link(raw: object) -> str:
+    cleaned = str(raw or "").strip()
+    if not cleaned or any(ch in cleaned for ch in '<>"\'\r\n\t\0'):
+        return ""
+    parsed = urlsplit(cleaned)
+    if parsed.scheme.lower() in {"http", "https"} and parsed.netloc:
+        return cleaned
+    return ""
+
+
+def _has_rich_report(report: dict[str, Any] | None) -> bool:
+    return bool(
+        isinstance(report, dict)
+        and isinstance(report.get("market_regime"), dict)
+        and report.get("market_regime")
+    )
+
+
+def _resolved_report_url(report: dict[str, Any]) -> str:
+    raw = DEFAULT_DASHBOARD_URL if report.get("detail_url") is None else report.get("detail_url")
+    return _safe_http_link(raw)
+
+
+def _sorted_hit_patterns(report: dict[str, Any]) -> list[dict[str, Any]]:
+    pat_sec = report.get("patterns") or {}
+    active = list(pat_sec.get("active") or [])
+    exp = list(pat_sec.get("experimental") or [])
+    active_hits = sorted(
+        (p for p in active if int(p.get("hit_count") or 0) > 0),
+        key=lambda p: -int(p.get("hit_count") or 0),
+    )
+    exp_hits = sorted(
+        (p for p in exp if int(p.get("hit_count") or 0) > 0),
+        key=lambda p: -int(p.get("hit_count") or 0),
+    )
+    return [*active_hits, *exp_hits]
+
+
+def _stage_palette(stage: str) -> tuple[str, str, str]:
+    """Return (bg, fg, feishu_template) for CN market regime stage."""
+    if stage in {"freezing", "ebb"}:
+        return "#FEF2F2", "#DC2626", "red"
+    if stage in {"startup", "main_up"}:
+        return "#ECFDF5", "#059669", "green"
+    if stage == "divergence":
+        return "#FFFBEB", "#D97706", "orange"
+    return "#F1F5F9", "#475569", "blue"
+
+
+def _fmt_report_pct(val: object) -> str:
+    if val is None:
+        return "–"
+    try:
+        num = float(val)
+    except (TypeError, ValueError):
+        return "–"
+    if num != num:
+        return "–"
+    return f"{num:+.2f}%"
+
+
+def _build_feishu_card(
+    report: dict[str, Any] | None,
+    content: str,
+    *,
+    title: str,
+) -> dict[str, Any]:
+    if not _has_rich_report(report):
+        return {
+            "config": {"wide_screen_mode": True},
+            "header": {"title": {"tag": "plain_text", "content": title}, "template": "blue"},
+            "elements": [{"tag": "markdown", "content": content}],
+        }
+
+    assert report is not None
+    reg = report.get("market_regime") or {}
+    stage = str(reg.get("regime_stage") or "")
+    stage_lbl = str(reg.get("regime_stage_label") or "-")
+    _, _, tmpl = _stage_palette(stage)
+    ann = report.get("announcement_risks") or {}
+    flagged = ann.get("flagged_items") or []
+    checked = int(ann.get("checked_count") or 0)
+    if report.get("pack_is_stale"):
+        tmpl = "orange"
+    elif flagged:
+        tmpl = "red"
+
+    seal = reg.get("seal_rate_pct")
+    seal_str = "-" if seal is None else f"{float(seal):.1f}%"
+    prev_ret = reg.get("prev_limit_up_avg_return_pct")
+    prev_str = "-" if prev_ret is None else f"{float(prev_ret):+.2f}%"
+    amt = reg.get("total_amount_yi")
+    amt_str = "-" if amt is None else f"{float(amt):,.0f} 亿"
+    med = reg.get("median_return_pct")
+    med_str = "-" if med is None else f"{float(med):+.2f}%"
+    adv_str = f"{float(reg.get('advance_ratio_pct', 0.0)):.1f}%"
+
+    elements: list[dict[str, Any]] = []
+    if report.get("pack_is_stale"):
+        elements.append({
+            "tag": "markdown",
+            "content": (
+                f"⚠️ **旧包降级提示**：当前包日期 `{report.get('pack_trade_date', '-')}` "
+                f"落后于目标交易日 `{report.get('expected_trade_date', '-')}`，仅供参考"
+            ),
+        })
+
+    elements.append({
+        "tag": "div",
+        "fields": [
+            {
+                "is_short": True,
+                "text": {"tag": "lark_md", "content": f"**盘面温度（{stage_lbl}）**\n上涨 {adv_str} · 中位 {med_str}"},
+            },
+            {
+                "is_short": True,
+                "text": {
+                    "tag": "lark_md",
+                    "content": (
+                        f"**非ST涨跌停 / 封板**\n"
+                        f"{reg.get('non_st_limit_up_count', 0)} 涨停 / {reg.get('non_st_limit_down_count', 0)} 跌停 · {seal_str}"
+                    ),
+                },
+            },
+            {
+                "is_short": True,
+                "text": {"tag": "lark_md", "content": f"**连板与昨涨停**\n最高 {reg.get('max_consecutive_limit_up', 0)} 板 · 昨涨停 {prev_str}"},
+            },
+            {
+                "is_short": True,
+                "text": {"tag": "lark_md", "content": f"**两市成交额**\n{amt_str}"},
+            },
+        ],
+    })
+    elements.append({"tag": "hr"})
+
+    # Alert-first Announcement risk block
+    if flagged:
+        ann_lines = [f"**⚠️ 公告排雷预警（抽检 {checked} 只，命中 {len(flagged)} 只高风险）**"]
+        for item in flagged[:5]:
+            flags = " / ".join(str(x) for x in (item.get("negative_event_flags") or [])[:2])
+            snip = _clean_announcement_snippet(item.get("announcement_summary"), max_len=48)
+            line = f"- **{item.get('code', '')} {item.get('name', '')}** [{flags}]"
+            if snip:
+                line += f"：{snip}"
+            ann_lines.append(line)
+        if len(flagged) > 5:
+            ann_lines.append(f"- 其余 {len(flagged) - 5} 条请点击下方按钮查看网页详情")
+        elements.append({"tag": "markdown", "content": "\n".join(ann_lines)})
+    elif checked > 0 and ann.get("errors"):
+        elements.append({"tag": "markdown", "content": f"**⚠️ 公告排雷降级**：抽检 {checked} 只（{str(ann['errors'][0])[:60]}）"})
+    elif checked > 0:
+        elements.append({"tag": "markdown", "content": f"**✅ 公告排雷通过**：抽检 {checked} 只重点候选，未检出减持 / 诉讼 / 立案等风险"})
+
+    # Brief summary
+    brief = report.get("ai_brief") or {}
+    if brief.get("headline"):
+        brief_lbl = "🤖 AI 盘后综述" if brief.get("mode") == "llm" else "📌 盘后盘面摘要"
+        b_lines = [f"**{brief_lbl}**：{str(brief['headline']).strip()}"]
+        if brief.get("consensus_and_ai_edge"):
+            b_lines.append(str(brief["consensus_and_ai_edge"]).strip())
+        elif brief.get("regime_interpretation"):
+            b_lines.append(str(brief["regime_interpretation"]).strip())
+        elements.append({"tag": "markdown", "content": "\n".join(b_lines)})
+
+    # Multi-strategy consensus table-like list
+    syn = report.get("cross_strategy_synthesis") or {}
+    consensus = syn.get("consensus_picks") or []
+    strategies = report.get("strategies") or []
+    if consensus:
+        c_lines = [f"**🎯 跨策略高共识精选（共 {len(consensus)} 只，展示 Top 5）**"]
+        for idx, c in enumerate(consensus[:5], start=1):
+            risk_tag = " ⚠️" if c.get("announcement_risk_flags") else ""
+            chg = f" · {_fmt_report_pct(c.get('change_pct'))}" if c.get("change_pct") is not None else ""
+            sc_txt = f" · 均分 {float(c['avg_final_score']):.1f}" if c.get("avg_final_score") is not None else ""
+            ind = str(c.get("industry") or "-")
+            c_lines.append(
+                f"{idx}. **{c.get('name', '')}** `{c.get('code', '')}`{risk_tag} · {ind} · "
+                f"**{c.get('strategy_count', 0)} 策略共振**{sc_txt}{chg}"
+            )
+        elements.append({"tag": "markdown", "content": "\n".join(c_lines)})
+    elif not strategies:
+        elements.append({"tag": "markdown", "content": "**🎯 策略概览**：当日未附带 CN 策略选股运行，下方展示盘后形态扫描结果"})
+
+    # Pattern radar hits
+    hit_pats = _sorted_hit_patterns(report)
+    if hit_pats:
+        p_lines = ["**📡 形态雷达触发（未达 25bp/NW 严格门槛统一标为观察期）**"]
+        for p in hit_pats[:4]:
+            tag = "active" if p.get("status") == "active" else "观察期"
+            sigs = "、".join(
+                f"{s.get('name') or s.get('code')}({s.get('code')}, {_fmt_report_pct(s.get('change_pct'))})"
+                for s in (p.get("signals") or [])[:3]
+            )
+            p_lines.append(
+                f"- **{p.get('display_name') or p.get('pattern')}**（{int(p.get('hit_count') or 0)} 只 · {tag}）"
+                + (f"：{sigs}" if sigs else "")
+            )
+        elements.append({"tag": "markdown", "content": "\n".join(p_lines)})
+
+    elements.append({"tag": "hr"})
+    detail_url = _resolved_report_url(report)
+    if detail_url:
+        elements.append({
+            "tag": "action",
+            "actions": [{
+                "tag": "button",
+                "text": {"tag": "plain_text", "content": "打开在线交互看板（20日K线 & T+N实盘验证）"},
+                "type": "primary",
+                "url": detail_url,
+            }],
+        })
+    elements.append({
+        "tag": "note",
+        "elements": [{
+            "tag": "plain_text",
+            "content": "AlphaSift · 开源量化选股与 T+N 验证基准 · 历史统计不含分红，不构成投资建议",
+        }],
+    })
+    return {
+        "config": {"wide_screen_mode": True},
+        "header": {"title": {"tag": "plain_text", "content": title}, "template": tmpl},
+        "elements": elements,
+    }
+
+
+def _render_telegram_html(
+    report: dict[str, Any] | None,
+    content: str,
+    *,
+    title: str,
+) -> str:
+    esc = html_lib.escape
+    if not _has_rich_report(report):
+        lines: list[str] = [f"<b>{esc(title)}</b>"]
+        for raw_line in content.splitlines():
+            s = raw_line.strip()
+            if not s:
+                continue
+            s_esc = esc(s)
+            s_esc = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", s_esc)
+            if s_esc.startswith("&gt; "):
+                lines.append(f"<blockquote>{s_esc[5:]}</blockquote>")
+            else:
+                lines.append(s_esc)
+        out = "\n".join(lines)
+        return out[:3990] + ("…" if len(out) > 3990 else "")
+
+    assert report is not None
+    reg = report.get("market_regime") or {}
+    seal = reg.get("seal_rate_pct")
+    seal_str = "-" if seal is None else f"{float(seal):.1f}%"
+    prev_ret = reg.get("prev_limit_up_avg_return_pct")
+    prev_str = "-" if prev_ret is None else f"{float(prev_ret):+.2f}%"
+    amt = reg.get("total_amount_yi")
+    amt_str = "-" if amt is None else f"{float(amt):,.0f} 亿"
+    med = reg.get("median_return_pct")
+    med_str = "-" if med is None else f"{float(med):+.2f}%"
+
+    parts: list[str] = [
+        f"📊 <b>AlphaSift · A 股盘后观察</b> <code>{esc(str(report.get('trade_date', '-')))}</code>",
+    ]
+    if report.get("pack_is_stale"):
+        parts.append(
+            f"⚠️ <b>旧包降级</b>：包日期 <code>{esc(str(report.get('pack_trade_date', '-')))}</code> "
+            f"&lt; 目标 <code>{esc(str(report.get('expected_trade_date', '-')))}</code>"
+        )
+    parts.append(
+        "<blockquote>"
+        f"<b>盘面 · {esc(str(reg.get('regime_stage_label', '-')))}</b>｜上涨 <b>{float(reg.get('advance_ratio_pct', 0.0)):.1f}%</b>（中位 {esc(med_str)}）\n"
+        f"涨跌停 <b>{int(reg.get('non_st_limit_up_count', 0))}/{int(reg.get('non_st_limit_down_count', 0))}</b>（封板 {esc(seal_str)}）｜"
+        f"最高 {int(reg.get('max_consecutive_limit_up', 0))}板 · 昨涨停 {esc(prev_str)} · 成交 {esc(amt_str)}"
+        "</blockquote>"
+    )
+
+    ann = report.get("announcement_risks") or {}
+    flagged = ann.get("flagged_items") or []
+    checked = int(ann.get("checked_count") or 0)
+    if flagged:
+        ann_lines = [f"\n⚠️ <b>公告排雷预警</b>（{checked}检 / {len(flagged)}中）"]
+        for item in flagged[:4]:
+            flags = " / ".join(str(x) for x in (item.get("negative_event_flags") or [])[:2])
+            snip = _clean_announcement_snippet(item.get("announcement_summary"), max_len=44)
+            ann_lines.append(
+                f"• <code>{esc(str(item.get('code', '')))}</code> <b>{esc(str(item.get('name', '')))}</b> "
+                f"[{esc(flags)}]" + (f"：{esc(snip)}" if snip else "")
+            )
+        parts.append("\n".join(ann_lines))
+    elif checked > 0:
+        parts.append(f"\n✅ <b>公告排雷</b>：抽检 {checked} 只重点候选无异常")
+
+    brief = report.get("ai_brief") or {}
+    if brief.get("headline"):
+        lbl = "🤖 AI 盘后综述" if brief.get("mode") == "llm" else "📌 盘后盘面摘要"
+        b_txt = f"\n<b>{lbl}</b>\n{esc(str(brief['headline']).strip())}"
+        summary_line = str(brief.get("consensus_and_ai_edge") or brief.get("regime_interpretation") or brief.get("market_summary") or "").strip()
+        if summary_line:
+            b_txt += f"\n{esc(summary_line[:180])}"
+        parts.append(b_txt)
+
+    syn = report.get("cross_strategy_synthesis") or {}
+    consensus = syn.get("consensus_picks") or []
+    if consensus:
+        c_lines = [f"\n🎯 <b>跨策略高共识精选（Top {min(5, len(consensus))}/{len(consensus)}）</b>"]
+        for idx, c in enumerate(consensus[:5], start=1):
+            risk_mark = " ⚠️" if c.get("announcement_risk_flags") else ""
+            chg = f" · {_fmt_report_pct(c.get('change_pct'))}" if c.get("change_pct") is not None else ""
+            sc_txt = f" · {float(c['avg_final_score']):.1f}分" if c.get("avg_final_score") is not None else ""
+            c_lines.append(
+                f"{idx}. <b>{esc(str(c.get('name', '')))}</b> <code>{esc(str(c.get('code', '')))}</code>{risk_mark} · "
+                f"{esc(str(c.get('industry') or '-'))} · <b>{int(c.get('strategy_count', 0))}策略</b>{esc(sc_txt)}{esc(chg)}"
+            )
+        parts.append("\n".join(c_lines))
+
+    hit_pats = _sorted_hit_patterns(report)
+    if hit_pats:
+        p_lines = ["\n📡 <b>形态雷达触发</b>"]
+        for p in hit_pats[:4]:
+            tag = "active" if p.get("status") == "active" else "观察期"
+            sigs = "、".join(
+                f"{esc(str(s.get('name') or s.get('code')))} {esc(_fmt_report_pct(s.get('change_pct')))}"
+                for s in (p.get("signals") or [])[:3]
+            )
+            p_lines.append(
+                f"• <b>{esc(str(p.get('display_name') or p.get('pattern')))}</b>"
+                f"（{int(p.get('hit_count') or 0)}只 · {tag}）" + (f"：{sigs}" if sigs else "")
+            )
+        parts.append("\n".join(p_lines))
+
+    detail_url = _resolved_report_url(report)
+    footer_lines: list[str] = []
+    if detail_url:
+        footer_lines.append(
+            f'\n🔗 <a href="{esc(detail_url, quote=True)}">打开在线交互看板（20日K线 &amp; T+N验证）</a>'
+        )
+    footer_lines.append("<i>注：仅作量化形态观测与回测基准，不构成投资建议。</i>")
+    tail = "\n".join(footer_lines)
+
+    body = "\n".join(parts)
+    max_body = 4000 - len(tail) - 1
+    if len(body) > max_body:
+        kept: list[str] = []
+        used = 0
+        for block in parts:
+            add = len(block) + (1 if kept else 0)
+            if used + add <= max_body - 16:
+                kept.append(block)
+                used += add
+            else:
+                break
+        body = "\n".join(kept) if kept else esc(str(report.get("trade_date", "")))
+    return f"{body}\n{tail}"
+
+
+def _render_email_html(
+    report: dict[str, Any] | None,
+    content: str,
+    *,
+    title: str,
+) -> str:
+    esc = html_lib.escape
+    font_stack = "-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei','Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+    mono_stack = "'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace"
+
+    if not _has_rich_report(report):
+        body_rows: list[str] = []
+        for raw_line in content.splitlines():
+            s = raw_line.strip()
+            if not s:
+                continue
+            s_esc = esc(s)
+            s_esc = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", s_esc)
+            if s_esc.startswith("&gt; "):
+                body_rows.append(
+                    f'<div style="background:#F8FAFC;border-left:3px solid #2563EB;padding:10px 14px;'
+                    f'margin:8px 0;border-radius:0 6px 6px 0;color:#334155;font-size:14px;line-height:1.6;">{s_esc[5:]}</div>'
+                )
+            else:
+                body_rows.append(f'<p style="margin:6px 0;color:#1E293B;font-size:14px;line-height:1.65;">{s_esc}</p>')
+        inner = "".join(body_rows) or f'<p style="margin:0;color:#334155;">{esc(content)}</p>'
+        return (
+            f'<!doctype html><html><body style="margin:0;padding:24px 12px;background:#F1F5F9;font-family:{font_stack};">'
+            f'<div style="max-width:660px;margin:0 auto;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;">'
+            f'<div style="background:#0F172A;color:#F8FAFC;padding:18px 24px;">'
+            f'<div style="font-size:11px;letter-spacing:0.08em;color:#93C5FD;font-weight:700;text-transform:uppercase;">AlphaSift</div>'
+            f'<div style="font-size:19px;font-weight:700;margin-top:4px;">{esc(title)}</div></div>'
+            f'<div style="padding:20px 24px;">{inner}</div></div></body></html>'
+        )
+
+    assert report is not None
+    reg = report.get("market_regime") or {}
+    stage = str(reg.get("regime_stage") or "")
+    stage_lbl = str(reg.get("regime_stage_label") or "-")
+    st_bg, st_fg, _ = _stage_palette(stage)
+    adv = float(reg.get("advance_ratio_pct") or 0.0)
+    adv_color = "#DC2626" if adv >= 50.0 else "#059669"
+    med = reg.get("median_return_pct")
+    med_str = _fmt_report_pct(med)
+    seal = reg.get("seal_rate_pct")
+    seal_str = "–" if seal is None else f"{float(seal):.1f}%"
+    prev_ret = reg.get("prev_limit_up_avg_return_pct")
+    prev_str = _fmt_report_pct(prev_ret)
+    amt = reg.get("total_amount_yi")
+    amt_str = "–" if amt is None else f"{float(amt):,.0f} 亿"
+    dist = reg.get("return_distribution") or {}
+    up_cnt = int(reg.get("up_count") or sum(int(dist.get(k) or 0) for k in ("pos0_3", "pos3_7", "ge_pos7")))
+    flat_cnt = int(reg.get("flat_count") or int(dist.get("flat") or 0))
+    down_cnt = int(reg.get("down_count") or sum(int(dist.get(k) or 0) for k in ("le_neg7", "neg7_neg3", "neg3_0")))
+    lu_cnt = int(reg.get("non_st_limit_up_count") or 0)
+    ld_cnt = int(reg.get("non_st_limit_down_count") or 0)
+    max_streak = int(reg.get("max_consecutive_limit_up") or 0)
+
+    sections: list[str] = []
+    if report.get("pack_is_stale"):
+        sections.append(
+            f'<div style="background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #D97706;'
+            f'border-radius:8px;padding:10px 14px;margin-bottom:16px;color:#92400E;font-size:13px;">'
+            f'<strong>旧包降级提示：</strong>当前数据包日期 <code>{esc(str(report.get("pack_trade_date", "-")))}</code> '
+            f'落后于目标交易日 <code>{esc(str(report.get("expected_trade_date", "-")))}</code>，仅供参考。</div>'
+        )
+
+    # 4-card KPI grid
+    kpi_cell = 'style="width:25%;padding:12px 10px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;vertical-align:top;"'
+    kpi_lbl = 'style="font-size:11px;color:#64748B;margin-bottom:4px;font-weight:600;"'
+    kpi_sub = 'style="font-size:11px;color:#64748B;margin-top:4px;"'
+    sections.append(
+        '<table role="presentation" width="100%" cellspacing="6" cellpadding="0" style="border-collapse:separate;margin:0 -6px 14px -6px;"><tr>'
+        f'<td {kpi_cell}><div {kpi_lbl}>上涨家数占比</div>'
+        f'<div style="font-size:20px;font-weight:700;color:{adv_color};font-family:{mono_stack};">{adv:.1f}%</div>'
+        f'<div {kpi_sub}>中位数 {esc(med_str)}</div></td>'
+        f'<td {kpi_cell}><div {kpi_lbl}>非 ST 涨跌停</div>'
+        f'<div style="font-size:20px;font-weight:700;color:#0F172A;font-family:{mono_stack};">'
+        f'<span style="color:#DC2626;">{lu_cnt}</span> / <span style="color:#059669;">{ld_cnt}</span></div>'
+        f'<div {kpi_sub}>封板率 {esc(seal_str)}</div></td>'
+        f'<td {kpi_cell}><div {kpi_lbl}>连板高度</div>'
+        f'<div style="font-size:20px;font-weight:700;color:#0F172A;font-family:{mono_stack};">{max_streak} 板</div>'
+        f'<div {kpi_sub}>昨涨停 {esc(prev_str)}</div></td>'
+        f'<td {kpi_cell}><div {kpi_lbl}>两市成交额</div>'
+        f'<div style="font-size:19px;font-weight:700;color:#0F172A;font-family:{mono_stack};">{esc(amt_str)}</div>'
+        f'<div {kpi_sub}>涨 {up_cnt:,} / 平 {flat_cnt:,} / 跌 {down_cnt:,}</div></td>'
+        '</tr></table>'
+    )
+
+    # 7-bucket return distribution bar
+    buckets = (
+        ("le_neg7", "≤-7%", "#059669"),
+        ("neg7_neg3", "-7~-3%", "#10B981"),
+        ("neg3_0", "-3~0%", "#6EE7B7"),
+        ("flat", "平", "#94A3B8"),
+        ("pos0_3", "0~3%", "#FCA5A5"),
+        ("pos3_7", "3~7%", "#F87171"),
+        ("ge_pos7", "≥7%", "#DC2626"),
+    )
+    counts = [int(dist.get(k) or 0) for k, _, _ in buckets]
+    max_b = max(1, *counts)
+    b_cells = []
+    for idx, (_, blbl, bcol) in enumerate(buckets):
+        cnt = counts[idx]
+        bh = max(3, int(round((cnt / max_b) * 34))) if cnt > 0 else 2
+        b_cells.append(
+            f'<td style="width:14.28%;text-align:center;vertical-align:bottom;padding:4px 2px;">'
+            f'<div style="font-size:10px;color:#475569;font-family:{mono_stack};margin-bottom:3px;">{cnt}</div>'
+            f'<div style="height:{bh}px;background:{bcol};border-radius:3px 3px 0 0;margin:0 6px;"></div>'
+            f'<div style="font-size:10px;color:#64748B;border-top:1px solid #CBD5E1;padding-top:3px;">{blbl}</div>'
+            f'</td>'
+        )
+    sections.append(
+        '<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;margin-bottom:16px;">'
+        '<div style="font-size:12px;font-weight:700;color:#334155;margin-bottom:6px;">全 A 股涨跌分布（7 档）</div>'
+        f'<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>{"".join(b_cells)}</tr></table>'
+        '</div>'
+    )
+
+    # Alert-first Announcement Risk section
+    ann = report.get("announcement_risks") or {}
+    flagged = ann.get("flagged_items") or []
+    checked = int(ann.get("checked_count") or 0)
+    if flagged:
+        ann_rows = []
+        for item in flagged[:6]:
+            flags = " / ".join(str(x) for x in (item.get("negative_event_flags") or [])[:2])
+            snip = _clean_announcement_snippet(item.get("announcement_summary"), max_len=64)
+            ann_rows.append(
+                f'<li style="margin:5px 0;font-size:13px;color:#7F1D1D;line-height:1.5;">'
+                f'<strong>{esc(str(item.get("name", "")))}</strong> '
+                f'<code style="font-family:{mono_stack};color:#991B1B;">{esc(str(item.get("code", "")))}</code> '
+                f'<span style="display:inline-block;background:#FEE2E2;color:#B91C1C;font-size:11px;font-weight:700;'
+                f'padding:1px 6px;border-radius:4px;margin:0 4px;">{esc(flags)}</span>'
+                + (f'<span style="color:#450A0A;">{esc(snip)}</span>' if snip else "")
+                + '</li>'
+            )
+        sections.append(
+            f'<div style="background:#FEF2F2;border:1px solid #FECACA;border-left:4px solid #DC2626;'
+            f'border-radius:8px;padding:12px 16px;margin-bottom:16px;">'
+            f'<div style="font-size:13px;font-weight:700;color:#991B1B;margin-bottom:6px;">'
+            f'⚠️ 公告排雷预警（抽检 {checked} 只重点标的 · 命中 {len(flagged)} 只高风险）</div>'
+            f'<ul style="margin:0;padding-left:18px;">{"".join(ann_rows)}</ul></div>'
+        )
+    elif checked > 0:
+        sections.append(
+            f'<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-left:4px solid #059669;'
+            f'border-radius:8px;padding:10px 14px;margin-bottom:16px;color:#065F46;font-size:13px;">'
+            f'<strong>✓ 公告排雷通过：</strong>已抽检 {checked} 只重点候选，未检出减持 / 立案 / 退市等高风险公告。</div>'
+        )
+
+    # Post-Close Brief
+    brief = report.get("ai_brief") or {}
+    if brief.get("headline"):
+        is_ai = brief.get("mode") == "llm"
+        lbl = "🤖 AI 盘后综述" if is_ai else "📌 盘后盘面摘要"
+        accent = "#2563EB" if is_ai else "#475569"
+        extra_paras = []
+        for k in ("market_summary", "consensus_and_ai_edge", "regime_interpretation", "risk_focus"):
+            val = str(brief.get(k) or "").strip()
+            if val:
+                extra_paras.append(f'<p style="margin:5px 0 0 0;font-size:13px;color:#334155;line-height:1.6;">{esc(val)}</p>')
+        watch = [str(w).strip() for w in (brief.get("watch_points") or []) if str(w).strip()][:3]
+        if watch:
+            w_items = "".join(f'<li style="margin:2px 0;">{esc(w)}</li>' for w in watch)
+            extra_paras.append(
+                f'<ul style="margin:6px 0 0 0;padding-left:18px;font-size:12px;color:#475569;line-height:1.55;">{w_items}</ul>'
+            )
+        sections.append(
+            f'<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-left:4px solid {accent};'
+            f'border-radius:8px;padding:12px 16px;margin-bottom:16px;">'
+            f'<div style="font-size:12px;font-weight:700;color:{accent};margin-bottom:4px;">{lbl}</div>'
+            f'<div style="font-size:14px;font-weight:700;color:#0F172A;line-height:1.5;">{esc(str(brief["headline"]).strip())}</div>'
+            f'{"".join(extra_paras)}</div>'
+        )
+
+    # Multi-Strategy Consensus Table
+    syn = report.get("cross_strategy_synthesis") or {}
+    consensus = syn.get("consensus_picks") or []
+    if consensus:
+        th_css = 'style="padding:8px;text-align:left;font-size:11px;color:#64748B;border-bottom:1px solid #E2E8F0;background:#F8FAFC;"'
+        th_r = 'style="padding:8px;text-align:right;font-size:11px;color:#64748B;border-bottom:1px solid #E2E8F0;background:#F8FAFC;"'
+        c_rows = []
+        for idx, c in enumerate(consensus[:6], start=1):
+            chg_v = c.get("change_pct")
+            chg_col = "#DC2626" if (chg_v is not None and float(chg_v) > 0) else ("#059669" if (chg_v is not None and float(chg_v) < 0) else "#475569")
+            sc_v = "–" if c.get("avg_final_score") is None else f"{float(c['avg_final_score']):.1f}"
+            strats = " · ".join(str(x) for x in (c.get("strategies") or [])[:3])
+            risk_badge = ' <span style="background:#FEE2E2;color:#DC2626;font-size:10px;padding:1px 4px;border-radius:3px;">公告风险</span>' if c.get("announcement_risk_flags") else ""
+            c_rows.append(
+                f'<tr style="border-bottom:1px solid #F1F5F9;">'
+                f'<td style="padding:8px;font-size:12px;color:#64748B;font-family:{mono_stack};">{idx}</td>'
+                f'<td style="padding:8px;font-size:13px;color:#0F172A;"><strong>{esc(str(c.get("name", "")))}</strong> '
+                f'<code style="font-size:11px;color:#64748B;font-family:{mono_stack};">{esc(str(c.get("code", "")))}</code>{risk_badge}'
+                f'<div style="font-size:11px;color:#64748B;margin-top:2px;">{esc(str(c.get("industry") or "-"))} · {esc(strats)}</div></td>'
+                f'<td style="padding:8px;text-align:right;font-size:12px;"><span style="background:#EFF6FF;color:#1D4ED8;font-weight:700;padding:2px 7px;border-radius:999px;">{int(c.get("strategy_count", 0))} 策略</span></td>'
+                f'<td style="padding:8px;text-align:right;font-size:12px;font-family:{mono_stack};color:#0F172A;">{sc_v}</td>'
+                f'<td style="padding:8px;text-align:right;font-size:12px;font-weight:700;font-family:{mono_stack};color:{chg_col};">{esc(_fmt_report_pct(chg_v))}</td>'
+                f'</tr>'
+            )
+        sections.append(
+            f'<div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;margin-bottom:16px;">'
+            f'<div style="padding:10px 14px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;font-size:13px;font-weight:700;color:#0F172A;">'
+            f'🎯 跨策略高共识精选（共 {len(consensus)} 只，展示 Top {min(6, len(consensus))}）</div>'
+            f'<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">'
+            f'<thead><tr><th {th_css}>#</th><th {th_css}>标的 / 行业 / 命中策略</th><th {th_r}>共振度</th><th {th_r}>均分</th><th {th_r}>今日涨跌</th></tr></thead>'
+            f'<tbody>{"".join(c_rows)}</tbody></table></div>'
+        )
+
+    # Pattern Radar Cards
+    hit_pats = _sorted_hit_patterns(report)
+    if hit_pats:
+        pat_blocks = []
+        for p in hit_pats[:5]:
+            is_act = p.get("status") == "active"
+            badge_bg, badge_fg, badge_txt = ("#ECFDF5", "#059669", "active") if is_act else ("#FFFBEB", "#B45309", "观察期")
+            sig_rows = []
+            for s in (p.get("signals") or [])[:4]:
+                cv = s.get("change_pct")
+                ccol = "#DC2626" if (cv is not None and float(cv) > 0) else ("#059669" if (cv is not None and float(cv) < 0) else "#475569")
+                ov = "–" if s.get("overhead_supply_10pct") is None else f"{float(s['overhead_supply_10pct']):.0f}%"
+                sig_rows.append(
+                    f'<tr><td style="width:46%;padding:6px 12px;font-size:12px;color:#0F172A;"><strong>{esc(str(s.get("name") or s.get("code")))}</strong> '
+                    f'<code style="color:#64748B;font-size:11px;font-family:{mono_stack};">{esc(str(s.get("code", "")))}</code></td>'
+                    f'<td style="width:24%;padding:6px 10px;text-align:right;font-size:12px;font-family:{mono_stack};color:{ccol};font-weight:600;">{esc(_fmt_report_pct(cv))}</td>'
+                    f'<td style="width:30%;padding:6px 12px;text-align:right;font-size:12px;font-family:{mono_stack};color:#64748B;">上方筹码 {esc(ov)}</td></tr>'
+                )
+            pat_blocks.append(
+                f'<div style="border:1px solid #E2E8F0;border-radius:8px;margin-bottom:10px;overflow:hidden;">'
+                f'<div style="padding:8px 12px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;font-size:13px;">'
+                f'<strong style="color:#0F172A;">{esc(str(p.get("display_name") or p.get("pattern")))}</strong> '
+                f'<span style="display:inline-block;background:{badge_bg};color:{badge_fg};font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:6px;">{badge_txt} · {int(p.get("hit_count") or 0)}只</span>'
+                f'</div>'
+                f'<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">{"".join(sig_rows)}</table></div>'
+            )
+        sections.append(
+            '<div style="margin-bottom:16px;">'
+            '<div style="font-size:13px;font-weight:700;color:#0F172A;margin-bottom:8px;">'
+            '📡 A 股无状态形态雷达（未过 25bp/NW 严格回放门槛统一标为观察期）</div>'
+            f'{"".join(pat_blocks)}</div>'
+        )
+
+    detail_url = _resolved_report_url(report)
+    cta_html = (
+        f'<div style="text-align:center;margin:20px 0 8px 0;">'
+        f'<a href="{esc(detail_url, quote=True)}" target="_blank" rel="noopener" '
+        f'style="display:inline-block;background:#2563EB;color:#FFFFFF;text-decoration:none;'
+        f'font-size:14px;font-weight:700;padding:11px 24px;border-radius:8px;">'
+        f'打开在线交互看板（20日K线 &amp; T+N 实盘验证）</a></div>'
+        if detail_url
+        else ""
+    )
+
+    return (
+        f'<!doctype html><html><body style="margin:0;padding:24px 12px;background:#F1F5F9;font-family:{font_stack};">'
+        f'<div style="max-width:660px;margin:0 auto;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;">'
+        f'<div style="background:#0F172A;color:#F8FAFC;padding:20px 24px;">'
+        f'<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
+        f'<td><span style="display:inline-block;background:#1E293B;color:#93C5FD;font-size:11px;font-weight:700;'
+        f'letter-spacing:0.06em;padding:3px 9px;border-radius:999px;">ALPHASIFT</span>'
+        f'<div style="font-size:20px;font-weight:700;margin-top:8px;">A 股盘后定量观测日报</div>'
+        f'<div style="font-size:12px;color:#94A3B8;margin-top:3px;">交易日 {esc(str(report.get("trade_date", "-")))} · 规则筛选 + 公告排雷 + 形态雷达</div></td>'
+        f'<td style="text-align:right;vertical-align:top;"><span style="display:inline-block;background:{st_bg};color:{st_fg};'
+        f'font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;">盘面 · {esc(stage_lbl)}</span></td>'
+        f'</tr></table></div>'
+        f'<div style="padding:20px 24px;">{"".join(sections)}{cta_html}</div>'
+        f'<div style="padding:12px 24px;background:#F8FAFC;border-top:1px solid #E2E8F0;font-size:11px;color:#64748B;line-height:1.5;">'
+        f'<strong>AlphaSift</strong> · 开源量化形态观测与 T+N 回测基准（Apache-2.0）· 历史统计不含分红，不构成投资建议。</div>'
+        f'</div></body></html>'
+    )
+
+
 def _send_feishu(
     webhook_url: str,
     content: str,
     *,
     title: str,
     secret: str = "",
+    report: dict[str, Any] | None = None,
     timeout_sec: float,
     post_fn=requests.post,
 ) -> None:
     body: dict[str, Any] = {
         "msg_type": "interactive",
-        "card": {
-            "header": {"title": {"tag": "plain_text", "content": title}, "template": "blue"},
-            "elements": [{"tag": "markdown", "content": content}],
-        },
+        "card": _build_feishu_card(report, content, title=title),
     }
     if secret:
         ts = int(time.time())
@@ -853,17 +1484,44 @@ def _send_bark(
         raise RuntimeError(f"bark code={payload.get('code')} msg={payload.get('message', '')}")
 
 
-def _send_telegram(bot_token: str, chat_id: str, content: str, *, timeout_sec: float, post_fn=requests.post) -> None:
+def _send_telegram(
+    bot_token: str,
+    chat_id: str,
+    content: str,
+    *,
+    title: str = "",
+    report: dict[str, Any] | None = None,
+    timeout_sec: float,
+    post_fn=requests.post,
+) -> None:
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    html_text = _render_telegram_html(report, content, title=title or "AlphaSift")
     resp = _post_with_retry(
         post_fn,
         url,
-        json={"chat_id": chat_id, "text": content, "disable_web_page_preview": True},
+        json={
+            "chat_id": chat_id,
+            "text": html_text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True,
+        },
         timeout=timeout_sec,
     )
     payload = _safe_json(resp)
     if payload.get("ok") is not True:
-        raise RuntimeError(f"telegram error={payload.get('description', 'unknown')}")
+        desc = str(payload.get("description") or "")
+        if "parse" in desc.lower() or "entity" in desc.lower() or "entities" in desc.lower():
+            resp2 = _post_with_retry(
+                post_fn,
+                url,
+                json={"chat_id": chat_id, "text": content, "disable_web_page_preview": True},
+                timeout=timeout_sec,
+            )
+            payload2 = _safe_json(resp2)
+            if payload2.get("ok") is True:
+                return
+            raise RuntimeError(f"telegram error={payload2.get('description', 'unknown')}")
+        raise RuntimeError(f"telegram error={desc or 'unknown'}")
 
 
 def _send_discord(
@@ -921,6 +1579,7 @@ def _send_email(
     content: str,
     *,
     title: str,
+    report: dict[str, Any] | None = None,
     smtp_host: str = "",
     smtp_port: int = 0,
     timeout_sec: float = 10.0,
@@ -933,6 +1592,8 @@ def _send_email(
     msg["From"] = sender
     msg["To"] = ", ".join(recips)
     msg.set_content(content, charset="utf-8")
+    html_body = _render_email_html(report, content, title=title)
+    msg.add_alternative(html_body, subtype="html", charset="utf-8")
 
     if smtp_factory is not None:
         client = smtp_factory(host, port, mode=mode, timeout=timeout_sec)
@@ -1038,7 +1699,15 @@ def _dispatch_target(
     if ch == "wecom":
         _send_wecom(target, content, timeout_sec=timeout, post_fn=post_fn)
     elif ch == "feishu":
-        _send_feishu(target, content, title=title, secret=secret, timeout_sec=timeout, post_fn=post_fn)
+        _send_feishu(
+            target,
+            content,
+            title=title,
+            secret=secret,
+            report=report,
+            timeout_sec=timeout,
+            post_fn=post_fn,
+        )
     elif ch == "dingtalk":
         _send_dingtalk(target, content, title=title, secret=secret, timeout_sec=timeout, post_fn=post_fn)
     elif ch == "pushplus":
@@ -1054,13 +1723,22 @@ def _dispatch_target(
             extra.get("receivers") or [target],
             content,
             title=title,
+            report=report,
             smtp_host=str(extra.get("smtp_host") or ""),
             smtp_port=int(extra.get("smtp_port") or 0),
             timeout_sec=timeout,
             smtp_factory=smtp_factory,
         )
     elif ch == "telegram":
-        _send_telegram(target, str(extra.get("chat_id") or ""), content, timeout_sec=timeout, post_fn=post_fn)
+        _send_telegram(
+            target,
+            str(extra.get("chat_id") or ""),
+            content,
+            title=title,
+            report=report,
+            timeout_sec=timeout,
+            post_fn=post_fn,
+        )
     elif ch == "discord":
         _send_discord(target, content, title=title, detail_url=str(report.get("detail_url") or ""), timeout_sec=timeout, post_fn=post_fn)
     elif ch == "slack":

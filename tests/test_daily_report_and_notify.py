@@ -998,3 +998,136 @@ def test_notify_round6_hardening_url_redaction_retries_and_ledger_transitions(tm
     )
     assert res_ab["status"] == "skipped_duplicate"
     assert sent_ab == []
+
+
+def test_channel_renderers_feishu_telegram_email_and_snippet(tmp_path: Path) -> None:
+    from alphasift.config import Config
+    from alphasift.daily_report import _clean_announcement_snippet, render_daily_im_card
+    from alphasift.notify import push_daily_report
+
+    assert _clean_announcement_snippet("2026-11-10 16:36:08 关于控股股东诉讼进展公告") == "关于控股股东诉讼进展公告"
+    assert _clean_announcement_snippet("2026-11-10T09:15:00  减持股份公告") == "减持股份公告"
+
+    rich_report = {
+        "trade_date": "2026-11-20",
+        "detail_url": "https://zhulinsen.github.io/alphasift/?lang=zh",
+        "pack_is_stale": False,
+        "market_regime": {
+            "regime_stage": "freezing",
+            "regime_stage_label": "冰点",
+            "advance_ratio_pct": 5.7,
+            "median_return_pct": -5.12,
+            "non_st_limit_up_count": 28,
+            "non_st_limit_down_count": 63,
+            "seal_rate_pct": 71.8,
+            "max_consecutive_limit_up": 4,
+            "prev_limit_up_avg_return_pct": -3.50,
+            "total_amount_yi": 14215.0,
+            "up_count": 295,
+            "flat_count": 15,
+            "down_count": 4890,
+            "return_distribution": {
+                "le_neg7": 210, "neg7_neg3": 1900, "neg3_0": 2780, "flat": 15, "pos0_3": 210, "pos3_7": 55, "ge_pos7": 30,
+            },
+        },
+        "announcement_risks": {
+            "checked_count": 12,
+            "flagged_count": 1,
+            "flagged_items": [{
+                "code": "300760",
+                "name": "迈瑞医疗",
+                "negative_event_flags": ["诉讼风险"],
+                "announcement_summary": "2026-11-10 16:36:08 关于控股股东涉诉进展<script>alert(1)</script>",
+            }],
+            "errors": [],
+        },
+        "ai_brief": {
+            "mode": "llm",
+            "headline": "冰点普跌下高共识银行股抗跌",
+            "market_summary": "全市场中位数下跌 5.12%，防御型权重占优。",
+        },
+        "cross_strategy_synthesis": {
+            "consensus_picks": [{
+                "code": "601668",
+                "name": "中国建筑",
+                "industry": "建筑",
+                "strategy_count": 6,
+                "strategies": ["balanced_alpha", "blue_chip_income"],
+                "avg_final_score": 80.1,
+                "change_pct": 1.25,
+                "announcement_risk_flags": [],
+            }],
+        },
+        "strategies": [{"strategy": "dual_low", "track": "rules", "llm_ranked": False, "pick_count": 5}],
+        "patterns": {
+            "active": [],
+            "experimental": [{
+                "pattern": "bottom_volume_yang",
+                "display_name": "底部倍量阳",
+                "status": "experimental",
+                "hit_count": 3,
+                "signals": [{"code": "002348", "name": "高乐股份", "change_pct": 7.78, "overhead_supply_10pct": 7}],
+            }],
+        },
+    }
+    card_md = render_daily_im_card(rich_report)
+    assert "[仅切片]" not in card_md
+    assert "14,215亿" in card_md
+    assert "2026-11-10 16:36:08" not in card_md
+    assert "中国建筑" in card_md
+    assert "底部倍量阳" in card_md
+
+    posted: list[tuple[str, dict]] = []
+    sent_msgs: list[object] = []
+
+    def fake_post(url: str, *, json: dict, timeout: float):
+        posted.append((url, json))
+        if "open.feishu.cn" in url:
+            return _DummyResponse(200, {"code": 0, "msg": "ok"})
+        return _DummyResponse(200, {"ok": True})
+
+    class _CaptureSMTP:
+        def __init__(self, host: str, port: int, *, mode: str, timeout: float) -> None:
+            pass
+
+        def login(self, user: str, password: str) -> None:
+            pass
+
+        def send_message(self, msg) -> None:
+            sent_msgs.append(msg)
+
+        def quit(self) -> None:
+            pass
+
+    cfg = Config(
+        feishu_webhook_url="https://open.feishu.cn/open-apis/bot/v2/hook/FEISHU_KEY",
+        telegram_bot_token="123456:TG_KEY",
+        telegram_chat_id="-100999",
+        notify_urls=["mailto://sender@qq.com:SMTP_SECRET@smtp.qq.com:465?to=recv@example.com"],
+        notify_state_path=tmp_path / "notify_state.json",
+    )
+    res = push_daily_report(rich_report, config=cfg, post_fn=fake_post, smtp_factory=_CaptureSMTP)
+    assert res["status"] == "ok" and sorted(res["sent"]) == ["email", "feishu", "telegram"]
+
+    feishu_card = next(j["card"] for u, j in posted if "open.feishu.cn" in u)
+    assert feishu_card["config"]["wide_screen_mode"] is True
+    assert feishu_card["header"]["template"] == "red"
+    assert any(el.get("tag") == "div" and len(el.get("fields", [])) == 4 for el in feishu_card["elements"])
+    assert any(el.get("tag") == "action" for el in feishu_card["elements"])
+
+    tg_payload = next(j for u, j in posted if "api.telegram.org" in u)
+    assert tg_payload["parse_mode"] == "HTML"
+    assert len(tg_payload["text"]) <= 4096
+    assert "<b>" in tg_payload["text"] and "<blockquote>" in tg_payload["text"]
+    assert "<script>alert(1)</script>" not in tg_payload["text"]
+    assert "2026-11-10 16:36:08" not in tg_payload["text"]
+
+    assert len(sent_msgs) == 1
+    email_msg = sent_msgs[0]
+    assert email_msg.is_multipart()
+    parts = {p.get_content_type(): p.get_content() for p in email_msg.iter_parts()}
+    assert "text/plain" in parts and "text/html" in parts
+    html_part = parts["text/html"]
+    assert "<script>alert(1)</script>" not in html_part
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html_part
+    assert "中国建筑" in html_part and "底部倍量阳" in html_part
