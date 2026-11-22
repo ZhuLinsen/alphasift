@@ -31,6 +31,10 @@
   --down-soft: rgba(52, 211, 153, 0.12);
   --warn: #fbbf24;
   --warn-soft: rgba(251, 191, 36, 0.14);
+  --status-ok: #38bdf8;
+  --status-ok-soft: rgba(56, 189, 248, 0.13);
+  --status-err: #f43f5e;
+  --status-err-soft: rgba(244, 63, 94, 0.14);
   --chip: rgba(255, 255, 255, 0.06);
   --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px -15px rgba(0, 0, 0, 0.65);
   --grid-dot: rgba(255, 255, 255, 0.035);
@@ -66,6 +70,10 @@
   --down-soft: rgba(5, 150, 105, 0.1);
   --warn: #b45309;
   --warn-soft: rgba(180, 83, 9, 0.1);
+  --status-ok: #0284c7;
+  --status-ok-soft: rgba(2, 132, 199, 0.1);
+  --status-err: #e11d48;
+  --status-err-soft: rgba(225, 29, 72, 0.1);
   --chip: rgba(9, 9, 11, 0.055);
   --shadow: 0 1px 2px rgba(9, 9, 11, 0.04), 0 8px 24px -16px rgba(9, 9, 11, 0.08);
   --grid-dot: rgba(9, 9, 11, 0.045);
@@ -215,6 +223,24 @@ main { max-width: 1280px; margin: 0 auto; padding: 24px 20px 72px; }
   color: var(--ink); font-size: 12.5px;
 }
 .stale-banner.show { display: block; }
+
+.health-strip {
+  margin-top: 14px; padding: 8px 12px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 12px;
+}
+.health-item {
+  display: inline-flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap;
+}
+.health-item strong { color: var(--ink-2); font-weight: 600; }
+.health-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--muted); }
+.health-dot.ok { background: var(--status-ok); box-shadow: 0 0 6px var(--status-ok-soft); }
+.health-dot.pend { background: var(--warn); }
+.health-dot.err { background: var(--status-err); }
+.status-ok { color: var(--status-ok); }
+.status-err { color: var(--status-err); }
+.badge.ok-neutral { color: var(--status-ok); border-color: rgba(56, 189, 248, 0.35); background: var(--status-ok-soft); }
+.badge.pending { color: var(--warn); border-color: rgba(251, 191, 36, 0.35); background: var(--warn-soft); }
 
 /* Unified 4-Col Hairline KPI Strip */
 .kpi-strip {
@@ -386,6 +412,10 @@ th, td {
   padding: 9px 11px; text-align: right; white-space: nowrap;
   border-bottom: 1px solid var(--border); font-size: 12.5px;
 }
+table.compact-tbl th, table.compact-tbl td {
+  padding: 6px 4px; font-size: 11px;
+}
+table.compact-tbl th { font-size: 10px; }
 th {
   font-weight: 600; color: var(--muted); font-size: 11px; letter-spacing: 0.03em;
   background: var(--surface-2); text-transform: uppercase;
@@ -461,6 +491,12 @@ tr.low-sample td, td.muted-cell { color: var(--muted); opacity: 0.78; }
 .card .sub { margin-top: 3px; color: var(--muted); font-size: 11.5px; font-family: var(--font-mono); }
 .card td, .card th { padding: 6px 10px; font-size: 12px; }
 .kline { width: 96px; height: 28px; display: inline-block; vertical-align: middle; }
+.sparkline { width: 64px; height: 18px; display: inline-block; vertical-align: middle; }
+.pat-meta-row {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px;
+  padding: 6px 14px; border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--muted); font-family: var(--font-mono);
+}
 
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
@@ -536,7 +572,8 @@ footer {
       <a href="#leaderboard" data-i18n="nav_leaderboard">策略排行</a>
       <a href="#trend-section" data-i18n="nav_trend">超额走势</a>
       <a href="#explorer" data-i18n="nav_explorer">选股浏览</a>
-      <a href="#radar-section" data-i18n="nav_radar">AI 与形态</a>
+      <a href="#track-comparison-section" data-i18n="nav_ai">AI 归因</a>
+      <a href="#radar-section" data-i18n="nav_patterns">形态雷达</a>
     </div>
 
     <div class="top-actions">
@@ -585,6 +622,7 @@ footer {
   </header>
 
   <div class="stale-banner" id="stale-banner"></div>
+  <div class="health-strip" id="health-strip"></div>
 
   <div class="kpi-strip" id="kpi-strip">
     <div class="kpi-cell"><div class="kpi-label" data-i18n="loading">加载中</div><div class="kpi-val">–</div><div class="kpi-foot" data-i18n="loading_sub">读取公开战绩与盘面统计…</div></div>
@@ -726,6 +764,7 @@ footer {
       <a href="https://github.com/ZhuLinsen/alphasift/tree/track-record" target="_blank" rel="noopener" data-i18n="footer_ledger">track-record 原始账本</a>
       <a id="footer-report-link" href="site/daily_report.html" style="display:none;" data-i18n="footer_report">每日投研日报</a>
       <a href="site/feed.xml" target="_blank" rel="noopener" data-i18n="footer_rss">Atom RSS 订阅</a>
+      <a id="footer-manifest-link" href="site/manifest.sha256" target="_blank" rel="noopener" style="display:none;">SHA-256</a>
       <a href="https://github.com/ZhuLinsen/alphasift/blob/main/README.md" target="_blank" rel="noopener" data-i18n="footer_readme">README 文档</a>
     </div>
   </footer>
@@ -742,7 +781,8 @@ const I18N = {
     nav_leaderboard: "策略排行",
     nav_trend: "超额走势",
     nav_explorer: "选股浏览",
-    nav_radar: "AI 与形态",
+    nav_ai: "AI 归因",
+    nav_patterns: "形态雷达",
     nav_report: "今日研报",
     nav_report_title: "可打印盘后投研日报",
     nav_rss: "RSS",
@@ -771,8 +811,8 @@ const I18N = {
     sort_beat: "按跑赢基准率",
     sort_return: "按绝对收益",
     sort_evaluated: "按样本数",
-    sec3_title: "分赛道累计超额收益走势",
-    sec3_hint: "纯规则赛道（实线）与 AI 重排赛道（虚线）分离展示；点击底部图例可单独聚焦某条策略曲线，悬停查看单日明细。",
+    sec3_title: "分赛道扩展均值超额走势",
+    sec3_hint: "纯规则赛道（实线）与 AI 重排赛道（虚线）分离展示；默认聚焦 Top 3，点击底部图例可单独锁定曲线，悬停或轻触查看单日明细。",
     track_both: "双赛道",
     track_rules: "仅规则",
     track_ai: "仅 AI",
@@ -790,7 +830,7 @@ const I18N = {
     details_pat_title: "A 股无状态形态雷达命中（20 日迷你 K 线）",
     details_pat_hint: "未通过 250 日 <code>next_open</code> 毕业门槛（基准匹配样本 ≥ 200 且 T+5 超额 > 0%）的形态一律置灰标 <code>experimental</code>，仅作研究观察。",
     details_replay_title: "250 日 next_open 形态回放、聚日稳定性与切片验证",
-    footer_note: "<strong>AlphaSift</strong> · 开源量化形态观测与回测基准（Apache-2.0 License）· 非投资建议，历史统计不含分红；低于样本门槛（成绩单 &lt; 20、AI 配对 &lt; 10 日、切片 &lt; 100、形态毕业 &lt; 200）统一置灰或隐藏差值。",
+    footer_note: "<strong>AlphaSift</strong> · 开源量化形态观测与回测基准（Apache-2.0 License）· 公开纸面跟踪，非投资建议，历史统计不含分红；低于样本门槛（成绩单 &lt; 20、AI 配对 &lt; 10 日、切片 &lt; 100、形态毕业 &lt; 200）统一置灰或隐藏差值。",
     footer_repo: "GitHub 源码仓库",
     footer_ledger: "track-record 原始账本",
     footer_report: "每日投研日报",
@@ -807,6 +847,22 @@ const I18N = {
     kpi1_foot: "{strat} · 跑赢基准 {beat} ({n}只)",
     kpi1_empty_val: "待到期",
     kpi1_empty_foot: "首日运行满 5 个交易日后披露",
+    kpi1_low_n_val: "样本不足 (<{min})",
+    kpi1_low_n_foot: "当前最高已到期 {max} 只 · 达 {min} 只后披露冠军",
+    hl_rules_lbl: "规则账本",
+    hl_rules_ok: "{d} 日 · {r} 次",
+    hl_ai_lbl: "AI 对照",
+    hl_ai_ok: "已配对 ({n} 策略)",
+    hl_ai_pend: "0/10 配对日 · 待积累",
+    hl_pat_lbl: "形态雷达",
+    hl_pat_ok: "{d}",
+    hl_pat_pend: "待构建日线包",
+    hl_rep_lbl: "盘后日报",
+    hl_rep_ok: "{d}",
+    hl_rep_pend: "待生成",
+    pat_f_all: "全部 ({n})",
+    pat_f_active: "active ({n})",
+    pat_f_exp: "experimental ({n})",
     kpi2_lbl: "全策略 T+5 样本加权均值",
     kpi2_badge: "{n} 组有效",
     kpi2_foot: "已到期 {eval} 股次 · 累计 {runs} 次选股",
@@ -879,7 +935,7 @@ const I18N = {
     sc_low_sample_title: "少于 {n} 只，样本偏小",
     sc_unassessed: "未评估",
     sc_unassessed_title: "切换前收盘口径，未评估开盘一字涨停",
-    tc_empty_all: "暂无成对「规则 vs AI」战绩记录 — 在 GitHub Secrets 配置 <code>DEEPSEEK_API_KEY</code> / <code>GEMINI_API_KEY</code> / <code>OPENAI_API_KEY</code> 后，系统将在每交易日自动并行运行双赛道并积累同日归因。",
+    tc_empty_all: "AI 对照赛道尚未积累成对交易日（当前 0/10 配对日），满足 10 个同日配对后将自动披露 AI vs 规则归因差值 · 自部署接入说明见 <a href=\"https://github.com/ZhuLinsen/alphasift/blob/main/docs/deployment.md\" target=\"_blank\" rel=\"noopener\">部署文档</a>。",
     tc_empty_pending: "暂无到期的规则 vs AI 同日配对样本。",
     tc_cols: ["市场", "策略", "配对日/总共", "AI 缺失率", "选股重合度", "规则同日超额", "AI 同日超额", "AI − 规则 (T+{w})", "AI 独选超额", "AI 剔除超额"],
     tc_win_days: "胜出 {w}/{n}日",
@@ -896,7 +952,7 @@ const I18N = {
     case_adds: "AI 独选高光：",
     case_avoids: "AI 避坑剔除：",
     case_misses: "AI 错杀遗憾：",
-    pat_not_built: "尚未生成 A 股形态雷达快照（当 GitHub Actions 私有日线缓存构建完毕后自动扫描并附带 20 日 K 线）。",
+    pat_not_built: "A 股形态雷达快照将在下一交易日盘后包构建完成后自动更新命中与 20 日迷你 K 线；全部 9 套无状态形态定义见仓库 patterns/ 目录。",
     pat_no_replay: "尚未生成 250 日形态回放结果。",
     pat_no_entries: "最新快照暂无形态统计条目。",
     pat_hit_zero: "{d} · 命中 0 只",
@@ -909,7 +965,10 @@ const I18N = {
     ub_bench: "· 沪深300 {ret}",
     ub_t10: "· T+10 等权超额 {ex}",
     rep_subhead: "250 日 next_open 回放门槛评估（{start} .. {end}，{sess} 个信号日）",
-    rep_cols: ["形态", "谱系/模式", "总信号", "不可成交", "T+5 基准匹配", "T+5 超额", "T+5 胜率", "聚日 t 值", "前半 H1 / 后半 H2", "T+10 超额", "门槛状态"],
+    rep_cols: ["形态", "谱系/模式", "总信号", "不可成交", "T+5 基准匹配", "T+5 毛超额", "T+5 净超额 (-25bp)", "T+5 胜率", "聚日 t 值", "前半 H1 / 后半 H2", "T+10 超额", "门槛状态"],
+    pat_card_meta: "T+5 毛 {g} / 净 {n} · t={t} · N={cnt}",
+    pat_card_spark: "近15日",
+    footer_manifest: "SHA-256 账本校验",
     sl_head_lbl: "形态 × 市场阶段（T+5 匹配样本 / 超额）",
     sl_subhead: "形态 × 市场阶段切片（带 * 且置灰表示样本 &lt; {n}）",
     ov_head_lbl: "形态 × 上方套牢盘切片（T+5 匹配样本 / 超额 / 胜率）",
@@ -963,7 +1022,8 @@ const I18N = {
     nav_leaderboard: "Leaderboard",
     nav_trend: "Trend",
     nav_explorer: "Explorer",
-    nav_radar: "AI & Patterns",
+    nav_ai: "AI Delta",
+    nav_patterns: "Patterns",
     nav_report: "Daily Report",
     nav_report_title: "Printable post-close quantitative brief",
     nav_rss: "RSS",
@@ -992,8 +1052,8 @@ const I18N = {
     sort_beat: "Sort by Beat Rate",
     sort_return: "Sort by Raw Return",
     sort_evaluated: "Sort by Sample Size",
-    sec3_title: "Cumulative Excess Return by Track",
-    sec3_hint: "Solid lines represent deterministic rules; dashed lines show AI re-ranked track. Click legend items to isolate a strategy and hover points for daily details.",
+    sec3_title: "Expanding Mean Excess Return by Track",
+    sec3_hint: "Solid lines represent deterministic rules; dashed lines show AI re-ranked track. Top 3 latest leaders stay highlighted; click legend to isolate or hover/touch for daily details.",
     track_both: "Both Tracks",
     track_rules: "Rules Only",
     track_ai: "AI Only",
@@ -1028,6 +1088,22 @@ const I18N = {
     kpi1_foot: "{strat} · Beat {beat} ({n} picks)",
     kpi1_empty_val: "Pending",
     kpi1_empty_foot: "Disclosed after 5 matured sessions",
+    kpi1_low_n_val: "Low N (<{min})",
+    kpi1_low_n_foot: "Max {max} matured picks so far · leader shown at ≥{min}",
+    hl_rules_lbl: "Rules Ledger",
+    hl_rules_ok: "{d}d · {r} runs",
+    hl_ai_lbl: "AI Track",
+    hl_ai_ok: "Paired ({n} strats)",
+    hl_ai_pend: "0/10 paired days · pending",
+    hl_pat_lbl: "Pattern Radar",
+    hl_pat_ok: "{d}",
+    hl_pat_pend: "Pack pending",
+    hl_rep_lbl: "Daily Report",
+    hl_rep_ok: "{d}",
+    hl_rep_pend: "Pending",
+    pat_f_all: "All ({n})",
+    pat_f_active: "active ({n})",
+    pat_f_exp: "experimental ({n})",
     kpi2_lbl: "Sample-Weighted T+5 Excess",
     kpi2_badge: "{n} active",
     kpi2_foot: "{eval} matured picks · {runs} total runs",
@@ -1100,7 +1176,7 @@ const I18N = {
     sc_low_sample_title: "Below {n} samples (noisy)",
     sc_unassessed: "Unassessed",
     sc_unassessed_title: "Legacy close entry before next_open switchover",
-    tc_empty_all: "No paired Rules vs AI sessions yet — configure <code>DEEPSEEK_API_KEY</code>, <code>GEMINI_API_KEY</code>, or <code>OPENAI_API_KEY</code> in GitHub Secrets to enable dual-track tracking.",
+    tc_empty_all: "AI benchmark track has not accumulated paired sessions yet (0/10 paired days). Attribution delta unlocks automatically at ≥10 same-day pairs · see <a href=\"https://github.com/ZhuLinsen/alphasift/blob/main/docs/deployment.md\" target=\"_blank\" rel=\"noopener\">Deployment Docs</a> for self-hosting.",
     tc_empty_pending: "No matured Rules vs AI paired samples yet.",
     tc_cols: ["Market", "Strategy", "Paired/Common", "AI Missing", "Overlap", "Rules Excess", "AI Excess", "AI − Rules (T+{w})", "AI Added Excess", "AI Dropped Excess"],
     tc_win_days: "Won {w}/{n}d",
@@ -1117,7 +1193,7 @@ const I18N = {
     case_adds: "Top AI Adds: ",
     case_avoids: "AI Avoided Losses: ",
     case_misses: "Missed by AI: ",
-    pat_not_built: "No CN pattern snapshot generated yet (auto-scans with 20-day mini K-lines once private pack cache is populated).",
+    pat_not_built: "CN pattern radar hits and 20D mini K-lines will appear automatically after the next post-close pack build; inspect all 9 YAML pattern specs in patterns/.",
     pat_no_replay: "No 250-day replay report yet.",
     pat_no_entries: "No pattern stats in latest snapshot.",
     pat_hit_zero: "{d} · 0 hits",
@@ -1130,7 +1206,10 @@ const I18N = {
     ub_bench: "· CSI 300 {ret}",
     ub_t10: "· T+10 EW Excess {ex}",
     rep_subhead: "250-Day next_open Graduation Gate ({start} .. {end}, {sess} signal days)",
-    rep_cols: ["Pattern", "Family / Mode", "Signals", "Untradable", "T+5 Matched", "T+5 Excess", "T+5 Win", "Clustered t", "H1 / H2 Excess", "T+10 Excess", "Status"],
+    rep_cols: ["Pattern", "Family / Mode", "Signals", "Untradable", "T+5 Matched", "T+5 Gross", "T+5 Net (-25bp)", "T+5 Win", "Clustered t", "H1 / H2 Excess", "T+10 Excess", "Status"],
+    pat_card_meta: "T+5 {g} / Net {n} · t={t} · N={cnt}",
+    pat_card_spark: "15D hits",
+    footer_manifest: "SHA-256 Manifest",
     sl_head_lbl: "Pattern × Market Regime (T+5 Matched / Excess)",
     sl_subhead: "Regime Slices (* & muted = matched N < {n})",
     ov_head_lbl: "Pattern × Top-10% Overhead Supply (T+5 Matched / Excess / Win Rate)",
@@ -1184,7 +1263,8 @@ const I18N = {
     nav_leaderboard: "戦略ランキング",
     nav_trend: "超過推移",
     nav_explorer: "銘柄ブラウザ",
-    nav_radar: "AI・チャート",
+    nav_ai: "AI 比較",
+    nav_patterns: "形態レーダー",
     nav_report: "日次レポート",
     nav_report_title: "印刷対応の引け後リサーチレポート",
     nav_rss: "RSS",
@@ -1213,8 +1293,8 @@ const I18N = {
     sort_beat: "ベンチマーク勝率順",
     sort_return: "絶対リターン順",
     sort_evaluated: "評価銘柄数順",
-    sec3_title: "トラック別 累積超過リターン推移",
-    sec3_hint: "実線がルールのみ、破線が AI 再ランクを示します。凡例クリックで戦略をフォーカス、点にホバーで詳細を表示します。",
+    sec3_title: "トラック別 拡張平均超過リターン推移",
+    sec3_hint: "実線がルール・破線が AI 再ランクです。上位 3 戦略を強調表示し、凡例クリックで固定・ホバーやタップで詳細表示します。",
     track_both: "両トラック",
     track_rules: "ルールのみ",
     track_ai: "AI のみ",
@@ -1249,6 +1329,22 @@ const I18N = {
     kpi1_foot: "{strat} · 対指数勝率 {beat} ({n}件)",
     kpi1_empty_val: "集計待ち",
     kpi1_empty_foot: "初回実行から 5 営業日後に公開",
+    kpi1_low_n_val: "標本不足 (<{min})",
+    kpi1_low_n_foot: "最多 {max} 件評価済 · {min} 件到達で首位公開",
+    hl_rules_lbl: "ルール台帳",
+    hl_rules_ok: "{d} 営業日 · {r} 回",
+    hl_ai_lbl: "AI 比較",
+    hl_ai_ok: "ペア済 ({n} 戦略)",
+    hl_ai_pend: "0/10 ペア日 · 蓄積中",
+    hl_pat_lbl: "形態レーダー",
+    hl_pat_ok: "{d}",
+    hl_pat_pend: "日足パック待ち",
+    hl_rep_lbl: "日次レポート",
+    hl_rep_ok: "{d}",
+    hl_rep_pend: "未生成",
+    pat_f_all: "すべて ({n})",
+    pat_f_active: "active ({n})",
+    pat_f_exp: "experimental ({n})",
     kpi2_lbl: "全戦略 T+5 加重平均超過",
     kpi2_badge: "{n} 戦略有効",
     kpi2_foot: "評価済 {eval} 銘柄 · 累計 {runs} 回実行",
@@ -1321,7 +1417,7 @@ const I18N = {
     sc_low_sample_title: "{n} 件未満のため参考値",
     sc_unassessed: "未評価",
     sc_unassessed_title: "next_open 切替前の終値基準",
-    tc_empty_all: "ルール vs AI のペア記録はまだありません — GitHub Secrets に <code>DEEPSEEK_API_KEY</code> / <code>GEMINI_API_KEY</code> / <code>OPENAI_API_KEY</code> を設定すると両トラックを並行実行します。",
+    tc_empty_all: "AI ベンチマークは現在ペア営業日を蓄積中です（0/10 ペア日）。同日ペアが 10 日以上に達すると差分を自動表示します · 自前設定は <a href=\"https://github.com/ZhuLinsen/alphasift/blob/main/docs/deployment.md\" target=\"_blank\" rel=\"noopener\">デプロイガイド</a> をご参照ください。",
     tc_empty_pending: "満期到来のルール vs AI ペア標本はまだありません。",
     tc_cols: ["市場", "戦略", "ペア/共通日", "AI 欠損率", "重複率", "ルール超過", "AI 超過", "AI − ルール (T+{w})", "AI 独自超過", "AI 除外超過"],
     tc_win_days: "勝 {w}/{n}日",
@@ -1338,7 +1434,7 @@ const I18N = {
     case_adds: "AI 独自選定ハイライト：",
     case_avoids: "AI 回避成功：",
     case_misses: "AI 見逃し：",
-    pat_not_built: "A 株パターンスナップショットはまだありません（日足キャッシュ構築後に 20 日ミニ K 線付きで表示されます）。",
+    pat_not_built: "A 株パターンレーダーは次営業日の引け後パック構築完了時に 20 日ミニローソク足付きで自動更新されます（全 9 パターン定義は patterns/ を参照）。",
     pat_no_replay: "250日リプレイ結果はまだありません。",
     pat_no_entries: "最新スナップショットにパターン統計がありません。",
     pat_hit_zero: "{d} · 0 件",
@@ -1351,7 +1447,10 @@ const I18N = {
     ub_bench: "· CSI 300 {ret}",
     ub_t10: "· T+10 等重超過 {ex}",
     rep_subhead: "250日 next_open 卒業基準検証（{start} .. {end}、{sess} 営業日）",
-    rep_cols: ["パターン", "系統 / 方式", "総数", "取引不可", "T+5 一致", "T+5 超過", "T+5 勝率", "日次 t値", "前半 H1 / 後半 H2", "T+10 超過", "判定"],
+    rep_cols: ["パターン", "系統 / 方式", "総数", "取引不可", "T+5 一致", "T+5 粗超過", "T+5 純超過 (-25bp)", "T+5 勝率", "日次 t値", "前半 H1 / 後半 H2", "T+10 超過", "判定"],
+    pat_card_meta: "T+5 粗 {g} / 純 {n} · t={t} · N={cnt}",
+    pat_card_spark: "15日推移",
+    footer_manifest: "SHA-256 検証",
     sl_head_lbl: "パターン × 市場局面（T+5 一致数 / 超過）",
     sl_subhead: "市場局面スライス（* と薄字は標本 &lt; {n}）",
     ov_head_lbl: "パターン × 上値10%しこり玉（T+5 一致 / 超過 / 勝率）",
@@ -1459,6 +1558,8 @@ const PATTERN_I18N = {
     shooting_star_confirm: "Upper-Wick Confirm",
     single_yang_hold: "Single Bullish Hold",
     steady_trend_breakout: "Steady Trend Breakout",
+    three_white_soldiers: "Three White Soldiers",
+    three_white_soldiers_pullback: "Three Soldiers Pullback",
   },
   ja: {
     bottom_volume_yang: "底値倍増陽線",
@@ -1468,6 +1569,8 @@ const PATTERN_I18N = {
     shooting_star_confirm: "上ヒゲ確認",
     single_yang_hold: "大陽線ホールド",
     steady_trend_breakout: "低ボラ堅調突破",
+    three_white_soldiers: "赤三兵",
+    three_white_soldiers_pullback: "赤三兵押し目確認",
   },
 };
 
@@ -1554,6 +1657,7 @@ const state = {
   trendFocus: null,
   latestMarket: null,
   explorerMode: "latest",
+  patFilter: "all",
   searchQuery: "",
   dayCache: {},
   currentDay: null,
@@ -1694,7 +1798,34 @@ function syncQueryState() {
     const url = new URL(window.location.href);
     url.searchParams.set("lang", state.lang);
     url.searchParams.set("theme", state.theme);
+    const setOrDel = (k, v, def) => {
+      if (v && v !== def) url.searchParams.set(k, v);
+      else url.searchParams.delete(k);
+    };
+    setOrDel("win", state.scoreWin, "5");
+    setOrDel("mkt", state.scoreMarket, "all");
+    setOrDel("q", (state.searchQuery || "").trim(), "");
+    setOrDel("mode", state.explorerMode, "latest");
+    setOrDel("pf", state.patFilter, "all");
     window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  } catch (_) {}
+}
+
+function restoreQueryState() {
+  try {
+    const qs = new URLSearchParams(window.location.search);
+    const win = qs.get("win");
+    if (win === "5" || win === "10" || win === "20") {
+      state.scoreWin = win; state.compareWin = win; state.trendWin = win;
+    }
+    const mkt = qs.get("mkt");
+    if (mkt) state.scoreMarket = mkt;
+    const q = qs.get("q");
+    if (q !== null) state.searchQuery = q;
+    const mode = qs.get("mode");
+    if (mode === "latest" || mode === "history") state.explorerMode = mode;
+    const pf = qs.get("pf");
+    if (pf === "all" || pf === "active" || pf === "experimental") state.patFilter = pf;
   } catch (_) {}
 }
 
@@ -1759,6 +1890,7 @@ function segmented(el, key, onChange) {
     if (!w) return;
     state[key] = w;
     sync();
+    if (key === "scoreWin") syncQueryState();
     onChange();
   });
   sync();
@@ -1888,7 +2020,7 @@ function computeClientConsensus() {
   return { consensus, sectors, latestDate, cnRunCount: cnRuns.length };
 }
 
-function renderMiniKline(bars) {
+function renderMiniKline(bars, observeLag) {
   if (!Array.isArray(bars) || !bars.length) return '<span class="dim">–</span>';
   let lo = Infinity, hi = -Infinity;
   for (const b of bars) {
@@ -1898,7 +2030,7 @@ function renderMiniKline(bars) {
   }
   if (!Number.isFinite(lo) || !Number.isFinite(hi)) return '<span class="dim">–</span>';
   const span = Math.max(hi - lo, hi * 0.005, 1e-6);
-  const W = 96, H = 28, pad = 2;
+  const W = 96, H = 28, pad = 3.5;
   const n = bars.length;
   const step = (W - pad * 2) / n;
   const bw = Math.max(1.8, step * 0.65);
@@ -1913,7 +2045,31 @@ function renderMiniKline(bars) {
     shapes.push(`<line x1="${cx}" x2="${cx}" y1="${y(h).toFixed(1)}" y2="${y(l).toFixed(1)}" stroke="${col}" stroke-width="1"/>`);
     shapes.push(`<rect x="${(Number(cx) - bw / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh}" rx="0.5" fill="${col}"/>`);
   });
+  const lag = Number(observeLag || 0);
+  if (Number.isInteger(lag) && lag > 0 && n - 1 - lag >= 0) {
+    const obsX = (pad + (n - 1 - lag + 0.5) * step).toFixed(1);
+    const confX = (pad + (n - 0.5) * step).toFixed(1);
+    shapes.push(`<circle cx="${obsX}" cy="2.2" r="1.8" fill="var(--accent-hi)"/>`);
+    shapes.push(`<circle cx="${confX}" cy="${(H - 2.2).toFixed(1)}" r="1.8" fill="var(--warn)"/>`);
+  }
   return `<svg class="kline" viewBox="0 0 ${W} ${H}" aria-label="${n}D">${shapes.join("")}</svg>`;
+}
+
+function renderHitSparkline(history, slug) {
+  const vals = (history || []).slice(-15).map((h) => Number(((h && h.counts_by_pattern) || {})[slug] || 0));
+  if (!vals.length) return '<span class="dim">–</span>';
+  const maxV = Math.max(1, ...vals);
+  const W = 64, H = 18;
+  const step = W / vals.length;
+  const bw = Math.max(2, step * 0.68);
+  const bars = vals.map((v, i) => {
+    const bh = Math.max(v > 0 ? 2.5 : 1, (v / maxV) * (H - 3));
+    const x = (i * step + (step - bw) / 2).toFixed(1);
+    const y = (H - 1 - bh).toFixed(1);
+    const fill = v > 0 ? "var(--accent-hi)" : "var(--border-strong)";
+    return `<rect x="${x}" y="${y}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="0.8" fill="${fill}" opacity="${v > 0 ? "0.9" : "0.5"}"/>`;
+  });
+  return `<svg class="sparkline" viewBox="0 0 ${W} ${H}" aria-label="${vals.length}d hits">${bars.join("")}</svg>`;
 }
 
 function renderReturnDistSvg(dist) {
@@ -1986,8 +2142,10 @@ function renderMetaAndKpis() {
 
   const sc = s.scorecard || [];
   const t5Rows = sc.filter((r) => ((r.windows || {})["5"] || {}).average_excess_return_pct !== null && ((r.windows || {})["5"] || {}).average_excess_return_pct !== undefined);
-  const sortedT5 = [...t5Rows].sort((a, b) => b.windows["5"].average_excess_return_pct - a.windows["5"].average_excess_return_pct);
+  const qualifiedT5 = t5Rows.filter((r) => Number(((r.windows || {})["5"] || {}).evaluated || 0) >= MIN_SAMPLE);
+  const sortedT5 = [...qualifiedT5].sort((a, b) => b.windows["5"].average_excess_return_pct - a.windows["5"].average_excess_return_pct);
   const bestT5 = sortedT5[0] || null;
+  const maxEval = t5Rows.reduce((mx, r) => Math.max(mx, Number(((r.windows || {})["5"] || {}).evaluated || 0)), 0);
 
   let evalTot = 0, exSum = 0;
   for (const r of t5Rows) {
@@ -2000,13 +2158,41 @@ function renderMetaAndKpis() {
   }
   const avgEx = evalTot > 0 ? exSum / evalTot : null;
 
+  const hs = $("health-strip");
+  if (hs) {
+    const aiCnt = (s.track_comparison || []).length;
+    const patOk = Boolean(patLatest && patLatest.trade_date);
+    const repOk = Boolean(state.reportReady || (rep && rep.trade_date));
+    const repDate = (rep && rep.trade_date) || "";
+    const art = s.artifacts || {};
+    const items = [
+      { cls: totalFailures ? "pend" : "ok", lbl: t("hl_rules_lbl"), val: t("hl_rules_ok", { d: (s.days || []).length, r: s.run_count }), tip: "" },
+      { cls: aiCnt > 0 ? "ok" : "pend", lbl: t("hl_ai_lbl"), val: aiCnt > 0 ? t("hl_ai_ok", { n: aiCnt }) : t("hl_ai_pend"), tip: "" },
+      { cls: patOk ? "ok" : "pend", lbl: t("hl_pat_lbl"), val: patOk ? t("hl_pat_ok", { d: patLatest.trade_date }) : t("hl_pat_pend"), tip: ((art.patterns || {}).reason) || "" },
+      { cls: repOk ? "ok" : "pend", lbl: t("hl_rep_lbl"), val: repOk ? t("hl_rep_ok", { d: repDate || "ready" }) : t("hl_rep_pend"), tip: ((art.report || {}).reason) || "" },
+    ];
+    hs.innerHTML = items.map((it) => `<span class="health-item" title="${esc(it.tip)}"><span class="health-dot ${it.cls}"></span><strong>${esc(it.lbl)}</strong><span>${esc(it.val)}</span></span>`).join("");
+  }
+  const mLink = $("footer-manifest-link");
+  if (mLink) {
+    if (s.integrity && s.integrity.manifest_path) {
+      mLink.href = s.integrity.manifest_path;
+      mLink.textContent = `${t("footer_manifest")} (${String(s.integrity.runs_sha256 || "").slice(0, 8)})`;
+      mLink.style.display = "";
+    } else {
+      mLink.style.display = "none";
+    }
+  }
+
   const kpi1 = bestT5
     ? `<div class="kpi-cell">
          <div class="kpi-label"><span>${esc(t("kpi1_lbl"))}</span><span class="badge active">${esc(mname(bestT5.market))}</span></div>
          <div class="kpi-val">${pct(bestT5.windows["5"].average_excess_return_pct)}</div>
          <div class="kpi-foot">${t("kpi1_foot", { strat: sname(bestT5.strategy), beat: rate(bestT5.windows["5"].beat_rate), n: bestT5.windows["5"].evaluated })}</div>
        </div>`
-    : `<div class="kpi-cell"><div class="kpi-label">${esc(t("kpi1_lbl"))}</div><div class="kpi-val dim">${esc(t("kpi1_empty_val"))}</div><div class="kpi-foot">${esc(t("kpi1_empty_foot"))}</div></div>`;
+    : t5Rows.length > 0
+      ? `<div class="kpi-cell"><div class="kpi-label"><span>${esc(t("kpi1_lbl"))}</span><span class="badge pending">&lt;${MIN_SAMPLE}</span></div><div class="kpi-val dim">${esc(t("kpi1_low_n_val", { min: MIN_SAMPLE }))}</div><div class="kpi-foot">${esc(t("kpi1_low_n_foot", { max: maxEval, min: MIN_SAMPLE }))}</div></div>`
+      : `<div class="kpi-cell"><div class="kpi-label">${esc(t("kpi1_lbl"))}</div><div class="kpi-val dim">${esc(t("kpi1_empty_val"))}</div><div class="kpi-foot">${esc(t("kpi1_empty_foot"))}</div></div>`;
 
   const kpi2 = `<div class="kpi-cell">
     <div class="kpi-label"><span>${esc(t("kpi2_lbl"))}</span><span class="badge">${esc(t("kpi2_badge", { n: t5Rows.length }))}</span></div>
@@ -2037,13 +2223,13 @@ function renderMetaAndKpis() {
   const checkedCount = Number(ann.checked_count || 0);
   const kpi4 = checkedCount > 0
     ? `<div class="kpi-cell">
-         <div class="kpi-label"><span>${esc(t("kpi4_ann_lbl"))}</span><span class="badge ${flaggedCount ? "bad" : "active"}">${esc(flaggedCount ? t("kpi4_ann_bad", { n: flaggedCount }) : t("kpi4_ann_ok"))}</span></div>
-         <div class="kpi-val">${flaggedCount > 0 ? `<span class="up">${esc(t("kpi4_ann_bad_val", { n: flaggedCount }))}</span>` : `<span class="down">${esc(t("kpi4_ann_ok_val"))}</span>`}</div>
+         <div class="kpi-label"><span>${esc(t("kpi4_ann_lbl"))}</span><span class="badge ${flaggedCount ? "bad" : "ok-neutral"}">${esc(flaggedCount ? t("kpi4_ann_bad", { n: flaggedCount }) : t("kpi4_ann_ok"))}</span></div>
+         <div class="kpi-val">${flaggedCount > 0 ? `<span class="status-err">${esc(t("kpi4_ann_bad_val", { n: flaggedCount }))}</span>` : `<span class="status-ok">${esc(t("kpi4_ann_ok_val"))}</span>`}</div>
          <div class="kpi-foot">${esc(t("kpi4_ann_foot", { n: checkedCount, tail: flaggedCount ? ((ann.flagged_items[0] || {}).name || "") : t("kpi4_ann_clean") }))}</div>
        </div>`
     : `<div class="kpi-cell">
-         <div class="kpi-label"><span>${esc(t("kpi4_ops_lbl"))}</span><span class="badge ${totalFailures ? "bad" : "active"}">${esc(totalFailures ? t("kpi4_ops_bad", { n: totalFailures }) : t("kpi4_ops_ok"))}</span></div>
-         <div class="kpi-val"><span class="${totalFailures ? "up" : "down"}">${totalOk} / ${totalRuns}</span></div>
+         <div class="kpi-label"><span>${esc(t("kpi4_ops_lbl"))}</span><span class="badge ${totalFailures ? "bad" : "ok-neutral"}">${esc(totalFailures ? t("kpi4_ops_bad", { n: totalFailures }) : t("kpi4_ops_ok"))}</span></div>
+         <div class="kpi-val"><span class="${totalFailures ? "status-err" : "status-ok"}">${totalOk} / ${totalRuns}</span></div>
          <div class="kpi-foot">${esc(t("kpi4_ops_foot", { m: (s.markets || []).length, d: (s.days || []).length }))}</div>
        </div>`;
 
@@ -2306,6 +2492,7 @@ function initScoreMarketPills() {
     if (!m) return;
     state.scoreMarket = m;
     wrap.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.m === m)));
+    syncQueryState();
     renderScorecard();
   });
   const sortEl = $("sort-score");
@@ -2469,46 +2656,88 @@ function renderPatternRadar() {
     $("overhead-slice-wrap").innerHTML = "";
     return;
   }
+  const dpEl = $("details-patterns");
+  if (dpEl) dpEl.open = true;
+  const drEl = $("details-replay");
   const latest = pb.latest;
   const replay = pb.replay;
+  if (drEl && replay && Array.isArray(replay.patterns) && replay.patterns.length) drEl.open = true;
   const sigMap = latest.signals_by_pattern || {};
   const counts = latest.counts_by_pattern || {};
   const patNames = Object.keys(counts);
   const replayStatus = {};
+  const replayByName = {};
   if (replay && Array.isArray(replay.patterns)) {
-    for (const p of replay.patterns) replayStatus[p.pattern] = (p.graduation || {}).recommended_status || "experimental";
+    for (const p of replay.patterns) {
+      replayStatus[p.pattern] = (p.graduation || {}).recommended_status || "experimental";
+      replayByName[p.pattern] = p;
+    }
   }
 
   if (!patNames.length) {
     $("pattern-hits-wrap").innerHTML = `<div class="empty">${esc(t("pat_no_entries"))}</div>`;
   } else {
     const pcols = t("pat_cols");
-    const cards = patNames.map((name) => {
+    const patMeta = patNames.map((name) => {
       const items = sigMap[name] || [];
       const total = counts[name] || items.length;
       const st = items[0] ? items[0].status : (replayStatus[name] || "experimental");
+      return { name, items, total, st };
+    });
+    const actCnt = patMeta.filter((x) => x.st === "active").length;
+    const expCnt = patMeta.length - actCnt;
+    const filterBar = `<div class="controls" id="pat-filter-bar" style="margin-bottom:10px;"><div class="seg">
+      <button type="button" data-pf="all" aria-pressed="${state.patFilter === "all"}">${esc(t("pat_f_all", { n: patMeta.length }))}</button>
+      <button type="button" data-pf="active" aria-pressed="${state.patFilter === "active"}">${esc(t("pat_f_active", { n: actCnt }))}</button>
+      <button type="button" data-pf="experimental" aria-pressed="${state.patFilter === "experimental"}">${esc(t("pat_f_exp", { n: expCnt }))}</button>
+    </div></div>`;
+    const fmtS = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? "–" : `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`);
+    const visible = patMeta.filter((x) => state.patFilter === "all" || x.st === state.patFilter);
+    const cards = visible.map(({ name, items, total, st }) => {
       const badge = st === "active"
         ? `<span class="badge active">${esc(t("pat_status_active"))}</span>`
         : `<span class="badge exp">${esc(t("pat_status_exp"))}</span>`;
       const dname = pname(name, items[0] && items[0].display_name);
+      const rInfo = replayByName[name] || null;
+      const rh5 = rInfo ? ((rInfo.horizons || {}).t5 || {}) : {};
+      const rGrad = rInfo ? (rInfo.graduation || {}) : {};
+      const rStab = rInfo ? (rInfo.stability || {}) : {};
+      const gVal = rh5.gross_excess_mean_pct ?? rh5.excess_mean_pct;
+      const nVal = rGrad.t5_net_excess_mean_pct ?? rh5.net_excess_mean_pct;
+      const tStr = rStab.t_stat !== null && rStab.t_stat !== undefined ? Number(rStab.t_stat).toFixed(2) : "–";
+      const metaBar = rInfo
+        ? `<div class="pat-meta-row"><span>${esc(t("pat_card_meta", { g: fmtS(gVal), n: fmtS(nVal), t: tStr, cnt: rh5.excess_scored ?? rh5.scored ?? 0 }))}</span><span title="${esc(t("pat_card_spark"))}">${renderHitSparkline(pb.history, name)}</span></div>`
+        : (pb.history && pb.history.length ? `<div class="pat-meta-row"><span>${esc(t("pat_card_spark"))}</span><span>${renderHitSparkline(pb.history, name)}</span></div>` : "");
       if (!items.length) {
-        return `<div class="card"><div class="card-top"><h3><span>${esc(dname)}</span>${badge}</h3><div class="sub">${esc(t("pat_hit_zero", { d: latest.trade_date }))}</div></div><div class="empty">${esc(t("pat_no_sig"))}</div></div>`;
+        return `<div class="card"><div class="card-top"><h3><span>${esc(dname)}</span>${badge}</h3><div class="sub">${esc(t("pat_hit_zero", { d: latest.trade_date }))}</div></div>${metaBar}<div class="empty">${esc(t("pat_no_sig"))}</div></div>`;
       }
       const rows = items.slice(0, 6).map((s) => {
         const obs = s.observe_lag_days ? ` <span class="dim small">-${s.observe_lag_days}d</span>` : "";
         const ov = s.overhead_supply_10pct !== null && s.overhead_supply_10pct !== undefined ? `${Number(s.overhead_supply_10pct).toFixed(0)}%` : "–";
         return `<tr><td class="l"><strong>${esc(s.name || s.code)}</strong> <span class="mono dim small">${esc(s.code)}</span>${obs}</td>
-          <td class="mono">${pct(s.change_pct)}</td><td class="dim mono">${ov}</td><td>${renderMiniKline(s.kline)}</td></tr>`;
+          <td class="mono">${pct(s.change_pct)}</td><td class="dim mono">${ov}</td><td>${renderMiniKline(s.kline, s.observe_lag_days)}</td></tr>`;
       }).join("");
       return `<div class="card">
         <div class="card-top">
           <h3><span>${esc(dname)}</span>${badge}</h3>
           <div class="sub">${esc(t("pat_hit_n", { d: latest.trade_date, tot: total, shown: Math.min(6, items.length) }))}</div>
         </div>
+        ${metaBar}
         <div class="scroll"><table><thead><tr><th class="l">${esc(pcols[0])}</th><th>${esc(pcols[1])}</th><th>${esc(pcols[2])}</th><th>${esc(pcols[3])}</th></tr></thead><tbody>${rows}</tbody></table></div>
       </div>`;
     }).join("");
-    $("pattern-hits-wrap").innerHTML = `<div class="cards">${cards}</div>`;
+    $("pattern-hits-wrap").innerHTML = `${filterBar}${cards ? `<div class="cards">${cards}</div>` : `<div class="empty">${esc(t("pat_no_sig"))}</div>`}`;
+    const pfBar = $("pat-filter-bar");
+    if (pfBar) {
+      pfBar.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        const pf = btn && btn.dataset && btn.dataset.pf;
+        if (!pf) return;
+        state.patFilter = pf;
+        syncQueryState();
+        renderPatternRadar();
+      });
+    }
   }
 
   if (replay && Array.isArray(replay.patterns) && replay.patterns.length) {
@@ -2529,7 +2758,7 @@ function renderPatternRadar() {
     }
 
     const rcols = t("rep_cols");
-    const repHead = `<thead><tr><th class="l">${esc(rcols[0])}</th><th class="l">${esc(rcols[1])}</th><th>${esc(rcols[2])}</th><th>${esc(rcols[3])}</th><th>${esc(rcols[4])}</th><th>${esc(rcols[5])}</th><th>${esc(rcols[6])}</th><th>${esc(rcols[7])}</th><th>${esc(rcols[8])}</th><th>${esc(rcols[9])}</th><th>${esc(rcols[10])}</th></tr></thead>`;
+    const repHead = `<thead><tr><th class="l">${esc(rcols[0])}</th><th class="l">${esc(rcols[1])}</th><th>${esc(rcols[2])}</th><th>${esc(rcols[3])}</th><th>${esc(rcols[4])}</th><th>${esc(rcols[5])}</th><th>${esc(rcols[6])}</th><th>${esc(rcols[7])}</th><th>${esc(rcols[8])}</th><th>${esc(rcols[9])}</th><th>${esc(rcols[10])}</th><th>${esc(rcols[11])}</th></tr></thead>`;
     const repRows = replay.patterns.map((p) => {
       const h5 = (p.horizons || {}).t5 || {};
       const h10 = (p.horizons || {}).t10 || {};
@@ -2543,24 +2772,27 @@ function renderPatternRadar() {
         : `<span class="badge exp">${esc(t("pat_status_exp"))}</span>`;
       const tStat = stab.t_stat !== null && stab.t_stat !== undefined ? `${Number(stab.t_stat).toFixed(2)}` : "–";
       const h1h2 = (stab.h1_days || stab.h2_days)
-        ? `${pct(stab.h1_daily_excess_mean_pct ?? stab.h1_excess_mean_pct)} (${stab.h1_days ?? 0}d) / ${pct(stab.h2_daily_excess_mean_pct ?? stab.h2_excess_mean_pct)} (${stab.h2_days ?? 0}d)`
+        ? `<div>${pct(stab.h1_daily_excess_mean_pct ?? stab.h1_excess_mean_pct)} <span class="dim">(${stab.h1_days ?? 0}d)</span></div><div>${pct(stab.h2_daily_excess_mean_pct ?? stab.h2_excess_mean_pct)} <span class="dim">(${stab.h2_days ?? 0}d)</span></div>`
         : '<span class="dim">–</span>';
+      const grossEx = h5.gross_excess_mean_pct ?? h5.excess_mean_pct;
+      const netEx = grad.t5_net_excess_mean_pct ?? h5.net_excess_mean_pct;
       return `<tr class="${muted ? "low-sample" : ""}">
-        <td class="l"><strong>${esc(pname(p.pattern, p.display_name))}</strong> <span class="mono dim small">${esc(p.pattern)}</span></td>
-        <td class="l dim">${esc(p.family)} · ${esc(p.mode)}</td>
+        <td class="l"><strong>${esc(pname(p.pattern, p.display_name))}</strong><div class="mono dim small">${esc(p.pattern)}</div></td>
+        <td class="l dim">${esc(p.family)}<div class="small">${esc(p.mode)}</div></td>
         <td class="mono">${(h5.scored ?? 0) + (p.untradable_count || 0)}</td>
         <td class="mono">${sharePct(p.untradable_share_pct)}</td>
         <td class="mono">${t5ExcessN}${t5ExcessN < MIN_PATTERN_GRAD_SAMPLE ? '<span class="tag">&lt;200</span>' : ""}</td>
-        <td class="mono">${pct(h5.excess_mean_pct)}</td>
+        <td class="mono">${pct(grossEx)}</td>
+        <td class="mono">${pct(netEx)}</td>
         <td class="mono">${sharePct(h5.excess_win_rate_pct ?? h5.win_rate_pct)}</td>
         <td class="mono">${tStat}</td>
         <td class="mono">${h1h2}</td>
         <td class="mono">${pct(h10.excess_mean_pct)}</td>
-        <td>${badge}</td>
+        <td title="${esc(grad.reason || "")}">${badge}</td>
       </tr>`;
     }).join("");
     $("replay-summary-wrap").innerHTML = `<h3 class="subhead" style="margin-top:4px;">${esc(t("rep_subhead", { start: ps.eval_start_date, end: ps.eval_end_date, sess: ps.eval_sessions ?? "-" }))}</h3>
-      <div class="panel scroll">${`<table>${repHead}<tbody>${repRows}</tbody></table>`}</div>`;
+      <div class="panel scroll">${`<table class="compact-tbl">${repHead}<tbody>${repRows}</tbody></table>`}</div>`;
 
     const slHead = `<thead><tr><th class="l">${esc(t("sl_head_lbl"))}</th>${REGIME_ORDER.map((s) => `<th>${esc(rname(s))}</th>`).join("")}</tr></thead>`;
     const slRows = replay.patterns.map((p) => {
@@ -2646,34 +2878,77 @@ function renderChart() {
       parts.push(`<text x="${x(d)}" y="${H - 8}" text-anchor="middle" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">${d.slice(5)}</text>`);
   });
 
+  let top3Ids = null;
+  if (!state.trendFocus && lines.length > 5) {
+    top3Ids = new Set(
+      [...lines]
+        .filter((l) => Array.isArray(l.pts) && l.pts.length)
+        .sort((a, b) => Number(b.pts[b.pts.length - 1][1]) - Number(a.pts[a.pts.length - 1][1]))
+        .slice(0, 3)
+        .map((l) => l.id)
+    );
+  }
+
   lines.forEach((l, i) => {
     const color = `var(--s${(i % 12) + 1})`;
-    const isDim = state.trendFocus && state.trendFocus !== l.id;
-    const sw = state.trendFocus === l.id ? "2.8" : "2";
-    const op = isDim ? "0.18" : "0.95";
+    const isDim = state.trendFocus ? state.trendFocus !== l.id : (top3Ids && !top3Ids.has(l.id));
+    const sw = state.trendFocus === l.id ? "2.8" : (top3Ids && top3Ids.has(l.id) ? "2.4" : "1.8");
+    const op = state.trendFocus ? (isDim ? "0.18" : "0.95") : (isDim ? "0.35" : "0.95");
     const dashAttr = l.track === "ai" ? ' stroke-dasharray="5 3"' : "";
     parts.push(`<polyline fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" stroke-linecap="round" stroke-linejoin="round"${dashAttr} points="${l.pts.map((p) => `${x(p[0])},${y(p[1])}`).join(" ")}"/>`);
     for (const p of l.pts) {
-      parts.push(`<circle class="pt" data-label="${l.label}" data-date="${p[0]}" data-val="${p[1]}" data-n="${p[2]}" data-col="${color}" cx="${x(p[0])}" cy="${y(p[1])}" r="${state.trendFocus === l.id ? 4 : 3}" fill="${color}" fill-opacity="${op}"/>`);
+      parts.push(`<circle class="pt" data-id="${esc(l.id)}" data-label="${esc(l.label)}" data-date="${esc(p[0])}" data-val="${p[1]}" data-n="${p[2]}" data-col="${color}" cx="${x(p[0])}" cy="${y(p[1])}" r="${state.trendFocus === l.id ? 4 : 3}" fill="${color}" fill-opacity="${op}"/>`);
     }
   });
+  parts.push(`<line class="chart-crosshair" id="chart-crosshair" x1="${L}" x2="${L}" y1="${T}" y2="${H - B}" stroke="var(--accent-hi)" stroke-width="1" stroke-dasharray="3 3" style="display:none;pointer-events:none"/>`);
+  parts.push(`<rect class="chart-hit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" style="cursor:crosshair;touch-action:none"/>`);
 
   $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img">${parts.join("")}</svg>`;
 
   const svg = $("chart").querySelector("svg");
+  const hitRect = svg && svg.querySelector("rect.chart-hit");
+  const xhair = svg && svg.querySelector("#chart-crosshair");
   if (svg && tip) {
+    const showTipFor = (c) => {
+      const val = Number(c.dataset.val);
+      tip.innerHTML = `<b>${esc(c.dataset.label)}</b><br>${esc(c.dataset.date)} · ${esc(t("chart_tip_excess"))} <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${esc(t("chart_tip_picks", { n: c.dataset.n }))}`;
+      tip.style.display = "block";
+      const wrapBox = $("chart").parentElement.getBoundingClientRect();
+      const cBox = c.getBoundingClientRect();
+      tip.style.left = `${Math.min(wrapBox.width - 210, Math.max(8, cBox.left - wrapBox.left + 10))}px`;
+      tip.style.top = `${Math.max(8, cBox.top - wrapBox.top - 48)}px`;
+      if (xhair) {
+        const cx = c.getAttribute("cx");
+        xhair.setAttribute("x1", cx);
+        xhair.setAttribute("x2", cx);
+        xhair.style.display = "";
+      }
+    };
     svg.querySelectorAll("circle.pt").forEach((c) => {
-      c.addEventListener("mouseenter", () => {
-        const val = Number(c.dataset.val);
-        tip.innerHTML = `<b>${esc(c.dataset.label)}</b><br>${esc(c.dataset.date)} · ${esc(t("chart_tip_excess"))} <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${esc(t("chart_tip_picks", { n: c.dataset.n }))}`;
-        tip.style.display = "block";
-        const wrapBox = $("chart").parentElement.getBoundingClientRect();
-        const cBox = c.getBoundingClientRect();
-        tip.style.left = `${Math.min(wrapBox.width - 210, Math.max(8, cBox.left - wrapBox.left + 10))}px`;
-        tip.style.top = `${Math.max(8, cBox.top - wrapBox.top - 48)}px`;
-      });
-      c.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+      c.addEventListener("mouseenter", () => showTipFor(c));
+      c.addEventListener("mouseleave", () => { tip.style.display = "none"; if (xhair) xhair.style.display = "none"; });
     });
+    if (hitRect) {
+      const pts = [...svg.querySelectorAll("circle.pt")].filter((c) => !state.trendFocus || c.dataset.id === state.trendFocus);
+      const handlePtr = (e) => {
+        if (!pts.length) return;
+        const svgBox = svg.getBoundingClientRect();
+        if (!svgBox.width || !svgBox.height) return;
+        const mx = ((e.clientX - svgBox.left) / svgBox.width) * W;
+        const my = ((e.clientY - svgBox.top) / svgBox.height) * H;
+        let best = null, bestDist = Infinity;
+        for (const c of pts) {
+          const dx = Number(c.getAttribute("cx")) - mx;
+          const dy = Number(c.getAttribute("cy")) - my;
+          const d2 = dx * dx * 1.4 + dy * dy;
+          if (d2 < bestDist) { bestDist = d2; best = c; }
+        }
+        if (best) showTipFor(best);
+      };
+      hitRect.addEventListener("pointermove", handlePtr);
+      hitRect.addEventListener("pointerdown", handlePtr);
+      hitRect.addEventListener("pointerleave", () => { tip.style.display = "none"; if (xhair) xhair.style.display = "none"; });
+    }
   }
 
   $("legend").innerHTML = lines.map((l, i) => {
@@ -2788,22 +3063,29 @@ function initExplorerControls() {
   const mktSel = $("market-latest");
   const daySel = $("day");
   const searchEl = $("pick-search");
+  const applyMode = (mode) => {
+    state.explorerMode = mode;
+    if (modeWrap) modeWrap.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+    $("tab-latest").classList.toggle("active", mode === "latest");
+    $("tab-history").classList.toggle("active", mode === "history");
+    if (mktSel) mktSel.style.display = mode === "latest" ? "" : "none";
+    if (daySel) daySel.style.display = mode === "history" ? "" : "none";
+  };
+  applyMode(state.explorerMode);
   if (modeWrap) {
     modeWrap.addEventListener("click", (e) => {
       const btn = e.target.closest("button");
       const mode = btn && btn.dataset && btn.dataset.mode;
       if (!mode) return;
-      state.explorerMode = mode;
-      modeWrap.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
-      $("tab-latest").classList.toggle("active", mode === "latest");
-      $("tab-history").classList.toggle("active", mode === "history");
-      if (mktSel) mktSel.style.display = mode === "latest" ? "" : "none";
-      if (daySel) daySel.style.display = mode === "history" ? "" : "none";
+      applyMode(mode);
+      syncQueryState();
     });
   }
   if (searchEl) {
+    if (state.searchQuery) searchEl.value = state.searchQuery;
     searchEl.addEventListener("input", () => {
       state.searchQuery = searchEl.value || "";
+      syncQueryState();
       renderLatest();
       if (state.currentDay) renderDay(state.currentDay);
     });
@@ -2812,6 +3094,7 @@ function initExplorerControls() {
 
 async function init() {
   initTheme();
+  restoreQueryState();
   initLang();
   initExplorerControls();
   try {
@@ -2821,18 +3104,22 @@ async function init() {
     document.querySelector("main").insertAdjacentHTML("beforeend", `<div class="panel empty">${esc(t("load_fatal", { msg: err.message }))}</div>`);
     return;
   }
+  const art = (state.summary && state.summary.artifacts) || null;
+  const needPat = !art || !art.patterns || art.patterns.exists;
+  const needRep = !art || !art.report || art.report.exists;
+  const needRepHtml = !art || !art.daily_report_html || art.daily_report_html.exists;
   const [patOutcome, repOutcome, repHtmlOutcome] = await Promise.allSettled([
-    fetch("site/patterns.json", { cache: "no-cache" }),
-    fetch("site/report.json", { cache: "no-cache" }),
-    fetch("site/daily_report.html", { method: "HEAD", cache: "no-cache" }),
+    needPat ? fetch("site/patterns.json", { cache: "no-cache" }) : Promise.resolve(null),
+    needRep ? fetch("site/report.json", { cache: "no-cache" }) : Promise.resolve(null),
+    needRepHtml ? fetch("site/daily_report.html", { method: "HEAD", cache: "no-cache" }) : Promise.resolve(null),
   ]);
-  if (patOutcome.status === "fulfilled" && patOutcome.value.ok) {
+  if (patOutcome.status === "fulfilled" && patOutcome.value && patOutcome.value.ok) {
     try { state.patterns = await patOutcome.value.json(); } catch (_) { state.patterns = null; }
   }
-  if (repOutcome.status === "fulfilled" && repOutcome.value.ok) {
+  if (repOutcome.status === "fulfilled" && repOutcome.value && repOutcome.value.ok) {
     try { state.report = await repOutcome.value.json(); } catch (_) { state.report = null; }
   }
-  state.reportReady = repHtmlOutcome.status === "fulfilled" && repHtmlOutcome.value.ok;
+  state.reportReady = Boolean(repHtmlOutcome.status === "fulfilled" && repHtmlOutcome.value && repHtmlOutcome.value.ok);
   ["report-top-link", "footer-report-link"].forEach((id) => {
     const el = $(id);
     if (el) el.style.display = state.reportReady ? "" : "none";
