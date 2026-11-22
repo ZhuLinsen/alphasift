@@ -841,18 +841,25 @@ def _baostock_session() -> Iterator:
 
     # The SDK has one process-global socket, shared with the existing daily path.
     with _BAOSTOCK_LOCK:
-        login = bs.login()
-        _check_baostock(login)
+        prev_timeout = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(15.0)
         try:
-            yield bs
-        finally:
+            login = bs.login()
+            _check_baostock(login)
             try:
-                bs.logout()
-            except Exception:
-                logger.warning("Baostock logout failed")
+                yield bs
+            finally:
+                try:
+                    bs.logout()
+                except Exception:
+                    logger.warning("Baostock logout failed")
+        finally:
+            socket.setdefaulttimeout(prev_timeout)
 
 
 def _baostock_reachable() -> bool:
+    if os.getenv("GITHUB_ACTIONS", "").strip().lower() == "true":
+        return False
     try:
         import baostock.common.contants as constants
 
@@ -868,15 +875,18 @@ def _history_session(source: str = "auto") -> Iterator[tuple[object | None, str]
     if source not in ("auto", "baostock", "yfinance", "daily"):
         raise PackError("history source must be auto, baostock, yfinance or daily")
     if source == "daily":
+        logger.info("Using daily (sina+tencent) history source")
         yield None, "daily"
         return
     if source == "yfinance":
+        logger.info("Using yfinance history source")
         yield None, "yfinance"
         return
     if source == "auto" and not _baostock_reachable():
-        logger.warning("Baostock is unreachable, using batched yfinance daily history")
+        logger.info("Using batched yfinance daily history (baostock skipped or unreachable)")
         yield None, "yfinance"
         return
+    logger.info("Using baostock history source")
     with _baostock_session() as bs:
         yield bs, "baostock"
 
@@ -887,8 +897,14 @@ def _source_frame(code: str, count: int, source: str) -> pd.DataFrame:
     return frame.drop_duplicates("date").set_index("date").sort_index()
 
 
+def _is_bse_code(code: str) -> bool:
+    return _code(code).startswith(("4", "8", "920"))
+
+
 def _to_yahoo_cn_symbol(code: str) -> str | None:
     normalized = _code(code)
+    if _is_bse_code(normalized):
+        return None
     if normalized.startswith(("6", "9", "5")):
         return f"{normalized}.SS"
     if normalized.startswith(("0", "3")):
@@ -1066,16 +1082,19 @@ def _daily_source_history(code: str, dates: list[str]) -> pd.DataFrame:
     """
     count = (datetime.now(_CN_TZ).date() - date.fromisoformat(dates[0])).days + 10
     raw = _source_frame(code, count, "sina")
-    adjusted = _source_frame(code, count, "tencent")["close"].reindex(raw.index)
     known = raw.index.isin(dates)
-    if adjusted[known].isna().any():
-        raise PackError(f"Adjusted history does not cover the raw bars for {code}")
-    close = raw["close"]
-    factor = adjusted / close
-    previous = close.shift()
-    ratio = factor.shift() / factor
-    noise = np.maximum(0.002, 0.012 / adjusted.clip(lower=0.01))
-    pre_close = previous.where(~((ratio - 1).abs() > noise), (previous * ratio).round(2))
+    if _is_bse_code(code):
+        pre_close = raw["close"].shift().fillna(raw["open"])
+    else:
+        adjusted = _source_frame(code, count, "tencent")["close"].reindex(raw.index)
+        if adjusted[known].isna().any():
+            raise PackError(f"Adjusted history does not cover the raw bars for {code}")
+        close = raw["close"]
+        factor = adjusted / close
+        previous = close.shift()
+        ratio = factor.shift() / factor
+        noise = np.maximum(0.002, 0.012 / adjusted.clip(lower=0.01))
+        pre_close = previous.where(~((ratio - 1).abs() > noise), (previous * ratio).round(2))
     bars = raw.assign(pre_close=pre_close.fillna(raw["open"]), amount=np.nan)
     bars = bars.loc[known & raw["volume"].gt(0)]
     values = _numeric_bars(bars)
@@ -1171,9 +1190,10 @@ def _backfill_yfinance(
     batch_size: int = _YFINANCE_BATCH_SIZE,
 ) -> tuple[dict[int, pd.DataFrame], list[str]]:
     results: dict[int, pd.DataFrame] = {}
-    failed: list[str] = []
-    max_failures = max(_MAX_FAILED_CODES * len(codes), 1)
+    yf_failed: list[str] = []
+    bse_failed: list[str] = []
     pending: list[tuple[int, str, str]] = []
+    bse_pending: list[tuple[int, str]] = []
 
     for col, code in enumerate(codes):
         dst = cache / f"{code}.csv"
@@ -1182,19 +1202,11 @@ def _backfill_yfinance(
             continue
         symbol = _to_yahoo_cn_symbol(code)
         if symbol is None:
-            try:
-                bars = _daily_source_history(code, dates)
-                _history_positions(bars, dates)
-                _write_history_cache(cache, code, bars)
-                results[col] = bars
-            except Exception as exc:
-                failed.append(code)
-                logger.warning("Daily history failed for %s: %s", code, exc)
-                if len(failed) > max_failures:
-                    raise PackError(f"Daily history failed for {len(failed)} codes, aborting") from None
-            continue
-        pending.append((col, code, symbol))
+            bse_pending.append((col, code))
+        else:
+            pending.append((col, code, symbol))
 
+    max_yf_failures = max(_MAX_FAILED_CODES * max(len(pending), 1), 1)
     start_pad = (date.fromisoformat(dates[0]) - timedelta(days=15)).isoformat()
     end_pad = (date.fromisoformat(dates[-1]) + timedelta(days=3)).isoformat()
     chunks = [pending[i:i + batch_size] for i in range(0, len(pending), batch_size)]
@@ -1203,14 +1215,26 @@ def _backfill_yfinance(
         if chunk_idx > 0 and _YFINANCE_CHUNK_DELAY_SEC > 0:
             time.sleep(_YFINANCE_CHUNK_DELAY_SEC)
         symbols = [sym for _, _, sym in chunk]
-        try:
-            raw = _yf_download(symbols, start=start_pad, end=end_pad, actions=True)
-        except Exception as exc:
+        raw = None
+        last_exc: Exception | None = None
+        for attempt in range(2):
+            try:
+                raw = _yf_download(symbols, start=start_pad, end=end_pad, actions=True)
+                last_exc = None
+                break
+            except ValueError as exc:
+                last_exc = exc
+                break
+            except Exception as exc:
+                last_exc = exc
+                if attempt == 0:
+                    time.sleep(2.0)
+        if last_exc is not None:
             for _, code, _ in chunk:
-                failed.append(code)
-                logger.warning("yfinance chunk download failed for %s: %s", code, exc)
-                if len(failed) > max_failures:
-                    raise PackError(f"Daily history failed for {len(failed)} codes, aborting") from None
+                yf_failed.append(code)
+                logger.warning("yfinance chunk download failed for %s: %s", code, last_exc)
+                if len(yf_failed) > max_yf_failures:
+                    raise PackError(f"Daily history failed for {len(yf_failed)} codes, aborting") from None
             continue
 
         for col, code, sym in chunk:
@@ -1223,12 +1247,42 @@ def _backfill_yfinance(
                 _write_history_cache(cache, code, bars)
                 results[col] = bars
             except Exception as exc:
-                failed.append(code)
+                yf_failed.append(code)
                 logger.warning("Daily history failed for %s: %s", code, exc)
-                if len(failed) > max_failures:
-                    raise PackError(f"Daily history failed for {len(failed)} codes, aborting") from None
+                if len(yf_failed) > max_yf_failures:
+                    raise PackError(f"Daily history failed for {len(yf_failed)} codes, aborting") from None
+        if (chunk_idx + 1) % 5 == 0 or chunk_idx + 1 == len(chunks):
+            logger.info(
+                "yfinance backfill chunk %d/%d: loaded=%d failed=%d",
+                chunk_idx + 1,
+                len(chunks),
+                len(results),
+                len(yf_failed),
+            )
 
-    return results, failed
+    if bse_pending:
+        def _fetch_bse(item: tuple[int, str]) -> tuple[int, str, pd.DataFrame | None, Exception | None]:
+            col, code = item
+            try:
+                bars = _daily_source_history(code, dates)
+                _history_positions(bars, dates)
+                _write_history_cache(cache, code, bars)
+                return col, code, bars, None
+            except Exception as exc:
+                return col, code, None, exc
+
+        bse_ok = 0
+        with ThreadPoolExecutor(max_workers=min(6, len(bse_pending))) as executor:
+            for col, code, bars, exc in executor.map(_fetch_bse, bse_pending):
+                if exc is None and bars is not None:
+                    results[col] = bars
+                    bse_ok += 1
+                else:
+                    bse_failed.append(code)
+                    logger.warning("BSE daily history failed for %s: %s", code, exc)
+        logger.info("BSE daily-source backfill complete: ok=%d failed=%d", bse_ok, len(bse_failed))
+
+    return results, [*yf_failed, *bse_failed]
 
 
 def _backfill_range(
@@ -1269,6 +1323,14 @@ def _backfill_range(
             index = _history_positions(bars, dates)
             for key in FIELDS:
                 matrices[key][index, col] = bars[key]
+            if (col + 1) % 250 == 0 or col + 1 == len(codes):
+                logger.info(
+                    "%s backfill progress: %d/%d codes (failed=%d)",
+                    resolved_mode,
+                    col + 1,
+                    len(codes),
+                    len(failed),
+                )
 
     close = matrices["close"]
     try:

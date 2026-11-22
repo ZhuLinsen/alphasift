@@ -17,6 +17,8 @@ import pytest
 from alphasift import cli, pack
 from scripts import build_pack
 
+_REAL_BAOSTOCK_REACHABLE = pack._baostock_reachable
+
 DATES = ("2025-01-06", "2025-01-07", "2025-01-08")
 CODES = ("000001", "000002", "600000")
 
@@ -884,3 +886,80 @@ def test_build_script_dispatches_update(tmp_path, monkeypatch, capsys):
     ])
     build_pack.main()
     assert json.loads(capsys.readouterr().out) == {"market": "cn"}
+
+
+def test_bse_symbol_routing_daily_source_and_yfinance_concurrent_fallback(tmp_path, monkeypatch):
+    # 1. BSE 4xx/8xx/920xxx must return None from _to_yahoo_cn_symbol, while SH/SZ/900 keep suffixes
+    assert pack._to_yahoo_cn_symbol("920000") is None
+    assert pack._to_yahoo_cn_symbol("830799") is None
+    assert pack._to_yahoo_cn_symbol("430047") is None
+    assert pack._to_yahoo_cn_symbol("600519") == "600519.SS"
+    assert pack._to_yahoo_cn_symbol("900901") == "900901.SS"
+    assert pack._to_yahoo_cn_symbol("000001") == "000001.SZ"
+
+    # 2. _daily_source_history for BSE uses Sina raw bars directly without calling Tencent qfq
+    days = ["2025-01-03", *DATES]
+    calls = []
+
+    def fake_fetch(code, *, lookback_days, source, cache_write):
+        calls.append((code, source))
+        if source == "sina":
+            return pd.DataFrame({
+                "date": days,
+                "open": [10.0, 10.5, 11.0, 11.2],
+                "high": [10.2, 10.8, 11.2, 11.4],
+                "low": [9.8, 10.2, 10.8, 11.0],
+                "close": [10.1, 10.7, 11.1, 11.3],
+                "volume": [1000.0] * 4,
+                "amount": [np.nan] * 4,
+            })
+        raise AssertionError(f"Tencent qfq should not be queried for BSE code {code}")
+
+    monkeypatch.setattr(pack, "fetch_daily_history", fake_fetch)
+    bars = pack._daily_source_history("920000", list(DATES))
+    assert bars["date"].tolist() == list(DATES)
+    np.testing.assert_allclose(bars["pre_close"], [10.1, 10.7, 11.1], rtol=1e-6)
+    assert calls == [("920000", "sina")]
+
+    # 3. _backfill_yfinance routes 920000/920001 via BSE fallback without aborting SH/SZ pack on BSE error
+    idx = pd.to_datetime(days)
+
+    def fake_yf(tickers, *, start, end, actions=True):
+        frames = {}
+        for tk in tickers:
+            frames[tk] = pd.DataFrame({
+                "Open": [20.0] * 4,
+                "High": [21.0] * 4,
+                "Low": [19.0] * 4,
+                "Close": [20.0] * 4,
+                "Adj Close": [20.0] * 4,
+                "Volume": [500.0] * 4,
+                "Dividends": [0.0] * 4,
+                "Stock Splits": [0.0] * 4,
+            }, index=idx)
+        return _yf_multi_frame(frames)
+
+    def fake_daily_bse(code, *, lookback_days, source, cache_write):
+        if code == "920001":
+            raise RuntimeError("bse temporary error")
+        return pd.DataFrame({
+            "date": days,
+            "open": [10.0] * 4,
+            "high": [10.5] * 4,
+            "low": [9.8] * 4,
+            "close": [10.2] * 4,
+            "volume": [1000.0] * 4,
+            "amount": [np.nan] * 4,
+        })
+
+    monkeypatch.setattr(pack, "_yf_download", fake_yf)
+    monkeypatch.setattr(pack, "fetch_daily_history", fake_daily_bse)
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    loaded, failed = pack._backfill_yfinance(cache, list(DATES), ["000001", "600000", "920000", "920001"])
+    assert sorted(loaded.keys()) == [0, 1, 2]
+    assert failed == ["920001"]
+
+    # 4. Real _baostock_reachable skips baostock cleanly in GitHub Actions
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    assert _REAL_BAOSTOCK_REACHABLE() is False
