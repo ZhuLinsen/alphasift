@@ -1,0 +1,6718 @@
+{
+  "schema_version": 1,
+  "object": "DailyReport",
+  "trade_date": "2026-11-20",
+  "pack_trade_date": "2026-11-20",
+  "expected_trade_date": "2026-11-20",
+  "pack_is_stale": false,
+  "stale_reason": null,
+  "detail_url": "",
+  "market": "cn",
+  "generated_at": "2026-11-22T15:48:04.177890+00:00",
+  "usage_policy": "cn_only_regime_slice_only",
+  "strategy_display_names": {
+    "balanced_alpha": "均衡多因子",
+    "blue_chip_income": "蓝筹收益质量",
+    "capital_heat": "资金热度",
+    "dual_low": "双低选股",
+    "global_value": "全球低估值",
+    "low_volatility_quality": "低波质量",
+    "momentum_quality": "趋势质量",
+    "oversold_reversal": "超跌反转",
+    "quality_value": "稳健价值",
+    "shrink_pullback": "缩量回踩",
+    "us_momentum_quality": "US Momentum Quality",
+    "volume_breakout": "放量突破"
+  },
+  "strategy_track_stats": {
+    "balanced_alpha": {
+      "track": "rules",
+      "t5_matched": 15,
+      "t5_avg_excess_pct": 1.02,
+      "t5_beat_rate_pct": 53.3
+    },
+    "blue_chip_income": {
+      "track": "rules",
+      "t5_matched": 15,
+      "t5_avg_excess_pct": 2.72,
+      "t5_beat_rate_pct": 80.0
+    },
+    "capital_heat": {
+      "track": "rules",
+      "t5_matched": 15,
+      "t5_avg_excess_pct": -6.81,
+      "t5_beat_rate_pct": 33.3
+    },
+    "dual_low": {
+      "track": "rules",
+      "t5_matched": 15,
+      "t5_avg_excess_pct": 1.47,
+      "t5_beat_rate_pct": 73.3
+    },
+    "low_volatility_quality": {
+      "track": "rules",
+      "t5_matched": 15,
+      "t5_avg_excess_pct": 2.43,
+      "t5_beat_rate_pct": 73.3
+    },
+    "momentum_quality": {
+      "track": "rules",
+      "t5_matched": 15,
+      "t5_avg_excess_pct": 3.36,
+      "t5_beat_rate_pct": 80.0
+    },
+    "oversold_reversal": {
+      "track": "rules",
+      "t5_matched": 15,
+      "t5_avg_excess_pct": -5.14,
+      "t5_beat_rate_pct": 13.3
+    },
+    "quality_value": {
+      "track": "rules",
+      "t5_matched": 15,
+      "t5_avg_excess_pct": 2.06,
+      "t5_beat_rate_pct": 73.3
+    },
+    "shrink_pullback": {
+      "track": "rules",
+      "t5_matched": 14,
+      "t5_avg_excess_pct": 3.44,
+      "t5_beat_rate_pct": 85.7
+    },
+    "volume_breakout": {
+      "track": "rules",
+      "t5_matched": 8,
+      "t5_avg_excess_pct": -0.83,
+      "t5_beat_rate_pct": 12.5
+    }
+  },
+  "market_regime": {
+    "trade_date": "2026-11-20",
+    "traded_count": 5571,
+    "advancing_count": 313,
+    "declining_count": 5235,
+    "flat_count": 23,
+    "advance_ratio_pct": 5.62,
+    "limit_up_count": 28,
+    "non_st_limit_up_count": 28,
+    "one_price_limit_up_count": 0,
+    "broken_board_count": 15,
+    "non_st_broken_board_count": 11,
+    "seal_rate_pct": 71.79,
+    "limit_down_count": 63,
+    "non_st_limit_down_count": 63,
+    "one_price_limit_down_count": 3,
+    "max_consecutive_limit_up": 4,
+    "consecutive_board_ladder": {
+      "2": 1,
+      "4": 2
+    },
+    "prev_limit_up_count": 24,
+    "prev_limit_up_avg_return_pct": -3.5,
+    "prev_limit_up_open_premium_pct": -0.67,
+    "prev_limit_up_win_rate_pct": 29.17,
+    "prev_limit_up_promoted_count": 3,
+    "prev_limit_up_promotion_rate_pct": 12.5,
+    "total_amount_yi": 14128.22,
+    "amount_is_proxy": true,
+    "regime_stage": "freezing",
+    "regime_stage_label": "冰点",
+    "regime_reasons": [
+      "上涨占比 5.6%",
+      "非ST涨停 28 / 跌停 63",
+      "昨涨停溢价 -3.50%"
+    ],
+    "usage_policy": "reporting_and_slice_only",
+    "median_return_pct": -5.08,
+    "return_distribution": {
+      "le_neg7": 1131,
+      "neg7_neg3": 3125,
+      "neg3_0": 979,
+      "flat": 23,
+      "pos0_3": 218,
+      "pos3_7": 49,
+      "ge_pos7": 46
+    }
+  },
+  "strategies": [
+    {
+      "run_id": "903f276257ea",
+      "strategy": "balanced_alpha",
+      "display_name": "均衡多因子",
+      "market": "cn",
+      "track": "rules",
+      "llm_ranked": false,
+      "llm_market_view": "",
+      "created_at": "2026-11-20T10:33:28.177769+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Snapshot source fallback: sina: sina exceeded 60s snapshot budget after 63 pages",
+        "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+        "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "601166",
+          "name": "兴业银行",
+          "industry": "银行",
+          "price": 20.3,
+          "pe_ratio": 5.7,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 4296.1,
+          "final_score": 79.29,
+          "screen_score": 77.09,
+          "change_pct": 1.05,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "601668",
+          "name": "中国建筑",
+          "industry": "建筑施工",
+          "price": 4.75,
+          "pe_ratio": 6.6,
+          "pb_ratio": 0.39,
+          "market_cap_yi": 1962.7,
+          "final_score": 78.33,
+          "screen_score": 76.13,
+          "change_pct": 0.42,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "601390",
+          "name": "中国中铁",
+          "industry": "基础建设",
+          "price": 4.32,
+          "pe_ratio": 5.9,
+          "pb_ratio": 0.33,
+          "market_cap_yi": 1059.8,
+          "final_score": 74.57,
+          "screen_score": 72.37,
+          "change_pct": 0.7,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "估值+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "000001",
+          "name": "平安银行",
+          "industry": "银行",
+          "price": 12.22,
+          "pe_ratio": 5.5,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 2371.4,
+          "final_score": 74.48,
+          "screen_score": 76.28,
+          "change_pct": 1.5,
+          "risk_level": "low",
+          "risk_flags": [
+            "portfolio_sector_concentration:金融"
+          ],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "601919",
+          "name": "中远海控",
+          "industry": "港口航运",
+          "price": 17.73,
+          "pe_ratio": 7.8,
+          "pb_ratio": 1.11,
+          "market_cap_yi": 2698.2,
+          "final_score": 72.39,
+          "screen_score": 72.39,
+          "change_pct": 1.6,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市值规模+流动性因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
+      "run_id": "94878e573030",
+      "strategy": "blue_chip_income",
+      "display_name": "蓝筹收益质量",
+      "market": "cn",
+      "track": "rules",
+      "llm_ranked": false,
+      "llm_market_view": "",
+      "created_at": "2026-11-20T10:33:28.232674+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Snapshot source fallback: sina: sina exceeded 60s snapshot budget after 63 pages",
+        "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+        "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "601166",
+          "name": "兴业银行",
+          "industry": "银行",
+          "price": 20.3,
+          "pe_ratio": 5.7,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 4296.1,
+          "final_score": 86.11,
+          "screen_score": 83.61,
+          "change_pct": 1.05,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "000001",
+          "name": "平安银行",
+          "industry": "银行",
+          "price": 12.22,
+          "pe_ratio": 5.5,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 2371.4,
+          "final_score": 84.45,
+          "screen_score": 81.95,
+          "change_pct": 1.5,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "601668",
+          "name": "中国建筑",
+          "industry": "建筑施工",
+          "price": 4.75,
+          "pe_ratio": 6.6,
+          "pb_ratio": 0.39,
+          "market_cap_yi": 1962.7,
+          "final_score": 82.55,
+          "screen_score": 80.05,
+          "change_pct": 0.42,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "600036",
+          "name": "招商银行",
+          "industry": "银行",
+          "price": 44.0,
+          "pe_ratio": 7.3,
+          "pb_ratio": 0.94,
+          "market_cap_yi": 11096.7,
+          "final_score": 75.36,
+          "screen_score": 78.36,
+          "change_pct": 1.57,
+          "risk_level": "low",
+          "risk_flags": [
+            "portfolio_sector_concentration:金融"
+          ],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "601919",
+          "name": "中远海控",
+          "industry": "港口航运",
+          "price": 17.73,
+          "pe_ratio": 7.8,
+          "pb_ratio": 1.11,
+          "market_cap_yi": 2698.2,
+          "final_score": 73.36,
+          "screen_score": 73.36,
+          "change_pct": 1.6,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市值规模+流动性因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
+      "run_id": "abe4d5b9ce5a",
+      "strategy": "capital_heat",
+      "display_name": "资金热度",
+      "market": "cn",
+      "track": "rules",
+      "llm_ranked": false,
+      "llm_market_view": "",
+      "created_at": "2026-11-20T10:33:28.272542+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Snapshot source fallback: sina: sina exceeded 60s snapshot budget after 63 pages",
+        "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+        "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "000725",
+          "name": "京东方A",
+          "industry": "电子器件",
+          "price": 4.39,
+          "pe_ratio": 29.4,
+          "pb_ratio": 1.23,
+          "market_cap_yi": 1617.9,
+          "final_score": 71.03,
+          "screen_score": 68.63,
+          "change_pct": 1.39,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市值规模+流动性因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "000100",
+          "name": "TCL科技",
+          "industry": "电子元件",
+          "price": 4.9,
+          "pe_ratio": 16.3,
+          "pb_ratio": 1.58,
+          "market_cap_yi": 1075.4,
+          "final_score": 70.56,
+          "screen_score": 68.16,
+          "change_pct": 1.87,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市值规模+流动性因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "000410",
+          "name": "沈阳机床",
+          "industry": "通用设备",
+          "price": 5.87,
+          "pe_ratio": -715.5,
+          "pb_ratio": 3.7,
+          "market_cap_yi": 155.5,
+          "final_score": 65.86,
+          "screen_score": 66.46,
+          "change_pct": 5.58,
+          "risk_level": "low",
+          "risk_flags": [
+            "negative_or_invalid_pe"
+          ],
+          "ranking_reason": "市值规模+活跃度因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "000158",
+          "name": "常山北明",
+          "industry": "计算机软件",
+          "price": 13.52,
+          "pe_ratio": 634.5,
+          "pb_ratio": 4.15,
+          "market_cap_yi": 216.1,
+          "final_score": 65.8,
+          "screen_score": 65.8,
+          "change_pct": 3.76,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市值规模+流动性因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "300416",
+          "name": "苏试试验",
+          "industry": "专业服务",
+          "price": 13.06,
+          "pe_ratio": 24.6,
+          "pb_ratio": 2.32,
+          "market_cap_yi": 66.4,
+          "final_score": 62.87,
+          "screen_score": 60.47,
+          "change_pct": 1.95,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "估值+低波稳健因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
+      "run_id": "2c6037453680",
+      "strategy": "dual_low",
+      "display_name": "双低选股",
+      "market": "cn",
+      "track": "rules",
+      "llm_ranked": false,
+      "llm_market_view": "",
+      "created_at": "2026-11-20T10:33:28.334273+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Snapshot source fallback: sina: sina exceeded 60s snapshot budget after 63 pages",
+        "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+        "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "600016",
+          "name": "民生银行",
+          "industry": "银行",
+          "price": 3.47,
+          "pe_ratio": 5.8,
+          "pb_ratio": 0.26,
+          "market_cap_yi": 1519.2,
+          "final_score": 84.03,
+          "screen_score": 81.03,
+          "change_pct": 0.58,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "000001",
+          "name": "平安银行",
+          "industry": "银行",
+          "price": 12.22,
+          "pe_ratio": 5.5,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 2371.4,
+          "final_score": 83.85,
+          "screen_score": 80.85,
+          "change_pct": 1.5,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "601668",
+          "name": "中国建筑",
+          "industry": "建筑施工",
+          "price": 4.75,
+          "pe_ratio": 6.6,
+          "pb_ratio": 0.39,
+          "market_cap_yi": 1962.7,
+          "final_score": 83.68,
+          "screen_score": 80.68,
+          "change_pct": 0.42,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "601390",
+          "name": "中国中铁",
+          "industry": "基础建设",
+          "price": 4.32,
+          "pe_ratio": 5.9,
+          "pb_ratio": 0.33,
+          "market_cap_yi": 1059.8,
+          "final_score": 82.36,
+          "screen_score": 79.36,
+          "change_pct": 0.7,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市值规模+估值因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "600704",
+          "name": "物产中大",
+          "industry": "物流",
+          "price": 4.87,
+          "pe_ratio": 7.1,
+          "pb_ratio": 0.61,
+          "market_cap_yi": 251.8,
+          "final_score": 77.04,
+          "screen_score": 72.84,
+          "change_pct": -2.79,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "超跌反转+活跃度因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
+      "run_id": "1dc905bbd73b",
+      "strategy": "low_volatility_quality",
+      "display_name": "低波质量",
+      "market": "cn",
+      "track": "rules",
+      "llm_ranked": false,
+      "llm_market_view": "",
+      "created_at": "2026-11-20T10:34:35.274728+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Snapshot source fallback: sina: sina exceeded 60s snapshot budget after 63 pages",
+        "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+        "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "601166",
+          "name": "兴业银行",
+          "industry": "银行",
+          "price": 20.3,
+          "pe_ratio": 5.7,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 4296.1,
+          "final_score": 83.15,
+          "screen_score": 79.15,
+          "change_pct": 1.05,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+估值因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "601668",
+          "name": "中国建筑",
+          "industry": "建筑施工",
+          "price": 4.75,
+          "pe_ratio": 6.6,
+          "pb_ratio": 0.39,
+          "market_cap_yi": 1962.7,
+          "final_score": 78.03,
+          "screen_score": 74.03,
+          "change_pct": 0.42,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "低波稳健+活跃度因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "000001",
+          "name": "平安银行",
+          "industry": "银行",
+          "price": 12.22,
+          "pe_ratio": 5.5,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 2371.4,
+          "final_score": 76.27,
+          "screen_score": 75.77,
+          "change_pct": 1.5,
+          "risk_level": "low",
+          "risk_flags": [
+            "portfolio_sector_concentration:金融"
+          ],
+          "ranking_reason": "流动性+估值因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "600036",
+          "name": "招商银行",
+          "industry": "银行",
+          "price": 44.0,
+          "pe_ratio": 7.3,
+          "pb_ratio": 0.94,
+          "market_cap_yi": 11096.7,
+          "final_score": 69.35,
+          "screen_score": 74.55,
+          "change_pct": 1.57,
+          "risk_level": "low",
+          "risk_flags": [
+            "portfolio_sector_concentration:金融"
+          ],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "600028",
+          "name": "中国石化",
+          "industry": "石油天然气",
+          "price": 6.03,
+          "pe_ratio": 17.8,
+          "pb_ratio": 0.87,
+          "market_cap_yi": 7279.1,
+          "final_score": 68.01,
+          "screen_score": 66.21,
+          "change_pct": 1.86,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市值规模+动量因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
+      "run_id": "a86b9166d90c",
+      "strategy": "momentum_quality",
+      "display_name": "趋势质量",
+      "market": "cn",
+      "track": "rules",
+      "llm_ranked": false,
+      "llm_market_view": "",
+      "created_at": "2026-11-20T10:34:35.342419+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Snapshot source fallback: sina: sina exceeded 60s snapshot budget after 63 pages",
+        "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+        "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "601166",
+          "name": "兴业银行",
+          "industry": "银行",
+          "price": 20.3,
+          "pe_ratio": 5.7,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 4296.1,
+          "final_score": 75.73,
+          "screen_score": 73.93,
+          "change_pct": 1.05,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "601668",
+          "name": "中国建筑",
+          "industry": "建筑施工",
+          "price": 4.75,
+          "pe_ratio": 6.6,
+          "pb_ratio": 0.39,
+          "market_cap_yi": 1962.7,
+          "final_score": 73.66,
+          "screen_score": 71.86,
+          "change_pct": 0.42,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+估值因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "601919",
+          "name": "中远海控",
+          "industry": "港口航运",
+          "price": 17.73,
+          "pe_ratio": 7.8,
+          "pb_ratio": 1.11,
+          "market_cap_yi": 2698.2,
+          "final_score": 69.45,
+          "screen_score": 69.45,
+          "change_pct": 1.6,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市值规模+流动性因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "601899",
+          "name": "紫金矿业",
+          "industry": "贵金属",
+          "price": 23.73,
+          "pe_ratio": 8.8,
+          "pb_ratio": 3.03,
+          "market_cap_yi": 6310.0,
+          "final_score": 69.14,
+          "screen_score": 69.14,
+          "change_pct": -0.63,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "000100",
+          "name": "TCL科技",
+          "industry": "电子元件",
+          "price": 4.9,
+          "pe_ratio": 16.3,
+          "pb_ratio": 1.58,
+          "market_cap_yi": 1075.4,
+          "final_score": 68.86,
+          "screen_score": 68.86,
+          "change_pct": 1.87,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+活跃度因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
+      "run_id": "6a11bbd1a8a4",
+      "strategy": "oversold_reversal",
+      "display_name": "超跌反转",
+      "market": "cn",
+      "track": "rules",
+      "llm_ranked": false,
+      "llm_market_view": "",
+      "created_at": "2026-11-20T10:34:35.454520+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Snapshot source fallback: sina: sina exceeded 60s snapshot budget after 63 pages",
+        "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+        "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "600362",
+          "name": "江西铜业",
+          "industry": "基本金属",
+          "price": 28.4,
+          "pe_ratio": 7.7,
+          "pb_ratio": 1.08,
+          "market_cap_yi": 983.4,
+          "final_score": 92.64,
+          "screen_score": 88.24,
+          "change_pct": -3.4,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "超跌反转+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "603799",
+          "name": "华友钴业",
+          "industry": "稀有金属",
+          "price": 28.5,
+          "pe_ratio": 8.7,
+          "pb_ratio": 1.07,
+          "market_cap_yi": 539.7,
+          "final_score": 92.14,
+          "screen_score": 87.74,
+          "change_pct": -3.72,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "超跌反转+流动性因子靠前",
+          "announcement_risk_flags": [
+            "质押冻结"
+          ]
+        },
+        {
+          "rank": 3,
+          "code": "000690",
+          "name": "宝新能源",
+          "industry": "电力",
+          "price": 5.63,
+          "pe_ratio": 12.8,
+          "pb_ratio": 0.94,
+          "market_cap_yi": 122.5,
+          "final_score": 89.49,
+          "screen_score": 85.09,
+          "change_pct": -3.76,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "超跌反转+估值因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "000703",
+          "name": "恒逸石化",
+          "industry": "合成纤维及树脂",
+          "price": 11.24,
+          "pe_ratio": 5.7,
+          "pb_ratio": 1.38,
+          "market_cap_yi": 462.1,
+          "final_score": 89.19,
+          "screen_score": 84.79,
+          "change_pct": -3.19,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "超跌反转+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "000338",
+          "name": "潍柴动力",
+          "industry": "汽车",
+          "price": 18.18,
+          "pe_ratio": 12.4,
+          "pb_ratio": 1.67,
+          "market_cap_yi": 1570.8,
+          "final_score": 88.21,
+          "screen_score": 86.21,
+          "change_pct": -3.71,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市值规模+流动性因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
+      "run_id": "71432366dbdd",
+      "strategy": "quality_value",
+      "display_name": "稳健价值",
+      "market": "cn",
+      "track": "rules",
+      "llm_ranked": false,
+      "llm_market_view": "",
+      "created_at": "2026-11-20T10:34:35.525199+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Snapshot source fallback: sina: sina exceeded 60s snapshot budget after 63 pages",
+        "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+        "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "601166",
+          "name": "兴业银行",
+          "industry": "银行",
+          "price": 20.3,
+          "pe_ratio": 5.7,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 4296.1,
+          "final_score": 85.51,
+          "screen_score": 82.71,
+          "change_pct": 1.05,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "601668",
+          "name": "中国建筑",
+          "industry": "建筑施工",
+          "price": 4.75,
+          "pe_ratio": 6.6,
+          "pb_ratio": 0.39,
+          "market_cap_yi": 1962.7,
+          "final_score": 84.53,
+          "screen_score": 81.73,
+          "change_pct": 0.42,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "601390",
+          "name": "中国中铁",
+          "industry": "基础建设",
+          "price": 4.32,
+          "pe_ratio": 5.9,
+          "pb_ratio": 0.33,
+          "market_cap_yi": 1059.8,
+          "final_score": 81.33,
+          "screen_score": 78.53,
+          "change_pct": 0.7,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "估值+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "000001",
+          "name": "平安银行",
+          "industry": "银行",
+          "price": 12.22,
+          "pe_ratio": 5.5,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 2371.4,
+          "final_score": 80.15,
+          "screen_score": 81.85,
+          "change_pct": 1.5,
+          "risk_level": "low",
+          "risk_flags": [
+            "portfolio_sector_concentration:金融"
+          ],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "601919",
+          "name": "中远海控",
+          "industry": "港口航运",
+          "price": 17.73,
+          "pe_ratio": 7.8,
+          "pb_ratio": 1.11,
+          "market_cap_yi": 2698.2,
+          "final_score": 75.07,
+          "screen_score": 75.07,
+          "change_pct": 1.6,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
+      "run_id": "25f961fa86dc",
+      "strategy": "shrink_pullback",
+      "display_name": "缩量回踩",
+      "market": "cn",
+      "track": "rules",
+      "llm_ranked": false,
+      "llm_market_view": "",
+      "created_at": "2026-11-20T10:35:24.215763+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Snapshot source fallback: sina: sina exceeded 60s snapshot budget after 63 pages",
+        "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+        "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "601328",
+          "name": "交通银行",
+          "industry": "银行",
+          "price": 8.98,
+          "pe_ratio": 7.9,
+          "pb_ratio": 0.67,
+          "market_cap_yi": 7935.1,
+          "final_score": 80.04,
+          "screen_score": 78.64,
+          "change_pct": 2.63,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "000001",
+          "name": "平安银行",
+          "industry": "银行",
+          "price": 12.22,
+          "pe_ratio": 5.5,
+          "pb_ratio": 0.5,
+          "market_cap_yi": 2371.4,
+          "final_score": 78.01,
+          "screen_score": 78.21,
+          "change_pct": 1.5,
+          "risk_level": "low",
+          "risk_flags": [
+            "portfolio_sector_concentration:金融"
+          ],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "600887",
+          "name": "伊利股份",
+          "industry": "食品",
+          "price": 33.35,
+          "pe_ratio": 21.2,
+          "pb_ratio": 3.71,
+          "market_cap_yi": 2109.5,
+          "final_score": 76.5,
+          "screen_score": 76.6,
+          "change_pct": 1.34,
+          "risk_level": "low",
+          "risk_flags": [
+            "rsi_overbought"
+          ],
+          "ranking_reason": "流动性+活跃度因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "600941",
+          "name": "中国移动",
+          "industry": "通信运营",
+          "price": 108.71,
+          "pe_ratio": 18.4,
+          "pb_ratio": 1.69,
+          "market_cap_yi": 23592.5,
+          "final_score": 75.25,
+          "screen_score": 73.85,
+          "change_pct": 0.84,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市值规模+活跃度因子靠前",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "600031",
+          "name": "三一重工",
+          "industry": "专用设备",
+          "price": 19.1,
+          "pe_ratio": 18.9,
+          "pb_ratio": 1.86,
+          "market_cap_yi": 1756.2,
+          "final_score": 72.57,
+          "screen_score": 71.17,
+          "change_pct": 1.06,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "低波稳健+活跃度因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
+      "run_id": "34d37cfe27c6",
+      "strategy": "volume_breakout",
+      "display_name": "放量突破",
+      "market": "cn",
+      "track": "rules",
+      "llm_ranked": false,
+      "llm_market_view": "",
+      "created_at": "2026-11-20T10:35:37.100051+00:00",
+      "pick_count": 1,
+      "degradation": [
+        "Snapshot source fallback: sina: sina exceeded 60s snapshot budget after 63 pages",
+        "Snapshot source fallback: efinance: Expecting value: line 1 column 1 (char 0)",
+        "Snapshot source fallback: akshare_em: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "002157",
+          "name": "正邦科技",
+          "industry": "畜牧业",
+          "price": 2.98,
+          "pe_ratio": -16.8,
+          "pb_ratio": 2.8,
+          "market_cap_yi": 275.7,
+          "final_score": 70.11,
+          "screen_score": 74.61,
+          "change_pct": 3.47,
+          "risk_level": "medium",
+          "risk_flags": [
+            "negative_or_invalid_pe",
+            "rsi_overbought"
+          ],
+          "ranking_reason": "流动性+市值规模因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    }
+  ],
+  "ai_highlights": [],
+  "patterns": {
+    "active": [],
+    "experimental": [
+      {
+        "pattern": "bottom_volume_yang",
+        "display_name": "底部倍量阳",
+        "family": "bottom_reversal",
+        "mode": "direct",
+        "status": "experimental",
+        "expectancy_tier": "negative_watch",
+        "aligned_strategy": null,
+        "hit_count": 3,
+        "signals": [
+          {
+            "pattern": "bottom_volume_yang",
+            "display_name": "底部倍量阳",
+            "family": "bottom_reversal",
+            "status": "experimental",
+            "code": "002348",
+            "name": "高乐股份",
+            "industry": "文娱用品",
+            "trade_date": "2026-11-20",
+            "close": 7.76,
+            "change_pct": 7.78,
+            "proxy_amount": 630425584.67,
+            "atr20_pct": 6.29,
+            "vol_ratio_20d": 3.69,
+            "overhead_supply_10pct": 6.9,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                8.38,
+                8.41,
+                8.15,
+                8.19
+              ],
+              [
+                8.3,
+                8.47,
+                8.16,
+                8.26
+              ],
+              [
+                8.23,
+                8.54,
+                8.18,
+                8.44
+              ],
+              [
+                8.5,
+                8.59,
+                7.95,
+                7.97
+              ],
+              [
+                7.55,
+                7.86,
+                7.2,
+                7.31
+              ],
+              [
+                7.31,
+                7.39,
+                6.89,
+                7.1
+              ],
+              [
+                7.09,
+                7.19,
+                6.59,
+                6.7
+              ],
+              [
+                6.73,
+                7.08,
+                6.41,
+                7.05
+              ],
+              [
+                6.99,
+                7.25,
+                6.84,
+                7.12
+              ],
+              [
+                6.8,
+                7.04,
+                6.66,
+                6.87
+              ],
+              [
+                7.04,
+                7.17,
+                6.85,
+                6.86
+              ],
+              [
+                7.06,
+                7.25,
+                6.99,
+                7.11
+              ],
+              [
+                7.08,
+                7.3,
+                6.96,
+                7.25
+              ],
+              [
+                7.27,
+                7.5,
+                7.1,
+                7.12
+              ],
+              [
+                7.12,
+                7.19,
+                6.73,
+                6.77
+              ],
+              [
+                6.75,
+                7.02,
+                6.53,
+                6.7
+              ],
+              [
+                6.62,
+                7.05,
+                6.57,
+                6.85
+              ],
+              [
+                6.89,
+                7.09,
+                6.66,
+                7.05
+              ],
+              [
+                7.0,
+                7.34,
+                6.85,
+                7.2
+              ],
+              [
+                7.04,
+                7.92,
+                6.94,
+                7.76
+              ]
+            ]
+          },
+          {
+            "pattern": "bottom_volume_yang",
+            "display_name": "底部倍量阳",
+            "family": "bottom_reversal",
+            "status": "experimental",
+            "code": "603223",
+            "name": "恒通股份",
+            "industry": "港口航运",
+            "trade_date": "2026-11-20",
+            "close": 8.22,
+            "change_pct": 5.93,
+            "proxy_amount": 181479225.98,
+            "atr20_pct": 3.23,
+            "vol_ratio_20d": 3.73,
+            "overhead_supply_10pct": 23.91,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                8.38,
+                8.39,
+                8.19,
+                8.27
+              ],
+              [
+                8.27,
+                8.34,
+                7.98,
+                7.98
+              ],
+              [
+                8.05,
+                8.19,
+                8.0,
+                8.17
+              ],
+              [
+                8.21,
+                8.33,
+                8.02,
+                8.03
+              ],
+              [
+                7.99,
+                8.48,
+                7.9,
+                8.15
+              ],
+              [
+                8.16,
+                8.27,
+                8.02,
+                8.26
+              ],
+              [
+                8.24,
+                8.38,
+                8.16,
+                8.19
+              ],
+              [
+                8.19,
+                8.32,
+                8.09,
+                8.32
+              ],
+              [
+                8.3,
+                8.39,
+                8.24,
+                8.35
+              ],
+              [
+                8.2,
+                8.33,
+                8.1,
+                8.22
+              ],
+              [
+                8.3,
+                8.3,
+                8.2,
+                8.25
+              ],
+              [
+                8.32,
+                8.37,
+                8.28,
+                8.33
+              ],
+              [
+                8.3,
+                8.43,
+                8.29,
+                8.41
+              ],
+              [
+                8.44,
+                8.44,
+                8.27,
+                8.33
+              ],
+              [
+                8.31,
+                8.34,
+                8.15,
+                8.17
+              ],
+              [
+                8.15,
+                8.16,
+                7.95,
+                8.0
+              ],
+              [
+                7.98,
+                8.07,
+                7.85,
+                7.96
+              ],
+              [
+                8.0,
+                8.02,
+                7.77,
+                7.85
+              ],
+              [
+                7.9,
+                7.91,
+                7.72,
+                7.76
+              ],
+              [
+                7.66,
+                8.37,
+                7.42,
+                8.22
+              ]
+            ]
+          },
+          {
+            "pattern": "bottom_volume_yang",
+            "display_name": "底部倍量阳",
+            "family": "bottom_reversal",
+            "status": "experimental",
+            "code": "301505",
+            "name": "苏州规划",
+            "industry": "专业服务",
+            "trade_date": "2026-11-20",
+            "close": 15.2,
+            "change_pct": 9.35,
+            "proxy_amount": 134349439.11,
+            "atr20_pct": 5.36,
+            "vol_ratio_20d": 3.87,
+            "overhead_supply_10pct": 26.89,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                15.7,
+                16.09,
+                15.53,
+                15.67
+              ],
+              [
+                15.73,
+                15.81,
+                14.7,
+                14.74
+              ],
+              [
+                14.79,
+                15.08,
+                14.65,
+                14.81
+              ],
+              [
+                14.79,
+                14.88,
+                14.33,
+                14.44
+              ],
+              [
+                14.14,
+                14.67,
+                13.69,
+                13.71
+              ],
+              [
+                13.93,
+                14.22,
+                13.22,
+                14.12
+              ],
+              [
+                14.12,
+                14.45,
+                13.76,
+                13.93
+              ],
+              [
+                14.02,
+                14.65,
+                13.73,
+                14.54
+              ],
+              [
+                14.6,
+                15.38,
+                14.47,
+                15.35
+              ],
+              [
+                15.06,
+                15.18,
+                14.74,
+                14.88
+              ],
+              [
+                15.11,
+                15.29,
+                14.43,
+                14.5
+              ],
+              [
+                14.79,
+                14.99,
+                14.66,
+                14.99
+              ],
+              [
+                14.99,
+                15.53,
+                14.96,
+                15.52
+              ],
+              [
+                15.62,
+                15.9,
+                15.41,
+                15.69
+              ],
+              [
+                15.69,
+                16.05,
+                15.31,
+                15.4
+              ],
+              [
+                15.41,
+                15.64,
+                14.56,
+                14.78
+              ],
+              [
+                14.75,
+                14.95,
+                14.24,
+                14.36
+              ],
+              [
+                14.73,
+                14.73,
+                13.93,
+                13.99
+              ],
+              [
+                13.88,
+                14.46,
+                13.58,
+                13.9
+              ],
+              [
+                13.66,
+                15.4,
+                13.5,
+                15.2
+              ]
+            ]
+          }
+        ],
+        "replay_t5_net_excess_pct": -0.52,
+        "replay_t5_win_rate_pct": 42.6,
+        "replay_samples": 1545
+      },
+      {
+        "pattern": "box_breakout",
+        "display_name": "箱体突破",
+        "family": "breakout",
+        "mode": "direct",
+        "status": "experimental",
+        "expectancy_tier": "negative_watch",
+        "aligned_strategy": "volume_breakout",
+        "hit_count": 3,
+        "signals": [
+          {
+            "pattern": "box_breakout",
+            "display_name": "箱体突破",
+            "family": "breakout",
+            "status": "experimental",
+            "code": "601728",
+            "name": "中国电信",
+            "industry": "通信运营",
+            "trade_date": "2026-11-20",
+            "close": 7.34,
+            "change_pct": 2.66,
+            "proxy_amount": 1365704033.83,
+            "atr20_pct": 3.22,
+            "vol_ratio_20d": 1.51,
+            "overhead_supply_10pct": 0.0,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "volume_breakout",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                6.82,
+                6.94,
+                6.79,
+                6.94
+              ],
+              [
+                6.88,
+                7.0,
+                6.82,
+                6.95
+              ],
+              [
+                7.01,
+                7.01,
+                6.7,
+                6.88
+              ],
+              [
+                6.89,
+                6.99,
+                6.75,
+                6.99
+              ],
+              [
+                7.04,
+                7.05,
+                6.92,
+                7.01
+              ],
+              [
+                7.06,
+                7.06,
+                6.93,
+                7.04
+              ],
+              [
+                7.06,
+                7.27,
+                6.93,
+                7.27
+              ],
+              [
+                7.25,
+                7.26,
+                6.78,
+                6.86
+              ],
+              [
+                6.76,
+                6.76,
+                6.51,
+                6.63
+              ],
+              [
+                6.69,
+                6.91,
+                6.56,
+                6.91
+              ],
+              [
+                6.8,
+                6.89,
+                6.78,
+                6.79
+              ],
+              [
+                6.73,
+                6.83,
+                6.69,
+                6.76
+              ],
+              [
+                6.79,
+                6.84,
+                6.6,
+                6.62
+              ],
+              [
+                6.63,
+                6.65,
+                6.53,
+                6.61
+              ],
+              [
+                6.55,
+                6.74,
+                6.54,
+                6.67
+              ],
+              [
+                6.64,
+                6.96,
+                6.62,
+                6.94
+              ],
+              [
+                6.99,
+                7.0,
+                6.86,
+                6.98
+              ],
+              [
+                7.0,
+                7.08,
+                6.88,
+                7.08
+              ],
+              [
+                7.18,
+                7.18,
+                6.96,
+                7.15
+              ],
+              [
+                7.04,
+                7.34,
+                7.02,
+                7.34
+              ]
+            ]
+          },
+          {
+            "pattern": "box_breakout",
+            "display_name": "箱体突破",
+            "family": "breakout",
+            "status": "experimental",
+            "code": "600886",
+            "name": "国投电力",
+            "industry": "电力",
+            "trade_date": "2026-11-20",
+            "close": 16.82,
+            "change_pct": 3.96,
+            "proxy_amount": 868291981.69,
+            "atr20_pct": 2.53,
+            "vol_ratio_20d": 1.73,
+            "overhead_supply_10pct": 0.0,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "volume_breakout",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                15.77,
+                16.07,
+                15.7,
+                15.88
+              ],
+              [
+                15.81,
+                16.03,
+                15.68,
+                15.91
+              ],
+              [
+                15.89,
+                15.97,
+                15.74,
+                15.88
+              ],
+              [
+                15.92,
+                16.28,
+                15.83,
+                16.24
+              ],
+              [
+                16.16,
+                16.37,
+                16.03,
+                16.13
+              ],
+              [
+                16.13,
+                16.21,
+                15.7,
+                15.89
+              ],
+              [
+                15.88,
+                16.03,
+                15.51,
+                15.82
+              ],
+              [
+                15.82,
+                16.06,
+                15.49,
+                15.61
+              ],
+              [
+                15.61,
+                15.63,
+                15.08,
+                15.46
+              ],
+              [
+                15.35,
+                15.87,
+                15.29,
+                15.81
+              ],
+              [
+                15.8,
+                15.81,
+                15.6,
+                15.72
+              ],
+              [
+                15.66,
+                15.67,
+                15.48,
+                15.55
+              ],
+              [
+                15.57,
+                15.9,
+                15.43,
+                15.48
+              ],
+              [
+                15.48,
+                15.66,
+                15.34,
+                15.6
+              ],
+              [
+                15.49,
+                15.8,
+                15.45,
+                15.65
+              ],
+              [
+                15.71,
+                16.04,
+                15.62,
+                15.87
+              ],
+              [
+                15.91,
+                16.28,
+                15.77,
+                15.92
+              ],
+              [
+                16.0,
+                16.2,
+                15.76,
+                16.16
+              ],
+              [
+                16.2,
+                16.34,
+                16.05,
+                16.18
+              ],
+              [
+                16.2,
+                16.89,
+                16.12,
+                16.82
+              ]
+            ]
+          },
+          {
+            "pattern": "box_breakout",
+            "display_name": "箱体突破",
+            "family": "breakout",
+            "status": "experimental",
+            "code": "603998",
+            "name": "方盛制药",
+            "industry": "中药生产",
+            "trade_date": "2026-11-20",
+            "close": 11.11,
+            "change_pct": 2.78,
+            "proxy_amount": 357544230.95,
+            "atr20_pct": 3.2,
+            "vol_ratio_20d": 2.64,
+            "overhead_supply_10pct": 0.0,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "volume_breakout",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                10.15,
+                10.56,
+                10.15,
+                10.5
+              ],
+              [
+                10.45,
+                10.56,
+                10.27,
+                10.29
+              ],
+              [
+                10.3,
+                10.6,
+                10.24,
+                10.39
+              ],
+              [
+                10.29,
+                10.31,
+                9.67,
+                9.67
+              ],
+              [
+                9.61,
+                10.07,
+                9.57,
+                9.91
+              ],
+              [
+                9.91,
+                10.0,
+                9.78,
+                9.88
+              ],
+              [
+                9.82,
+                10.1,
+                9.81,
+                10.0
+              ],
+              [
+                10.0,
+                10.3,
+                9.98,
+                10.2
+              ],
+              [
+                10.14,
+                10.33,
+                10.14,
+                10.31
+              ],
+              [
+                10.17,
+                10.4,
+                10.16,
+                10.2
+              ],
+              [
+                10.3,
+                10.31,
+                10.08,
+                10.13
+              ],
+              [
+                10.2,
+                10.21,
+                10.07,
+                10.09
+              ],
+              [
+                10.1,
+                10.14,
+                9.98,
+                10.01
+              ],
+              [
+                10.04,
+                10.04,
+                9.91,
+                9.93
+              ],
+              [
+                9.93,
+                9.96,
+                9.66,
+                9.69
+              ],
+              [
+                9.69,
+                10.21,
+                9.65,
+                10.16
+              ],
+              [
+                10.08,
+                10.75,
+                10.08,
+                10.54
+              ],
+              [
+                10.57,
+                10.68,
+                10.44,
+                10.58
+              ],
+              [
+                10.59,
+                11.04,
+                10.51,
+                10.81
+              ],
+              [
+                10.68,
+                11.27,
+                10.65,
+                11.11
+              ]
+            ]
+          }
+        ],
+        "replay_t5_net_excess_pct": -0.6,
+        "replay_t5_win_rate_pct": 41.0,
+        "replay_samples": 5109
+      },
+      {
+        "pattern": "double_bottom_breakout",
+        "display_name": "双底突破",
+        "family": "bottom_reversal",
+        "mode": "direct",
+        "status": "experimental",
+        "expectancy_tier": "negative_watch",
+        "aligned_strategy": null,
+        "hit_count": 2,
+        "signals": [
+          {
+            "pattern": "double_bottom_breakout",
+            "display_name": "双底突破",
+            "family": "bottom_reversal",
+            "status": "experimental",
+            "code": "601083",
+            "name": "锦江航运",
+            "industry": "港口航运",
+            "trade_date": "2026-11-20",
+            "close": 14.22,
+            "change_pct": 3.42,
+            "proxy_amount": 303251289.05,
+            "atr20_pct": 3.95,
+            "vol_ratio_20d": 1.43,
+            "overhead_supply_10pct": 6.46,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                12.23,
+                12.38,
+                11.98,
+                12.07
+              ],
+              [
+                12.15,
+                12.56,
+                12.13,
+                12.27
+              ],
+              [
+                12.28,
+                12.37,
+                12.07,
+                12.21
+              ],
+              [
+                12.26,
+                12.5,
+                12.08,
+                12.45
+              ],
+              [
+                12.89,
+                13.7,
+                12.89,
+                13.7
+              ],
+              [
+                13.87,
+                14.53,
+                13.63,
+                13.85
+              ],
+              [
+                13.85,
+                14.71,
+                13.74,
+                14.57
+              ],
+              [
+                14.57,
+                15.03,
+                14.1,
+                14.33
+              ],
+              [
+                14.28,
+                14.33,
+                13.87,
+                14.22
+              ],
+              [
+                13.92,
+                14.11,
+                13.54,
+                13.96
+              ],
+              [
+                14.07,
+                14.15,
+                13.65,
+                13.68
+              ],
+              [
+                13.7,
+                13.78,
+                13.38,
+                13.45
+              ],
+              [
+                13.42,
+                13.57,
+                13.39,
+                13.51
+              ],
+              [
+                13.58,
+                13.62,
+                13.33,
+                13.38
+              ],
+              [
+                13.39,
+                13.6,
+                13.33,
+                13.42
+              ],
+              [
+                13.36,
+                13.48,
+                13.16,
+                13.35
+              ],
+              [
+                13.37,
+                13.69,
+                13.35,
+                13.66
+              ],
+              [
+                13.53,
+                14.12,
+                13.19,
+                13.86
+              ],
+              [
+                13.76,
+                14.01,
+                13.51,
+                13.75
+              ],
+              [
+                13.55,
+                14.25,
+                13.55,
+                14.22
+              ]
+            ]
+          },
+          {
+            "pattern": "double_bottom_breakout",
+            "display_name": "双底突破",
+            "family": "bottom_reversal",
+            "status": "experimental",
+            "code": "002567",
+            "name": "唐人神",
+            "industry": "畜牧业",
+            "trade_date": "2026-11-20",
+            "close": 3.77,
+            "change_pct": 5.31,
+            "proxy_amount": 196934363.64,
+            "atr20_pct": 3.2,
+            "vol_ratio_20d": 2.6,
+            "overhead_supply_10pct": 43.42,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                3.62,
+                3.66,
+                3.56,
+                3.6
+              ],
+              [
+                3.59,
+                3.65,
+                3.54,
+                3.55
+              ],
+              [
+                3.56,
+                3.58,
+                3.49,
+                3.51
+              ],
+              [
+                3.51,
+                3.55,
+                3.49,
+                3.5
+              ],
+              [
+                3.5,
+                3.52,
+                3.45,
+                3.45
+              ],
+              [
+                3.46,
+                3.53,
+                3.4,
+                3.49
+              ],
+              [
+                3.48,
+                3.62,
+                3.46,
+                3.58
+              ],
+              [
+                3.56,
+                3.64,
+                3.53,
+                3.58
+              ],
+              [
+                3.57,
+                3.66,
+                3.56,
+                3.65
+              ],
+              [
+                3.6,
+                3.69,
+                3.59,
+                3.67
+              ],
+              [
+                3.7,
+                3.77,
+                3.68,
+                3.75
+              ],
+              [
+                3.74,
+                3.76,
+                3.7,
+                3.76
+              ],
+              [
+                3.74,
+                3.77,
+                3.69,
+                3.7
+              ],
+              [
+                3.7,
+                3.77,
+                3.68,
+                3.72
+              ],
+              [
+                3.73,
+                3.88,
+                3.71,
+                3.85
+              ],
+              [
+                3.81,
+                3.88,
+                3.79,
+                3.83
+              ],
+              [
+                3.8,
+                3.83,
+                3.72,
+                3.74
+              ],
+              [
+                3.73,
+                3.76,
+                3.68,
+                3.72
+              ],
+              [
+                3.7,
+                3.74,
+                3.55,
+                3.58
+              ],
+              [
+                3.53,
+                3.88,
+                3.47,
+                3.77
+              ]
+            ]
+          }
+        ],
+        "replay_t5_net_excess_pct": -0.38,
+        "replay_t5_win_rate_pct": 41.1,
+        "replay_samples": 1215
+      },
+      {
+        "pattern": "ma20_shrink_pullback",
+        "display_name": "20日线低波缩量回踩",
+        "family": "trend_continuation",
+        "mode": "direct",
+        "status": "experimental",
+        "expectancy_tier": "negative_watch",
+        "aligned_strategy": "shrink_pullback",
+        "hit_count": 17,
+        "signals": [
+          {
+            "pattern": "ma20_shrink_pullback",
+            "display_name": "20日线低波缩量回踩",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "300760",
+            "name": "迈瑞医疗",
+            "industry": "医疗器械",
+            "trade_date": "2026-11-20",
+            "close": 183.81,
+            "change_pct": -0.54,
+            "proxy_amount": 1652089220.93,
+            "atr20_pct": 2.9,
+            "vol_ratio_20d": 0.79,
+            "overhead_supply_10pct": 4.43,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "shrink_pullback",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                175.15,
+                182.53,
+                174.97,
+                182.44
+              ],
+              [
+                180.63,
+                184.68,
+                176.29,
+                176.54
+              ],
+              [
+                175.75,
+                176.63,
+                171.65,
+                174.06
+              ],
+              [
+                173.76,
+                178.83,
+                173.33,
+                177.74
+              ],
+              [
+                173.76,
+                182.07,
+                173.76,
+                180.47
+              ],
+              [
+                178.73,
+                185.63,
+                177.24,
+                178.02
+              ],
+              [
+                178.02,
+                185.2,
+                177.55,
+                184.55
+              ],
+              [
+                182.75,
+                185.34,
+                177.84,
+                179.72
+              ],
+              [
+                180.7,
+                183.98,
+                178.52,
+                182.79
+              ],
+              [
+                182.76,
+                184.69,
+                181.02,
+                182.85
+              ],
+              [
+                182.06,
+                183.5,
+                179.65,
+                181.1
+              ],
+              [
+                180.01,
+                180.72,
+                177.01,
+                178.92
+              ],
+              [
+                178.84,
+                178.84,
+                176.43,
+                176.79
+              ],
+              [
+                176.85,
+                178.07,
+                174.4,
+                177.51
+              ],
+              [
+                176.7,
+                181.0,
+                175.14,
+                179.4
+              ],
+              [
+                180.57,
+                184.5,
+                179.02,
+                184.3
+              ],
+              [
+                184.0,
+                185.91,
+                182.11,
+                185.38
+              ],
+              [
+                183.5,
+                186.0,
+                182.64,
+                184.61
+              ],
+              [
+                184.63,
+                185.89,
+                183.08,
+                184.8
+              ],
+              [
+                184.8,
+                185.0,
+                181.1,
+                183.81
+              ]
+            ]
+          },
+          {
+            "pattern": "ma20_shrink_pullback",
+            "display_name": "20日线低波缩量回踩",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "300015",
+            "name": "爱尔眼科",
+            "industry": "医疗服务",
+            "trade_date": "2026-11-20",
+            "close": 8.95,
+            "change_pct": -0.78,
+            "proxy_amount": 636207872.44,
+            "atr20_pct": 2.73,
+            "vol_ratio_20d": 0.75,
+            "overhead_supply_10pct": 17.42,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "shrink_pullback",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                8.11,
+                8.44,
+                8.09,
+                8.42
+              ],
+              [
+                8.36,
+                8.45,
+                8.23,
+                8.25
+              ],
+              [
+                8.25,
+                8.33,
+                8.09,
+                8.12
+              ],
+              [
+                8.1,
+                8.27,
+                8.07,
+                8.22
+              ],
+              [
+                8.2,
+                8.58,
+                8.16,
+                8.52
+              ],
+              [
+                8.48,
+                8.8,
+                8.46,
+                8.68
+              ],
+              [
+                8.67,
+                8.96,
+                8.66,
+                8.93
+              ],
+              [
+                8.9,
+                9.1,
+                8.86,
+                8.92
+              ],
+              [
+                8.93,
+                9.08,
+                8.89,
+                8.99
+              ],
+              [
+                8.9,
+                9.18,
+                8.87,
+                9.01
+              ],
+              [
+                8.97,
+                9.1,
+                8.9,
+                8.93
+              ],
+              [
+                8.92,
+                8.92,
+                8.81,
+                8.85
+              ],
+              [
+                8.84,
+                8.85,
+                8.66,
+                8.68
+              ],
+              [
+                8.68,
+                8.71,
+                8.51,
+                8.65
+              ],
+              [
+                8.62,
+                8.9,
+                8.58,
+                8.84
+              ],
+              [
+                8.86,
+                9.02,
+                8.78,
+                8.99
+              ],
+              [
+                8.94,
+                9.17,
+                8.92,
+                9.15
+              ],
+              [
+                9.1,
+                9.18,
+                8.99,
+                9.08
+              ],
+              [
+                9.05,
+                9.12,
+                8.94,
+                9.02
+              ],
+              [
+                9.0,
+                9.02,
+                8.83,
+                8.95
+              ]
+            ]
+          },
+          {
+            "pattern": "ma20_shrink_pullback",
+            "display_name": "20日线低波缩量回踩",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "600115",
+            "name": "中国东航",
+            "industry": "航空机场",
+            "trade_date": "2026-11-20",
+            "close": 3.44,
+            "change_pct": -2.27,
+            "proxy_amount": 410255837.86,
+            "atr20_pct": 2.92,
+            "vol_ratio_20d": 0.78,
+            "overhead_supply_10pct": 45.8,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "shrink_pullback",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                3.16,
+                3.23,
+                3.16,
+                3.23
+              ],
+              [
+                3.22,
+                3.26,
+                3.2,
+                3.2
+              ],
+              [
+                3.2,
+                3.25,
+                3.17,
+                3.21
+              ],
+              [
+                3.21,
+                3.27,
+                3.2,
+                3.24
+              ],
+              [
+                3.22,
+                3.28,
+                3.21,
+                3.25
+              ],
+              [
+                3.25,
+                3.33,
+                3.24,
+                3.32
+              ],
+              [
+                3.36,
+                3.47,
+                3.36,
+                3.43
+              ],
+              [
+                3.41,
+                3.5,
+                3.4,
+                3.5
+              ],
+              [
+                3.59,
+                3.66,
+                3.57,
+                3.61
+              ],
+              [
+                3.5,
+                3.59,
+                3.47,
+                3.56
+              ],
+              [
+                3.58,
+                3.61,
+                3.51,
+                3.53
+              ],
+              [
+                3.6,
+                3.69,
+                3.59,
+                3.67
+              ],
+              [
+                3.64,
+                3.65,
+                3.54,
+                3.56
+              ],
+              [
+                3.56,
+                3.57,
+                3.5,
+                3.52
+              ],
+              [
+                3.47,
+                3.51,
+                3.44,
+                3.49
+              ],
+              [
+                3.48,
+                3.52,
+                3.46,
+                3.5
+              ],
+              [
+                3.54,
+                3.57,
+                3.47,
+                3.48
+              ],
+              [
+                3.48,
+                3.48,
+                3.39,
+                3.44
+              ],
+              [
+                3.46,
+                3.55,
+                3.43,
+                3.52
+              ],
+              [
+                3.49,
+                3.5,
+                3.41,
+                3.44
+              ]
+            ]
+          },
+          {
+            "pattern": "ma20_shrink_pullback",
+            "display_name": "20日线低波缩量回踩",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "601077",
+            "name": "渝农商行",
+            "industry": "银行",
+            "trade_date": "2026-11-20",
+            "close": 7.29,
+            "change_pct": 0.28,
+            "proxy_amount": 384519358.59,
+            "atr20_pct": 2.54,
+            "vol_ratio_20d": 0.73,
+            "overhead_supply_10pct": 6.34,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "shrink_pullback",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                7.08,
+                7.28,
+                7.06,
+                7.26
+              ],
+              [
+                7.23,
+                7.32,
+                7.15,
+                7.25
+              ],
+              [
+                7.25,
+                7.28,
+                7.09,
+                7.15
+              ],
+              [
+                7.13,
+                7.31,
+                7.11,
+                7.27
+              ],
+              [
+                7.27,
+                7.4,
+                7.22,
+                7.27
+              ],
+              [
+                7.26,
+                7.35,
+                7.07,
+                7.14
+              ],
+              [
+                7.13,
+                7.19,
+                6.92,
+                7.09
+              ],
+              [
+                7.05,
+                7.1,
+                6.97,
+                7.02
+              ],
+              [
+                7.01,
+                7.12,
+                6.9,
+                7.08
+              ],
+              [
+                7.04,
+                7.22,
+                7.04,
+                7.21
+              ],
+              [
+                7.14,
+                7.24,
+                7.08,
+                7.18
+              ],
+              [
+                7.14,
+                7.33,
+                7.1,
+                7.3
+              ],
+              [
+                7.28,
+                7.37,
+                7.24,
+                7.24
+              ],
+              [
+                7.22,
+                7.24,
+                7.08,
+                7.21
+              ],
+              [
+                7.17,
+                7.38,
+                7.12,
+                7.32
+              ],
+              [
+                7.32,
+                7.43,
+                7.29,
+                7.43
+              ],
+              [
+                7.43,
+                7.44,
+                7.28,
+                7.39
+              ],
+              [
+                7.4,
+                7.4,
+                7.22,
+                7.3
+              ],
+              [
+                7.3,
+                7.34,
+                7.23,
+                7.27
+              ],
+              [
+                7.27,
+                7.29,
+                7.16,
+                7.29
+              ]
+            ]
+          },
+          {
+            "pattern": "ma20_shrink_pullback",
+            "display_name": "20日线低波缩量回踩",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "002223",
+            "name": "鱼跃医疗",
+            "industry": "医疗器械",
+            "trade_date": "2026-11-20",
+            "close": 28.06,
+            "change_pct": -2.3,
+            "proxy_amount": 355720036.55,
+            "atr20_pct": 2.98,
+            "vol_ratio_20d": 0.79,
+            "overhead_supply_10pct": 26.42,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "shrink_pullback",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                27.4,
+                28.66,
+                27.21,
+                28.51
+              ],
+              [
+                28.3,
+                28.87,
+                28.12,
+                28.12
+              ],
+              [
+                28.22,
+                28.53,
+                27.99,
+                28.07
+              ],
+              [
+                28.0,
+                28.3,
+                27.47,
+                27.7
+              ],
+              [
+                27.52,
+                27.99,
+                27.4,
+                27.77
+              ],
+              [
+                27.77,
+                28.37,
+                27.54,
+                28.06
+              ],
+              [
+                27.9,
+                28.83,
+                27.88,
+                28.58
+              ],
+              [
+                28.5,
+                28.78,
+                28.2,
+                28.34
+              ],
+              [
+                28.43,
+                29.05,
+                28.12,
+                29.02
+              ],
+              [
+                28.5,
+                29.6,
+                28.41,
+                28.93
+              ],
+              [
+                29.25,
+                29.3,
+                28.3,
+                28.3
+              ],
+              [
+                28.35,
+                28.45,
+                27.81,
+                27.9
+              ],
+              [
+                27.81,
+                27.9,
+                27.2,
+                27.23
+              ],
+              [
+                27.18,
+                27.38,
+                26.93,
+                27.07
+              ],
+              [
+                26.97,
+                28.12,
+                26.72,
+                27.5
+              ],
+              [
+                27.38,
+                28.04,
+                27.28,
+                27.97
+              ],
+              [
+                27.83,
+                28.25,
+                27.75,
+                28.0
+              ],
+              [
+                27.98,
+                28.78,
+                27.92,
+                28.33
+              ],
+              [
+                28.33,
+                28.95,
+                28.27,
+                28.72
+              ],
+              [
+                28.5,
+                28.74,
+                27.66,
+                28.06
+              ]
+            ]
+          },
+          {
+            "pattern": "ma20_shrink_pullback",
+            "display_name": "20日线低波缩量回踩",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "000513",
+            "name": "丽珠集团",
+            "industry": "化学制药",
+            "trade_date": "2026-11-20",
+            "close": 30.85,
+            "change_pct": -1.37,
+            "proxy_amount": 270773939.4,
+            "atr20_pct": 2.97,
+            "vol_ratio_20d": 0.82,
+            "overhead_supply_10pct": 18.43,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "shrink_pullback",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                27.55,
+                28.57,
+                27.55,
+                28.4
+              ],
+              [
+                28.4,
+                28.67,
+                27.9,
+                27.92
+              ],
+              [
+                27.98,
+                28.23,
+                27.69,
+                27.83
+              ],
+              [
+                27.83,
+                27.99,
+                27.5,
+                27.64
+              ],
+              [
+                27.67,
+                28.96,
+                27.2,
+                28.52
+              ],
+              [
+                28.5,
+                29.6,
+                28.4,
+                29.42
+              ],
+              [
+                29.3,
+                30.31,
+                29.21,
+                29.96
+              ],
+              [
+                29.94,
+                30.96,
+                29.82,
+                30.6
+              ],
+              [
+                30.5,
+                31.04,
+                30.25,
+                30.82
+              ],
+              [
+                30.42,
+                31.77,
+                30.27,
+                31.35
+              ],
+              [
+                31.32,
+                31.49,
+                30.91,
+                31.32
+              ],
+              [
+                31.38,
+                31.45,
+                30.81,
+                31.29
+              ],
+              [
+                31.2,
+                31.39,
+                30.72,
+                31.21
+              ],
+              [
+                31.15,
+                32.05,
+                31.0,
+                31.53
+              ],
+              [
+                31.52,
+                32.0,
+                31.2,
+                31.67
+              ],
+              [
+                31.58,
+                32.18,
+                31.42,
+                31.98
+              ],
+              [
+                31.89,
+                32.1,
+                31.24,
+                31.7
+              ],
+              [
+                31.8,
+                32.0,
+                31.45,
+                31.99
+              ],
+              [
+                31.97,
+                32.02,
+                31.25,
+                31.28
+              ],
+              [
+                31.22,
+                31.51,
+                30.74,
+                30.85
+              ]
+            ]
+          },
+          {
+            "pattern": "ma20_shrink_pullback",
+            "display_name": "20日线低波缩量回踩",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "600872",
+            "name": "中炬高新",
+            "industry": "食品",
+            "trade_date": "2026-11-20",
+            "close": 19.45,
+            "change_pct": -1.67,
+            "proxy_amount": 231519194.08,
+            "atr20_pct": 2.93,
+            "vol_ratio_20d": 0.79,
+            "overhead_supply_10pct": 23.66,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "shrink_pullback",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                17.91,
+                18.57,
+                17.91,
+                18.38
+              ],
+              [
+                18.28,
+                18.49,
+                18.01,
+                18.05
+              ],
+              [
+                18.79,
+                19.1,
+                18.51,
+                18.77
+              ],
+              [
+                18.78,
+                19.3,
+                18.7,
+                19.22
+              ],
+              [
+                19.25,
+                19.6,
+                18.98,
+                19.47
+              ],
+              [
+                19.57,
+                19.98,
+                19.48,
+                19.89
+              ],
+              [
+                19.9,
+                20.22,
+                19.82,
+                20.16
+              ],
+              [
+                20.25,
+                20.45,
+                19.69,
+                19.87
+              ],
+              [
+                19.85,
+                20.21,
+                19.79,
+                20.08
+              ],
+              [
+                19.89,
+                20.43,
+                19.8,
+                20.3
+              ],
+              [
+                20.16,
+                20.36,
+                20.07,
+                20.14
+              ],
+              [
+                20.0,
+                20.19,
+                19.29,
+                19.38
+              ],
+              [
+                19.4,
+                19.53,
+                19.15,
+                19.23
+              ],
+              [
+                19.25,
+                19.38,
+                18.84,
+                18.99
+              ],
+              [
+                18.91,
+                19.3,
+                18.81,
+                19.07
+              ],
+              [
+                19.0,
+                19.46,
+                18.96,
+                19.41
+              ],
+              [
+                19.3,
+                19.89,
+                19.25,
+                19.64
+              ],
+              [
+                19.67,
+                19.9,
+                19.55,
+                19.76
+              ],
+              [
+                19.79,
+                20.08,
+                19.55,
+                19.78
+              ],
+              [
+                19.74,
+                19.93,
+                19.3,
+                19.45
+              ]
+            ]
+          },
+          {
+            "pattern": "ma20_shrink_pullback",
+            "display_name": "20日线低波缩量回踩",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "603658",
+            "name": "安图生物",
+            "industry": "生物医药",
+            "trade_date": "2026-11-20",
+            "close": 38.34,
+            "change_pct": -1.57,
+            "proxy_amount": 194337677.75,
+            "atr20_pct": 3.06,
+            "vol_ratio_20d": 0.8,
+            "overhead_supply_10pct": 32.53,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "shrink_pullback",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                35.0,
+                36.27,
+                34.81,
+                36.15
+              ],
+              [
+                37.4,
+                39.44,
+                37.4,
+                38.19
+              ],
+              [
+                38.3,
+                38.95,
+                37.71,
+                38.15
+              ],
+              [
+                37.77,
+                38.3,
+                37.2,
+                37.5
+              ],
+              [
+                37.5,
+                38.5,
+                37.07,
+                38.18
+              ],
+              [
+                37.98,
+                39.09,
+                37.86,
+                38.8
+              ],
+              [
+                38.55,
+                39.4,
+                38.37,
+                39.13
+              ],
+              [
+                38.99,
+                39.42,
+                38.67,
+                38.94
+              ],
+              [
+                38.98,
+                40.12,
+                38.41,
+                39.99
+              ],
+              [
+                39.44,
+                40.16,
+                39.01,
+                39.76
+              ],
+              [
+                40.06,
+                40.1,
+                39.16,
+                39.21
+              ],
+              [
+                39.79,
+                39.8,
+                38.7,
+                39.1
+              ],
+              [
+                39.1,
+                39.38,
+                38.82,
+                39.05
+              ],
+              [
+                39.02,
+                39.05,
+                38.08,
+                38.22
+              ],
+              [
+                38.86,
+                38.97,
+                37.84,
+                38.3
+              ],
+              [
+                38.29,
+                39.5,
+                38.08,
+                39.2
+              ],
+              [
+                39.04,
+                39.41,
+                38.77,
+                38.94
+              ],
+              [
+                38.8,
+                39.18,
+                38.4,
+                38.82
+              ],
+              [
+                38.85,
+                39.33,
+                38.78,
+                38.95
+              ],
+              [
+                38.95,
+                38.98,
+                38.03,
+                38.34
+              ]
+            ]
+          },
+          {
+            "pattern": "ma20_shrink_pullback",
+            "display_name": "20日线低波缩量回踩",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "600998",
+            "name": "九州通",
+            "industry": "医药商业",
+            "trade_date": "2026-11-20",
+            "close": 5.17,
+            "change_pct": -1.15,
+            "proxy_amount": 179857354.17,
+            "atr20_pct": 2.45,
+            "vol_ratio_20d": 0.8,
+            "overhead_supply_10pct": 23.55,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "shrink_pullback",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                4.91,
+                5.2,
+                4.87,
+                5.13
+              ],
+              [
+                5.13,
+                5.23,
+                5.1,
+                5.1
+              ],
+              [
+                5.11,
+                5.18,
+                5.06,
+                5.17
+              ],
+              [
+                5.17,
+                5.19,
+                5.09,
+                5.15
+              ],
+              [
+                5.15,
+                5.27,
+                5.1,
+                5.22
+              ],
+              [
+                5.23,
+                5.33,
+                5.22,
+                5.32
+              ],
+              [
+                5.33,
+                5.34,
+                5.22,
+                5.28
+              ],
+              [
+                5.29,
+                5.41,
+                5.28,
+                5.34
+              ],
+              [
+                5.34,
+                5.36,
+                5.21,
+                5.25
+              ],
+              [
+                5.19,
+                5.28,
+                5.15,
+                5.24
+              ],
+              [
+                5.25,
+                5.28,
+                5.19,
+                5.19
+              ],
+              [
+                5.2,
+                5.21,
+                5.15,
+                5.18
+              ],
+              [
+                5.16,
+                5.22,
+                5.12,
+                5.15
+              ],
+              [
+                5.15,
+                5.16,
+                5.05,
+                5.14
+              ],
+              [
+                5.12,
+                5.14,
+                5.06,
+                5.09
+              ],
+              [
+                5.1,
+                5.26,
+                5.09,
+                5.25
+              ],
+              [
+                5.22,
+                5.29,
+                5.2,
+                5.27
+              ],
+              [
+                5.24,
+                5.32,
+                5.23,
+                5.32
+              ],
+              [
+                5.32,
+                5.34,
+                5.21,
+                5.23
+              ],
+              [
+                5.19,
+                5.21,
+                5.11,
+                5.17
+              ]
+            ]
+          },
+          {
+            "pattern": "ma20_shrink_pullback",
+            "display_name": "20日线低波缩量回踩",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "603323",
+            "name": "苏农银行",
+            "industry": "银行",
+            "trade_date": "2026-11-20",
+            "close": 4.5,
+            "change_pct": -1.53,
+            "proxy_amount": 171689724.0,
+            "atr20_pct": 2.19,
+            "vol_ratio_20d": 0.82,
+            "overhead_supply_10pct": 17.2,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "shrink_pullback",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                4.25,
+                4.37,
+                4.24,
+                4.35
+              ],
+              [
+                4.35,
+                4.42,
+                4.34,
+                4.38
+              ],
+              [
+                4.39,
+                4.42,
+                4.34,
+                4.34
+              ],
+              [
+                4.3,
+                4.4,
+                4.29,
+                4.38
+              ],
+              [
+                4.36,
+                4.45,
+                4.32,
+                4.43
+              ],
+              [
+                4.41,
+                4.5,
+                4.38,
+                4.43
+              ],
+              [
+                4.43,
+                4.48,
+                4.37,
+                4.43
+              ],
+              [
+                4.43,
+                4.51,
+                4.42,
+                4.47
+              ],
+              [
+                4.47,
+                4.48,
+                4.38,
+                4.43
+              ],
+              [
+                4.41,
+                4.49,
+                4.37,
+                4.49
+              ],
+              [
+                4.46,
+                4.59,
+                4.45,
+                4.56
+              ],
+              [
+                4.54,
+                4.59,
+                4.51,
+                4.57
+              ],
+              [
+                4.56,
+                4.6,
+                4.54,
+                4.55
+              ],
+              [
+                4.55,
+                4.58,
+                4.5,
+                4.56
+              ],
+              [
+                4.54,
+                4.67,
+                4.52,
+                4.63
+              ],
+              [
+                4.63,
+                4.66,
+                4.61,
+                4.66
+              ],
+              [
+                4.65,
+                4.68,
+                4.62,
+                4.65
+              ],
+              [
+                4.63,
+                4.66,
+                4.57,
+                4.6
+              ],
+              [
+                4.6,
+                4.64,
+                4.55,
+                4.57
+              ],
+              [
+                4.54,
+                4.54,
+                4.47,
+                4.5
+              ]
+            ]
+          }
+        ],
+        "replay_t5_net_excess_pct": -0.09,
+        "replay_t5_win_rate_pct": 43.7,
+        "replay_samples": 2293
+      },
+      {
+        "pattern": "shooting_star_confirm",
+        "display_name": "仙人指路确认",
+        "family": "breakout",
+        "mode": "observe_confirm",
+        "status": "experimental",
+        "expectancy_tier": "negative_watch",
+        "aligned_strategy": null,
+        "hit_count": 0,
+        "signals": [],
+        "replay_t5_net_excess_pct": -1.51,
+        "replay_t5_win_rate_pct": 37.5,
+        "replay_samples": 1013
+      },
+      {
+        "pattern": "single_yang_hold",
+        "display_name": "单阳不破",
+        "family": "trend_continuation",
+        "mode": "observe_confirm",
+        "status": "experimental",
+        "expectancy_tier": "negative_watch",
+        "aligned_strategy": null,
+        "hit_count": 8,
+        "signals": [
+          {
+            "pattern": "single_yang_hold",
+            "display_name": "单阳不破",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "600103",
+            "name": "青山纸业",
+            "industry": "造纸印刷",
+            "trade_date": "2026-11-20",
+            "close": 3.21,
+            "change_pct": -4.46,
+            "proxy_amount": 1132837775.06,
+            "atr20_pct": 6.07,
+            "vol_ratio_20d": 1.98,
+            "overhead_supply_10pct": 23.62,
+            "observe_date": "2026-11-17",
+            "observe_lag_days": 3,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                3.03,
+                3.07,
+                2.98,
+                3.02
+              ],
+              [
+                3.05,
+                3.09,
+                2.95,
+                2.95
+              ],
+              [
+                2.99,
+                3.02,
+                2.91,
+                2.97
+              ],
+              [
+                2.95,
+                3.0,
+                2.88,
+                2.89
+              ],
+              [
+                2.84,
+                2.95,
+                2.79,
+                2.79
+              ],
+              [
+                2.81,
+                2.86,
+                2.76,
+                2.85
+              ],
+              [
+                2.83,
+                2.91,
+                2.79,
+                2.83
+              ],
+              [
+                2.83,
+                2.93,
+                2.79,
+                2.92
+              ],
+              [
+                2.88,
+                3.0,
+                2.86,
+                2.97
+              ],
+              [
+                2.88,
+                2.94,
+                2.86,
+                2.9
+              ],
+              [
+                2.93,
+                2.96,
+                2.91,
+                2.92
+              ],
+              [
+                2.95,
+                2.98,
+                2.93,
+                2.98
+              ],
+              [
+                2.95,
+                3.28,
+                2.95,
+                3.28
+              ],
+              [
+                3.61,
+                3.61,
+                3.29,
+                3.33
+              ],
+              [
+                3.35,
+                3.37,
+                3.13,
+                3.18
+              ],
+              [
+                3.12,
+                3.35,
+                3.11,
+                3.15
+              ],
+              [
+                3.07,
+                3.46,
+                3.03,
+                3.35
+              ],
+              [
+                3.25,
+                3.28,
+                3.06,
+                3.14
+              ],
+              [
+                3.07,
+                3.45,
+                2.96,
+                3.36
+              ],
+              [
+                3.16,
+                3.35,
+                3.16,
+                3.21
+              ]
+            ]
+          },
+          {
+            "pattern": "single_yang_hold",
+            "display_name": "单阳不破",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "688775",
+            "name": "影石创新",
+            "industry": "电子设备制造",
+            "trade_date": "2026-11-20",
+            "close": 108.36,
+            "change_pct": -0.15,
+            "proxy_amount": 1082618156.14,
+            "atr20_pct": 7.4,
+            "vol_ratio_20d": 1.05,
+            "overhead_supply_10pct": 26.76,
+            "observe_date": "2026-11-17",
+            "observe_lag_days": 3,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                103.88,
+                105.0,
+                101.0,
+                103.7
+              ],
+              [
+                102.66,
+                104.79,
+                101.05,
+                101.49
+              ],
+              [
+                100.77,
+                104.18,
+                97.92,
+                99.11
+              ],
+              [
+                97.41,
+                97.51,
+                88.77,
+                89.05
+              ],
+              [
+                86.66,
+                92.69,
+                86.51,
+                86.69
+              ],
+              [
+                87.2,
+                99.6,
+                83.12,
+                97.56
+              ],
+              [
+                96.98,
+                101.01,
+                94.85,
+                95.69
+              ],
+              [
+                96.0,
+                105.68,
+                94.7,
+                103.63
+              ],
+              [
+                103.9,
+                112.4,
+                103.63,
+                110.8
+              ],
+              [
+                107.5,
+                113.9,
+                106.4,
+                106.66
+              ],
+              [
+                108.0,
+                110.74,
+                104.8,
+                106.68
+              ],
+              [
+                108.01,
+                114.88,
+                107.02,
+                110.88
+              ],
+              [
+                110.76,
+                111.28,
+                106.34,
+                107.69
+              ],
+              [
+                106.5,
+                106.9,
+                101.21,
+                101.8
+              ],
+              [
+                102.26,
+                104.4,
+                99.5,
+                99.73
+              ],
+              [
+                99.45,
+                106.29,
+                97.95,
+                100.97
+              ],
+              [
+                98.88,
+                120.84,
+                98.88,
+                115.2
+              ],
+              [
+                116.09,
+                116.88,
+                112.0,
+                114.04
+              ],
+              [
+                112.01,
+                114.88,
+                107.2,
+                108.52
+              ],
+              [
+                106.3,
+                110.71,
+                105.0,
+                108.36
+              ]
+            ]
+          },
+          {
+            "pattern": "single_yang_hold",
+            "display_name": "单阳不破",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "002739",
+            "name": "儒意电影",
+            "industry": "影视动漫",
+            "trade_date": "2026-11-20",
+            "close": 9.74,
+            "change_pct": 1.67,
+            "proxy_amount": 946580085.6,
+            "atr20_pct": 4.06,
+            "vol_ratio_20d": 1.26,
+            "overhead_supply_10pct": 20.65,
+            "observe_date": "2026-11-13",
+            "observe_lag_days": 5,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                8.25,
+                8.52,
+                8.22,
+                8.5
+              ],
+              [
+                8.48,
+                8.64,
+                8.36,
+                8.38
+              ],
+              [
+                8.37,
+                8.49,
+                8.34,
+                8.4
+              ],
+              [
+                8.36,
+                8.53,
+                8.36,
+                8.45
+              ],
+              [
+                8.39,
+                8.46,
+                8.23,
+                8.25
+              ],
+              [
+                8.31,
+                8.87,
+                8.23,
+                8.84
+              ],
+              [
+                8.76,
+                8.88,
+                8.67,
+                8.76
+              ],
+              [
+                8.76,
+                8.94,
+                8.74,
+                8.83
+              ],
+              [
+                8.84,
+                9.27,
+                8.79,
+                9.25
+              ],
+              [
+                9.03,
+                9.38,
+                9.03,
+                9.24
+              ],
+              [
+                9.21,
+                9.47,
+                9.13,
+                9.15
+              ],
+              [
+                9.19,
+                9.5,
+                9.13,
+                9.32
+              ],
+              [
+                9.25,
+                9.35,
+                9.07,
+                9.21
+              ],
+              [
+                9.17,
+                9.27,
+                9.07,
+                9.14
+              ],
+              [
+                9.12,
+                10.05,
+                9.12,
+                10.05
+              ],
+              [
+                10.11,
+                10.55,
+                9.93,
+                10.2
+              ],
+              [
+                10.17,
+                10.2,
+                9.66,
+                9.78
+              ],
+              [
+                9.8,
+                10.1,
+                9.61,
+                9.8
+              ],
+              [
+                9.79,
+                9.85,
+                9.53,
+                9.58
+              ],
+              [
+                9.38,
+                9.95,
+                9.15,
+                9.74
+              ]
+            ]
+          },
+          {
+            "pattern": "single_yang_hold",
+            "display_name": "单阳不破",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "000400",
+            "name": "许继电气",
+            "industry": "输变电设备",
+            "trade_date": "2026-11-20",
+            "close": 25.74,
+            "change_pct": -0.19,
+            "proxy_amount": 595577571.58,
+            "atr20_pct": 3.81,
+            "vol_ratio_20d": 0.86,
+            "overhead_supply_10pct": 8.57,
+            "observe_date": "2026-11-16",
+            "observe_lag_days": 4,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                22.8,
+                23.35,
+                22.56,
+                23.09
+              ],
+              [
+                23.0,
+                23.2,
+                22.7,
+                22.71
+              ],
+              [
+                22.59,
+                22.9,
+                22.51,
+                22.59
+              ],
+              [
+                22.6,
+                22.6,
+                22.01,
+                22.2
+              ],
+              [
+                21.43,
+                22.53,
+                20.65,
+                21.99
+              ],
+              [
+                21.96,
+                24.19,
+                21.92,
+                23.9
+              ],
+              [
+                23.9,
+                24.94,
+                23.6,
+                24.79
+              ],
+              [
+                25.0,
+                25.04,
+                24.37,
+                24.62
+              ],
+              [
+                24.62,
+                24.99,
+                24.45,
+                24.68
+              ],
+              [
+                24.25,
+                25.5,
+                24.16,
+                25.25
+              ],
+              [
+                25.27,
+                25.4,
+                24.52,
+                24.54
+              ],
+              [
+                24.69,
+                24.87,
+                24.26,
+                24.55
+              ],
+              [
+                24.51,
+                24.95,
+                24.45,
+                24.58
+              ],
+              [
+                24.5,
+                24.51,
+                23.9,
+                24.01
+              ],
+              [
+                23.95,
+                24.9,
+                23.8,
+                24.49
+              ],
+              [
+                24.4,
+                26.5,
+                24.4,
+                26.19
+              ],
+              [
+                26.19,
+                26.96,
+                25.88,
+                26.1
+              ],
+              [
+                25.98,
+                26.4,
+                25.58,
+                25.74
+              ],
+              [
+                25.81,
+                26.35,
+                25.69,
+                25.79
+              ],
+              [
+                25.4,
+                26.16,
+                25.31,
+                25.74
+              ]
+            ]
+          },
+          {
+            "pattern": "single_yang_hold",
+            "display_name": "单阳不破",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "600499",
+            "name": "科达制造",
+            "industry": "专用设备",
+            "trade_date": "2026-11-20",
+            "close": 12.19,
+            "change_pct": 0.08,
+            "proxy_amount": 318913550.02,
+            "atr20_pct": 3.21,
+            "vol_ratio_20d": 0.93,
+            "overhead_supply_10pct": 10.19,
+            "observe_date": "2026-11-16",
+            "observe_lag_days": 4,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                10.43,
+                10.68,
+                10.27,
+                10.54
+              ],
+              [
+                10.54,
+                10.62,
+                10.28,
+                10.28
+              ],
+              [
+                10.35,
+                10.44,
+                10.28,
+                10.35
+              ],
+              [
+                10.55,
+                10.72,
+                10.41,
+                10.68
+              ],
+              [
+                10.57,
+                10.78,
+                10.36,
+                10.68
+              ],
+              [
+                10.74,
+                10.79,
+                10.51,
+                10.7
+              ],
+              [
+                10.7,
+                10.99,
+                10.63,
+                10.92
+              ],
+              [
+                10.86,
+                11.12,
+                10.86,
+                11.03
+              ],
+              [
+                11.11,
+                11.69,
+                11.06,
+                11.45
+              ],
+              [
+                11.2,
+                11.58,
+                11.13,
+                11.4
+              ],
+              [
+                11.52,
+                11.56,
+                11.13,
+                11.15
+              ],
+              [
+                11.22,
+                11.44,
+                11.1,
+                11.39
+              ],
+              [
+                11.36,
+                11.44,
+                11.1,
+                11.4
+              ],
+              [
+                11.4,
+                11.49,
+                11.28,
+                11.31
+              ],
+              [
+                11.33,
+                11.46,
+                11.23,
+                11.27
+              ],
+              [
+                11.31,
+                12.19,
+                11.25,
+                12.14
+              ],
+              [
+                12.1,
+                12.48,
+                11.94,
+                12.44
+              ],
+              [
+                12.42,
+                12.52,
+                12.14,
+                12.32
+              ],
+              [
+                12.31,
+                12.36,
+                12.02,
+                12.18
+              ],
+              [
+                12.03,
+                12.33,
+                11.97,
+                12.19
+              ]
+            ]
+          },
+          {
+            "pattern": "single_yang_hold",
+            "display_name": "单阳不破",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "600483",
+            "name": "福能股份",
+            "industry": "电力",
+            "trade_date": "2026-11-20",
+            "close": 12.1,
+            "change_pct": 0.92,
+            "proxy_amount": 272822338.6,
+            "atr20_pct": 3.08,
+            "vol_ratio_20d": 1.17,
+            "overhead_supply_10pct": 3.72,
+            "observe_date": "2026-11-16",
+            "observe_lag_days": 4,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                10.37,
+                10.62,
+                10.33,
+                10.53
+              ],
+              [
+                10.53,
+                10.57,
+                10.36,
+                10.41
+              ],
+              [
+                10.1,
+                10.57,
+                9.98,
+                10.52
+              ],
+              [
+                10.49,
+                10.72,
+                10.46,
+                10.65
+              ],
+              [
+                10.72,
+                10.88,
+                10.58,
+                10.81
+              ],
+              [
+                10.8,
+                10.96,
+                10.44,
+                10.49
+              ],
+              [
+                10.53,
+                10.8,
+                10.39,
+                10.76
+              ],
+              [
+                10.77,
+                10.91,
+                10.6,
+                10.63
+              ],
+              [
+                10.6,
+                10.8,
+                10.41,
+                10.75
+              ],
+              [
+                10.59,
+                10.98,
+                10.51,
+                10.87
+              ],
+              [
+                10.9,
+                11.06,
+                10.79,
+                11.01
+              ],
+              [
+                11.0,
+                11.08,
+                10.86,
+                10.92
+              ],
+              [
+                10.9,
+                11.0,
+                10.8,
+                10.8
+              ],
+              [
+                10.79,
+                10.99,
+                10.64,
+                10.97
+              ],
+              [
+                10.93,
+                11.3,
+                10.89,
+                11.25
+              ],
+              [
+                11.26,
+                11.82,
+                11.23,
+                11.75
+              ],
+              [
+                11.7,
+                12.07,
+                11.7,
+                11.97
+              ],
+              [
+                12.01,
+                12.4,
+                11.9,
+                12.2
+              ],
+              [
+                12.24,
+                12.4,
+                11.91,
+                11.99
+              ],
+              [
+                11.99,
+                12.17,
+                11.86,
+                12.1
+              ]
+            ]
+          },
+          {
+            "pattern": "single_yang_hold",
+            "display_name": "单阳不破",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "600301",
+            "name": "华锡有色",
+            "industry": "基本金属",
+            "trade_date": "2026-11-20",
+            "close": 44.45,
+            "change_pct": -0.67,
+            "proxy_amount": 237880579.88,
+            "atr20_pct": 3.2,
+            "vol_ratio_20d": 0.77,
+            "overhead_supply_10pct": 74.36,
+            "observe_date": "2026-11-17",
+            "observe_lag_days": 3,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                45.68,
+                46.65,
+                45.4,
+                45.58
+              ],
+              [
+                45.73,
+                46.08,
+                44.66,
+                44.78
+              ],
+              [
+                45.15,
+                45.19,
+                44.03,
+                44.14
+              ],
+              [
+                44.13,
+                44.44,
+                43.16,
+                43.19
+              ],
+              [
+                43.0,
+                43.01,
+                41.6,
+                41.63
+              ],
+              [
+                42.47,
+                43.3,
+                42.05,
+                42.79
+              ],
+              [
+                42.88,
+                43.46,
+                42.5,
+                42.61
+              ],
+              [
+                42.85,
+                45.38,
+                42.4,
+                45.0
+              ],
+              [
+                44.8,
+                45.99,
+                44.44,
+                45.46
+              ],
+              [
+                44.31,
+                45.8,
+                44.2,
+                45.69
+              ],
+              [
+                45.58,
+                45.73,
+                44.35,
+                44.55
+              ],
+              [
+                44.81,
+                44.91,
+                43.85,
+                44.08
+              ],
+              [
+                43.97,
+                44.65,
+                43.6,
+                44.55
+              ],
+              [
+                44.44,
+                44.5,
+                43.91,
+                44.07
+              ],
+              [
+                44.01,
+                44.42,
+                43.76,
+                43.8
+              ],
+              [
+                43.8,
+                44.03,
+                43.03,
+                43.17
+              ],
+              [
+                42.99,
+                46.28,
+                42.82,
+                45.85
+              ],
+              [
+                45.5,
+                45.85,
+                44.2,
+                44.7
+              ],
+              [
+                44.4,
+                45.25,
+                44.27,
+                44.75
+              ],
+              [
+                44.32,
+                44.52,
+                43.66,
+                44.45
+              ]
+            ]
+          },
+          {
+            "pattern": "single_yang_hold",
+            "display_name": "单阳不破",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "002452",
+            "name": "长高电气",
+            "industry": "输变电设备",
+            "trade_date": "2026-11-20",
+            "close": 10.27,
+            "change_pct": 0.29,
+            "proxy_amount": 212762202.76,
+            "atr20_pct": 3.65,
+            "vol_ratio_20d": 1.27,
+            "overhead_supply_10pct": 9.19,
+            "observe_date": "2026-11-17",
+            "observe_lag_days": 3,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                9.57,
+                9.87,
+                9.46,
+                9.51
+              ],
+              [
+                9.47,
+                9.59,
+                9.25,
+                9.25
+              ],
+              [
+                9.28,
+                9.52,
+                9.28,
+                9.4
+              ],
+              [
+                9.37,
+                9.52,
+                9.32,
+                9.36
+              ],
+              [
+                9.37,
+                9.45,
+                9.11,
+                9.13
+              ],
+              [
+                9.2,
+                9.47,
+                9.14,
+                9.22
+              ],
+              [
+                9.19,
+                9.62,
+                9.18,
+                9.44
+              ],
+              [
+                9.56,
+                9.58,
+                9.25,
+                9.49
+              ],
+              [
+                9.48,
+                9.78,
+                9.46,
+                9.76
+              ],
+              [
+                9.53,
+                10.2,
+                9.5,
+                9.86
+              ],
+              [
+                9.96,
+                10.04,
+                9.66,
+                9.7
+              ],
+              [
+                9.77,
+                9.83,
+                9.62,
+                9.71
+              ],
+              [
+                9.66,
+                9.74,
+                9.57,
+                9.71
+              ],
+              [
+                9.68,
+                9.73,
+                9.44,
+                9.44
+              ],
+              [
+                9.46,
+                9.55,
+                9.34,
+                9.45
+              ],
+              [
+                9.45,
+                10.14,
+                9.25,
+                10.0
+              ],
+              [
+                9.88,
+                10.45,
+                9.81,
+                10.43
+              ],
+              [
+                10.24,
+                10.5,
+                10.1,
+                10.24
+              ],
+              [
+                10.24,
+                10.37,
+                10.16,
+                10.24
+              ],
+              [
+                10.13,
+                10.49,
+                10.1,
+                10.27
+              ]
+            ]
+          }
+        ],
+        "replay_t5_net_excess_pct": -0.48,
+        "replay_t5_win_rate_pct": 43.7,
+        "replay_samples": 9326
+      },
+      {
+        "pattern": "steady_trend_breakout",
+        "display_name": "低波趋势稳健突破",
+        "family": "breakout",
+        "mode": "direct",
+        "status": "experimental",
+        "expectancy_tier": "positive_watch",
+        "aligned_strategy": "volume_breakout",
+        "hit_count": 5,
+        "signals": [
+          {
+            "pattern": "steady_trend_breakout",
+            "display_name": "低波趋势稳健突破",
+            "family": "breakout",
+            "status": "experimental",
+            "code": "601328",
+            "name": "交通银行",
+            "industry": "银行",
+            "trade_date": "2026-11-20",
+            "close": 8.98,
+            "change_pct": 2.63,
+            "proxy_amount": 2808851039.54,
+            "atr20_pct": 2.53,
+            "vol_ratio_20d": 1.32,
+            "overhead_supply_10pct": 0.0,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "volume_breakout",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                8.01,
+                8.25,
+                7.99,
+                8.25
+              ],
+              [
+                8.19,
+                8.35,
+                8.14,
+                8.34
+              ],
+              [
+                8.26,
+                8.32,
+                8.19,
+                8.26
+              ],
+              [
+                8.36,
+                8.58,
+                8.29,
+                8.56
+              ],
+              [
+                8.55,
+                8.63,
+                8.47,
+                8.63
+              ],
+              [
+                8.7,
+                8.77,
+                8.48,
+                8.57
+              ],
+              [
+                8.64,
+                8.66,
+                8.09,
+                8.39
+              ],
+              [
+                8.36,
+                8.39,
+                8.19,
+                8.25
+              ],
+              [
+                8.2,
+                8.24,
+                8.06,
+                8.2
+              ],
+              [
+                8.29,
+                8.31,
+                8.14,
+                8.3
+              ],
+              [
+                8.23,
+                8.47,
+                8.2,
+                8.45
+              ],
+              [
+                8.39,
+                8.49,
+                8.34,
+                8.41
+              ],
+              [
+                8.45,
+                8.55,
+                8.42,
+                8.42
+              ],
+              [
+                8.39,
+                8.49,
+                8.33,
+                8.45
+              ],
+              [
+                8.41,
+                8.6,
+                8.38,
+                8.58
+              ],
+              [
+                8.56,
+                8.74,
+                8.54,
+                8.72
+              ],
+              [
+                8.73,
+                8.74,
+                8.59,
+                8.73
+              ],
+              [
+                8.69,
+                8.77,
+                8.62,
+                8.74
+              ],
+              [
+                8.76,
+                8.79,
+                8.66,
+                8.75
+              ],
+              [
+                8.71,
+                9.1,
+                8.64,
+                8.98
+              ]
+            ]
+          },
+          {
+            "pattern": "steady_trend_breakout",
+            "display_name": "低波趋势稳健突破",
+            "family": "breakout",
+            "status": "experimental",
+            "code": "601728",
+            "name": "中国电信",
+            "industry": "通信运营",
+            "trade_date": "2026-11-20",
+            "close": 7.34,
+            "change_pct": 2.66,
+            "proxy_amount": 1365704033.83,
+            "atr20_pct": 3.22,
+            "vol_ratio_20d": 1.51,
+            "overhead_supply_10pct": 0.0,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "volume_breakout",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                6.82,
+                6.94,
+                6.79,
+                6.94
+              ],
+              [
+                6.88,
+                7.0,
+                6.82,
+                6.95
+              ],
+              [
+                7.01,
+                7.01,
+                6.7,
+                6.88
+              ],
+              [
+                6.89,
+                6.99,
+                6.75,
+                6.99
+              ],
+              [
+                7.04,
+                7.05,
+                6.92,
+                7.01
+              ],
+              [
+                7.06,
+                7.06,
+                6.93,
+                7.04
+              ],
+              [
+                7.06,
+                7.27,
+                6.93,
+                7.27
+              ],
+              [
+                7.25,
+                7.26,
+                6.78,
+                6.86
+              ],
+              [
+                6.76,
+                6.76,
+                6.51,
+                6.63
+              ],
+              [
+                6.69,
+                6.91,
+                6.56,
+                6.91
+              ],
+              [
+                6.8,
+                6.89,
+                6.78,
+                6.79
+              ],
+              [
+                6.73,
+                6.83,
+                6.69,
+                6.76
+              ],
+              [
+                6.79,
+                6.84,
+                6.6,
+                6.62
+              ],
+              [
+                6.63,
+                6.65,
+                6.53,
+                6.61
+              ],
+              [
+                6.55,
+                6.74,
+                6.54,
+                6.67
+              ],
+              [
+                6.64,
+                6.96,
+                6.62,
+                6.94
+              ],
+              [
+                6.99,
+                7.0,
+                6.86,
+                6.98
+              ],
+              [
+                7.0,
+                7.08,
+                6.88,
+                7.08
+              ],
+              [
+                7.18,
+                7.18,
+                6.96,
+                7.15
+              ],
+              [
+                7.04,
+                7.34,
+                7.02,
+                7.34
+              ]
+            ]
+          },
+          {
+            "pattern": "steady_trend_breakout",
+            "display_name": "低波趋势稳健突破",
+            "family": "breakout",
+            "status": "experimental",
+            "code": "600930",
+            "name": "华电新能",
+            "industry": "电力",
+            "trade_date": "2026-11-20",
+            "close": 4.09,
+            "change_pct": 2.25,
+            "proxy_amount": 955102659.79,
+            "atr20_pct": 1.87,
+            "vol_ratio_20d": 1.8,
+            "overhead_supply_10pct": 0.0,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "volume_breakout",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                3.92,
+                3.98,
+                3.91,
+                3.98
+              ],
+              [
+                3.97,
+                3.98,
+                3.9,
+                3.9
+              ],
+              [
+                3.93,
+                3.93,
+                3.88,
+                3.91
+              ],
+              [
+                3.91,
+                3.92,
+                3.87,
+                3.91
+              ],
+              [
+                3.89,
+                3.9,
+                3.82,
+                3.84
+              ],
+              [
+                3.85,
+                3.92,
+                3.84,
+                3.91
+              ],
+              [
+                3.91,
+                3.95,
+                3.89,
+                3.95
+              ],
+              [
+                3.95,
+                3.99,
+                3.87,
+                3.94
+              ],
+              [
+                3.93,
+                3.99,
+                3.92,
+                3.98
+              ],
+              [
+                3.94,
+                4.0,
+                3.93,
+                3.98
+              ],
+              [
+                3.99,
+                4.01,
+                3.95,
+                3.95
+              ],
+              [
+                3.95,
+                3.96,
+                3.92,
+                3.94
+              ],
+              [
+                3.93,
+                3.94,
+                3.88,
+                3.89
+              ],
+              [
+                3.88,
+                3.94,
+                3.87,
+                3.94
+              ],
+              [
+                3.94,
+                4.04,
+                3.92,
+                3.99
+              ],
+              [
+                4.01,
+                4.01,
+                3.91,
+                3.98
+              ],
+              [
+                3.96,
+                4.01,
+                3.95,
+                4.0
+              ],
+              [
+                4.0,
+                4.06,
+                3.99,
+                4.01
+              ],
+              [
+                4.01,
+                4.03,
+                3.96,
+                4.0
+              ],
+              [
+                3.97,
+                4.09,
+                3.95,
+                4.09
+              ]
+            ]
+          },
+          {
+            "pattern": "steady_trend_breakout",
+            "display_name": "低波趋势稳健突破",
+            "family": "breakout",
+            "status": "experimental",
+            "code": "600886",
+            "name": "国投电力",
+            "industry": "电力",
+            "trade_date": "2026-11-20",
+            "close": 16.82,
+            "change_pct": 3.96,
+            "proxy_amount": 868291981.69,
+            "atr20_pct": 2.53,
+            "vol_ratio_20d": 1.73,
+            "overhead_supply_10pct": 0.0,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "volume_breakout",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                15.77,
+                16.07,
+                15.7,
+                15.88
+              ],
+              [
+                15.81,
+                16.03,
+                15.68,
+                15.91
+              ],
+              [
+                15.89,
+                15.97,
+                15.74,
+                15.88
+              ],
+              [
+                15.92,
+                16.28,
+                15.83,
+                16.24
+              ],
+              [
+                16.16,
+                16.37,
+                16.03,
+                16.13
+              ],
+              [
+                16.13,
+                16.21,
+                15.7,
+                15.89
+              ],
+              [
+                15.88,
+                16.03,
+                15.51,
+                15.82
+              ],
+              [
+                15.82,
+                16.06,
+                15.49,
+                15.61
+              ],
+              [
+                15.61,
+                15.63,
+                15.08,
+                15.46
+              ],
+              [
+                15.35,
+                15.87,
+                15.29,
+                15.81
+              ],
+              [
+                15.8,
+                15.81,
+                15.6,
+                15.72
+              ],
+              [
+                15.66,
+                15.67,
+                15.48,
+                15.55
+              ],
+              [
+                15.57,
+                15.9,
+                15.43,
+                15.48
+              ],
+              [
+                15.48,
+                15.66,
+                15.34,
+                15.6
+              ],
+              [
+                15.49,
+                15.8,
+                15.45,
+                15.65
+              ],
+              [
+                15.71,
+                16.04,
+                15.62,
+                15.87
+              ],
+              [
+                15.91,
+                16.28,
+                15.77,
+                15.92
+              ],
+              [
+                16.0,
+                16.2,
+                15.76,
+                16.16
+              ],
+              [
+                16.2,
+                16.34,
+                16.05,
+                16.18
+              ],
+              [
+                16.2,
+                16.89,
+                16.12,
+                16.82
+              ]
+            ]
+          },
+          {
+            "pattern": "steady_trend_breakout",
+            "display_name": "低波趋势稳健突破",
+            "family": "breakout",
+            "status": "experimental",
+            "code": "601998",
+            "name": "中信银行",
+            "industry": "银行",
+            "trade_date": "2026-11-20",
+            "close": 9.66,
+            "change_pct": 3.09,
+            "proxy_amount": 616002966.11,
+            "atr20_pct": 2.53,
+            "vol_ratio_20d": 1.39,
+            "overhead_supply_10pct": 0.0,
+            "observe_date": null,
+            "observe_lag_days": null,
+            "aligned_strategy": "volume_breakout",
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                8.55,
+                8.82,
+                8.54,
+                8.78
+              ],
+              [
+                8.72,
+                8.97,
+                8.65,
+                8.92
+              ],
+              [
+                8.87,
+                9.06,
+                8.82,
+                8.94
+              ],
+              [
+                8.95,
+                9.15,
+                8.93,
+                9.1
+              ],
+              [
+                9.11,
+                9.29,
+                8.98,
+                9.26
+              ],
+              [
+                9.2,
+                9.38,
+                9.08,
+                9.14
+              ],
+              [
+                9.11,
+                9.21,
+                8.86,
+                8.98
+              ],
+              [
+                8.96,
+                9.06,
+                8.82,
+                8.83
+              ],
+              [
+                8.81,
+                8.9,
+                8.69,
+                8.88
+              ],
+              [
+                8.89,
+                9.0,
+                8.76,
+                8.96
+              ],
+              [
+                8.86,
+                8.95,
+                8.78,
+                8.91
+              ],
+              [
+                8.84,
+                9.05,
+                8.73,
+                9.01
+              ],
+              [
+                8.98,
+                9.04,
+                8.91,
+                8.91
+              ],
+              [
+                8.89,
+                8.97,
+                8.8,
+                8.97
+              ],
+              [
+                8.94,
+                9.17,
+                8.86,
+                9.12
+              ],
+              [
+                9.09,
+                9.29,
+                9.04,
+                9.29
+              ],
+              [
+                9.24,
+                9.33,
+                9.16,
+                9.29
+              ],
+              [
+                9.29,
+                9.37,
+                9.16,
+                9.37
+              ],
+              [
+                9.4,
+                9.48,
+                9.32,
+                9.37
+              ],
+              [
+                9.4,
+                9.66,
+                9.37,
+                9.66
+              ]
+            ]
+          }
+        ],
+        "replay_t5_net_excess_pct": 0.02,
+        "replay_t5_win_rate_pct": 45.6,
+        "replay_samples": 460
+      },
+      {
+        "pattern": "three_white_soldiers",
+        "display_name": "红三兵",
+        "family": "trend_continuation",
+        "mode": "direct",
+        "status": "experimental",
+        "expectancy_tier": "positive_watch",
+        "aligned_strategy": null,
+        "hit_count": 0,
+        "signals": [],
+        "replay_t5_net_excess_pct": 0.18,
+        "replay_t5_win_rate_pct": 48.0,
+        "replay_samples": 1336
+      },
+      {
+        "pattern": "three_white_soldiers_pullback",
+        "display_name": "红三兵回踩确认",
+        "family": "trend_continuation",
+        "mode": "observe_confirm",
+        "status": "experimental",
+        "expectancy_tier": "positive_watch",
+        "aligned_strategy": null,
+        "hit_count": 2,
+        "signals": [
+          {
+            "pattern": "three_white_soldiers_pullback",
+            "display_name": "红三兵回踩确认",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "601857",
+            "name": "中国石油",
+            "industry": "石油天然气",
+            "trade_date": "2026-11-20",
+            "close": 13.22,
+            "change_pct": 4.67,
+            "proxy_amount": 2610015134.32,
+            "atr20_pct": 4.08,
+            "vol_ratio_20d": 1.07,
+            "overhead_supply_10pct": 12.59,
+            "observe_date": "2026-11-13",
+            "observe_lag_days": 5,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                12.7,
+                13.41,
+                12.65,
+                13.38
+              ],
+              [
+                13.22,
+                13.54,
+                13.16,
+                13.2
+              ],
+              [
+                13.2,
+                13.34,
+                12.92,
+                13.26
+              ],
+              [
+                13.26,
+                13.69,
+                13.18,
+                13.69
+              ],
+              [
+                13.6,
+                13.88,
+                13.51,
+                13.84
+              ],
+              [
+                13.71,
+                14.07,
+                13.56,
+                14.02
+              ],
+              [
+                13.88,
+                14.0,
+                13.24,
+                14.0
+              ],
+              [
+                13.96,
+                14.02,
+                13.5,
+                13.62
+              ],
+              [
+                12.9,
+                12.9,
+                12.45,
+                12.54
+              ],
+              [
+                12.54,
+                12.77,
+                12.1,
+                12.7
+              ],
+              [
+                12.39,
+                12.88,
+                12.26,
+                12.62
+              ],
+              [
+                12.3,
+                12.42,
+                11.75,
+                11.82
+              ],
+              [
+                11.8,
+                11.99,
+                11.76,
+                11.92
+              ],
+              [
+                11.85,
+                12.05,
+                11.84,
+                12.03
+              ],
+              [
+                12.08,
+                12.45,
+                12.03,
+                12.39
+              ],
+              [
+                12.43,
+                12.66,
+                12.35,
+                12.47
+              ],
+              [
+                12.1,
+                12.42,
+                12.04,
+                12.4
+              ],
+              [
+                12.38,
+                12.75,
+                12.34,
+                12.57
+              ],
+              [
+                12.54,
+                12.68,
+                12.37,
+                12.63
+              ],
+              [
+                12.6,
+                13.39,
+                12.5,
+                13.22
+              ]
+            ]
+          },
+          {
+            "pattern": "three_white_soldiers_pullback",
+            "display_name": "红三兵回踩确认",
+            "family": "trend_continuation",
+            "status": "experimental",
+            "code": "600483",
+            "name": "福能股份",
+            "industry": "电力",
+            "trade_date": "2026-11-20",
+            "close": 12.1,
+            "change_pct": 0.92,
+            "proxy_amount": 272822338.6,
+            "atr20_pct": 3.08,
+            "vol_ratio_20d": 1.17,
+            "overhead_supply_10pct": 3.72,
+            "observe_date": "2026-11-16",
+            "observe_lag_days": 4,
+            "aligned_strategy": null,
+            "announcement_risk_flags": [],
+            "kline": [
+              [
+                10.37,
+                10.62,
+                10.33,
+                10.53
+              ],
+              [
+                10.53,
+                10.57,
+                10.36,
+                10.41
+              ],
+              [
+                10.1,
+                10.57,
+                9.98,
+                10.52
+              ],
+              [
+                10.49,
+                10.72,
+                10.46,
+                10.65
+              ],
+              [
+                10.72,
+                10.88,
+                10.58,
+                10.81
+              ],
+              [
+                10.8,
+                10.96,
+                10.44,
+                10.49
+              ],
+              [
+                10.53,
+                10.8,
+                10.39,
+                10.76
+              ],
+              [
+                10.77,
+                10.91,
+                10.6,
+                10.63
+              ],
+              [
+                10.6,
+                10.8,
+                10.41,
+                10.75
+              ],
+              [
+                10.59,
+                10.98,
+                10.51,
+                10.87
+              ],
+              [
+                10.9,
+                11.06,
+                10.79,
+                11.01
+              ],
+              [
+                11.0,
+                11.08,
+                10.86,
+                10.92
+              ],
+              [
+                10.9,
+                11.0,
+                10.8,
+                10.8
+              ],
+              [
+                10.79,
+                10.99,
+                10.64,
+                10.97
+              ],
+              [
+                10.93,
+                11.3,
+                10.89,
+                11.25
+              ],
+              [
+                11.26,
+                11.82,
+                11.23,
+                11.75
+              ],
+              [
+                11.7,
+                12.07,
+                11.7,
+                11.97
+              ],
+              [
+                12.01,
+                12.4,
+                11.9,
+                12.2
+              ],
+              [
+                12.24,
+                12.4,
+                11.91,
+                11.99
+              ],
+              [
+                11.99,
+                12.17,
+                11.86,
+                12.1
+              ]
+            ]
+          }
+        ],
+        "replay_t5_net_excess_pct": 0.2,
+        "replay_t5_win_rate_pct": 45.0,
+        "replay_samples": 837
+      }
+    ]
+  },
+  "announcement_risks": {
+    "checked_count": 20,
+    "flagged_count": 1,
+    "by_code": {
+      "601668": {
+        "code": "601668",
+        "name": "中国建筑",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-20 中国建筑2026年1-10月经营情况简报 | 2026-10-31 中国建筑关于聘任公司副总裁的公告 | 2026-10-31 中国建筑2026年第三季度报告",
+        "matched_announcement": "中国建筑2026年1-10月经营情况简报",
+        "announcement_date": "2026-11-20",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 6
+      },
+      "000001": {
+        "code": "000001",
+        "name": "平安银行",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-18 关于2026年二级资本债券（债券通）发行完毕的公告 | 2026-10-24 关联交易公告 | 2026-10-24 董事会决议公告",
+        "matched_announcement": "关于2026年二级资本债券（债券通）发行完毕的公告",
+        "announcement_date": "2026-11-18",
+        "days_ago": 2,
+        "recency": "recent",
+        "consensus_count": 6
+      },
+      "601166": {
+        "code": "601166",
+        "name": "兴业银行",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-10-30 兴业银行2026年第三季度报告 | 2026-10-30 兴业银行关于变更会计师事务所的公告 | 2026-10-30 兴业银行第十一届董事会第十七次会议（临时会议）决议公告",
+        "matched_announcement": "兴业银行2026年第三季度报告",
+        "announcement_date": "2026-10-30",
+        "days_ago": 21,
+        "recency": "mid",
+        "consensus_count": 5
+      },
+      "601919": {
+        "code": "601919",
+        "name": "中远海控",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-21 中远海控H股公告：翌日披露报表 | 2026-11-20 中远海控H股公告：翌日披露报表 | 2026-11-19 中远海控H股公告：翌日披露报表",
+        "matched_announcement": "中远海控H股公告：翌日披露报表",
+        "announcement_date": "2026-11-21",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 4
+      },
+      "601390": {
+        "code": "601390",
+        "name": "中国中铁",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-10-30 中国中铁第六届董事会第二十七次会议决议公告 | 2026-10-30 中国中铁2026年第三季度报告 | 2026-10-30 中国中铁关于指定副总裁代为履行总会计师职责的公告",
+        "matched_announcement": "中国中铁第六届董事会第二十七次会议决议公告",
+        "announcement_date": "2026-10-30",
+        "days_ago": 21,
+        "recency": "mid",
+        "consensus_count": 3
+      },
+      "600036": {
+        "code": "600036",
+        "name": "招商银行",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-10-31 [H股公告]招商银行股份有限公司更换联席公司秘书 | 2026-10-31 招商银行股份有限公司2026年第三季度第三支柱报告 | 2026-10-31 招商银行内部审计章程(第六版)",
+        "matched_announcement": "[H股公告]招商银行股份有限公司更换联席公司秘书",
+        "announcement_date": "2026-10-31",
+        "days_ago": 20,
+        "recency": "mid",
+        "consensus_count": 2
+      },
+      "000100": {
+        "code": "000100",
+        "name": "TCL科技",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-14 00:00:00 2026年第三季度报告（英文版） | 2026-11-14 00:00:00 关于独立董事任期届满的提示性公告 | 2026-11-14 00:00:00 独立董事2026年第六次专门会议决议公告",
+        "matched_announcement": "2026年第三季度报告（英文版）",
+        "announcement_date": "2026-11-14",
+        "days_ago": 6,
+        "recency": "recent",
+        "consensus_count": 2
+      },
+      "000725": {
+        "code": "000725",
+        "name": "京东方A",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-21 关于回购公司股份的进展公告 | 2026-11-18 京东方科技集团股份有限公司公司债券临时受托管理事务报告 | 2026-11-13 关于回购股份注销完成暨股份变动的公告",
+        "matched_announcement": "关于回购公司股份的进展公告",
+        "announcement_date": "2026-11-21",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "600016": {
+        "code": "600016",
+        "name": "民生银行",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-04 中国民生银行关于董事任职资格获国家金融监督管理总局核准的公告（张震） | 2026-10-31 中国民生银行2026年第三季度报告 | 2026-10-31 中国民生银行第九届董事会第二十六次会议决议公告",
+        "matched_announcement": "中国民生银行关于董事任职资格获国家金融监督管理总局核准的公告（张震）",
+        "announcement_date": "2026-11-04",
+        "days_ago": 16,
+        "recency": "mid",
+        "consensus_count": 1
+      },
+      "600362": {
+        "code": "600362",
+        "name": "江西铜业",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-21 江西铜业股份有限公司关于以集中竞价交易方式首次回购公司A股股份暨回购进展公告 | 2026-11-20 江西铜业股份有限公司2026年第三次临时股东会会议资料 | 2026-11-17 江西铜业股份有限公司关于以集中竞价交易方式回购公司股份的回购报告书",
+        "matched_announcement": "江西铜业股份有限公司关于以集中竞价交易方式首次回购公司A股股份暨回购进展公告",
+        "announcement_date": "2026-11-21",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "601328": {
+        "code": "601328",
+        "name": "交通银行",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "业绩"
+        ],
+        "announcement_summary": "2026-11-07 交通银行关于召开2026年第一次临时股东会的通知 | 2026-11-07 交通银行2026年第一次临时股东会资料 | 2026-11-05 交通银行关于参加2026年上海辖区上市公司三季报集体业绩说明会的公告",
+        "matched_announcement": "交通银行关于召开2026年第一次临时股东会的通知",
+        "announcement_date": "2026-11-07",
+        "days_ago": 13,
+        "recency": "mid",
+        "consensus_count": 1
+      },
+      "002157": {
+        "code": "002157",
+        "name": "正邦科技",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "诉讼担保"
+        ],
+        "announcement_summary": "2026-11-10 关于对外担保的进展公告 | 2026-11-10 关于2026年10月份生猪销售情况简报 | 2026-10-30 关于计提资产减值准备的公告",
+        "matched_announcement": "关于对外担保的进展公告",
+        "announcement_date": "2026-11-10",
+        "days_ago": 10,
+        "recency": "mid",
+        "consensus_count": 1
+      },
+      "603799": {
+        "code": "603799",
+        "name": "华友钴业",
+        "negative_event_flags": [
+          "质押冻结"
+        ],
+        "announcement_categories": [
+          "诉讼担保"
+        ],
+        "announcement_summary": "2026-11-10 华友钴业关于对外担保的进展公告 | 2026-11-07 华友钴业关于控股股东部分股份质押的公告 | 2026-10-26 华友钴业关于子公司受让权利义务暨收购Atlantic Lithium Limited股权的进展公告",
+        "matched_announcement": "华友钴业关于控股股东部分股份质押的公告",
+        "announcement_date": "2026-11-07",
+        "days_ago": 13,
+        "recency": "mid",
+        "consensus_count": 1
+      },
+      "000410": {
+        "code": "000410",
+        "name": "沈阳机床",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-21 北京大成（沈阳）律师事务所关于沈阳机床股份有限公司2026年第三次临时股东会的法律意见书 | 2026-11-21 沈阳机床股份有限公司2026年第三次临时股东会决议公告 | 2026-11-17 沈阳机床股份有限公司关于获得政府补助的公告",
+        "matched_announcement": "北京大成（沈阳）律师事务所关于沈阳机床股份有限公司2026年第三次临时股东会的法律意见书",
+        "announcement_date": "2026-11-21",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "000690": {
+        "code": "000690",
+        "name": "宝新能源",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "诉讼担保"
+        ],
+        "announcement_summary": "2026-11-19 2026年前三季度权益分派实施公告 | 2026-11-14 关于公司高级管理人员职务调整及聘任财务总监的公告 | 2026-11-14 关于全资子公司为全资子公司提供担保的公告",
+        "matched_announcement": "2026年前三季度权益分派实施公告",
+        "announcement_date": "2026-11-19",
+        "days_ago": 1,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "600887": {
+        "code": "600887",
+        "name": "伊利股份",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-21 北京天驰君泰律师事务所关于内蒙古伊利实业集团股份有限公司2026年第二次临时股东会的法律意见书 | 2026-11-21 内蒙古伊利实业集团股份有限公司2026年第二次临时股东会决议公告 | 2026-11-20 内蒙古伊利实业集团股份有限公司关于出资设立风险投资基金的进展公告",
+        "matched_announcement": "北京天驰君泰律师事务所关于内蒙古伊利实业集团股份有限公司2026年第二次临时股东会的法律意见书",
+        "announcement_date": "2026-11-21",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "000158": {
+        "code": "000158",
+        "name": "常山北明",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-20 股票交易异常波动公告 | 2026-10-30 关于2026年第一期科技创新债券发行结果的公告 | 2026-10-28 关于2026年前三季度计提资产减值准备的公告",
+        "matched_announcement": "股票交易异常波动公告",
+        "announcement_date": "2026-11-20",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "601899": {
+        "code": "601899",
+        "name": "紫金矿业",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-21 紫金矿业集团股份有限公司关于以集中竞价交易方式首次回购公司A股股份的公告 | 2026-11-20 紫金矿业集团股份有限公司关于以集中竞价方式回购A股股份方案的公告暨回购报告书 | 2026-11-14 紫金矿业集团股份有限公司关于调整2023年股票期权激励计划行权价格的公告",
+        "matched_announcement": "紫金矿业集团股份有限公司关于以集中竞价交易方式首次回购公司A股股份的公告",
+        "announcement_date": "2026-11-21",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "000703": {
+        "code": "000703",
+        "name": "恒逸石化",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "诉讼担保"
+        ],
+        "announcement_summary": "2026-11-14 关于解除对控股子公司担保责任的进展公告 | 2026-11-13 2026年第六次独立董事专门会议决议 | 2026-11-13 关于新增控股股东向公司提供资金支持额度暨关联交易的公告",
+        "matched_announcement": "关于解除对控股子公司担保责任的进展公告",
+        "announcement_date": "2026-11-14",
+        "days_ago": 6,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "600941": {
+        "code": "600941",
+        "name": "中国移动",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-21 中国移动：关于中国移动有限公司会计估计变更事项的专项报告 | 2026-11-21 中国移动：2026年第七次董事会决议公告 | 2026-11-21 中国移动：独立非执行董事的独立意见",
+        "matched_announcement": "中国移动：关于中国移动有限公司会计估计变更事项的专项报告",
+        "announcement_date": "2026-11-21",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 1
+      }
+    },
+    "flagged_items": [
+      {
+        "code": "603799",
+        "name": "华友钴业",
+        "negative_event_flags": [
+          "质押冻结"
+        ],
+        "announcement_categories": [
+          "诉讼担保"
+        ],
+        "announcement_summary": "2026-11-10 华友钴业关于对外担保的进展公告 | 2026-11-07 华友钴业关于控股股东部分股份质押的公告 | 2026-10-26 华友钴业关于子公司受让权利义务暨收购Atlantic Lithium Limited股权的进展公告",
+        "matched_announcement": "华友钴业关于控股股东部分股份质押的公告",
+        "announcement_date": "2026-11-07",
+        "days_ago": 13,
+        "recency": "mid",
+        "consensus_count": 1
+      }
+    ],
+    "errors": []
+  },
+  "market_news": {
+    "items": [
+      {
+        "title": "京东健康与中国生物制药深化战略合作",
+        "summary": "【京东健康与中国生物制药深化战略合作】据京东健康黑板报，11月22日，京东健康与中国生物制药正式升级战略合作，双方将持续围绕肿瘤、风湿、外科/镇痛、肝病、呼吸、心血管、内分泌等多个治疗领域，在患教科普、医学学术交流、产品商业化及患者健康服务等方面开展更加深入的合作，共同探索医药…",
+        "published_at": "11-22 20:24",
+        "source": "东方财富7x24",
+        "category": "板块产业"
+      },
+      {
+        "title": "深天马A：公司非显业务总体规模还很小",
+        "summary": "【深天马A：公司非显业务总体规模还很小】深天马A近日接受机构调研时表示，公司持续聚焦显示主业，同时积极推进非显示应用技术开发，建立了MPG平台（多项目玻璃基板技术平台），稳步推进与行业伙伴在面板级智能天线、智能调光玻璃、玻璃基封装基板、微流控生物芯片、指纹识别等领域开展技术开发…",
+        "published_at": "11-22 19:57",
+        "source": "东方财富7x24",
+        "category": "板块产业"
+      },
+      {
+        "title": "小鹏G9L在泰国、印尼上市",
+        "summary": "【小鹏G9L在泰国、印尼上市】11月22日，据小鹏集团消息，小鹏近日在泰国曼谷、印度尼西亚雅加达同步发布小鹏G9L，两地售价分别折合人民币约47.15万元和47.6万元。",
+        "published_at": "11-22 18:19",
+        "source": "东方财富7x24",
+        "category": "市场要闻"
+      },
+      {
+        "title": "复星医药：拟2.5亿元至5亿元回购A股股份",
+        "summary": "【复星医药：拟2.5亿元至5亿元回购A股股份】复星医药(600196.SH)公告称，公司董事会审议通过以集中竞价交易方式回购A股方案，回购资金总额不低于2.5亿元且不超过5亿元，回购价格上限为33元/股，回购期限为董事会审议通过之日起12个月内。",
+        "published_at": "11-22 17:00",
+        "source": "东方财富7x24",
+        "category": "板块产业"
+      },
+      {
+        "title": "金海通：拟0.5亿元至1亿元回购公司股份",
+        "summary": "【金海通：拟0.5亿元至1亿元回购公司股份】金海通(603061.SH)公告称，公司拟以自有资金通过集中竞价交易方式回购股份，回购金额不低于0.5亿元且不超过1亿元，回购价格不超过230元/股。本次回购的股份拟用于员工持股计划或股权激励，回购期限为自董事会审议通过之日起不超过6…",
+        "published_at": "11-22 16:54",
+        "source": "东方财富7x24",
+        "category": "公司动态"
+      },
+      {
+        "title": "华友钴业：拟10亿至15亿元回购公司股份",
+        "summary": "【华友钴业：拟10亿至15亿元回购公司股份】华友钴业(603799.SH)公告称，公司拟以自有资金或自筹资金通过集中竞价交易方式回购股份，回购金额不低于10亿元且不超过15亿元，回购价格不超过45元/股，用于维护公司价值及股东权益。回购期限为董事会审议通过之日起3个月内。",
+        "published_at": "11-22 16:39",
+        "source": "东方财富7x24",
+        "category": "公司动态"
+      }
+    ],
+    "sources": [
+      "东方财富7x24",
+      "同花顺快讯"
+    ],
+    "candidate_news": {
+      "601668": [
+        {
+          "title": "人民财讯 中国建筑：1—10月新签合同总额35862亿元 同比下降0.6%",
+          "published_at": "11-19"
+        },
+        {
+          "title": "证券时报网 中国建筑1—10月新签合同额3.59万亿元，境外业务增长62.1%",
+          "published_at": "11-19"
+        }
+      ],
+      "000001": [
+        {
+          "title": "证券时报网 北上资金，增持000001超4.7亿股！外资调仓新动向曝光",
+          "published_at": "10-31"
+        },
+        {
+          "title": "界面新闻 机构风向标",
+          "published_at": "10-24"
+        }
+      ],
+      "601166": [
+        {
+          "title": "证券时报网 银行行业11月20日资金流向日报",
+          "published_at": "11-20"
+        },
+        {
+          "title": "证券时报网 15.32亿元资金今日流出银行股",
+          "published_at": "11-17"
+        }
+      ],
+      "601919": [
+        {
+          "title": "证券时报网 6.87亿元资金今日流入交通运输股",
+          "published_at": "11-16"
+        },
+        {
+          "title": "证券时报网 航运概念涨0.03%，主力资金净流入36股",
+          "published_at": "11-16"
+        }
+      ],
+      "601390": [
+        {
+          "title": "证券时报网 金属铅概念上涨1.03%，6股主力资金净流入超千万元",
+          "published_at": "11-17"
+        },
+        {
+          "title": "证券时报网 金属锌概念涨0.73%，主力资金净流入19股",
+          "published_at": "11-17"
+        }
+      ]
+    },
+    "errors": []
+  },
+  "degradation": [],
+  "non_goals": [
+    "量化形态观测与回测基准，非投资建议。",
+    "Market regime stage is reporting and slice metadata only; never adjusts strategy weights.",
+    "Relay statistics do not generate stock-picking signals."
+  ],
+  "cross_strategy_synthesis": {
+    "consensus_picks": [
+      {
+        "code": "601668",
+        "name": "中国建筑",
+        "industry": "建筑施工",
+        "strategy_count": 6,
+        "strategies": [
+          "balanced_alpha",
+          "blue_chip_income",
+          "dual_low",
+          "low_volatility_quality",
+          "momentum_quality",
+          "quality_value"
+        ],
+        "strategy_display_names": [
+          "均衡多因子",
+          "蓝筹收益质量",
+          "双低选股",
+          "低波质量",
+          "趋势质量",
+          "稳健价值"
+        ],
+        "tracks": [
+          "rules"
+        ],
+        "avg_final_score": 80.13,
+        "change_pct": 0.42,
+        "announcement_risk_flags": [],
+        "price": 4.75,
+        "pe_ratio": 6.6,
+        "pb_ratio": 0.39,
+        "market_cap_yi": 1962.7,
+        "reasons": [
+          "流动性+市值规模因子靠前",
+          "低波稳健+活跃度因子靠前"
+        ],
+        "news_headline": "人民财讯 中国建筑：1—10月新签合同总额35862亿元 同比下降0.6%"
+      },
+      {
+        "code": "000001",
+        "name": "平安银行",
+        "industry": "银行",
+        "strategy_count": 6,
+        "strategies": [
+          "balanced_alpha",
+          "blue_chip_income",
+          "dual_low",
+          "low_volatility_quality",
+          "quality_value",
+          "shrink_pullback"
+        ],
+        "strategy_display_names": [
+          "均衡多因子",
+          "蓝筹收益质量",
+          "双低选股",
+          "低波质量",
+          "稳健价值",
+          "缩量回踩"
+        ],
+        "tracks": [
+          "rules"
+        ],
+        "avg_final_score": 79.54,
+        "change_pct": 1.5,
+        "announcement_risk_flags": [],
+        "price": 12.22,
+        "pe_ratio": 5.5,
+        "pb_ratio": 0.5,
+        "market_cap_yi": 2371.4,
+        "reasons": [
+          "流动性+市值规模因子靠前",
+          "流动性+估值因子靠前"
+        ],
+        "news_headline": "证券时报网 北上资金，增持000001超4.7亿股！外资调仓新动向曝光"
+      },
+      {
+        "code": "601166",
+        "name": "兴业银行",
+        "industry": "银行",
+        "strategy_count": 5,
+        "strategies": [
+          "balanced_alpha",
+          "blue_chip_income",
+          "low_volatility_quality",
+          "momentum_quality",
+          "quality_value"
+        ],
+        "strategy_display_names": [
+          "均衡多因子",
+          "蓝筹收益质量",
+          "低波质量",
+          "趋势质量",
+          "稳健价值"
+        ],
+        "tracks": [
+          "rules"
+        ],
+        "avg_final_score": 81.96,
+        "change_pct": 1.05,
+        "announcement_risk_flags": [],
+        "price": 20.3,
+        "pe_ratio": 5.7,
+        "pb_ratio": 0.5,
+        "market_cap_yi": 4296.1,
+        "reasons": [
+          "流动性+市值规模因子靠前",
+          "流动性+估值因子靠前"
+        ],
+        "news_headline": "证券时报网 银行行业11月20日资金流向日报"
+      },
+      {
+        "code": "601919",
+        "name": "中远海控",
+        "industry": "港口航运",
+        "strategy_count": 4,
+        "strategies": [
+          "balanced_alpha",
+          "blue_chip_income",
+          "momentum_quality",
+          "quality_value"
+        ],
+        "strategy_display_names": [
+          "均衡多因子",
+          "蓝筹收益质量",
+          "趋势质量",
+          "稳健价值"
+        ],
+        "tracks": [
+          "rules"
+        ],
+        "avg_final_score": 72.57,
+        "change_pct": 1.6,
+        "announcement_risk_flags": [],
+        "price": 17.73,
+        "pe_ratio": 7.8,
+        "pb_ratio": 1.11,
+        "market_cap_yi": 2698.2,
+        "reasons": [
+          "市值规模+流动性因子靠前",
+          "流动性+市值规模因子靠前"
+        ],
+        "news_headline": "证券时报网 6.87亿元资金今日流入交通运输股"
+      },
+      {
+        "code": "601390",
+        "name": "中国中铁",
+        "industry": "基础建设",
+        "strategy_count": 3,
+        "strategies": [
+          "balanced_alpha",
+          "dual_low",
+          "quality_value"
+        ],
+        "strategy_display_names": [
+          "均衡多因子",
+          "双低选股",
+          "稳健价值"
+        ],
+        "tracks": [
+          "rules"
+        ],
+        "avg_final_score": 79.42,
+        "change_pct": 0.7,
+        "announcement_risk_flags": [],
+        "price": 4.32,
+        "pe_ratio": 5.9,
+        "pb_ratio": 0.33,
+        "market_cap_yi": 1059.8,
+        "reasons": [
+          "估值+市值规模因子靠前",
+          "市值规模+估值因子靠前"
+        ],
+        "news_headline": "证券时报网 金属铅概念上涨1.03%，6股主力资金净流入超千万元"
+      },
+      {
+        "code": "600036",
+        "name": "招商银行",
+        "industry": "银行",
+        "strategy_count": 2,
+        "strategies": [
+          "blue_chip_income",
+          "low_volatility_quality"
+        ],
+        "strategy_display_names": [
+          "蓝筹收益质量",
+          "低波质量"
+        ],
+        "tracks": [
+          "rules"
+        ],
+        "avg_final_score": 72.35,
+        "change_pct": 1.57,
+        "announcement_risk_flags": [],
+        "price": 44.0,
+        "pe_ratio": 7.3,
+        "pb_ratio": 0.94,
+        "market_cap_yi": 11096.7,
+        "reasons": [
+          "流动性+市值规模因子靠前"
+        ]
+      },
+      {
+        "code": "000100",
+        "name": "TCL科技",
+        "industry": "电子元件",
+        "strategy_count": 2,
+        "strategies": [
+          "capital_heat",
+          "momentum_quality"
+        ],
+        "strategy_display_names": [
+          "资金热度",
+          "趋势质量"
+        ],
+        "tracks": [
+          "rules"
+        ],
+        "avg_final_score": 69.71,
+        "change_pct": 1.87,
+        "announcement_risk_flags": [],
+        "price": 4.9,
+        "pe_ratio": 16.3,
+        "pb_ratio": 1.58,
+        "market_cap_yi": 1075.4,
+        "reasons": [
+          "市值规模+流动性因子靠前",
+          "流动性+活跃度因子靠前"
+        ]
+      }
+    ],
+    "sector_concentration": [
+      {
+        "industry": "银行",
+        "pick_count": 15,
+        "unique_codes": 5,
+        "share_pct": 32.6
+      },
+      {
+        "industry": "建筑施工",
+        "pick_count": 6,
+        "unique_codes": 1,
+        "share_pct": 13.0
+      },
+      {
+        "industry": "港口航运",
+        "pick_count": 4,
+        "unique_codes": 1,
+        "share_pct": 8.7
+      },
+      {
+        "industry": "基础建设",
+        "pick_count": 3,
+        "unique_codes": 1,
+        "share_pct": 6.5
+      },
+      {
+        "industry": "电子元件",
+        "pick_count": 2,
+        "unique_codes": 1,
+        "share_pct": 4.3
+      },
+      {
+        "industry": "专业服务",
+        "pick_count": 1,
+        "unique_codes": 1,
+        "share_pct": 2.2
+      },
+      {
+        "industry": "专用设备",
+        "pick_count": 1,
+        "unique_codes": 1,
+        "share_pct": 2.2
+      },
+      {
+        "industry": "合成纤维及树脂",
+        "pick_count": 1,
+        "unique_codes": 1,
+        "share_pct": 2.2
+      }
+    ],
+    "strategy_pattern_resonance": [
+      {
+        "code": "601328",
+        "name": "交通银行",
+        "strategies": [
+          "shrink_pullback"
+        ],
+        "active_patterns": [],
+        "experimental_patterns": [
+          "低波趋势稳健突破"
+        ],
+        "announcement_risk_flags": []
+      }
+    ],
+    "risk_spotlight": [
+      {
+        "code": "603799",
+        "name": "华友钴业",
+        "severity": "high",
+        "flags": [
+          "质押冻结"
+        ],
+        "summary": "2026-11-10 华友钴业关于对外担保的进展公告 | 2026-11-07 华友钴业关于控股股东部分股份质押的公告 | 2026-10-26 华友钴业关于子公司受让权利义务暨收购Atlantic Lithium Limited股权的进展公告",
+        "source": "announcement"
+      },
+      {
+        "code": "002157",
+        "name": "正邦科技",
+        "severity": "medium",
+        "flags": [
+          "negative_or_invalid_pe",
+          "rsi_overbought"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      },
+      {
+        "code": "000001",
+        "name": "平安银行",
+        "severity": "medium",
+        "flags": [
+          "portfolio_sector_concentration:金融"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      },
+      {
+        "code": "000410",
+        "name": "沈阳机床",
+        "severity": "medium",
+        "flags": [
+          "negative_or_invalid_pe"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      },
+      {
+        "code": "600036",
+        "name": "招商银行",
+        "severity": "medium",
+        "flags": [
+          "portfolio_sector_concentration:金融"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      },
+      {
+        "code": "600887",
+        "name": "伊利股份",
+        "severity": "medium",
+        "flags": [
+          "rsi_overbought"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      }
+    ]
+  },
+  "ai_brief": {
+    "mode": "rule_fallback",
+    "model": null,
+    "headline": "盘面处于冰点阶段，上涨 5.6%（中位数 -5.08%），涨跌停 28/63（封板率 71.8%），公告排雷命中 1 只预警",
+    "regime_interpretation": "2026-11-20 全市场情绪处于「冰点」阶段：全市场上涨占比 5.6%、中位数 -5.08%，成交额 14128亿；非 ST 涨停 28 只 / 跌停 63 只，首板封板率 71.8%，连板最高 4 板，昨涨停今日均表现 -3.50%。",
+    "consensus_and_ai_edge": "多策略共振标的前列：601668中国建筑(6策略)、000001平安银行(6策略)、601166兴业银行(5策略)；行业主要集中在 银行(32.6%)、建筑施工(13.0%)、港口航运(8.7%)。",
+    "risk_warnings": [
+      "公告预警：603799 华友钴业 命中 [质押冻结]",
+      "短线承接偏弱（非 ST 跌停 63 只，封板率 71.8%），警惕高位接力退潮风险。"
+    ],
+    "watch_points": [
+      "观察次日上涨占比能否从 5.6% 修复、跌停家数（63 只）是否收敛；",
+      "跟踪昨日涨停溢价（-3.50%）与连板梯队（4 板）高度延续情况；",
+      "复盘多策略共识标的（601668 中国建筑 等）次日开盘承接与换手。"
+    ],
+    "disclaimer": "仅供量化研究与复盘观察，不构成投资建议。",
+    "fallback_reason": "no_llm_configured"
+  },
+  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-20)**\n> 盘面 **冰点**｜上涨 5.6% · 中位 -5.08%｜涨跌停 28/63（封板 71.8%）｜最高 4板 · 昨涨停 -3.50% · 成交 14,128亿\n**⚠️ 公告排雷预警（20检/1中）**\n- 603799 华友钴业 [11-07·质押冻结]: 华友钴业关于控股股东部分股份质押的公告\n**策略概览**：规则 10 组共 46 只候选\n**多策略共识(7)**：601668 中国建筑(6策略)、000001 平安银行(6策略)、601166 兴业银行(5策略)、601919 中远海控(4策略)\n**盘后摘要**：盘面处于冰点阶段，上涨 5.6%（中位数 -5.08%），涨跌停 28/63（封板率 71.8%），公告排雷命中 1 只预警\n**形态雷达**：低波趋势稳健突破(5只·观察期：交通银行、中国电信)；红三兵回踩确认(2只·观察期：中国石油、福能股份)\n**盘后要闻**：京东健康与中国生物制药深化战略合作\n注：量化形态观测与回测基准，非投资建议。",
+  "im_card_chars": 475
+}

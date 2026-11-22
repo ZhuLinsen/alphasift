@@ -3,8 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23090d16'/%3E%3Cpath d='M6 8h20l-7.5 8.8v6.6l-5 2.4V16.8L6 8z' fill='%233b82f6' fill-opacity='.25' stroke='%2360a5fa' stroke-width='2.2' stroke-linejoin='round'/%3E%3Ccircle cx='23' cy='23' r='2.5' fill='%2334d399'/%3E%3C/svg%3E">
 <title>AlphaSift · 量化形态观测与回测基准</title>
 <meta name="description" content="AlphaSift 开源全市场选股与验证引擎：A 股盘面宽度与情绪分布、多策略共识、公告排雷、规则 vs AI 同日配对归因、形态 250 日聚日验证与 T+5 / T+10 / T+20 不可成交口径评估。">
+<link rel="canonical" href="https://alphasift.zhulinsen.tech/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AlphaSift">
+<meta property="og:title" content="AlphaSift · 形态 + AI 选股与多策略公开跟踪曲线">
+<meta property="og:description" content="A股/美股/港股等7市场每日自动选股、K线形态雷达、公告排雷、AI复盘日报与公开 T+5/T+10/T+20 策略跟踪曲线。">
+<meta property="og:url" content="https://alphasift.zhulinsen.tech/">
+<meta property="og:image" content="https://alphasift.zhulinsen.tech/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AlphaSift · 形态 + AI 选股与多策略公开跟踪曲线">
+<meta name="twitter:description" content="A股/美股/港股等7市场每日自动选股、K线形态雷达、公告排雷、AI复盘日报与公开 T+5/T+10/T+20 策略跟踪曲线。">
+<meta name="twitter:image" content="https://alphasift.zhulinsen.tech/social-preview.png">
 <link rel="alternate" type="application/atom+xml" title="AlphaSift Daily Feed" href="site/feed.xml">
 <style>
 :root {
@@ -452,8 +466,30 @@ tr.low-sample td, td.muted-cell { color: var(--muted); opacity: 0.78; }
 .badge.ai { color: var(--accent-hi); border-color: rgba(59, 130, 246, 0.35); background: var(--accent-soft); }
 .badge.active { color: var(--down); border-color: rgba(52, 211, 153, 0.3); background: var(--down-soft); }
 .badge.bad { color: var(--up); border-color: rgba(248, 113, 113, 0.3); background: var(--up-soft); }
+.badge.warn { color: var(--warn); border-color: rgba(251, 191, 36, 0.35); background: var(--warn-soft); }
 .badge.exp { color: var(--muted); }
 .badge.mode { font-weight: 500; font-size: 10.5px; font-family: var(--font-mono); }
+
+.news-strip {
+  padding: 10px 12px; border-radius: 9px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.news-strip-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 11.5px; color: var(--muted); font-weight: 600;
+}
+.news-row {
+  display: flex; align-items: baseline; gap: 8px; font-size: 12px; line-height: 1.45; min-width: 0;
+}
+.news-meta {
+  flex-shrink: 0; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted);
+}
+.news-title {
+  color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+a.news-title:hover { color: var(--accent-hi); }
+.chart svg text.end-lbl { font-family: var(--font-sans); font-size: 11px; font-weight: 600; }
 
 /* Chart Panel & Tooltip */
 .chart-wrap { position: relative; padding: 14px 16px 8px; }
@@ -490,6 +526,7 @@ tr.low-sample td, td.muted-cell { color: var(--muted); opacity: 0.78; }
 .card h3 { font-size: 13.5px; margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .card .sub { margin-top: 3px; color: var(--muted); font-size: 11.5px; font-family: var(--font-mono); }
 .card td, .card th { padding: 6px 10px; font-size: 12px; }
+.bento-pane table th, .bento-pane table td { padding: 7px 6px; font-size: 12px; }
 .kline { width: 96px; height: 28px; display: inline-block; vertical-align: middle; }
 .sparkline { width: 64px; height: 18px; display: inline-block; vertical-align: middle; }
 .pat-meta-row {
@@ -543,12 +580,21 @@ footer {
   .nav-center { display: none; }
 }
 @media (max-width: 640px) {
-  .topbar-inner { padding: 9px 12px; }
+  .topbar-inner { padding: 8px 10px; gap: 6px; }
+  .brand-group { gap: 6px; }
+  .brand-link { flex-shrink: 0; font-size: 14px; gap: 6px; }
+  .brand-mark { width: 24px; height: 24px; }
+  .top-actions { gap: 4px; }
+  .action-btn, .github-btn { padding: 5px 7px; font-size: 11.5px; gap: 4px; }
+  .lang-switch button { padding: 3px 5px; font-size: 11px; }
   main { padding: 16px 14px 52px; }
   .kpi-strip { grid-template-columns: 1fr; }
   .cards { grid-template-columns: 1fr; }
   .live-pill { display: none; }
   .action-btn .btn-lbl { display: none; }
+}
+@media (max-width: 460px) {
+  .github-btn span, #theme-toggle span { display: none; }
 }
 </style>
 </head>
@@ -682,6 +728,10 @@ footer {
           <button type="button" data-t="both" aria-pressed="true" data-i18n="track_both">双赛道</button>
           <button type="button" data-t="rules" aria-pressed="false" data-i18n="track_rules">仅规则</button>
           <button type="button" data-t="ai" aria-pressed="false" data-i18n="track_ai">仅 AI</button>
+        </div>
+        <div class="seg" id="trend-density">
+          <button type="button" data-d="top3" aria-pressed="true" data-i18n="trend_top3">Top 3</button>
+          <button type="button" data-d="all" aria-pressed="false" data-i18n="trend_all">全部</button>
         </div>
         <select id="market-trend" data-i18n-aria="trend_mkt_aria" aria-label="走势市场"></select>
       </div>
@@ -987,7 +1037,11 @@ const I18N = {
     st_excess_lbl: "超 ",
     latest_n_picks: "{n} 只",
     latest_sub: "{d} · 全市场 {snap} 只 → 硬筛 {flt} 只",
-    degraded_lbl: "数据降级",
+    degraded_lbl: "数据回退",
+    trend_top3: "Top 3",
+    trend_all: "全部",
+    news_strip_title: "盘面要闻 (7×24)",
+    news_tag: "资讯",
     no_picks_day: "当天没有符合条件的股票",
     no_match_latest: "当前过滤条件无匹配策略或标的",
     no_days: "暂无历史交易日记录",
@@ -1229,7 +1283,11 @@ const I18N = {
     st_excess_lbl: "Ex ",
     latest_n_picks: "{n} picks",
     latest_sub: "{d} · {snap} universe → {flt} filtered",
-    degraded_lbl: "Degraded",
+    degraded_lbl: "Fallback",
+    trend_top3: "Top 3",
+    trend_all: "All",
+    news_strip_title: "Market Flash (7x24)",
+    news_tag: "News",
     no_picks_day: "No qualifying picks recorded",
     no_match_latest: "No strategies or picks match current filter",
     no_days: "No trading sessions recorded",
@@ -1471,7 +1529,11 @@ const I18N = {
     st_excess_lbl: "超 ",
     latest_n_picks: "{n} 銘柄",
     latest_sub: "{d} · 市場 {snap} 銘柄 → 絞り込み {flt} 銘柄",
-    degraded_lbl: "データ縮退",
+    degraded_lbl: "フォールバック",
+    trend_top3: "上位3",
+    trend_all: "すべて",
+    news_strip_title: "市況フラッシュ (7×24)",
+    news_tag: "ニュース",
     no_picks_day: "該当銘柄なし",
     no_match_latest: "条件に一致する戦略・銘柄がありません",
     no_days: "営業日データなし",
@@ -1656,6 +1718,7 @@ const state = {
   compareWin: "5",
   trendWin: "5",
   trendTrack: "both",
+  trendDensity: "top3",
   trendMarket: null,
   trendFocus: null,
   latestMarket: null,
@@ -1712,10 +1775,13 @@ const tHiddenReason = (raw, paired, minPaired) => {
   return t("tc_insuff_title", { m: minPaired });
 };
 
-function sname(name) {
+function rawSname(name) {
   const map = STRATEGY_I18N[state.lang];
-  if (map && map[name]) return esc(map[name]);
-  return esc(((state.summary && state.summary.strategy_names) || {})[name] || name);
+  if (map && map[name]) return String(map[name]);
+  return String(((state.summary && state.summary.strategy_names) || {})[name] || name || "");
+}
+function sname(name) {
+  return esc(rawSname(name));
 }
 
 function pname(slug, serverDisplay) {
@@ -1908,6 +1974,22 @@ function initTrackToggle() {
     const tr = btn && btn.dataset && btn.dataset.t;
     if (!tr) return;
     state.trendTrack = tr;
+    state.trendFocus = null;
+    sync();
+    renderChart();
+  });
+  sync();
+}
+
+function initTrendDensity() {
+  const el = $("trend-density");
+  if (!el) return;
+  const sync = () => el.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.d === state.trendDensity)));
+  el.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    const d = btn && btn.dataset && btn.dataset.d;
+    if (!d) return;
+    state.trendDensity = d;
     state.trendFocus = null;
     sync();
     renderChart();
@@ -2269,6 +2351,8 @@ function renderConsensusPane() {
   const tradeDate = rep.trade_date || clientSyn.latestDate || t("latest_fallback");
   const flagged = ann.flagged_items || [];
   const checked = Number(ann.checked_count || 0);
+  const mNews = (rep.market_news && Array.isArray(rep.market_news.items)) ? rep.market_news.items : [];
+  const candNews = (rep.market_news && rep.market_news.candidate_news) || {};
 
   let headlineHtml = "";
   if (brief.headline) {
@@ -2337,12 +2421,15 @@ function renderConsensusPane() {
       const more = (c.strategies || []).length > 3 ? ` <span class="dim small">+${c.strategies.length - 3}</span>` : "";
       const riskFlags = c.announcement_risk_flags || [];
       const riskCell = riskFlags.length ? `<span class="badge bad">${esc(riskFlags.join("/"))}</span>` : '<span class="dim">–</span>';
+      const stockNews = candNews[c.code] || [];
+      const newsHint = stockNews.length ? stockNews.map((n) => `[${n.date || n.source || ""}] ${n.title}`).join("\n") : "";
+      const newsPill = stockNews.length ? ` <span class="badge" title="${esc(newsHint)}">${esc(t("news_tag"))}</span>` : "";
       const rightCol = (c.change_pct !== null && c.change_pct !== undefined)
         ? pct(c.change_pct, 2)
         : (c.price !== null && c.price !== undefined ? `¥${num(c.price, 2)}` : '<span class="dim">–</span>');
       return `<tr>
         <td><span class="rank-num ${idx < 3 ? "top" : ""}">${idx + 1}</span></td>
-        <td class="l"><strong>${esc(c.name)}</strong> <span class="mono small dim">${esc(c.code)}</span></td>
+        <td class="l" title="${esc(newsHint)}"><strong>${esc(c.name)}</strong> <span class="mono small dim">${esc(c.code)}</span>${newsPill}</td>
         <td class="l dim">${c.industry ? esc(indname(c.industry)) : "–"}</td>
         <td><span class="badge accent">${esc(t("n_strat_badge", { n: c.strategy_count }))}</span></td>
         <td class="l">${stratTags}${more}</td>
@@ -2372,6 +2459,21 @@ function renderConsensusPane() {
       </div>`
     : "";
 
+  const safeNewsUrl = (raw) => (/^https?:\/\//i.test(String(raw || "").trim()) ? String(raw).trim() : "");
+  const newsHtml = mNews.length
+    ? `<div class="news-strip">
+        <div class="news-strip-head"><span>📰 ${esc(t("news_strip_title"))}</span><span class="mono">${esc(((rep.market_news || {}).sources || []).join(" · "))}</span></div>
+        ${mNews.slice(0, 4).map((n) => {
+          const href = safeNewsUrl(n.url);
+          const meta = [n.time, n.source].filter(Boolean).join(" · ");
+          const titleEl = href
+            ? `<a class="news-title" href="${esc(href)}" target="_blank" rel="noopener">${esc(n.title)}</a>`
+            : `<span class="news-title">${esc(n.title)}</span>`;
+          return `<div class="news-row">${meta ? `<span class="news-meta">${esc(meta)}</span>` : ""}${titleEl}</div>`;
+        }).join("")}
+      </div>`
+    : "";
+
   const reportBtn = rep.trade_date
     ? `<a class="action-btn" href="${esc(reportHref())}" style="padding:3px 9px;font-size:11.5px;">${esc(t("full_report_btn"))}</a>`
     : `<span class="chip">${esc(t("live_agg_chip", { d: tradeDate }))}</span>`;
@@ -2385,6 +2487,7 @@ function renderConsensusPane() {
     ${annHtml}
     ${tableHtml}
     ${sectorHtml}
+    ${newsHtml}
   `;
 }
 
@@ -2868,12 +2971,12 @@ function renderChart() {
   const lines = [];
   if (state.trendTrack === "rules" || state.trendTrack === "both") {
     for (const n of Object.keys(rulesSeries).sort()) {
-      lines.push({ id: `${n}:rules`, label: sname(n), track: "rules", pts: rulesSeries[n] });
+      lines.push({ id: `${n}:rules`, label: rawSname(n), track: "rules", pts: rulesSeries[n] });
     }
   }
   if (state.trendTrack === "ai" || state.trendTrack === "both") {
     for (const n of Object.keys(aiSeries).sort()) {
-      lines.push({ id: `${n}:ai`, label: `${sname(n)} [AI]`, track: "ai", pts: aiSeries[n] });
+      lines.push({ id: `${n}:ai`, label: `${rawSname(n)} [AI]`, track: "ai", pts: aiSeries[n] });
     }
   }
   const tip = $("chart-tip");
@@ -2889,7 +2992,7 @@ function renderChart() {
   let lo = Math.min(0, ...values), hi = Math.max(0, ...values);
   const pad = (hi - lo) * 0.14 || 1;
   lo -= pad; hi += pad;
-  const W = 1040, H = 310, L = 54, R = 24, T = 16, B = 30;
+  const W = 1040, H = 310, L = 54, R = 148, T = 16, B = 30;
   const x = (d) => L + (dates.length === 1 ? (W - L - R) / 2 : (dates.indexOf(d) / (dates.length - 1)) * (W - L - R));
   const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
   const ticks = 4, parts = [];
@@ -2908,7 +3011,7 @@ function renderChart() {
   });
 
   let top3Ids = null;
-  if (!state.trendFocus && lines.length > 5) {
+  if (!state.trendFocus && state.trendDensity === "top3" && lines.length > 5) {
     top3Ids = new Set(
       [...lines]
         .filter((l) => Array.isArray(l.pts) && l.pts.length)
@@ -2918,17 +3021,58 @@ function renderChart() {
     );
   }
 
+  const endLabels = [];
   lines.forEach((l, i) => {
     const color = `var(--s${(i % 12) + 1})`;
-    const isDim = state.trendFocus ? state.trendFocus !== l.id : (top3Ids && !top3Ids.has(l.id));
-    const sw = state.trendFocus === l.id ? "2.8" : (top3Ids && top3Ids.has(l.id) ? "2.4" : "1.8");
-    const op = state.trendFocus ? (isDim ? "0.18" : "0.95") : (isDim ? "0.35" : "0.95");
+    const isDim = state.trendFocus ? state.trendFocus !== l.id : (top3Ids ? !top3Ids.has(l.id) : false);
+    const sw = state.trendFocus === l.id ? "2.8" : (top3Ids && top3Ids.has(l.id) ? "2.4" : (state.trendDensity === "all" && !state.trendFocus ? "2.1" : "1.8"));
+    const op = state.trendFocus ? (isDim ? "0.18" : "0.95") : (isDim ? "0.22" : (state.trendDensity === "all" && !top3Ids ? "0.86" : "0.95"));
     const dashAttr = l.track === "ai" ? ' stroke-dasharray="5 3"' : "";
     parts.push(`<polyline fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" stroke-linecap="round" stroke-linejoin="round"${dashAttr} points="${l.pts.map((p) => `${x(p[0])},${y(p[1])}`).join(" ")}"/>`);
     for (const p of l.pts) {
       parts.push(`<circle class="pt" data-id="${esc(l.id)}" data-label="${esc(l.label)}" data-date="${esc(p[0])}" data-val="${p[1]}" data-n="${p[2]}" data-col="${color}" cx="${x(p[0])}" cy="${y(p[1])}" r="${state.trendFocus === l.id ? 4 : 3}" fill="${color}" fill-opacity="${op}"/>`);
     }
+    if (l.pts.length && (!isDim || state.trendFocus === l.id)) {
+      const lp = l.pts[l.pts.length - 1];
+      endLabels.push({
+        id: l.id,
+        label: l.label,
+        color,
+        lastX: x(lp[0]),
+        desiredY: y(lp[1]),
+        val: Number(lp[1]),
+      });
+    }
   });
+
+  // Render collision-avoided right-edge end labels for active/top curves (capped at 5 in "all" mode).
+  const sortedByVal = [...endLabels].sort((a, b) => b.val - a.val).slice(0, state.trendFocus ? 1 : (state.trendDensity === "all" ? 5 : 3));
+  sortedByVal.sort((a, b) => a.desiredY - b.desiredY);
+  const minGap = 15, yMin = T + 8, yMax = H - B - 4;
+  for (let i = 0; i < sortedByVal.length; i++) {
+    let cur = Math.max(yMin, Math.min(yMax, sortedByVal[i].desiredY));
+    if (i > 0) cur = Math.max(cur, sortedByVal[i - 1].yPos + minGap);
+    sortedByVal[i].yPos = cur;
+  }
+  if (sortedByVal.length && sortedByVal[sortedByVal.length - 1].yPos > yMax) {
+    sortedByVal[sortedByVal.length - 1].yPos = yMax;
+    for (let i = sortedByVal.length - 2; i >= 0; i--) {
+      sortedByVal[i].yPos = Math.min(sortedByVal[i].yPos, sortedByVal[i + 1].yPos - minGap);
+    }
+    for (let i = 0; i < sortedByVal.length; i++) {
+      sortedByVal[i].yPos = Math.max(yMin, sortedByVal[i].yPos);
+    }
+  }
+  for (const item of sortedByVal) {
+    const lblX = dates.length === 1 ? item.lastX + 12 : Math.max(item.lastX + 8, W - R + 10);
+    const shortName = item.label.length > 10 ? `${item.label.slice(0, 9)}…` : item.label;
+    const sign = item.val > 0 ? "+" : "";
+    if (Math.abs(item.yPos - item.desiredY) > 2 || lblX - item.lastX > 12) {
+      parts.push(`<line x1="${item.lastX + 2}" y1="${item.desiredY.toFixed(1)}" x2="${lblX - 4}" y2="${item.yPos.toFixed(1)}" stroke="${item.color}" stroke-opacity="0.45" stroke-width="1"/>`);
+    }
+    parts.push(`<text class="end-lbl" x="${lblX}" y="${(item.yPos + 3.5).toFixed(1)}" fill="${item.color}">${esc(shortName)} ${sign}${item.val.toFixed(2)}%</text>`);
+  }
+
   parts.push(`<line class="chart-crosshair" id="chart-crosshair" x1="${L}" x2="${L}" y1="${T}" y2="${H - B}" stroke="var(--accent-hi)" stroke-width="1" stroke-dasharray="3 3" style="display:none;pointer-events:none"/>`);
   parts.push(`<rect class="chart-hit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" style="cursor:crosshair;touch-action:none"/>`);
 
@@ -2938,14 +3082,23 @@ function renderChart() {
   const hitRect = svg && svg.querySelector("rect.chart-hit");
   const xhair = svg && svg.querySelector("#chart-crosshair");
   if (svg && tip) {
-    const showTipFor = (c) => {
+    const showTipFor = (c, rowsForDate) => {
       const val = Number(c.dataset.val);
-      tip.innerHTML = `<b>${esc(c.dataset.label)}</b><br>${esc(c.dataset.date)} · ${esc(t("chart_tip_excess"))} <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${esc(t("chart_tip_picks", { n: c.dataset.n }))}`;
+      if (Array.isArray(rowsForDate) && rowsForDate.length > 1) {
+        const extra = rowsForDate.slice(0, 5).map((item) => {
+          const mark = item.id === c.dataset.id ? "▸ " : "";
+          const sign = item.val > 0 ? "+" : "";
+          return `<div style="display:flex;justify-content:space-between;gap:12px;margin-top:2px;"><span>${mark}<span style="color:${item.col}">●</span> ${esc(item.label)}</span><span class="${item.val >= 0 ? "up" : "down"}">${sign}${item.val.toFixed(2)}%</span></div>`;
+        }).join("");
+        tip.innerHTML = `<div style="font-weight:700;margin-bottom:3px;">${esc(c.dataset.date)} · ${esc(t("chart_tip_excess"))}</div>${extra}`;
+      } else {
+        tip.innerHTML = `<b>${esc(c.dataset.label)}</b><br>${esc(c.dataset.date)} · ${esc(t("chart_tip_excess"))} <span class="${val >= 0 ? "up" : "down"}">${val > 0 ? "+" : ""}${val.toFixed(2)}%</span> · ${esc(t("chart_tip_picks", { n: c.dataset.n }))}`;
+      }
       tip.style.display = "block";
       const wrapBox = $("chart").parentElement.getBoundingClientRect();
       const cBox = c.getBoundingClientRect();
-      tip.style.left = `${Math.min(wrapBox.width - 210, Math.max(8, cBox.left - wrapBox.left + 10))}px`;
-      tip.style.top = `${Math.max(8, cBox.top - wrapBox.top - 48)}px`;
+      tip.style.left = `${Math.min(wrapBox.width - 230, Math.max(8, cBox.left - wrapBox.left + 10))}px`;
+      tip.style.top = `${Math.max(8, cBox.top - wrapBox.top - 52)}px`;
       if (xhair) {
         const cx = c.getAttribute("cx");
         xhair.setAttribute("x1", cx);
@@ -2972,7 +3125,22 @@ function renderChart() {
           const d2 = dx * dx * 1.4 + dy * dy;
           if (d2 < bestDist) { bestDist = d2; best = c; }
         }
-        if (best) showTipFor(best);
+        if (best) {
+          let dateRows = null;
+          if (!state.trendFocus) {
+            const targetDate = best.dataset.date;
+            dateRows = pts
+              .filter((p) => p.dataset.date === targetDate)
+              .map((p) => ({
+                id: p.dataset.id,
+                label: p.dataset.label,
+                col: p.dataset.col,
+                val: Number(p.dataset.val),
+              }))
+              .sort((a, b) => b.val - a.val);
+          }
+          showTipFor(best, dateRows);
+        }
       };
       hitRect.addEventListener("pointermove", handlePtr);
       hitRect.addEventListener("pointerdown", handlePtr);
@@ -2983,7 +3151,7 @@ function renderChart() {
   $("legend").innerHTML = lines.map((l, i) => {
     const col = `var(--s${(i % 12) + 1})`;
     const focused = state.trendFocus === l.id;
-    return `<button type="button" class="legend-btn${focused ? " focused" : ""}" data-id="${esc(l.id)}"><i class="${l.track === "ai" ? "dashed" : ""}" style="background:${col};color:${col}"></i><span>${l.label}</span></button>`;
+    return `<button type="button" class="legend-btn${focused ? " focused" : ""}" data-id="${esc(l.id)}"><i class="${l.track === "ai" ? "dashed" : ""}" style="background:${col};color:${col}"></i><span>${esc(l.label)}</span></button>`;
   }).join("");
 
   $("legend").querySelectorAll("button.legend-btn").forEach((btn) => {
@@ -3035,10 +3203,13 @@ function renderLatest() {
   const runs = ((state.summary.latest || {})[state.latestMarket] || []).filter((r) => matchesSearch(r, q));
   $("latest").innerHTML = runs.length ? runs.map((r) => {
     const badge = r.track === "ai" ? '<span class="badge ai">AI</span>' : "";
+    const degNotes = Array.isArray(r.degradation_notes) ? r.degradation_notes.join(" · ") : "";
+    const degLbl = Number(r.degradation || 0) > 1 ? `${t("degraded_lbl")} (${r.degradation})` : t("degraded_lbl");
+    const degHtml = r.degradation ? `<span class="badge warn" title="${esc(degNotes)}">${esc(degLbl)}</span>` : "";
     return `<div class="card">
       <div class="card-top">
-        <h3><span>${sname(r.strategy)}${badge}</span><span class="badge">${esc(t("latest_n_picks", { n: r.picks.length }))}</span></h3>
-        <div class="sub">${esc(t("latest_sub", { d: r.date, snap: r.snapshot_count ?? "–", flt: r.after_filter_count ?? "–" }))}${r.degradation ? ` · <span class="up">${esc(t("degraded_lbl"))}</span>` : ""}</div>
+        <h3><span>${sname(r.strategy)}${badge}</span><span>${degHtml}<span class="badge">${esc(t("latest_n_picks", { n: r.picks.length }))}</span></span></h3>
+        <div class="sub">${esc(t("latest_sub", { d: r.date, snap: r.snapshot_count ?? "–", flt: r.after_filter_count ?? "–" }))}</div>
       </div>
       ${r.picks.length ? picksTable(r.picks, false) : `<div class="empty">${esc(t("no_picks_day"))}</div>`}
     </div>`;
@@ -3163,6 +3334,7 @@ async function init() {
   segmented($("win-compare"), "compareWin", renderTrackComparison);
   segmented($("win-trend"), "trendWin", renderChart);
   initTrackToggle();
+  initTrendDensity();
   fillMarkets($("market-trend"), "trendMarket", renderChart);
   fillMarkets($("market-latest"), "latestMarket", renderLatest);
   renderScorecard();
