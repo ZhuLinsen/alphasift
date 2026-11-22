@@ -739,7 +739,7 @@ footer {
     <details class="sec-details" id="details-patterns">
       <summary class="sec-summary"><span data-i18n="details_pat_title">A 股无状态形态雷达命中（20 日迷你 K 线）</span></summary>
       <div class="sec-body">
-        <p class="sec-hint" style="margin:0 0 12px;" data-i18n-html="details_pat_hint">未通过 250 日 <code>next_open</code> 严苛门槛（N ≥ 200、扣 25bp 净超额 &gt; 0%、同日跑赢全A等权、H1/H2 ≥15d 同号正超额、Newey-West t ≥ 1.96 且 BH-FDR q ≤ 0.05）的形态一律置灰标 <code>experimental</code>，仅作研究观察。</p>
+        <p class="sec-hint" style="margin:0 0 12px;" data-i18n-html="details_pat_hint">未通过 250 日 <code>next_open</code> 严苛门槛（N ≥ 200、扣 25bp 净超额 &gt; 0%、同日跑赢全A等权、H1/H2 各 ≥15d 且 ≥30 样本同号正超额、Newey-West t ≥ 1.96 且 BH-FDR q ≤ 0.05）的形态一律置灰标 <code>experimental</code>，仅作研究观察。</p>
         <div id="pattern-hits-wrap"><div class="empty" data-i18n="loading_pat">加载形态命中…</div></div>
       </div>
     </details>
@@ -828,7 +828,7 @@ const I18N = {
     sec5_title: "规则榜 vs AI 榜同日配对归因",
     sec5_hint: "仅针对同一策略在同一交易日的双轨运行严格配对对比（同日配对 < 10 日时隐藏差值，单列 AI 缺失率与重合度）。",
     details_pat_title: "A 股无状态形态雷达命中（20 日迷你 K 线）",
-    details_pat_hint: "未通过 250 日 <code>next_open</code> 严苛门槛（N ≥ 200、扣 25bp 净超额 > 0%、同日跑赢全A等权、H1/H2 ≥15d 同号正超额、Newey-West t ≥ 1.96 且 BH-FDR q ≤ 0.05）的形态一律置灰标 <code>experimental</code>，仅作研究观察。",
+    details_pat_hint: "未通过 250 日 <code>next_open</code> 严苛门槛（N ≥ 200、扣 25bp 净超额 > 0%、同日跑赢全A等权、H1/H2 各 ≥15d 且 ≥30 样本同号正超额、Newey-West t ≥ 1.96 且 BH-FDR q ≤ 0.05）的形态一律置灰标 <code>experimental</code>，仅作研究观察。",
     details_replay_title: "250 日 next_open 形态回放、聚日稳定性与切片验证",
     footer_note: "<strong>AlphaSift</strong> · 开源量化形态观测与回测基准（Apache-2.0 License）· 公开纸面跟踪，非投资建议，历史统计不含分红；低于样本门槛（成绩单 &lt; 20、AI 配对 &lt; 10 日、切片 &lt; 100、形态毕业 &lt; 200）统一置灰或隐藏差值。",
     footer_repo: "GitHub 源码仓库",
@@ -1070,7 +1070,7 @@ const I18N = {
     sec5_title: "Rules vs AI Same-Day Paired Attribution",
     sec5_hint: "Strict same-date, same-strategy paired comparison between rules and AI tracks (delta hidden when paired sessions < 10).",
     details_pat_title: "CN Stateless Pattern Radar Hits (20-Day Mini K-Line)",
-    details_pat_hint: "Patterns below the strict 250-day <code>next_open</code> graduation gate (matched N ≥ 200, net excess > 0% after 25bp, matched-day alpha over All-A EW, H1/H2 ≥15d positive, Newey-West t ≥ 1.96, and BH-FDR q ≤ 0.05) stay muted as <code>experimental</code>.",
+    details_pat_hint: "Patterns below the strict 250-day <code>next_open</code> graduation gate (matched N ≥ 200, net excess > 0% after 25bp, matched-day alpha over All-A EW, H1/H2 ≥15d and ≥30 samples positive, Newey-West t ≥ 1.96, and BH-FDR q ≤ 0.05) stay muted as <code>experimental</code>.",
     details_replay_title: "250-Day next_open Replay, Clustered Stability & Regime Slices",
     footer_note: "<strong>AlphaSift</strong> · Open-Source Quantitative Discovery & Benchmark (Apache-2.0 License) · Research only, not investment advice; excludes dividends. Under-threshold cells (scorecard &lt; 20, AI pairs &lt; 10d, slices &lt; 100, pattern gate &lt; 200) are muted or hidden.",
     footer_repo: "GitHub Repository",
@@ -1312,7 +1312,7 @@ const I18N = {
     sec5_title: "ルール vs AI 同日ペア帰属分析",
     sec5_hint: "同一戦略・同一営業日の両トラック実行のみを厳密にペア比較します（ペア日数 < 10 日の場合、差分は非表示）。",
     details_pat_title: "中国 A 株 ステートレスパターン検出（20日ミニローソク足）",
-    details_pat_hint: "250日 <code>next_open</code> 厳格基準（一致標本 ≥ 200、25bp 控除後純超過 > 0%、同日全A等重超過、H1/H2 ≥15日同符号正超過、Newey-West t ≥ 1.96 かつ BH-FDR q ≤ 0.05）未達のパターンは <code>experimental</code> としてグレー表示されます。",
+    details_pat_hint: "250日 <code>next_open</code> 厳格基準（一致標本 ≥ 200、25bp 控除後純超過 > 0%、同日全A等重超過、H1/H2 各 ≥15日かつ ≥30標本同符号正超過、Newey-West t ≥ 1.96 かつ BH-FDR q ≤ 0.05）未達のパターンは <code>experimental</code> としてグレー表示されます。",
     details_replay_title: "250日 next_open リプレイ・日別安定性・局面別スライス検証",
     footer_note: "<strong>AlphaSift</strong> · オープンソース銘柄発掘＆検証ベンチマーク（Apache-2.0 License）· 投資助言ではありません（配当除く）。閾値未満（成績表 &lt; 20、AI ペア &lt; 10日、スライス &lt; 100、パターン &lt; 200）はグレーまたは非表示。",
     footer_repo: "GitHub リポジトリ",
@@ -2701,7 +2701,7 @@ function renderPatternRadar() {
     const patMeta = patNames.map((name) => {
       const items = sigMap[name] || [];
       const total = counts[name] || items.length;
-      const st = items[0] ? items[0].status : (replayStatus[name] || "experimental");
+      const st = replayStatus[name] || (items[0] ? items[0].status : "experimental");
       return { name, items, total, st };
     });
     const actCnt = patMeta.filter((x) => x.st === "active").length;
