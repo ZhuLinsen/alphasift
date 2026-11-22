@@ -115,8 +115,8 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 |---|---|---|
 | **GitHub Search / Topics** | `mcp`, `a-shares`, `stock-screener`, `quantitative-finance`, `ai-agent`, `backtesting`, `claude-code`, `openclaw`, `akshare`, `yfinance` | Repository Topics (`20/20`) + Bilingual Bio + `README*.md` 首屏 |
 | **PyPI & `CITATION.cff`** | `quantitative-finance`, `stock-screener`, `mcp`, `multi-market`, `track-record`, `ai-agent`, `china-equities` | `pyproject.toml` keywords/classifiers + `CITATION.cff` |
-| **Google / Bing 长尾词** | `"auditable stock screener mcp"`, `"rules vs llm stock selection benchmark"`, `"next_open survivorship bias python"`, `"alphasift serve"` | `README.md`、`docs/ecosystem.md`、`docs/result-schema.md`、Pages `<title>`/`<meta>` |
-| **Baidu / 知乎 / 掘金中文词** | `A股 开源选股 MCP`, `Python 量化初筛 涨停不可成交`, `daily_stock_analysis 上游选股`, `Claude Code 选股 skill` | `README.zh-CN.md`、知乎/掘金文章标题与前 200 字 |
+| **Google / Bing 长尾词** | `"auditable stock screener mcp"`, `"rules vs llm stock selection benchmark"`, `"next_open survivorship bias python"`, `"alphasift serve"` | `README.en.md`、`docs/ecosystem.md`、`docs/result-schema.md`、Pages `<title>`/`<meta>` |
+| **Baidu / 知乎 / 掘金中文词** | `A股 开源选股 MCP`, `Python 量化初筛 涨停不可成交`, `daily_stock_analysis 上游选股`, `Claude Code 选股 skill` | `README.md`（主中文）与 `dashboard-preview.gif`、知乎/掘金文章标题 |
 
 ---
 
