@@ -6,9 +6,9 @@
 
 # 🔎 AlphaSift
 
-**Open-Source Full-Market AI Stock Screener, 250-Day Pattern Radar & Audited T+N Quant Engine**
+**AI Quantitative Stock Screener**
 
-*7 global markets (CN A-Shares / US / HK / JP / KR / TW / IN) -> Auditable YAML strategies -> Red-Flag AI re-ranking -> 1-line 12-channel push & public T+5/10/20 audit*
+*7 global markets (CN / US / HK / JP / KR / TW / IN) -> Multi-factor YAML screening -> Red-flag AI re-ranking -> Public T+N benchmark*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
 [![CI](https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml/badge.svg)](https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml)

@@ -6,9 +6,9 @@
 
 # 🔎 AlphaSift
 
-**开源全市场 AI 量化选股引擎、250 日实证形态雷达与公开 T+N 回测基准**
+**AI 量化选股引擎**
 
-*A股 / 美股 / 港股 / 日韩台印 7 大市场 → 可审计 YAML 策略 → 公告情报红线 AI 复核 → 一行 12 通道推送与公开 T+5/10/20 验真*
+*A股 / 美股 / 港股 / 日韩台印全市场多因子筛选 → AI 情报复核与排雷 → 公开 T+N 实盘验证*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
 [![CI](https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml/badge.svg)](https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml)

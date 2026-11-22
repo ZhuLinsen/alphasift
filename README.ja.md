@@ -6,9 +6,9 @@
 
 # 🔎 AlphaSift
 
-**オープンソース全市場 AI 株式スクリーナー・250日実証パターン検出・公開 T+N 検証ベンチマーク**
+**AI クオンツ株式スクリーナー**
 
-*中国A株・米国・香港・日本・韓国・台湾・インドの7市場 → 監査可能な YAML 戦略 → 開示リスク重視 AI 再ランク → 1行12チャネル通知＆T+5/10/20 公開検証*
+*世界7市場（中国A株・米国・香港・日本・韓国・台湾・インド）のマルチファクター選定 → AI 開示リスク再評価 → 公開 T+N 検証*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
 [![CI](https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml/badge.svg)](https://github.com/ZhuLinsen/alphasift/actions/workflows/ci.yml)
