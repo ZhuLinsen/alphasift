@@ -19,6 +19,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--benchmark-csv", default=None, help="Optional CSV with date,open,close columns")
     parser.add_argument("--warmup-days", type=int, default=60, help="Warmup sessions before evaluating signals")
     parser.add_argument("--cost-bps", type=float, default=0.0, help="Round-trip cost in bps")
+    parser.add_argument(
+        "--allowed-regimes",
+        default=None,
+        help="Comma-separated permitted regime stages (e.g. startup,main_up)",
+    )
+    parser.add_argument(
+        "--exclude-regimes",
+        default=None,
+        help="Comma-separated excluded regime stages (e.g. freezing,ebb)",
+    )
     parser.add_argument("--output-json", default=None, help="Write replay JSON report")
     parser.add_argument("--output-md", default=None, help="Write replay Markdown report")
     args = parser.parse_args(argv)
@@ -36,6 +46,14 @@ def main(argv: list[str] | None = None) -> int:
         benchmark_df=bench,
         warmup_days=args.warmup_days,
         cost_bps=args.cost_bps,
+        allowed_regimes=[
+            s.strip() for s in (args.allowed_regimes or "").split(",") if s.strip()
+        ]
+        or None,
+        excluded_regimes=[
+            s.strip() for s in (args.exclude_regimes or "").split(",") if s.strip()
+        ]
+        or None,
     )
     md = render_replay_markdown(report)
 

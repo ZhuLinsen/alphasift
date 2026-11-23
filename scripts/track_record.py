@@ -1500,6 +1500,7 @@ def _build_pattern_board(track: Path) -> dict[str, Any] | None:
             "pack_summary": replay.get("pack_summary"),
             "regime_distribution": replay.get("regime_distribution"),
             "universe_baseline": replay.get("universe_baseline"),
+            "regime_filter": replay.get("regime_filter"),
             "patterns": [
                 {
                     "pattern": item.get("pattern"),
@@ -1514,6 +1515,7 @@ def _build_pattern_board(track: Path) -> dict[str, Any] | None:
                     "multiple_testing": item.get("multiple_testing"),
                     "by_regime": item.get("by_regime"),
                     "by_overhead_supply": item.get("by_overhead_supply"),
+                    "walk_forward_regime_audit": item.get("walk_forward_regime_audit"),
                 }
                 for item in (replay.get("patterns") or [])
             ],

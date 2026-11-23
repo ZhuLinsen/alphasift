@@ -439,6 +439,16 @@ def main():
     pat_replay.add_argument("--cost-bps", type=float, default=0.0, help="扣减双边交易成本（bps）")
     pat_replay.add_argument("--output-json", default=None, help="写出 JSON 回放报告")
     pat_replay.add_argument("--output-md", default=None, help="写出 Markdown 回放报告")
+    pat_replay.add_argument(
+        "--allowed-regimes",
+        default=None,
+        help="仅保留指定市场情绪阶段（逗号分隔，支持 freezing/startup/main_up/divergence/ebb/neutral 或中文标签）",
+    )
+    pat_replay.add_argument(
+        "--exclude-regimes",
+        default=None,
+        help="剔除指定市场情绪阶段（逗号分隔，例如 freezing,ebb）",
+    )
     pat_replay.add_argument("--json", action="store_true", help="以 JSON 输出")
 
     # daily-report (CN daily report + multi-market digest + IM card + idempotent push)
@@ -1105,6 +1115,14 @@ def main():
                     benchmark_df=bench,
                     warmup_days=args.warmup_days,
                     cost_bps=args.cost_bps,
+                    allowed_regimes=[
+                        s.strip() for s in (args.allowed_regimes or "").split(",") if s.strip()
+                    ]
+                    or None,
+                    excluded_regimes=[
+                        s.strip() for s in (args.exclude_regimes or "").split(",") if s.strip()
+                    ]
+                    or None,
                 )
             except (OSError, RuntimeError, ValueError, IndexError) as exc:
                 parser.error(str(exc))

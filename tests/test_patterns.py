@@ -17,8 +17,10 @@ from alphasift.pattern_replay import (
     _benjamini_hochberg_q_values,
     _evaluate_graduation,
     _newey_west_t_stat,
+    _normalize_regime_filter,
     _summarize_horizon_obs,
     _summarize_stability,
+    _summarize_walk_forward_regime_audit,
     load_cn_benchmark,
     render_replay_markdown,
     replay_patterns,
@@ -628,3 +630,248 @@ def test_newey_west_deflates_autocorrelation_and_bh_fdr() -> None:
 
     q_vals = _benjamini_hochberg_q_values([0.004, 0.04, 0.25])
     assert q_vals == [pytest.approx(0.012), pytest.approx(0.06), pytest.approx(0.25)]
+
+
+def test_normalize_regime_filter_and_validation() -> None:
+    allowed, meta = _normalize_regime_filter(["startup", "主升"], ["冰点"])
+    assert allowed == {"startup", "main_up"}
+    assert meta == {
+        "active": True,
+        "allowed_regimes": ["startup", "main_up"],
+        "excluded_regimes": ["freezing"],
+        "effective_regimes": ["startup", "main_up"],
+    }
+
+    # Excluding one item from explicit allowed_regimes narrows effective set cleanly
+    narrowed, meta_narrow = _normalize_regime_filter(["startup", "main_up"], ["main_up"])
+    assert narrowed == {"startup"}
+    assert meta_narrow["effective_regimes"] == ["startup"]
+
+    # Default inactive state returns None mask and full canonical stage list
+    none_mask, meta_default = _normalize_regime_filter()
+    assert none_mask is None
+    assert meta_default["active"] is False
+    assert len(meta_default["effective_regimes"]) == 6
+
+    with pytest.raises(ValueError, match="Unknown market regime"):
+        _normalize_regime_filter(["nonexistent_stage"])
+
+    with pytest.raises(ValueError, match="no permitted market regimes"):
+        _normalize_regime_filter(["startup"], ["startup"])
+
+    with pytest.raises(ValueError, match="cannot be empty"):
+        _normalize_regime_filter([])
+
+
+def test_walk_forward_regime_audit_zero_snooping_h1_to_h2_oos() -> None:
+    mid_date = "2026-06-01"
+    obs: list[dict[str, object]] = []
+
+    def _add(date: str, stage: str, ret: float, ew: float) -> None:
+        obs.append({
+            "date": date,
+            "code": "000001",
+            "stage": stage,
+            "horizons": {
+                "t5": {
+                    "status": "ok",
+                    "net_excess_return_pct": ret,
+                    "excess_return_pct": ret,
+                    "net_over_ew_pct": ew,
+                }
+            },
+        })
+
+    # H1 (< 2026-06-01): startup is strongly positive (+2.0%), freezing & divergence are negative (-2.0% and -1.5%)
+    for i in range(4):
+        _add(f"2026-05-0{i + 1}", "startup", 2.0, 1.5)
+        _add(f"2026-05-1{i + 1}", "freezing", -2.0, -1.8)
+        _add(f"2026-05-2{i + 1}", "divergence", -1.5, -1.2)
+
+    # H2 (>= 2026-06-01): startup remains positive (+1.8%), freezing stays negative (-2.5%),
+    # while divergence spikes +5.0% ONLY in H2 (must NOT leak backward into H1 regime selection!).
+    for i in range(4):
+        _add(f"2026-06-0{i + 1}", "startup", 1.8, 1.3)
+        _add(f"2026-06-1{i + 1}", "freezing", -2.5, -2.0)
+        _add(f"2026-06-2{i + 1}", "divergence", 5.0, 4.2)
+
+    audit = _summarize_walk_forward_regime_audit(obs, mid_date=mid_date, horizon=5, min_regime_days_h1=3)
+    assert audit["status"] == "ok"
+    # Zero look-ahead check: only startup was positive in H1; divergence must remain adverse despite H2 +5.0%!
+    assert audit["h1_positive_regimes"] == ["startup"]
+    assert audit["h1_adverse_regimes"] == ["freezing", "divergence"]
+    assert "divergence" not in audit["h1_non_adverse_regimes"]
+    assert audit["h2_positive_only"]["days"] == 4
+    assert audit["h2_positive_only"]["daily_mean_pct"] == pytest.approx(1.8)
+    assert audit["h2_baseline"]["days"] == 12
+    # H2 baseline = mean([1.8, -2.5, 5.0]) = 1.4333... -> H2 positive (1.8) still outperforms baseline OOS
+    assert audit["delta_positive_vs_h2_baseline_pct"] > 0.0
+    assert audit["per_regime_oos"]["divergence"]["h1_daily_mean_pct"] == pytest.approx(-1.5)
+    assert audit["per_regime_oos"]["divergence"]["h2_daily_mean_pct"] == pytest.approx(5.0)
+
+
+def test_replay_patterns_regime_filter_and_walk_forward_markdown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    n_days = 100
+    dates = _dates(n_days)
+
+    # Custom deterministic direct pattern (`body_pct >= 4.0`) + two signal bursts across distinct market regimes
+    pat_dir = tmp_path / "patterns"
+    pat_dir.mkdir()
+    (pat_dir / "body_filter_test.yaml").write_text(
+        "name: body_filter_test\ndisplay_name: 测试过滤形态\nfamily: breakout\nstatus: experimental\n"
+        "mode: direct\nmarket_scope: [cn]\nmin_history_days: 60\n"
+        "universe:\n  exclude_st: true\n  proxy_amount_min: 50000000\n"
+        "conditions:\n  - feature: body_pct\n    min: 4.0\n",
+        encoding="utf-8",
+    )
+
+    series_by_code: dict[str, list[tuple[float, float, float, float, float, float]]] = {
+        f"600{idx:03d}": _flat_bars(n_days, price=10.0, vol=10_000_000.0)
+        for idx in range(10)
+    }
+
+    # Day 65: market-wide panic drop (-8%), only 600000 has a qualifying +5% rebound bar
+    for idx in range(1, 10):
+        c = f"600{idx:03d}"
+        series_by_code[c][65] = (9.9, 9.9, 9.1, 9.2, 10.0, 20_000_000.0)
+        series_by_code[c][66] = (9.2, 9.3, 9.0, 9.1, 9.2, 15_000_000.0)
+    series_by_code["600000"][65] = (10.0, 10.6, 9.95, 10.5, 10.0, 25_000_000.0)
+
+    # Days 78-80: market-wide broad rally (+5% / +6%), and 600000 & 600001 trigger pattern bars
+    for d in (77, 78, 79, 80):
+        for idx in range(10):
+            c = f"600{idx:03d}"
+            pc = series_by_code[c][d - 1][3]
+            op = round(pc * 1.005, 2)
+            cl = round(pc * (1.06 if idx < 2 and d == 80 else 1.045), 2)
+            hi = round(cl * 1.01, 2)
+            lo = round(op * 0.99, 2)
+            series_by_code[c][d] = (op, hi, lo, cl, pc, 25_000_000.0)
+    # Fix subsequent pre_close consistency after rally so downstream returns stay clean
+    for d in range(81, n_days):
+        for idx in range(10):
+            c = f"600{idx:03d}"
+            pc = series_by_code[c][d - 1][3]
+            series_by_code[c][d] = (pc, pc * 1.01, pc * 0.99, pc, pc, 12_000_000.0)
+
+    # Also keep one real built-in `single_yang_hold` signal on 600009 at day 74 for CLI smoke coverage
+    # Observe yang on day 70 -> 3 holds (71..73) -> confirm on day 74
+    series_by_code["600009"][70] = (10.05, 10.85, 10.00, 10.80, 10.0, 28_000_000.0)
+    for d in (71, 72, 73):
+        pc = series_by_code["600009"][d - 1][3]
+        series_by_code["600009"][d] = (10.75, 10.85, 10.60, 10.70, pc, 9_000_000.0)
+    series_by_code["600009"][74] = (10.68, 10.88, 10.65, 10.84, 10.70, 12_000_000.0)
+
+    pack = _make_ohlcv_pack(series_by_code, dates=dates)
+    bench_df = pd.DataFrame({
+        "date": dates,
+        "open": [3000.0] * n_days,
+        "close": [3010.0] * n_days,
+    })
+
+    full_report = replay_patterns(
+        pack,
+        benchmark_df=bench_df,
+        warmup_days=60,
+        cost_bps=25.0,
+        patterns_dir=pat_dir,
+    )
+    assert full_report["regime_filter"]["active"] is False
+    full_pat = full_report["patterns"][0]
+    assert "walk_forward_regime_audit" in full_pat
+    md_full = render_replay_markdown(full_report)
+    assert "## Walk-Forward 情绪门控样本外检验" in md_full
+    assert "- 情绪过滤:" not in md_full
+
+    # Pick an active regime actually observed during eval sessions and verify strict filtering
+    observed_stages = [
+        st for st, info in full_pat["by_regime"].items() if info["signals"] > 0
+    ]
+    assert len(observed_stages) >= 2
+    chosen = observed_stages[0]
+    other_stages = [st for st in ("freezing", "startup", "main_up", "divergence", "ebb", "neutral") if st != chosen]
+
+    allowed_report = replay_patterns(
+        pack,
+        benchmark_df=bench_df,
+        warmup_days=60,
+        patterns_dir=pat_dir,
+        allowed_regimes=[chosen],
+    )
+    assert allowed_report["regime_filter"]["active"] is True
+    assert allowed_report["regime_filter"]["effective_regimes"] == [chosen]
+    allowed_pat = allowed_report["patterns"][0]
+    assert allowed_pat["by_regime"][chosen]["signals"] == full_pat["by_regime"][chosen]["signals"]
+    assert allowed_pat["total_signals"] < full_pat["total_signals"]
+    for st in other_stages:
+        assert allowed_pat["by_regime"][st]["signals"] == 0
+    assert "- 情绪过滤:" in render_replay_markdown(allowed_report)
+
+    # Check CLI end-to-end --allowed-regimes / --exclude-regimes on built-in `single_yang_hold`
+    full_builtin = replay_patterns(
+        pack,
+        patterns=["single_yang_hold"],
+        benchmark_df=bench_df,
+        warmup_days=60,
+    )
+    builtin_stages = [
+        st for st, info in full_builtin["patterns"][0]["by_regime"].items() if info["signals"] > 0
+    ]
+    assert len(builtin_stages) >= 1
+    builtin_stage = builtin_stages[0]
+
+    pack_dir_path = tmp_path / "pack"
+    save_pack(pack_dir_path, pack)
+    bench_csv = tmp_path / "bench.csv"
+    bench_df.to_csv(bench_csv, index=False)
+    out_json = tmp_path / "replay_filtered.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "alphasift",
+            "patterns",
+            "replay",
+            "--pack-dir",
+            str(pack_dir_path),
+            "--pattern",
+            "single_yang_hold",
+            "--benchmark-csv",
+            str(bench_csv),
+            "--warmup-days",
+            "60",
+            "--allowed-regimes",
+            builtin_stage,
+            "--output-json",
+            str(out_json),
+        ],
+    )
+    cli_main()
+    loaded = json.loads(out_json.read_text(encoding="utf-8"))
+    assert loaded["regime_filter"]["effective_regimes"] == [builtin_stage]
+    assert loaded["patterns"][0]["total_signals"] == full_builtin["patterns"][0]["by_regime"][builtin_stage]["signals"]
+
+    # Also validate scripts/replay_patterns.py main() accepts --exclude-regimes
+    from scripts.replay_patterns import main as replay_script_main
+
+    out_script_json = tmp_path / "script_filtered.json"
+    assert replay_script_main([
+        "--pack-dir",
+        str(pack_dir_path),
+        "--pattern",
+        "single_yang_hold",
+        "--benchmark-csv",
+        str(bench_csv),
+        "--warmup-days",
+        "60",
+        "--exclude-regimes",
+        builtin_stage,
+        "--output-json",
+        str(out_script_json),
+    ]) == 0
+    script_loaded = json.loads(out_script_json.read_text(encoding="utf-8"))
+    assert builtin_stage not in script_loaded["regime_filter"]["effective_regimes"]
+    assert script_loaded["patterns"][0]["by_regime"][builtin_stage]["signals"] == 0
+

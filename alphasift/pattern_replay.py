@@ -165,6 +165,215 @@ def _naive_daily_t_stat(daily_vals: list[float]) -> float | None:
     return round(float(np.mean(daily_vals) / (d_std / np.sqrt(len(daily_vals)))), 2)
 
 
+def _normalize_regime_filter(
+    allowed_regimes: Sequence[str] | None = None,
+    excluded_regimes: Sequence[str] | None = None,
+) -> tuple[set[str] | None, dict[str, Any]]:
+    """Parse and validate market-regime allow/exclude filters (keys or Chinese labels)."""
+    label_to_key = {label: key for key, label in REGIME_STAGE_LABELS.items()}
+    valid_keys = set(REGIME_STAGE_ORDER)
+
+    def _parse(values: Sequence[str] | None, *, name: str) -> list[str] | None:
+        if values is None:
+            return None
+        tokens: list[str] = []
+        raw_items = [values] if isinstance(values, str) else list(values)
+        for raw in raw_items:
+            for part in str(raw).split(","):
+                tok = part.strip()
+                if not tok:
+                    continue
+                lowered = tok.lower()
+                if lowered in valid_keys:
+                    tokens.append(lowered)
+                elif tok in label_to_key:
+                    tokens.append(label_to_key[tok])
+                else:
+                    raise ValueError(
+                        f"Unknown market regime {tok!r} in {name}; valid stages: {', '.join(REGIME_STAGE_ORDER)}"
+                    )
+        if not tokens:
+            raise ValueError(f"{name} cannot be empty when specified")
+        ordered = [s for s in REGIME_STAGE_ORDER if s in set(tokens)]
+        return ordered
+
+    allowed_list = _parse(allowed_regimes, name="allowed_regimes")
+    excluded_list = _parse(excluded_regimes, name="excluded_regimes")
+
+    if allowed_list is None and excluded_list is None:
+        return None, {
+            "active": False,
+            "allowed_regimes": None,
+            "excluded_regimes": None,
+            "effective_regimes": list(REGIME_STAGE_ORDER),
+        }
+
+    base_set = set(allowed_list) if allowed_list is not None else set(REGIME_STAGE_ORDER)
+    if excluded_list is not None:
+        base_set -= set(excluded_list)
+    if not base_set:
+        raise ValueError("Regime filter leaves no permitted market regimes")
+
+    effective = [s for s in REGIME_STAGE_ORDER if s in base_set]
+    return base_set, {
+        "active": True,
+        "allowed_regimes": allowed_list,
+        "excluded_regimes": excluded_list,
+        "effective_regimes": effective,
+    }
+
+
+def _summarize_walk_forward_regime_audit(
+    obs_list: list[dict[str, Any]],
+    *,
+    mid_date: str,
+    horizon: int = 5,
+    date_to_idx: dict[str, int] | None = None,
+    min_regime_days_h1: int = 3,
+    adverse_threshold_pct: float = -0.5,
+) -> dict[str, Any]:
+    """Zero-snooping walk-forward audit: select favorable/non-adverse regimes on H1 only, evaluate strictly OOS on H2."""
+    h_key = f"t{horizon}"
+    nw_lag = max(NEWEY_WEST_MIN_LAG, int(horizon) - 1)
+
+    h1_by_stage_date: dict[str, dict[str, list[float]]] = {
+        stage: defaultdict(list) for stage in REGIME_STAGE_ORDER
+    }
+    h1_ew_by_stage_date: dict[str, dict[str, list[float]]] = {
+        stage: defaultdict(list) for stage in REGIME_STAGE_ORDER
+    }
+    h2_records: list[tuple[str, str, float, float | None]] = []
+
+    for item in obs_list:
+        res = (item.get("horizons") or {}).get(h_key)
+        if not isinstance(res, dict) or res.get("status") != "ok":
+            continue
+        ex = res.get("net_excess_return_pct")
+        if ex is None:
+            ex = res.get("excess_return_pct")
+        if ex is None or not np.isfinite(ex):
+            continue
+        day = str(item["date"])
+        stage = str(item.get("stage") or item.get("regime_stage") or "neutral")
+        if stage not in h1_by_stage_date:
+            stage = "neutral"
+        ew_raw = res.get("net_over_ew_pct")
+        ew_val = float(ew_raw) if ew_raw is not None and np.isfinite(ew_raw) else None
+        ex_val = float(ex)
+
+        if day < mid_date:
+            h1_by_stage_date[stage][day].append(ex_val)
+            if ew_val is not None:
+                h1_ew_by_stage_date[stage][day].append(ew_val)
+        else:
+            h2_records.append((day, stage, ex_val, ew_val))
+
+    def _cluster_metrics(records: list[tuple[str, float, float | None]]) -> dict[str, Any]:
+        if not records:
+            return {
+                "days": 0,
+                "signals": 0,
+                "daily_mean_pct": None,
+                "ew_daily_mean_pct": None,
+                "t_stat": None,
+            }
+        by_day: dict[str, list[float]] = defaultdict(list)
+        ew_by_day: dict[str, list[float]] = defaultdict(list)
+        for day, ex_val, ew_val in records:
+            by_day[day].append(ex_val)
+            if ew_val is not None:
+                ew_by_day[day].append(ew_val)
+        sorted_days = sorted(by_day)
+        daily_series = [float(np.mean(by_day[d])) for d in sorted_days]
+        ew_days = sorted(ew_by_day)
+        ew_series = [float(np.mean(ew_by_day[d])) for d in ew_days]
+        cal_indices = (
+            [date_to_idx[d] for d in sorted_days]
+            if date_to_idx is not None and all(d in date_to_idx for d in sorted_days)
+            else None
+        )
+        return {
+            "days": len(sorted_days),
+            "signals": len(records),
+            "daily_mean_pct": _mean_or_none(daily_series),
+            "ew_daily_mean_pct": _mean_or_none(ew_series),
+            "t_stat": _newey_west_t_stat(daily_series, cal_indices, max_lag=nw_lag),
+        }
+
+    h1_positive_regimes: list[str] = []
+    h1_adverse_regimes: list[str] = []
+    h1_non_adverse_regimes: list[str] = []
+    per_regime_oos: dict[str, dict[str, Any]] = {}
+
+    for stage in REGIME_STAGE_ORDER:
+        h1_days_map = h1_by_stage_date[stage]
+        h1_daily = [float(np.mean(h1_days_map[d])) for d in sorted(h1_days_map)]
+        h1_mean = _mean_or_none(h1_daily)
+        h1_days = len(h1_daily)
+        h1_signals = sum(len(v) for v in h1_days_map.values())
+
+        stage_h2 = [(d, ex, ew) for (d, st, ex, ew) in h2_records if st == stage]
+        stage_h2_stats = _cluster_metrics(stage_h2)
+
+        per_regime_oos[stage] = {
+            "label": REGIME_STAGE_LABELS.get(stage, stage),
+            "h1_days": h1_days,
+            "h1_signals": h1_signals,
+            "h1_daily_mean_pct": h1_mean,
+            "h2_days": stage_h2_stats["days"],
+            "h2_signals": stage_h2_stats["signals"],
+            "h2_daily_mean_pct": stage_h2_stats["daily_mean_pct"],
+            "h2_ew_daily_mean_pct": stage_h2_stats["ew_daily_mean_pct"],
+        }
+
+        if h1_days >= min_regime_days_h1 and h1_mean is not None:
+            if h1_mean > 0:
+                h1_positive_regimes.append(stage)
+            if h1_mean <= adverse_threshold_pct:
+                h1_adverse_regimes.append(stage)
+            else:
+                h1_non_adverse_regimes.append(stage)
+        else:
+            # Insufficient H1 observations in this stage: keep in non-adverse baseline rather than overfitting-dropping.
+            h1_non_adverse_regimes.append(stage)
+
+    pos_set = set(h1_positive_regimes)
+    non_adv_set = set(h1_non_adverse_regimes)
+
+    h2_baseline = _cluster_metrics([(d, ex, ew) for (d, _st, ex, ew) in h2_records])
+    h2_positive = _cluster_metrics([(d, ex, ew) for (d, st, ex, ew) in h2_records if st in pos_set])
+    h2_non_adverse = _cluster_metrics(
+        [(d, ex, ew) for (d, st, ex, ew) in h2_records if st in non_adv_set]
+    )
+
+    def _diff(lhs: float | None, rhs: float | None) -> float | None:
+        if lhs is None or rhs is None:
+            return None
+        return round(float(lhs - rhs), 3)
+
+    base_daily = h2_baseline["daily_mean_pct"]
+    base_ew = h2_baseline["ew_daily_mean_pct"]
+    has_data = h2_baseline["days"] > 0 and (h2_positive["days"] > 0 or h2_non_adverse["days"] > 0)
+
+    return {
+        "horizon": h_key,
+        "status": "ok" if has_data else "insufficient_data",
+        "min_regime_days_h1": int(min_regime_days_h1),
+        "adverse_threshold_pct": float(adverse_threshold_pct),
+        "h1_positive_regimes": h1_positive_regimes,
+        "h1_adverse_regimes": h1_adverse_regimes,
+        "h1_non_adverse_regimes": h1_non_adverse_regimes,
+        "h2_baseline": h2_baseline,
+        "h2_positive_only": h2_positive,
+        "h2_non_adverse": h2_non_adverse,
+        "delta_positive_vs_h2_baseline_pct": _diff(h2_positive["daily_mean_pct"], base_daily),
+        "delta_non_adverse_vs_h2_baseline_pct": _diff(h2_non_adverse["daily_mean_pct"], base_daily),
+        "ew_delta_positive_vs_h2_baseline_pct": _diff(h2_positive["ew_daily_mean_pct"], base_ew),
+        "ew_delta_non_adverse_vs_h2_baseline_pct": _diff(h2_non_adverse["ew_daily_mean_pct"], base_ew),
+        "per_regime_oos": per_regime_oos,
+    }
+
+
 def _summarize_stability(
     obs_list: list[dict[str, Any]],
     *,
@@ -705,6 +914,8 @@ def replay_patterns(
     warmup_days: int = 60,
     cost_bps: float = 0.0,
     patterns_dir: Path | None = None,
+    allowed_regimes: Sequence[str] | None = None,
+    excluded_regimes: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     """Replay CN patterns point-in-time on ``daily_pack`` using ``next_open`` + tradability rules."""
     sorted_horizons = tuple(sorted({int(h) for h in horizons if int(h) > 0}))
@@ -764,6 +975,11 @@ def replay_patterns(
         cost_bps=cost_bps,
     )
 
+    allowed_stage_set, regime_filter_meta = _normalize_regime_filter(
+        allowed_regimes,
+        excluded_regimes,
+    )
+
     preliminary_reports: list[dict[str, Any]] = []
     for spec in specs:
         sig_mask, _ = evaluate_pattern_matrix(ctx, spec)
@@ -774,11 +990,13 @@ def replay_patterns(
         regime_untradable_counts: dict[str, int] = {stage: 0 for stage in REGIME_STAGE_ORDER}
 
         for t in range(warmup_days, end_t):
+            stage = regime_series[t].regime_stage
+            if allowed_stage_set is not None and stage not in allowed_stage_set:
+                continue
             cols = np.flatnonzero(sig_mask[t])
             if cols.size == 0:
                 continue
             overhead_vals = compute_overhead_supply_10pct_row(ctx, t, cols)
-            stage = regime_series[t].regime_stage
             day_str = dates[t]
 
             for pos, j in enumerate(cols.tolist()):
@@ -884,6 +1102,12 @@ def replay_patterns(
             horizon=primary_h,
             date_to_idx=date_to_idx,
         )
+        walk_forward_regime_audit = _summarize_walk_forward_regime_audit(
+            observations,
+            mid_date=mid_date,
+            horizon=primary_h,
+            date_to_idx=date_to_idx,
+        )
 
         by_regime: dict[str, Any] = {}
         for stage in REGIME_STAGE_ORDER:
@@ -966,6 +1190,7 @@ def replay_patterns(
             "by_regime": by_regime,
             "by_overhead_supply": by_overhead,
             "by_month": by_month,
+            "walk_forward_regime_audit": walk_forward_regime_audit,
         })
 
     n_tested = len(preliminary_reports)
@@ -1021,6 +1246,7 @@ def replay_patterns(
             "by_regime": item["by_regime"],
             "by_overhead_supply": item["by_overhead_supply"],
             "by_month": item["by_month"],
+            "walk_forward_regime_audit": item["walk_forward_regime_audit"],
         })
 
     return {
@@ -1028,6 +1254,7 @@ def replay_patterns(
         "entry_mode": "next_open",
         "benchmark": "sh000300",
         "cost_bps": float(cost_bps),
+        "regime_filter": regime_filter_meta,
         "graduation_rule": {
             "min_samples": GRADUATION_MIN_SAMPLES,
             "net_cost_bps": gate_cost_bps,
@@ -1076,12 +1303,19 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
             f"流动性>=8000万超额 {_fmt_pct(ub.get('liquid_excess_mean_pct'))}"
         ]
     gate_bps = float((report.get("graduation_rule") or {}).get("net_cost_bps", GRADUATION_COST_BPS))
+    regime_filter = report.get("regime_filter") or {}
+    filter_line: list[str] = []
+    if regime_filter.get("active"):
+        eff = regime_filter.get("effective_regimes") or []
+        eff_labels = "、".join(f"{REGIME_STAGE_LABELS.get(s, s)}(`{s}`)" for s in eff)
+        filter_line = [f"- 情绪过滤: 仅评估阶段 {eff_labels}"]
     lines = [
         "# A 股形态 250 日 next_open 回放报告",
         "",
         f"- 评估区间: `{ps['eval_start_date']}` .. `{ps['eval_end_date']}` ({ps['eval_sessions']} 交易日, 股票池 {ps['codes_total']} 只, 包截止 `{ps['pack_end_date']}`)",
         f"- 口径: `{report['entry_mode']}` 入场（一字涨停不可成交剔除，退出一字跌停顺延），基准 `{report['benchmark']}` 同期开盘→收盘，回放已计入 `{float(report.get('cost_bps', 0.0)):.0f}bp` 成本",
         *baseline_line,
+        *filter_line,
         f"- 毕业门槛: `T+5 基准匹配样本 >= {GRADUATION_MIN_SAMPLES}` 且扣 `{gate_bps:.0f}bp` 成本 `净超额 > 0%`、同信号日跑赢全A等权基线、H1/H2（各 `>= {STABILITY_MIN_HALF_DAYS}d` 且 `>= {STABILITY_MIN_HALF_SAMPLES}`）同号正超额、Newey-West HAC 聚日 `t >= {STABILITY_T_STAT_THRESHOLD}`（`lag >= {NEWEY_WEST_MIN_LAG}`）且多重检验 BH-FDR `q <= {GRADUATION_BH_FDR_ALPHA}`（否则标 `experimental`）",
         "",
         "## 形态总览与毕业判定",
@@ -1186,5 +1420,30 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
     if not stable_slices:
         lines.append("")
         lines.append("_注：当前暂无同时满足基准匹配样本 >= 100、前后半段各 >= 15 交易日且 >= 30 样本同号，并满足 Newey-West HAC |t| >= 1.96 的稳定正超额切片，保持情绪阶段不调权重。_")
+
+    lines.extend([
+        "",
+        "## Walk-Forward 情绪门控样本外检验（H1 选阶段 → H2 样本外对比）",
+        "",
+        "| 形态 | H1 正超额阶段 | H1 剔除逆风阶段 | H2 基线日均 (日数) | H2 仅正阶段 (OOS) | Δ 正阶段 vs 基线 | H2 剔除逆风 (OOS) | Δ 剔逆风 vs 基线 |",
+        "|---|---|---|---:|---:|---:|---:|---:|",
+    ])
+    for item in report["patterns"]:
+        wf = item.get("walk_forward_regime_audit") or {}
+        pos_stages = [REGIME_STAGE_LABELS.get(s, s) for s in (wf.get("h1_positive_regimes") or [])]
+        adv_stages = [REGIME_STAGE_LABELS.get(s, s) for s in (wf.get("h1_adverse_regimes") or [])]
+        h2_base = wf.get("h2_baseline") or {}
+        h2_pos = wf.get("h2_positive_only") or {}
+        h2_non_adv = wf.get("h2_non_adverse") or {}
+        base_str = f"{_fmt_pct(h2_base.get('daily_mean_pct'))} ({h2_base.get('days', 0)}d)"
+        pos_str = f"{_fmt_pct(h2_pos.get('daily_mean_pct'))} ({h2_pos.get('days', 0)}d)"
+        non_adv_str = f"{_fmt_pct(h2_non_adv.get('daily_mean_pct'))} ({h2_non_adv.get('days', 0)}d)"
+        lines.append(
+            f"| {item['display_name']} | "
+            f"{'、'.join(pos_stages) if pos_stages else '无'} | "
+            f"{'、'.join(adv_stages) if adv_stages else '无'} | "
+            f"{base_str} | {pos_str} | {_fmt_pct(wf.get('delta_positive_vs_h2_baseline_pct'))} | "
+            f"{non_adv_str} | {_fmt_pct(wf.get('delta_non_adverse_vs_h2_baseline_pct'))} |"
+        )
 
     return "\n".join(lines) + "\n"
