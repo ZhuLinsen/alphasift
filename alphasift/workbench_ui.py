@@ -75,9 +75,18 @@ def render_workbench_html() -> str:
     font-family: inherit; color: var(--ink); background: var(--surface);
     border: 1px solid var(--border); border-radius: 8px; padding: 6px 11px; font-size: 13px;
   }
+  a.ctrl-link {
+    text-decoration: none; font-family: inherit; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 11px; font-size: 13px;
+    font-weight: 600; transition: border-color .15s, background .15s;
+  }
+  a.ctrl-link:hover { border-color: var(--accent-hi); }
   button { cursor: pointer; font-weight: 600; transition: border-color .15s, background .15s; }
   button:hover { border-color: var(--accent-hi); }
   button.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+  button.mini-btn { padding: 3px 8px; font-size: 11.5px; }
+  .card-head-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .card-head-row .section-title { margin: 0; }
   .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
   .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 18px; }
   .card {
@@ -134,6 +143,7 @@ def render_workbench_html() -> str:
       </div>
     </div>
     <div class="controls">
+      <a class="ctrl-link" id="btn-daily-report" href="/daily-report.html" target="_blank" rel="noopener noreferrer">Daily Report</a>
       <button type="button" id="btn-refresh">Refresh</button>
       <button type="button" id="btn-lang">EN / 中文</button>
       <button type="button" id="btn-theme">Light / Dark</button>
@@ -159,6 +169,7 @@ def render_workbench_html() -> str:
     en: {
       title: "AlphaSift · Local Quantitative Workbench",
       sub: "Zero-dependency local UI for strategies, live pattern scans, saved runs & AI readiness",
+      btn_report: "Daily Report",
       refresh: "Refresh",
       tabs: { overview: "Overview", strategies: "Strategies", patterns: "Patterns", runs: "Runs & Picks", mcp: "MCP & API" },
       kpi_strats: "Built-in Strategies",
@@ -175,11 +186,16 @@ def render_workbench_html() -> str:
       no_runs: "No saved runs found yet. Run `alphasift screen <strategy> --save-run` first.",
       exposure_title: "Portfolio Topic Exposure & Replacement Candidates",
       picks_title: "Top Picks & Topic Alignment",
-      mcp_title: "STDIO MCP Client Configuration (Claude Code / Cursor / Codex)",
+      mcp_title: "STDIO MCP Client Configuration (Claude Code / Cursor / OpenClaw)",
+      codex_title: "Codex CLI Quick Add",
+      copy_cli: "Copy CLI",
+      copy_json: "Copy JSON",
+      copy_cmd: "Copy",
+      copied_lbl: "Copied",
       api_title: "Read-Only JSON Endpoints",
       loading: "Loading local workbench telemetry...",
       err_prefix: "Request failed: ",
-      cols_strat: ["Name", "Markets", "Category", "Version", "Horizon", "Daily Required", "Tags"],
+      cols_strat: ["Name", "Markets", "Category", "Version", "Horizon", "Daily Required", "Tags", "CLI"],
       cols_pat: ["Pattern", "Markets", "Family", "Min History", "Status"],
       cols_pick: ["#", "Stock", "Industry", "Score", "Topic Alignment", "Risk"],
       cols_fresh: ["Family", "State", "Cache", "Notes"],
@@ -205,6 +221,7 @@ def render_workbench_html() -> str:
     zh: {
       title: "AlphaSift · 本地量化工作台",
       sub: "零外部依赖本地 Web UI — 策略对比、本地形态扫描、历史归因与就绪自检",
+      btn_report: "盘后日报",
       refresh: "刷新数据",
       tabs: { overview: "总览与自检", strategies: "内置策略", patterns: "形态扫描", runs: "历史运行与持仓暴露", mcp: "MCP 与 API" },
       kpi_strats: "内置 YAML 策略",
@@ -221,11 +238,16 @@ def render_workbench_html() -> str:
       no_runs: "暂无保存的选股记录，可先运行 `alphasift screen <strategy> --save-run`。",
       exposure_title: "组合主题暴露、集中度预警与替补候选",
       picks_title: "入选标的与热点对齐明细",
-      mcp_title: "STDIO MCP 客户端配置 (Claude Code / Cursor / Codex)",
+      mcp_title: "STDIO MCP 客户端配置 (Claude Code / Cursor / OpenClaw)",
+      codex_title: "Codex CLI 一键接入",
+      copy_cli: "复制命令",
+      copy_json: "复制 JSON",
+      copy_cmd: "复制",
+      copied_lbl: "已复制",
       api_title: "本地只读 JSON 接口索引",
       loading: "正在读取本地量化服务数据…",
       err_prefix: "请求失败：",
-      cols_strat: ["策略名", "适用市场", "类型", "版本", "周期", "需日 K", "标签"],
+      cols_strat: ["策略名", "适用市场", "类型", "版本", "周期", "需日 K", "标签", "快捷命令"],
       cols_pat: ["形态名称", "市场", "谱系", "最少历史", "状态"],
       cols_pick: ["#", "标的", "行业", "综合分", "热点对齐", "风险"],
       cols_fresh: ["数据链路", "状态", "缓存状态", "建议"],
@@ -349,6 +371,37 @@ def render_workbench_html() -> str:
     return el("span", { class: "badge" + (tone ? " " + tone : ""), text: label });
   }
 
+  function copyText(text, btn, origLabel) {
+    const markDone = () => {
+      if (!btn) return;
+      if (btn._copyTimer) clearTimeout(btn._copyTimer);
+      btn.textContent = t("copied_lbl");
+      btn._copyTimer = setTimeout(() => { btn.textContent = origLabel; }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(markDone).catch(() => {
+        fallbackCopy(text, markDone);
+      });
+    } else {
+      fallbackCopy(text, markDone);
+    }
+  }
+
+  function fallbackCopy(text, onDone) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      onDone();
+    } catch (_) {}
+  }
+
   function makeSvgKline(bars) {
     if (!Array.isArray(bars) || !bars.length) return el("span", { class: "kpi-sub", text: "-" });
     let lo = Infinity, hi = -Infinity;
@@ -394,6 +447,8 @@ def render_workbench_html() -> str:
   function renderHeaderAndTabs() {
     document.getElementById("wb-title").textContent = t("title");
     document.getElementById("wb-sub").textContent = t("sub");
+    const repLink = document.getElementById("btn-daily-report");
+    if (repLink) repLink.textContent = t("btn_report");
     document.getElementById("btn-refresh").textContent = t("refresh");
     const tabLabels = t("tabs");
     const bar = clear(document.getElementById("tab-bar"));
@@ -622,6 +677,9 @@ def render_workbench_html() -> str:
       for (const s of filtered) {
         const mkts = stratMarkets(s);
         const holding = (s.style && s.style.holding_period) || "-";
+        const cliCmd = "alphasift screen " + String(s.name || "") + " --market " + String(mkts[0] || "cn") + " --no-llm --explain";
+        const cliBtn = el("button", { type: "button", class: "mini-btn", text: t("copy_cli"), title: cliCmd });
+        cliBtn.addEventListener("click", function () { copyText(cliCmd, cliBtn, t("copy_cli")); });
         tbody.appendChild(el("tr", null, [
           el("td", null, [el("strong", { text: s.display_name || s.name }), el("div", { class: "kpi-sub", text: s.name })]),
           el("td", null, mkts.map((m) => makeBadge(String(m).toUpperCase(), "accent"))),
@@ -630,6 +688,7 @@ def render_workbench_html() -> str:
           el("td", { class: "mono", text: String(holding) }),
           el("td", null, makeBadge(s.requires_daily_features ? t("yes_lbl") : t("no_lbl"), s.requires_daily_features ? "warn" : "ok")),
           el("td", null, (s.tags || []).slice(0, 4).map((tg) => makeBadge(String(tg)))),
+          el("td", null, cliBtn),
         ]));
       }
       table.appendChild(thead);
@@ -893,20 +952,36 @@ def render_workbench_html() -> str:
 
   function renderMcp() {
     const root = clear(document.getElementById("panel-mcp"));
+    const mcpJson = JSON.stringify({
+      mcpServers: {
+        alphasift: {
+          command: "alphasift",
+          args: ["mcp"],
+        },
+      },
+    }, null, 2);
+    const btnCopyJson = el("button", { type: "button", class: "mini-btn", text: t("copy_json") });
+    btnCopyJson.addEventListener("click", function () { copyText(mcpJson, btnCopyJson, t("copy_json")); });
     const mcpCard = el("div", { class: "card", style: "margin-bottom:14px;" }, [
-      el("h3", { class: "section-title", text: t("mcp_title") }),
-      el("pre", {
-        text: JSON.stringify({
-          mcpServers: {
-            alphasift: {
-              command: "alphasift",
-              args: ["mcp"],
-            },
-          },
-        }, null, 2),
-      }),
+      el("div", { class: "card-head-row" }, [
+        el("h3", { class: "section-title", text: t("mcp_title") }),
+        btnCopyJson,
+      ]),
+      el("pre", { text: mcpJson }),
     ]);
     root.appendChild(mcpCard);
+
+    const codexCmd = "codex mcp add alphasift -- alphasift mcp";
+    const btnCopyCodex = el("button", { type: "button", class: "mini-btn", text: t("copy_cmd") });
+    btnCopyCodex.addEventListener("click", function () { copyText(codexCmd, btnCopyCodex, t("copy_cmd")); });
+    const codexCard = el("div", { class: "card", style: "margin-bottom:14px;" }, [
+      el("div", { class: "card-head-row" }, [
+        el("h3", { class: "section-title", text: t("codex_title") }),
+        btnCopyCodex,
+      ]),
+      el("pre", { text: codexCmd }),
+    ]);
+    root.appendChild(codexCard);
 
     const epCard = el("div", { class: "card" }, [el("h3", { class: "section-title", text: t("api_title") })]);
     const eps = (state.index && state.index.endpoints) || [

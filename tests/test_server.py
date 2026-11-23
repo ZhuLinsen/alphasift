@@ -562,6 +562,9 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
     assert "with_kline=1" in html_text
     assert "cols_strat" in html_text
     assert "cols_fresh" in html_text
+    assert "btn-daily-report" in html_text
+    assert "codex mcp add alphasift -- alphasift mcp" in html_text
+    assert "Copy CLI" in html_text
 
     # Regression checks for Audit #4 security fixes
     from alphasift.daily_report_html import render_daily_report_html

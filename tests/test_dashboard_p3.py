@@ -252,6 +252,8 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
         "news-strip",
         "degradation_notes",
         "application/ld+json",
+        "btn-share",
+        "Post-Close Brief: ",
     ):
         assert marker in html
 
