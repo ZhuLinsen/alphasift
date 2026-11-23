@@ -20,6 +20,26 @@
 <meta name="twitter:description" content="A股/美股/港股等7市场每日自动选股、K线形态雷达、公告排雷、AI复盘日报与公开 T+5/T+10/T+20 策略跟踪曲线。">
 <meta name="twitter:image" content="https://alphasift.zhulinsen.tech/social-preview.png">
 <link rel="alternate" type="application/atom+xml" title="AlphaSift Daily Feed" href="site/feed.xml">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "AlphaSift",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Cross-platform",
+  "url": "https://alphasift.zhulinsen.tech/",
+  "codeRepository": "https://github.com/ZhuLinsen/alphasift",
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "image": "https://alphasift.zhulinsen.tech/social-preview.png",
+  "inLanguage": ["zh-CN", "en", "ja"],
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+</script>
 <style>
 :root {
   --bg: #09090b;
@@ -132,7 +152,7 @@ code {
   max-width: 1280px; margin: 0 auto; padding: 10px 20px;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
-.brand-group { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-group { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 0; }
 .brand-link {
   display: inline-flex; align-items: center; gap: 9px; color: var(--ink);
   font-weight: 700; font-size: 15px; letter-spacing: -0.02em; text-decoration: none;
@@ -574,10 +594,15 @@ footer {
 }
 .footer-links { display: flex; flex-wrap: wrap; gap: 14px; }
 
+@media (max-width: 1360px) {
+  .nav-center a { padding: 4px 8px; }
+}
+@media (max-width: 1240px) {
+  .nav-center { display: none; }
+}
 @media (max-width: 1100px) {
   .bento-command { grid-template-columns: 1fr; }
   .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .nav-center { display: none; }
 }
 @media (max-width: 640px) {
   .topbar-inner { padding: 8px 10px; gap: 6px; }

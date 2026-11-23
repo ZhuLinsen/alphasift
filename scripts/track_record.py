@@ -1169,6 +1169,8 @@ def build_site(track: Path) -> dict[str, Any]:
     }
     (site / "summary.json").write_text(json.dumps(summary, ensure_ascii=False), encoding="utf-8")
     (site / "feed.xml").write_text(render_atom_feed(summary), encoding="utf-8")
+    (track / "robots.txt").write_text(render_robots_txt(), encoding="utf-8")
+    (track / "sitemap.xml").write_text(render_sitemap_xml(summary), encoding="utf-8")
 
     # Emit standard `sha256sum -c` manifest relative to `site/` covering all published site files.
     manifest_path = site / "manifest.sha256"
@@ -1625,6 +1627,58 @@ def _atom_escape_attr(value: str) -> str:
     return _xml_escape(value, {'"': "&quot;"})
 
 
+def _resolve_dashboard_url(dashboard_url: str | None = None) -> str:
+    base = (
+        str(dashboard_url or os.getenv("ALPHASIFT_DASHBOARD_URL") or "https://alphasift.zhulinsen.tech/").strip()
+        or "https://alphasift.zhulinsen.tech/"
+    )
+    if not base.endswith("/"):
+        base += "/"
+    return base
+
+
+def render_robots_txt(*, dashboard_url: str | None = None) -> str:
+    """Render fork-safe robots.txt pointing crawlers to the live sitemap."""
+    base = _resolve_dashboard_url(dashboard_url)
+    return f"User-agent: *\nAllow: /\n\nSitemap: {base}sitemap.xml\n"
+
+
+def render_sitemap_xml(summary: dict[str, Any], *, dashboard_url: str | None = None) -> str:
+    """Render a minimal sitemap.xml covering the live dashboard, printable report, and Atom feed."""
+    base = _resolve_dashboard_url(dashboard_url)
+    days = summary.get("days") or []
+    latest_day = str(days[0].get("date") or "").strip() if days and isinstance(days[0], dict) else ""
+    fallback_date = latest_day or str(summary.get("generated_at") or _now())[:10]
+
+    urls: list[tuple[str, str, str, str]] = [
+        (base, fallback_date, "daily", "1.0"),
+    ]
+    report_html_art = ((summary.get("artifacts") or {}).get("daily_report_html") or {})
+    if report_html_art.get("exists"):
+        rep_date = str(report_html_art.get("trade_date") or "").strip() or fallback_date
+        urls.append((f"{base}site/daily_report.html", rep_date, "daily", "0.8"))
+    urls.append((f"{base}site/feed.xml", fallback_date, "daily", "0.6"))
+
+    url_blocks = [
+        "\n".join([
+            "  <url>",
+            f"    <loc>{_xml_escape(loc)}</loc>",
+            f"    <lastmod>{_xml_escape(lastmod)}</lastmod>",
+            f"    <changefreq>{changefreq}</changefreq>",
+            f"    <priority>{priority}</priority>",
+            "  </url>",
+        ])
+        for loc, lastmod, changefreq, priority in urls
+    ]
+    return "\n".join([
+        '<?xml version="1.0" encoding="utf-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        *url_blocks,
+        "</urlset>",
+        "",
+    ])
+
+
 def render_atom_feed(
     summary: dict[str, Any],
     *,
@@ -1632,12 +1686,7 @@ def render_atom_feed(
     max_entries: int = 14,
 ) -> str:
     """Render an Atom 1.0 RSS feed (zero external dependencies) for static Pages subscriptions."""
-    base = (
-        str(dashboard_url or os.getenv("ALPHASIFT_DASHBOARD_URL") or "https://alphasift.zhulinsen.tech/").strip()
-        or "https://alphasift.zhulinsen.tech/"
-    )
-    if not base.endswith("/"):
-        base += "/"
+    base = _resolve_dashboard_url(dashboard_url)
     feed_url = f"{base}site/feed.xml"
     report_url = f"{base}site/daily_report.html"
     updated = str(summary.get("generated_at") or _now())

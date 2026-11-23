@@ -403,11 +403,29 @@ jobs:
           ENABLE_PAGES: ${{ vars.ALPHASIFT_ENABLE_PAGES }}
           DASHBOARD_URL: ${{ vars.ALPHASIFT_DASHBOARD_URL }}
         run: |
+          eval "$(python3 - <<'PY'
+          import os, shlex
+
+          repo = os.environ.get("REPO_NAME", "").strip()
+          custom = os.environ.get("DASHBOARD_URL", "").strip()
+          if custom:
+              url = custom if custom.endswith("/") else f"{custom}/"
+          elif repo == "ZhuLinsen/alphasift":
+              url = "https://alphasift.zhulinsen.tech/"
+          elif "/" in repo:
+              owner, name = repo.split("/", 1)
+              url = f"https://{owner.lower()}.github.io/{name}/"
+          else:
+              url = ""
+          if url:
+              print(f"export ALPHASIFT_DASHBOARD_URL={shlex.quote(url)}")
+          PY
+          )"
           python scripts/track_record.py build --track track
           if [ "$REPO_NAME" = "ZhuLinsen/alphasift" ] || [ "$ENABLE_PAGES" = "true" ]; then
             cp scripts/track_record_page.html track/index.html
-            if [ "$REPO_NAME" != "ZhuLinsen/alphasift" ]; then
-              python3 -c 'import os, pathlib; repo = os.environ.get("REPO_NAME", "").strip(); custom = os.environ.get("DASHBOARD_URL", "").strip(); target = (custom if custom.endswith("/") else f"{custom}/") if custom else (f"https://{repo.split(\"/\", 1)[0].lower()}.github.io/{repo.split(\"/\", 1)[1]}/" if "/" in repo else ""); p = pathlib.Path("track/index.html"); target and p.write_text(p.read_text(encoding="utf-8").replace("https://alphasift.zhulinsen.tech/", target), encoding="utf-8")'
+            if [ "$REPO_NAME" != "ZhuLinsen/alphasift" ] && [ -n "${ALPHASIFT_DASHBOARD_URL:-}" ]; then
+              python3 -c 'import os, pathlib; target = os.environ["ALPHASIFT_DASHBOARD_URL"]; p = pathlib.Path("track/index.html"); p.write_text(p.read_text(encoding="utf-8").replace("https://alphasift.zhulinsen.tech/", target), encoding="utf-8")'
             fi
           fi
 
@@ -528,11 +546,31 @@ jobs:
 
       - name: Stage the dashboard
         if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
+        env:
+          CF_WEB_ANALYTICS_TOKEN: ${{ vars.CF_WEB_ANALYTICS_TOKEN }}
         run: |
           mkdir -p _site
           cp track/index.html _site/
           cp -r track/site _site/site
+          if [ -f track/robots.txt ]; then cp track/robots.txt _site/robots.txt; fi
+          if [ -f track/sitemap.xml ]; then cp track/sitemap.xml _site/sitemap.xml; fi
           if [ -f docs/assets/social-preview.png ]; then cp docs/assets/social-preview.png _site/social-preview.png; fi
+          python3 - <<'PY'
+          import os, pathlib, re
+
+          token = os.environ.get("CF_WEB_ANALYTICS_TOKEN", "").strip()
+          if re.fullmatch(r"[a-fA-F0-9]{16,64}", token):
+              snippet = (
+                  f'<script defer src="https://static.cloudflareinsights.com/beacon.min.js" '
+                  f'data-cf-beacon=\'{{"token":"{token}"}}\'></script>'
+              )
+              for rel in ("_site/index.html", "_site/site/daily_report.html"):
+                  p = pathlib.Path(rel)
+                  if p.is_file():
+                      html = p.read_text(encoding="utf-8")
+                      if "cloudflareinsights.com/beacon.min.js" not in html and "</body>" in html:
+                          p.write_text(html.replace("</body>", f"{snippet}\n</body>", 1), encoding="utf-8")
+          PY
       - uses: actions/upload-pages-artifact@v5
         if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
         with:

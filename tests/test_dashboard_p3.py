@@ -251,6 +251,7 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
         "trend-density",
         "news-strip",
         "degradation_notes",
+        "application/ld+json",
     ):
         assert marker in html
 
@@ -334,6 +335,9 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
     assert "social-preview.png" in tr_text
     assert "session == 'rebuild'" in tr_text
     assert "push_flag" in tr_text
+    assert "robots.txt" in tr_text
+    assert "sitemap.xml" in tr_text
+    assert "CF_WEB_ANALYTICS_TOKEN" in tr_text
 
 
 def test_dashboard_page_i18n_race_guard_url_sync_and_js_syntax(tmp_path) -> None:
@@ -400,3 +404,46 @@ console.log("I18N_PARITY_OK", zhKeys.length);
     )
     out = subprocess.run(["node", str(check_js)], check=True, capture_output=True, text=True)
     assert "I18N_PARITY_OK" in out.stdout
+
+
+def test_build_site_emits_robots_txt_and_fork_safe_sitemap(tmp_path: Path, monkeypatch) -> None:
+    import xml.etree.ElementTree as ET
+
+    runs_dir = tmp_path / "data" / "runs"
+    runs_dir.mkdir(parents=True)
+    run_payload = {
+        "run_id": "2026-11-20-cn-dual_low-1",
+        "market": "cn",
+        "strategy": "dual_low",
+        "created_at": "2026-11-20T18:30:00+08:00",
+        "picks": [
+            {"rank": 1, "code": "601997", "name": "贵阳银行", "price": 5.8, "final_score": 82.0},
+        ],
+    }
+    (runs_dir / "2026-11-20-cn-dual_low-1.json").write_text(json.dumps(run_payload), encoding="utf-8")
+    (tmp_path / "site").mkdir(exist_ok=True)
+    (tmp_path / "site" / "daily_report.html").write_text("<html><body>ok</body></html>", encoding="utf-8")
+    (tmp_path / "site" / "report.json").write_text(
+        json.dumps({"trade_date": "2026-11-20", "market_summary": {"up": 100}}),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setenv("ALPHASIFT_DASHBOARD_URL", "https://forkuser.github.io/alphasift")
+    track_record.build_site(tmp_path)
+
+    robots = (tmp_path / "robots.txt").read_text(encoding="utf-8")
+    assert "User-agent: *" in robots
+    assert "Sitemap: https://forkuser.github.io/alphasift/sitemap.xml" in robots
+
+    sitemap_text = (tmp_path / "sitemap.xml").read_text(encoding="utf-8")
+    root = ET.fromstring(sitemap_text)
+    assert root.tag == "{http://www.sitemaps.org/schemas/sitemap/0.9}urlset"
+    locs = [el.text for el in root.findall(".//{http://www.sitemaps.org/schemas/sitemap/0.9}loc")]
+    assert locs == [
+        "https://forkuser.github.io/alphasift/",
+        "https://forkuser.github.io/alphasift/site/daily_report.html",
+        "https://forkuser.github.io/alphasift/site/feed.xml",
+    ]
+    assert "alphasift.zhulinsen.tech" not in robots
+    assert "alphasift.zhulinsen.tech" not in sitemap_text
+

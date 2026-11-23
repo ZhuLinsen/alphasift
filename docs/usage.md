@@ -5,6 +5,10 @@
 ## 安装
 
 ```bash
+# 方式 A：直接安装 v0.3.0 Release Wheel
+pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.0/alphasift-0.3.0-py3-none-any.whl
+
+# 方式 B：源码克隆安装
 pip install -e .
 cp .env.example .env
 ```
@@ -30,7 +34,8 @@ alphasift evaluate <run_id> --explain
 ```bash
 alphasift overview --explain
 alphasift overview --risk-profile aggressive --data-requirement daily_k --match-limit 2 --json
-alphasift serve --host 127.0.0.1 --port 8765
+alphasift serve --host 127.0.0.1 --port 8765   # 访问 http://127.0.0.1:8765/ui 交互式 Web 工作台 + JSON API
+alphasift mcp                                   # 启动零依赖 STDIO MCP Server（详见 docs/ecosystem.md）
 ```
 
 默认不会发起网络请求，只读取当前进程的 source-health 和本地 run 索引；需要真实数据源 smoke check 时加 `--live-data-check`。
