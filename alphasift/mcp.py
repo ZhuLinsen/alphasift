@@ -11,6 +11,7 @@ import json
 import math
 import os
 from pathlib import Path
+import site
 import sys
 from typing import Any, BinaryIO
 
@@ -422,6 +423,8 @@ class MCPServer:
             _PROJECT_ROOT / "SKILL.md",
             Path(__file__).resolve().parent / "SKILL.md",
             Path(sys.prefix) / "SKILL.md",
+            Path(site.USER_BASE) / "SKILL.md",
+            Path.cwd() / "SKILL.md",
         ]
         for path in candidates:
             if path.is_file():

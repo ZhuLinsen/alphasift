@@ -10,6 +10,7 @@ from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
+from alphasift import __version__
 from alphasift.audit import audit_project
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources, doctor_radar_readiness, write_doctor_report
@@ -55,6 +56,7 @@ def main():
         format="%(levelname)s %(name)s: %(message)s",
     )
     parser = argparse.ArgumentParser(prog="alphasift", description="自动选股 Skill")
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
         "--env-file",
         action="append",

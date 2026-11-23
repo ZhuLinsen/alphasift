@@ -291,3 +291,22 @@ def test_mcp_round9_security_and_strict_schema_validation(tmp_path):
     assert raw_err.startswith(b"Content-Length: ")
     _, err_body = raw_err.split(b"\r\n\r\n", 1)
     assert json.loads(err_body.decode("utf-8"))["error"]["code"] == -32700
+
+
+def test_mcp_reads_skill_markdown_from_user_base_fallback(monkeypatch, tmp_path):
+    import site
+    import alphasift.mcp as mcp_mod
+
+    missing_root = tmp_path / "no_repo"
+    missing_prefix = tmp_path / "no_prefix"
+    user_base = tmp_path / "user_base"
+    user_base.mkdir(parents=True)
+    (user_base / "SKILL.md").write_text("# User Base Skill\n", encoding="utf-8")
+
+    monkeypatch.setattr(mcp_mod, "_PROJECT_ROOT", missing_root)
+    monkeypatch.setattr(mcp_mod.sys, "prefix", str(missing_prefix))
+    monkeypatch.setattr(site, "USER_BASE", str(user_base))
+
+    server = MCPServer(Config(data_dir=tmp_path))
+    assert server._read_skill_markdown() == "# User Base Skill\n"
+

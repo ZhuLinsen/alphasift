@@ -733,3 +733,15 @@ def test_evaluate_strategies_explain_prints_reviews_per_window():
     assert "-- T+5 reviews --" in text
     assert "-- T+20 reviews --" in text
     assert text.index("failures=1") < text.index("-- T+20 reviews --") < text.index("failures=4")
+
+
+def test_cli_version_flag_prints_package_version(monkeypatch, capsys):
+    import pytest
+    from alphasift import __version__
+
+    monkeypatch.setattr(sys, "argv", ["alphasift", "--version"])
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 0
+    assert f"alphasift {__version__}" in capsys.readouterr().out
+

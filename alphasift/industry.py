@@ -564,13 +564,15 @@ def _resolve_akshare_board_cache_dir(cache_dir: str | Path | None | object) -> P
 
 
 def _default_akshare_board_cache_dir() -> Path:
+    from alphasift.config import default_data_dir
+
     explicit = (
         os.getenv("ALPHASIFT_INDUSTRY_PROVIDER_CACHE_DIR", "").strip()
         or os.getenv("INDUSTRY_PROVIDER_CACHE_DIR", "").strip()
     )
     if explicit:
         return Path(explicit)
-    data_dir = Path(os.getenv("ALPHASIFT_DATA_DIR", str(_PROJECT_ROOT / "data")))
+    data_dir = default_data_dir()
     return data_dir / "industry_provider_cache"
 
 

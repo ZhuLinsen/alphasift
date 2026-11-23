@@ -146,6 +146,24 @@ def _resolve_source_health_path(data_dir: Path) -> Path | None:
     return Path(value)
 
 
+def _is_source_checkout(root: Path | None = None) -> bool:
+    base = root or _PROJECT_ROOT
+    return (base / "pyproject.toml").is_file() and (base / "alphasift").is_dir()
+
+
+def default_data_dir() -> Path:
+    """Return repo-local ``data/`` in editable checkouts, else a writable user data dir."""
+    env_val = os.getenv("ALPHASIFT_DATA_DIR", "").strip()
+    if env_val:
+        return Path(env_val)
+    if _is_source_checkout():
+        return _PROJECT_ROOT / "data"
+    xdg = os.getenv("XDG_DATA_HOME", "").strip()
+    if xdg:
+        return Path(xdg) / "alphasift"
+    return Path.home() / ".alphasift" / "data"
+
+
 def _default_strategies_dir() -> Path:
     """Find strategies directory: env var > project root > package bundled."""
     env_dir = os.getenv("STRATEGIES_DIR")
@@ -195,8 +213,8 @@ class Config:
     snapshot_source_priority: list[str] = field(
         default_factory=lambda: list(DEFAULT_SNAPSHOT_SOURCE_PRIORITY)
     )
-    fallback_snapshot_path: Path | None = (
-        _PROJECT_ROOT / "data" / "snapshot.last_good.json"
+    fallback_snapshot_path: Path | None = field(
+        default_factory=lambda: default_data_dir() / "snapshot.last_good.json"
     )
     # Cross-run snapshot source health; None disables persisted reordering.
     source_health_path: Path | None = None
@@ -211,8 +229,8 @@ class Config:
     # portfolio diversity control is not silently disabled.
     industry_auto_backfill: bool = True
     industry_provider_max_boards: int = 80
-    industry_provider_cache_dir: Path | None = (
-        _PROJECT_ROOT / "data" / "industry_provider_cache"
+    industry_provider_cache_dir: Path | None = field(
+        default_factory=lambda: default_data_dir() / "industry_provider_cache"
     )
     industry_provider_cache_ttl_hours: int = 24
 
@@ -261,7 +279,7 @@ class Config:
     evaluation_price_path_lookback_days: int = 90
 
     # Data directory
-    data_dir: Path = _PROJECT_ROOT / "data"
+    data_dir: Path = field(default_factory=default_data_dir)
 
     # Optional notification webhooks / 1-line NOTIFY_URLS (idle unless explicitly configured).
     notify_urls: list[str] = field(default_factory=list)
@@ -287,7 +305,7 @@ class Config:
     custom_webhook_url: str = ""
     custom_webhook_token: str = ""
     # Notification safety caps & UX URL
-    notify_state_path: Path = _PROJECT_ROOT / "data" / "notify_state.json"
+    notify_state_path: Path = field(default_factory=lambda: default_data_dir() / "notify_state.json")
     notify_timeout_sec: float = 10.0
     dashboard_url: str = ""
     tavily_api_keys: list[str] = field(default_factory=list)
@@ -333,7 +351,7 @@ class Config:
         _load_env_file()
         channels = _parse_llm_channels_env()
         llm_model = _resolve_llm_model(channels)
-        data_dir = Path(os.getenv("ALPHASIFT_DATA_DIR", str(_PROJECT_ROOT / "data")))
+        data_dir = default_data_dir()
         fallback_snapshot_path = _resolve_fallback_snapshot_path(data_dir)
         daily_history_cache_dir = (
             _parse_optional_path_env("ALPHASIFT_DAILY_HISTORY_CACHE_DIR")

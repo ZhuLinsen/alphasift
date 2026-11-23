@@ -387,3 +387,30 @@ def test_config_resolves_fork_safe_dashboard_url_and_search_keys(monkeypatch):
     assert cfg.dashboard_url == ""
     assert cfg.tavily_api_keys == ["tvly-a", "tvly-b"]
     assert cfg.serpapi_api_keys == ["serp-1"]
+
+
+def test_default_data_dir_uses_writable_user_dir_for_non_checkout_installs(monkeypatch, tmp_path):
+    import alphasift.config as config_mod
+
+    fake_pkg_parent = tmp_path / "site_packages"
+    fake_pkg_parent.mkdir(parents=True)
+    monkeypatch.setattr(config_mod, "_PROJECT_ROOT", fake_pkg_parent)
+    monkeypatch.delenv("ALPHASIFT_DATA_DIR", raising=False)
+
+    # 1. Honors XDG_DATA_HOME when not inside a source checkout
+    xdg_dir = tmp_path / "xdg_data"
+    monkeypatch.setenv("XDG_DATA_HOME", str(xdg_dir))
+    assert config_mod.default_data_dir() == xdg_dir / "alphasift"
+
+    # 2. Falls back to ~/.alphasift/data when XDG_DATA_HOME is unset
+    monkeypatch.delenv("XDG_DATA_HOME", raising=False)
+    assert config_mod.default_data_dir() == Path.home() / ".alphasift" / "data"
+
+    # 3. ALPHASIFT_DATA_DIR overrides everything and Config.from_env() propagates it
+    custom = tmp_path / "explicit_data"
+    monkeypatch.setenv("ALPHASIFT_DATA_DIR", str(custom))
+    cfg = Config.from_env()
+    assert cfg.data_dir == custom
+    assert cfg.fallback_snapshot_path == custom / "snapshot.last_good.json"
+    assert cfg.notify_state_path == custom / "notify_state.json"
+
