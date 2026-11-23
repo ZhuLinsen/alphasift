@@ -1,0 +1,30 @@
+{
+  "schema_version": 3,
+  "run_id": "ce96177ab2fd",
+  "strategy": "shrink_pullback",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "trend",
+  "created_at": "2026-11-23T10:32:52.761982+00:00",
+  "picks": 5,
+  "snapshot_count": 5573,
+  "after_filter_count": 41,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 0,
+  "degradation": [],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": true,
+  "daily_enrich_count": 2697,
+  "daily_source_counts": {
+    "pack": 2697
+  },
+  "daily_quality_flag_counts": {},
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/ce96177ab2fd.json",
+  "report_path": "track/data/runs/ce96177ab2fd.md"
+}
