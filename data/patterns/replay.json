@@ -1,8 +1,21 @@
 {
-  "generated_at": "2026-11-23T12:03:12.188824+00:00",
+  "generated_at": "2026-11-23T13:18:26.998224+00:00",
   "entry_mode": "next_open",
   "benchmark": "sh000300",
   "cost_bps": 25.0,
+  "regime_filter": {
+    "active": false,
+    "allowed_regimes": null,
+    "excluded_regimes": null,
+    "effective_regimes": [
+      "freezing",
+      "startup",
+      "main_up",
+      "divergence",
+      "ebb",
+      "neutral"
+    ]
+  },
   "graduation_rule": {
     "min_samples": 200,
     "net_cost_bps": 25.0,
@@ -688,6 +701,110 @@
           "t5_excess_mean_pct": 2.225,
           "t10_excess_mean_pct": -2.987
         }
+      },
+      "walk_forward_regime_audit": {
+        "horizon": "t5",
+        "status": "ok",
+        "min_regime_days_h1": 3,
+        "adverse_threshold_pct": -0.5,
+        "h1_positive_regimes": [],
+        "h1_adverse_regimes": [
+          "freezing",
+          "startup",
+          "divergence",
+          "ebb",
+          "neutral"
+        ],
+        "h1_non_adverse_regimes": [
+          "main_up"
+        ],
+        "h2_baseline": {
+          "days": 89,
+          "signals": 800,
+          "daily_mean_pct": 0.874,
+          "ew_daily_mean_pct": 0.338,
+          "t_stat": 1.05
+        },
+        "h2_positive_only": {
+          "days": 0,
+          "signals": 0,
+          "daily_mean_pct": null,
+          "ew_daily_mean_pct": null,
+          "t_stat": null
+        },
+        "h2_non_adverse": {
+          "days": 15,
+          "signals": 219,
+          "daily_mean_pct": 2.623,
+          "ew_daily_mean_pct": 1.655,
+          "t_stat": 0.99
+        },
+        "delta_positive_vs_h2_baseline_pct": null,
+        "delta_non_adverse_vs_h2_baseline_pct": 1.749,
+        "ew_delta_positive_vs_h2_baseline_pct": null,
+        "ew_delta_non_adverse_vs_h2_baseline_pct": 1.317,
+        "per_regime_oos": {
+          "freezing": {
+            "label": "冰点",
+            "h1_days": 10,
+            "h1_signals": 41,
+            "h1_daily_mean_pct": -4.334,
+            "h2_days": 11,
+            "h2_signals": 47,
+            "h2_daily_mean_pct": -2.161,
+            "h2_ew_daily_mean_pct": -1.809
+          },
+          "startup": {
+            "label": "启动",
+            "h1_days": 15,
+            "h1_signals": 114,
+            "h1_daily_mean_pct": -1.33,
+            "h2_days": 19,
+            "h2_signals": 234,
+            "h2_daily_mean_pct": 1.639,
+            "h2_ew_daily_mean_pct": 0.962
+          },
+          "main_up": {
+            "label": "主升",
+            "h1_days": 17,
+            "h1_signals": 269,
+            "h1_daily_mean_pct": -0.05,
+            "h2_days": 15,
+            "h2_signals": 219,
+            "h2_daily_mean_pct": 2.623,
+            "h2_ew_daily_mean_pct": 1.655
+          },
+          "divergence": {
+            "label": "分歧",
+            "h1_days": 24,
+            "h1_signals": 209,
+            "h1_daily_mean_pct": -0.818,
+            "h2_days": 23,
+            "h2_signals": 157,
+            "h2_daily_mean_pct": 0.448,
+            "h2_ew_daily_mean_pct": -0.044
+          },
+          "ebb": {
+            "label": "退潮",
+            "h1_days": 4,
+            "h1_signals": 29,
+            "h1_daily_mean_pct": -1.557,
+            "h2_days": 8,
+            "h2_signals": 31,
+            "h2_daily_mean_pct": 2.064,
+            "h2_ew_daily_mean_pct": 2.207
+          },
+          "neutral": {
+            "label": "震荡",
+            "h1_days": 15,
+            "h1_signals": 79,
+            "h1_daily_mean_pct": -0.505,
+            "h2_days": 13,
+            "h2_signals": 112,
+            "h2_daily_mean_pct": 0.327,
+            "h2_ew_daily_mean_pct": -0.753
+          }
+        }
       }
     },
     {
@@ -1295,6 +1412,113 @@
           "t5_scored": 142,
           "t5_excess_mean_pct": -0.452,
           "t10_excess_mean_pct": -4.917
+        }
+      },
+      "walk_forward_regime_audit": {
+        "horizon": "t5",
+        "status": "ok",
+        "min_regime_days_h1": 3,
+        "adverse_threshold_pct": -0.5,
+        "h1_positive_regimes": [
+          "startup",
+          "ebb"
+        ],
+        "h1_adverse_regimes": [
+          "freezing",
+          "divergence"
+        ],
+        "h1_non_adverse_regimes": [
+          "startup",
+          "main_up",
+          "ebb",
+          "neutral"
+        ],
+        "h2_baseline": {
+          "days": 89,
+          "signals": 2269,
+          "daily_mean_pct": -1.002,
+          "ew_daily_mean_pct": -1.511,
+          "t_stat": -2.2
+        },
+        "h2_positive_only": {
+          "days": 27,
+          "signals": 747,
+          "daily_mean_pct": -1.237,
+          "ew_daily_mean_pct": -1.686,
+          "t_stat": -2.71
+        },
+        "h2_non_adverse": {
+          "days": 55,
+          "signals": 1552,
+          "daily_mean_pct": -0.894,
+          "ew_daily_mean_pct": -1.623,
+          "t_stat": -1.75
+        },
+        "delta_positive_vs_h2_baseline_pct": -0.235,
+        "delta_non_adverse_vs_h2_baseline_pct": 0.108,
+        "ew_delta_positive_vs_h2_baseline_pct": -0.175,
+        "ew_delta_non_adverse_vs_h2_baseline_pct": -0.112,
+        "per_regime_oos": {
+          "freezing": {
+            "label": "冰点",
+            "h1_days": 10,
+            "h1_signals": 141,
+            "h1_daily_mean_pct": -0.576,
+            "h2_days": 10,
+            "h2_signals": 130,
+            "h2_daily_mean_pct": -1.951,
+            "h2_ew_daily_mean_pct": -1.468
+          },
+          "startup": {
+            "label": "启动",
+            "h1_days": 15,
+            "h1_signals": 662,
+            "h1_daily_mean_pct": 0.828,
+            "h2_days": 19,
+            "h2_signals": 532,
+            "h2_daily_mean_pct": -1.165,
+            "h2_ew_daily_mean_pct": -1.864
+          },
+          "main_up": {
+            "label": "主升",
+            "h1_days": 17,
+            "h1_signals": 658,
+            "h1_daily_mean_pct": -0.208,
+            "h2_days": 15,
+            "h2_signals": 497,
+            "h2_daily_mean_pct": -0.524,
+            "h2_ew_daily_mean_pct": -1.492
+          },
+          "divergence": {
+            "label": "分歧",
+            "h1_days": 24,
+            "h1_signals": 722,
+            "h1_daily_mean_pct": -0.615,
+            "h2_days": 24,
+            "h2_signals": 587,
+            "h2_daily_mean_pct": -0.854,
+            "h2_ew_daily_mean_pct": -1.273
+          },
+          "ebb": {
+            "label": "退潮",
+            "h1_days": 5,
+            "h1_signals": 97,
+            "h1_daily_mean_pct": 1.585,
+            "h2_days": 8,
+            "h2_signals": 215,
+            "h2_daily_mean_pct": -1.406,
+            "h2_ew_daily_mean_pct": -1.263
+          },
+          "neutral": {
+            "label": "震荡",
+            "h1_days": 19,
+            "h1_signals": 554,
+            "h1_daily_mean_pct": -0.224,
+            "h2_days": 13,
+            "h2_signals": 308,
+            "h2_daily_mean_pct": -0.608,
+            "h2_ew_daily_mean_pct": -1.643
+          }
         }
       }
     },
@@ -1904,6 +2128,113 @@
           "t5_excess_mean_pct": 0.108,
           "t10_excess_mean_pct": -5.33
         }
+      },
+      "walk_forward_regime_audit": {
+        "horizon": "t5",
+        "status": "ok",
+        "min_regime_days_h1": 3,
+        "adverse_threshold_pct": -0.5,
+        "h1_positive_regimes": [
+          "startup",
+          "divergence"
+        ],
+        "h1_adverse_regimes": [
+          "freezing",
+          "neutral"
+        ],
+        "h1_non_adverse_regimes": [
+          "startup",
+          "main_up",
+          "divergence",
+          "ebb"
+        ],
+        "h2_baseline": {
+          "days": 88,
+          "signals": 529,
+          "daily_mean_pct": -0.355,
+          "ew_daily_mean_pct": -0.896,
+          "t_stat": -0.52
+        },
+        "h2_positive_only": {
+          "days": 43,
+          "signals": 237,
+          "daily_mean_pct": 0.167,
+          "ew_daily_mean_pct": -0.369,
+          "t_stat": 0.16
+        },
+        "h2_non_adverse": {
+          "days": 65,
+          "signals": 410,
+          "daily_mean_pct": -0.27,
+          "ew_daily_mean_pct": -0.785,
+          "t_stat": -0.33
+        },
+        "delta_positive_vs_h2_baseline_pct": 0.522,
+        "delta_non_adverse_vs_h2_baseline_pct": 0.085,
+        "ew_delta_positive_vs_h2_baseline_pct": 0.527,
+        "ew_delta_non_adverse_vs_h2_baseline_pct": 0.111,
+        "per_regime_oos": {
+          "freezing": {
+            "label": "冰点",
+            "h1_days": 10,
+            "h1_signals": 29,
+            "h1_daily_mean_pct": -2.464,
+            "h2_days": 10,
+            "h2_signals": 20,
+            "h2_daily_mean_pct": 0.343,
+            "h2_ew_daily_mean_pct": 0.223
+          },
+          "startup": {
+            "label": "启动",
+            "h1_days": 15,
+            "h1_signals": 156,
+            "h1_daily_mean_pct": 1.076,
+            "h2_days": 19,
+            "h2_signals": 112,
+            "h2_daily_mean_pct": 1.89,
+            "h2_ew_daily_mean_pct": 1.206
+          },
+          "main_up": {
+            "label": "主升",
+            "h1_days": 16,
+            "h1_signals": 214,
+            "h1_daily_mean_pct": -0.429,
+            "h2_days": 14,
+            "h2_signals": 139,
+            "h2_daily_mean_pct": -0.588,
+            "h2_ew_daily_mean_pct": -1.416
+          },
+          "divergence": {
+            "label": "分歧",
+            "h1_days": 18,
+            "h1_signals": 116,
+            "h1_daily_mean_pct": 0.084,
+            "h2_days": 24,
+            "h2_signals": 125,
+            "h2_daily_mean_pct": -1.198,
+            "h2_ew_daily_mean_pct": -1.617
+          },
+          "ebb": {
+            "label": "退潮",
+            "h1_days": 5,
+            "h1_signals": 53,
+            "h1_daily_mean_pct": -0.208,
+            "h2_days": 8,
+            "h2_signals": 34,
+            "h2_daily_mean_pct": -2.059,
+            "h2_ew_daily_mean_pct": -1.916
+          },
+          "neutral": {
+            "label": "震荡",
+            "h1_days": 15,
+            "h1_signals": 117,
+            "h1_daily_mean_pct": -0.763,
+            "h2_days": 13,
+            "h2_signals": 99,
+            "h2_daily_mean_pct": -1.32,
+            "h2_ew_daily_mean_pct": -2.31
+          }
+        }
       }
     },
     {
@@ -2511,6 +2842,110 @@
           "t5_scored": 44,
           "t5_excess_mean_pct": 2.124,
           "t10_excess_mean_pct": 3.872
+        }
+      },
+      "walk_forward_regime_audit": {
+        "horizon": "t5",
+        "status": "ok",
+        "min_regime_days_h1": 3,
+        "adverse_threshold_pct": -0.5,
+        "h1_positive_regimes": [],
+        "h1_adverse_regimes": [
+          "freezing",
+          "main_up",
+          "divergence",
+          "ebb",
+          "neutral"
+        ],
+        "h1_non_adverse_regimes": [
+          "startup"
+        ],
+        "h2_baseline": {
+          "days": 82,
+          "signals": 1244,
+          "daily_mean_pct": 0.911,
+          "ew_daily_mean_pct": 0.268,
+          "t_stat": 1.77
+        },
+        "h2_positive_only": {
+          "days": 0,
+          "signals": 0,
+          "daily_mean_pct": null,
+          "ew_daily_mean_pct": null,
+          "t_stat": null
+        },
+        "h2_non_adverse": {
+          "days": 17,
+          "signals": 258,
+          "daily_mean_pct": 0.543,
+          "ew_daily_mean_pct": -0.198,
+          "t_stat": 0.89
+        },
+        "delta_positive_vs_h2_baseline_pct": null,
+        "delta_non_adverse_vs_h2_baseline_pct": -0.368,
+        "ew_delta_positive_vs_h2_baseline_pct": null,
+        "ew_delta_non_adverse_vs_h2_baseline_pct": -0.466,
+        "per_regime_oos": {
+          "freezing": {
+            "label": "冰点",
+            "h1_days": 8,
+            "h1_signals": 73,
+            "h1_daily_mean_pct": -2.558,
+            "h2_days": 10,
+            "h2_signals": 102,
+            "h2_daily_mean_pct": 0.267,
+            "h2_ew_daily_mean_pct": 0.397
+          },
+          "startup": {
+            "label": "启动",
+            "h1_days": 14,
+            "h1_signals": 222,
+            "h1_daily_mean_pct": -0.196,
+            "h2_days": 17,
+            "h2_signals": 258,
+            "h2_daily_mean_pct": 0.543,
+            "h2_ew_daily_mean_pct": -0.198
+          },
+          "main_up": {
+            "label": "主升",
+            "h1_days": 16,
+            "h1_signals": 138,
+            "h1_daily_mean_pct": -1.613,
+            "h2_days": 14,
+            "h2_signals": 288,
+            "h2_daily_mean_pct": 1.618,
+            "h2_ew_daily_mean_pct": 0.681
+          },
+          "divergence": {
+            "label": "分歧",
+            "h1_days": 22,
+            "h1_signals": 193,
+            "h1_daily_mean_pct": -1.019,
+            "h2_days": 22,
+            "h2_signals": 360,
+            "h2_daily_mean_pct": 1.78,
+            "h2_ew_daily_mean_pct": 1.269
+          },
+          "ebb": {
+            "label": "退潮",
+            "h1_days": 4,
+            "h1_signals": 65,
+            "h1_daily_mean_pct": -0.658,
+            "h2_days": 8,
+            "h2_signals": 55,
+            "h2_daily_mean_pct": -0.798,
+            "h2_ew_daily_mean_pct": -0.655
+          },
+          "neutral": {
+            "label": "震荡",
+            "h1_days": 17,
+            "h1_signals": 349,
+            "h1_daily_mean_pct": -0.842,
+            "h2_days": 11,
+            "h2_signals": 181,
+            "h2_daily_mean_pct": 0.673,
+            "h2_ew_daily_mean_pct": -0.988
+          }
         }
       }
     },
@@ -3120,6 +3555,112 @@
           "t5_excess_mean_pct": -2.241,
           "t10_excess_mean_pct": -3.887
         }
+      },
+      "walk_forward_regime_audit": {
+        "horizon": "t5",
+        "status": "ok",
+        "min_regime_days_h1": 3,
+        "adverse_threshold_pct": -0.5,
+        "h1_positive_regimes": [
+          "neutral"
+        ],
+        "h1_adverse_regimes": [
+          "freezing",
+          "startup",
+          "main_up",
+          "divergence",
+          "ebb"
+        ],
+        "h1_non_adverse_regimes": [
+          "neutral"
+        ],
+        "h2_baseline": {
+          "days": 78,
+          "signals": 345,
+          "daily_mean_pct": -0.243,
+          "ew_daily_mean_pct": -0.478,
+          "t_stat": -0.28
+        },
+        "h2_positive_only": {
+          "days": 9,
+          "signals": 21,
+          "daily_mean_pct": 1.728,
+          "ew_daily_mean_pct": 1.968,
+          "t_stat": 0.85
+        },
+        "h2_non_adverse": {
+          "days": 9,
+          "signals": 21,
+          "daily_mean_pct": 1.728,
+          "ew_daily_mean_pct": 1.968,
+          "t_stat": 0.85
+        },
+        "delta_positive_vs_h2_baseline_pct": 1.971,
+        "delta_non_adverse_vs_h2_baseline_pct": 1.971,
+        "ew_delta_positive_vs_h2_baseline_pct": 2.446,
+        "ew_delta_non_adverse_vs_h2_baseline_pct": 2.446,
+        "per_regime_oos": {
+          "freezing": {
+            "label": "冰点",
+            "h1_days": 10,
+            "h1_signals": 35,
+            "h1_daily_mean_pct": -2.947,
+            "h2_days": 10,
+            "h2_signals": 25,
+            "h2_daily_mean_pct": -2.534,
+            "h2_ew_daily_mean_pct": -2.654
+          },
+          "startup": {
+            "label": "启动",
+            "h1_days": 15,
+            "h1_signals": 127,
+            "h1_daily_mean_pct": -1.55,
+            "h2_days": 18,
+            "h2_signals": 121,
+            "h2_daily_mean_pct": 1.277,
+            "h2_ew_daily_mean_pct": 0.663
+          },
+          "main_up": {
+            "label": "主升",
+            "h1_days": 17,
+            "h1_signals": 148,
+            "h1_daily_mean_pct": -1.657,
+            "h2_days": 11,
+            "h2_signals": 55,
+            "h2_daily_mean_pct": -3.518,
+            "h2_ew_daily_mean_pct": -4.085
+          },
+          "divergence": {
+            "label": "分歧",
+            "h1_days": 23,
+            "h1_signals": 202,
+            "h1_daily_mean_pct": -1.253,
+            "h2_days": 22,
+            "h2_signals": 90,
+            "h2_daily_mean_pct": 0.381,
+            "h2_ew_daily_mean_pct": 0.237
+          },
+          "ebb": {
+            "label": "退潮",
+            "h1_days": 5,
+            "h1_signals": 40,
+            "h1_daily_mean_pct": -2.162,
+            "h2_days": 8,
+            "h2_signals": 33,
+            "h2_daily_mean_pct": -0.228,
+            "h2_ew_daily_mean_pct": -0.085
+          },
+          "neutral": {
+            "label": "震荡",
+            "h1_days": 16,
+            "h1_signals": 117,
+            "h1_daily_mean_pct": 0.093,
+            "h2_days": 9,
+            "h2_signals": 21,
+            "h2_daily_mean_pct": 1.728,
+            "h2_ew_daily_mean_pct": 1.968
+          }
+        }
       }
     },
     {
@@ -3727,6 +4268,112 @@
           "t5_scored": 484,
           "t5_excess_mean_pct": 1.179,
           "t10_excess_mean_pct": -5.624
+        }
+      },
+      "walk_forward_regime_audit": {
+        "horizon": "t5",
+        "status": "ok",
+        "min_regime_days_h1": 3,
+        "adverse_threshold_pct": -0.5,
+        "h1_positive_regimes": [
+          "startup"
+        ],
+        "h1_adverse_regimes": [
+          "freezing",
+          "divergence",
+          "neutral"
+        ],
+        "h1_non_adverse_regimes": [
+          "startup",
+          "main_up",
+          "ebb"
+        ],
+        "h2_baseline": {
+          "days": 90,
+          "signals": 4141,
+          "daily_mean_pct": -1.087,
+          "ew_daily_mean_pct": -1.605,
+          "t_stat": -2.18
+        },
+        "h2_positive_only": {
+          "days": 19,
+          "signals": 1157,
+          "daily_mean_pct": -0.875,
+          "ew_daily_mean_pct": -1.554,
+          "t_stat": -1.11
+        },
+        "h2_non_adverse": {
+          "days": 42,
+          "signals": 2279,
+          "daily_mean_pct": -0.936,
+          "ew_daily_mean_pct": -1.562,
+          "t_stat": -1.63
+        },
+        "delta_positive_vs_h2_baseline_pct": 0.212,
+        "delta_non_adverse_vs_h2_baseline_pct": 0.151,
+        "ew_delta_positive_vs_h2_baseline_pct": 0.051,
+        "ew_delta_non_adverse_vs_h2_baseline_pct": 0.043,
+        "per_regime_oos": {
+          "freezing": {
+            "label": "冰点",
+            "h1_days": 10,
+            "h1_signals": 218,
+            "h1_daily_mean_pct": -1.434,
+            "h2_days": 11,
+            "h2_signals": 334,
+            "h2_daily_mean_pct": -2.9,
+            "h2_ew_daily_mean_pct": -2.549
+          },
+          "startup": {
+            "label": "启动",
+            "h1_days": 15,
+            "h1_signals": 1106,
+            "h1_daily_mean_pct": 0.263,
+            "h2_days": 19,
+            "h2_signals": 1157,
+            "h2_daily_mean_pct": -0.875,
+            "h2_ew_daily_mean_pct": -1.554
+          },
+          "main_up": {
+            "label": "主升",
+            "h1_days": 16,
+            "h1_signals": 1207,
+            "h1_daily_mean_pct": -0.484,
+            "h2_days": 15,
+            "h2_signals": 819,
+            "h2_daily_mean_pct": -0.545,
+            "h2_ew_daily_mean_pct": -1.513
+          },
+          "divergence": {
+            "label": "分歧",
+            "h1_days": 23,
+            "h1_signals": 1401,
+            "h1_daily_mean_pct": -0.623,
+            "h2_days": 24,
+            "h2_signals": 1035,
+            "h2_daily_mean_pct": -1.003,
+            "h2_ew_daily_mean_pct": -1.425
+          },
+          "ebb": {
+            "label": "退潮",
+            "h1_days": 5,
+            "h1_signals": 237,
+            "h1_daily_mean_pct": -0.03,
+            "h2_days": 8,
+            "h2_signals": 303,
+            "h2_daily_mean_pct": -1.814,
+            "h2_ew_daily_mean_pct": -1.671
+          },
+          "neutral": {
+            "label": "震荡",
+            "h1_days": 19,
+            "h1_signals": 964,
+            "h1_daily_mean_pct": -1.051,
+            "h2_days": 13,
+            "h2_signals": 493,
+            "h2_daily_mean_pct": -0.197,
+            "h2_ew_daily_mean_pct": -1.28
+          }
         }
       }
     },
@@ -4336,6 +4983,113 @@
           "t5_excess_mean_pct": -0.664,
           "t10_excess_mean_pct": 0.61
         }
+      },
+      "walk_forward_regime_audit": {
+        "horizon": "t5",
+        "status": "ok",
+        "min_regime_days_h1": 3,
+        "adverse_threshold_pct": -0.5,
+        "h1_positive_regimes": [
+          "startup",
+          "ebb"
+        ],
+        "h1_adverse_regimes": [
+          "freezing",
+          "main_up",
+          "divergence",
+          "neutral"
+        ],
+        "h1_non_adverse_regimes": [
+          "startup",
+          "ebb"
+        ],
+        "h2_baseline": {
+          "days": 52,
+          "signals": 196,
+          "daily_mean_pct": 0.117,
+          "ew_daily_mean_pct": -0.262,
+          "t_stat": 0.21
+        },
+        "h2_positive_only": {
+          "days": 16,
+          "signals": 83,
+          "daily_mean_pct": -0.375,
+          "ew_daily_mean_pct": -0.79,
+          "t_stat": -0.41
+        },
+        "h2_non_adverse": {
+          "days": 16,
+          "signals": 83,
+          "daily_mean_pct": -0.375,
+          "ew_daily_mean_pct": -0.79,
+          "t_stat": -0.41
+        },
+        "delta_positive_vs_h2_baseline_pct": -0.492,
+        "delta_non_adverse_vs_h2_baseline_pct": -0.492,
+        "ew_delta_positive_vs_h2_baseline_pct": -0.528,
+        "ew_delta_non_adverse_vs_h2_baseline_pct": -0.528,
+        "per_regime_oos": {
+          "freezing": {
+            "label": "冰点",
+            "h1_days": 5,
+            "h1_signals": 11,
+            "h1_daily_mean_pct": -3.331,
+            "h2_days": 5,
+            "h2_signals": 16,
+            "h2_daily_mean_pct": -0.667,
+            "h2_ew_daily_mean_pct": -1.734
+          },
+          "startup": {
+            "label": "启动",
+            "h1_days": 13,
+            "h1_signals": 93,
+            "h1_daily_mean_pct": 1.139,
+            "h2_days": 10,
+            "h2_signals": 53,
+            "h2_daily_mean_pct": -0.726,
+            "h2_ew_daily_mean_pct": -1.214
+          },
+          "main_up": {
+            "label": "主升",
+            "h1_days": 14,
+            "h1_signals": 33,
+            "h1_daily_mean_pct": -2.542,
+            "h2_days": 10,
+            "h2_signals": 47,
+            "h2_daily_mean_pct": 0.704,
+            "h2_ew_daily_mean_pct": 0.275
+          },
+          "divergence": {
+            "label": "分歧",
+            "h1_days": 12,
+            "h1_signals": 28,
+            "h1_daily_mean_pct": -2.244,
+            "h2_days": 15,
+            "h2_signals": 39,
+            "h2_daily_mean_pct": 0.709,
+            "h2_ew_daily_mean_pct": 0.618
+          },
+          "ebb": {
+            "label": "退潮",
+            "h1_days": 4,
+            "h1_signals": 9,
+            "h1_daily_mean_pct": 6.126,
+            "h2_days": 6,
+            "h2_signals": 30,
+            "h2_daily_mean_pct": 0.21,
+            "h2_ew_daily_mean_pct": -0.084
+          },
+          "neutral": {
+            "label": "震荡",
+            "h1_days": 15,
+            "h1_signals": 85,
+            "h1_daily_mean_pct": -1.127,
+            "h2_days": 6,
+            "h2_signals": 11,
+            "h2_daily_mean_pct": -0.376,
+            "h2_ew_daily_mean_pct": -0.722
+          }
+        }
       }
     },
     {
@@ -4944,6 +5698,109 @@
           "t5_excess_mean_pct": -0.919,
           "t10_excess_mean_pct": -2.612
         }
+      },
+      "walk_forward_regime_audit": {
+        "horizon": "t5",
+        "status": "insufficient_data",
+        "min_regime_days_h1": 3,
+        "adverse_threshold_pct": -0.5,
+        "h1_positive_regimes": [],
+        "h1_adverse_regimes": [
+          "freezing",
+          "startup",
+          "main_up",
+          "divergence",
+          "ebb",
+          "neutral"
+        ],
+        "h1_non_adverse_regimes": [],
+        "h2_baseline": {
+          "days": 76,
+          "signals": 994,
+          "daily_mean_pct": 0.611,
+          "ew_daily_mean_pct": 0.049,
+          "t_stat": 1.35
+        },
+        "h2_positive_only": {
+          "days": 0,
+          "signals": 0,
+          "daily_mean_pct": null,
+          "ew_daily_mean_pct": null,
+          "t_stat": null
+        },
+        "h2_non_adverse": {
+          "days": 0,
+          "signals": 0,
+          "daily_mean_pct": null,
+          "ew_daily_mean_pct": null,
+          "t_stat": null
+        },
+        "delta_positive_vs_h2_baseline_pct": null,
+        "delta_non_adverse_vs_h2_baseline_pct": null,
+        "ew_delta_positive_vs_h2_baseline_pct": null,
+        "ew_delta_non_adverse_vs_h2_baseline_pct": null,
+        "per_regime_oos": {
+          "freezing": {
+            "label": "冰点",
+            "h1_days": 4,
+            "h1_signals": 19,
+            "h1_daily_mean_pct": -1.87,
+            "h2_days": 6,
+            "h2_signals": 22,
+            "h2_daily_mean_pct": 2.315,
+            "h2_ew_daily_mean_pct": 2.102
+          },
+          "startup": {
+            "label": "启动",
+            "h1_days": 10,
+            "h1_signals": 46,
+            "h1_daily_mean_pct": -0.758,
+            "h2_days": 19,
+            "h2_signals": 364,
+            "h2_daily_mean_pct": 0.099,
+            "h2_ew_daily_mean_pct": -0.578
+          },
+          "main_up": {
+            "label": "主升",
+            "h1_days": 13,
+            "h1_signals": 101,
+            "h1_daily_mean_pct": -0.992,
+            "h2_days": 14,
+            "h2_signals": 148,
+            "h2_daily_mean_pct": 1.728,
+            "h2_ew_daily_mean_pct": 0.391
+          },
+          "divergence": {
+            "label": "分歧",
+            "h1_days": 18,
+            "h1_signals": 99,
+            "h1_daily_mean_pct": -1.033,
+            "h2_days": 19,
+            "h2_signals": 106,
+            "h2_daily_mean_pct": 1.25,
+            "h2_ew_daily_mean_pct": 0.733
+          },
+          "ebb": {
+            "label": "退潮",
+            "h1_days": 5,
+            "h1_signals": 12,
+            "h1_daily_mean_pct": -0.507,
+            "h2_days": 8,
+            "h2_signals": 47,
+            "h2_daily_mean_pct": -1.969,
+            "h2_ew_daily_mean_pct": -1.826
+          },
+          "neutral": {
+            "label": "震荡",
+            "h1_days": 16,
+            "h1_signals": 54,
+            "h1_daily_mean_pct": -1.922,
+            "h2_days": 10,
+            "h2_signals": 307,
+            "h2_daily_mean_pct": -0.151,
+            "h2_ew_daily_mean_pct": -0.271
+          }
+        }
       }
     },
     {
@@ -5551,6 +6408,112 @@
           "t5_scored": 40,
           "t5_excess_mean_pct": -2.199,
           "t10_excess_mean_pct": 0.355
+        }
+      },
+      "walk_forward_regime_audit": {
+        "horizon": "t5",
+        "status": "ok",
+        "min_regime_days_h1": 3,
+        "adverse_threshold_pct": -0.5,
+        "h1_positive_regimes": [
+          "ebb"
+        ],
+        "h1_adverse_regimes": [
+          "freezing",
+          "main_up",
+          "divergence",
+          "neutral"
+        ],
+        "h1_non_adverse_regimes": [
+          "startup",
+          "ebb"
+        ],
+        "h2_baseline": {
+          "days": 76,
+          "signals": 652,
+          "daily_mean_pct": 0.031,
+          "ew_daily_mean_pct": -0.367,
+          "t_stat": 0.04
+        },
+        "h2_positive_only": {
+          "days": 6,
+          "signals": 60,
+          "daily_mean_pct": 0.067,
+          "ew_daily_mean_pct": 0.298,
+          "t_stat": 0.08
+        },
+        "h2_non_adverse": {
+          "days": 25,
+          "signals": 193,
+          "daily_mean_pct": -1.131,
+          "ew_daily_mean_pct": -1.591,
+          "t_stat": -0.76
+        },
+        "delta_positive_vs_h2_baseline_pct": 0.036,
+        "delta_non_adverse_vs_h2_baseline_pct": -1.162,
+        "ew_delta_positive_vs_h2_baseline_pct": 0.665,
+        "ew_delta_non_adverse_vs_h2_baseline_pct": -1.224,
+        "per_regime_oos": {
+          "freezing": {
+            "label": "冰点",
+            "h1_days": 4,
+            "h1_signals": 4,
+            "h1_daily_mean_pct": -0.619,
+            "h2_days": 7,
+            "h2_signals": 18,
+            "h2_daily_mean_pct": 0.039,
+            "h2_ew_daily_mean_pct": 1.065
+          },
+          "startup": {
+            "label": "启动",
+            "h1_days": 12,
+            "h1_signals": 43,
+            "h1_daily_mean_pct": -0.098,
+            "h2_days": 19,
+            "h2_signals": 133,
+            "h2_daily_mean_pct": -1.51,
+            "h2_ew_daily_mean_pct": -2.187
+          },
+          "main_up": {
+            "label": "主升",
+            "h1_days": 12,
+            "h1_signals": 51,
+            "h1_daily_mean_pct": -2.105,
+            "h2_days": 15,
+            "h2_signals": 180,
+            "h2_daily_mean_pct": 0.088,
+            "h2_ew_daily_mean_pct": -0.88
+          },
+          "divergence": {
+            "label": "分歧",
+            "h1_days": 18,
+            "h1_signals": 50,
+            "h1_daily_mean_pct": -0.794,
+            "h2_days": 19,
+            "h2_signals": 143,
+            "h2_daily_mean_pct": -0.053,
+            "h2_ew_daily_mean_pct": -0.172
+          },
+          "ebb": {
+            "label": "退潮",
+            "h1_days": 3,
+            "h1_signals": 4,
+            "h1_daily_mean_pct": 7.362,
+            "h2_days": 6,
+            "h2_signals": 60,
+            "h2_daily_mean_pct": 0.067,
+            "h2_ew_daily_mean_pct": 0.298
+          },
+          "neutral": {
+            "label": "震荡",
+            "h1_days": 13,
+            "h1_signals": 36,
+            "h1_daily_mean_pct": -0.815,
+            "h2_days": 10,
+            "h2_signals": 118,
+            "h2_daily_mean_pct": 3.009,
+            "h2_ew_daily_mean_pct": 2.084
+          }
         }
       }
     }
