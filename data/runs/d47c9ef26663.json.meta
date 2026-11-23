@@ -1,0 +1,34 @@
+{
+  "schema_version": 3,
+  "run_id": "d47c9ef26663",
+  "strategy": "us_momentum_quality",
+  "market": "us",
+  "strategy_version": "1.1",
+  "strategy_category": "framework",
+  "created_at": "2026-11-23T22:35:45.375789+00:00",
+  "picks": 5,
+  "snapshot_count": 1760,
+  "after_filter_count": 1170,
+  "snapshot_source": "yahoo_screener",
+  "source_error_count": 2,
+  "source_errors": [
+    "yahoo_screener sector Healthcare: Failed to perform, curl: (28) Operation timed out after 30001 milliseconds with 0 bytes received. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+    "yahoo_screener sector Technology: Failed to perform, curl: (28) Operation timed out after 30001 milliseconds with 0 bytes received. See https://curl.se/libcurl/c/libcurl-errors.html first for more details."
+  ],
+  "degradation_count": 2,
+  "degradation": [
+    "Snapshot source fallback: yahoo_screener sector Healthcare: Failed to perform, curl: (28) Operation timed out after 30001 milliseconds with 0 bytes received. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+    "Snapshot source fallback: yahoo_screener sector Technology: Failed to perform, curl: (28) Operation timed out after 30001 milliseconds with 0 bytes received. See https://curl.se/libcurl/c/libcurl-errors.html first for more details."
+  ],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {},
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/d47c9ef26663.json",
+  "report_path": "track/data/runs/d47c9ef26663.md"
+}
