@@ -2,7 +2,7 @@
 
 - **Repo**: [https://github.com/ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift)
 - **Live Benchmark**: [https://alphasift.zhulinsen.tech/](https://alphasift.zhulinsen.tech/)
-- **Baseline Snapshot（2026-11-23）**：`547★` · `256 Forks` · `7 Watchers` · `v0.3.1` 已发布 · `655+ pytest tests` · **`T+5` 样本池已解锁（`2026-11-23` 榜单 `momentum_quality` `+2.86%` 净超额 / `85%` 胜率, `n=20`）**；14 天内 `2,523` views / `1,180` unique visitors、`6,450` clones / `1,880` unique cloners；对比同作者生态 `ZhuLinsen/daily_stock_analysis`（`73.7k★`）与 `ZhuLinsen/alphaevo`（`235★`）仍有显著漏斗放大空间。
+- **Baseline Snapshot（2026-11-23）**：`547★` · `256 Forks` · `7 Watchers` · `v0.3.1` 已发布（GitHub Release + [PyPI](https://pypi.org/project/alphasift/) `pip install alphasift`） · `655+ pytest tests` · **`T+5` 样本池已解锁（`2026-11-23` 榜单 `momentum_quality` `+2.86%` 净超额 / `85%` 胜率, `n=20`）**；14 天内 `2,523` views / `1,180` unique visitors、`6,450` clones / `1,880` unique cloners；对比同作者生态 `ZhuLinsen/daily_stock_analysis`（`73.7k★`）与 `ZhuLinsen/alphaevo`（`235★`）仍有显著漏斗放大空间。
 - **线上 SEO 与埋点基建**：已上线 `social-preview.png`（1280×640）、`robots.txt`、`sitemap.xml`、`SoftwareApplication` JSON-LD、Atom 1.0 `site/feed.xml` 及可选零 Cookie Cloudflare Web Analytics（`CF_WEB_ANALYTICS_TOKEN`）。各渠道宣传统一附带 `?utm_source=<channel>` 参数便于归因。
 
 ---
@@ -102,9 +102,9 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
    - 内置 9 套无状态 K 线形态（红三兵、红三兵回踩确认、箱体突破等），结合私有 250 日离线日线包做样本外回放，必须同时过 25bp 成本扣除、Bartlett HAC t>=2.0、BH-FDR 多重检验校正及前后半样本稳定性门槛才会标为 `active`（当前阶段严苛门槛下 9 套全诚实标为 `experimental` 观察期，绝不强行美化）。
    - 所有线上跟踪统一按次日开盘价 **`next_open`** 计价，并单独剔除、标注**开盘一字涨停无法成交**的样本，拒绝用信号日收盘价算纸面富贵。
 3. **30 秒本地跑通 / 原生接入 Claude Code & Cursor MCP**
-   - 直接安装 `v0.3.1` Wheel 或源码安装：
+   - 直接通过 PyPI 安装（或使用 `uvx alphasift` / 源码安装）：
      ```bash
-     pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.1/alphasift-0.3.1-py3-none-any.whl
+     pip install alphasift
      alphasift quickstart                          # 无 Key 30 秒看全链路结果
      alphasift screen dual_low --no-llm            # 纯规则 A 股双低选股
      alphasift serve --host 127.0.0.1 --port 8765  # 本机离线安全 Web 工作台 (/ui)
@@ -180,7 +180,7 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 > - **Code-enforced LLM guardrails**: optional L2 re-ranking runs via a zero-SDK `requests` OpenAI/Gemini client (works with OpenAI, Gemini, DeepSeek, Ollama), but adverse filings cap LLM score at `35.0` in Python—not just in a prompt—and omitted picks never keep stale scores (flagged `1` live case on `2026-11-23`).
 > - **Empirical 250D pattern radar & Walk-Forward regime gate (no cherry-picking)**: 9 stateless pattern detectors must pass 25bp round-trip costs, Bartlett HAC `t >= 2.0`, Benjamini-Hochberg FDR `q <= 0.05`, H1/H2 subsample stability, and zero-snooping H1→H2 regime selection (`--allowed-regimes` / `--exclude-regimes`) before leaving `experimental` status (today all 9 are honestly marked `experimental`).
 > - **Paired attribution & unlocked T+5 milestone**: CN sessions log `rules` and `ai` tracks side-by-side (`next_open` entry); first `n >= 20` cohort unlocked `2026-11-23` with `momentum_quality` at `+2.86%` net excess / `85%` beat rate across `150` runs.
-> - **MCP + Local Workbench**: `alphasift mcp` speaks zero-dependency STDIO JSON-RPC 2.0 (10 tools, 2 resources; read-only without outbound pushes); `alphasift serve --port 8765` launches an offline-safe local Web UI at `/ui`. Install directly via the v0.3.1 release wheel or `pip install -e .`.
+> - **MCP + Local Workbench**: `alphasift mcp` speaks zero-dependency STDIO JSON-RPC 2.0 (10 tools, 2 resources; read-only without outbound pushes); `alphasift serve --port 8765` launches an offline-safe local Web UI at `/ui`. Install directly via `pip install alphasift` (`uvx alphasift`) or `pip install -e .`.
 >
 > Live verifiable ledger: https://alphasift.zhulinsen.tech/?lang=en&utm_source=hn
 > Happy to answer questions on `next_open` entry timing and limit-up accounting, FDR/HAC pattern graduation, or MCP safety boundaries!
@@ -236,7 +236,7 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 
 | 周期 | 动作清单 | 验证指标 & 目标 |
 |---|---|---|
-| **Week 1：基建补齐 + 中文首波分发** | ① 配置 `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` 启动每日 `AI 对照` 累积；② 发布 PyPI 首版；③ 合并 `#69`（推理模型 `finish_reason=length` 自动扩容）；④ 发 **LINUX DO** + **小红书**（第三人称）+ **V2EX `/go/share`**，更新 `DSA`/`AlphaEvo` 互链 | AI 配对日开始增长（`1..10/10`）、PyPI 下载数、GitHub `views` & `Stars` 增量、`utm_source` 来源分布 |
+| **Week 1：基建补齐 + 中文首波分发** | ① 配置 `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` 启动每日 `AI 对照` 累积；② ~~发布 PyPI 首版~~（`v0.3.1` 已上线）；③ ~~合并 `#69`~~（已合入并限制默认 `4096`/上限 `8192`）；④ 发 **LINUX DO** + **小红书**（第三人称）+ **V2EX `/go/share`**，更新 `AlphaEvo` 互链 | AI 配对日开始增长（`1..10/10`）、PyPI 下载数、GitHub `views` & `Stars` 增量、`utm_source` 来源分布 |
 | **Week 2：英文开发者社区集中爆发** | 周二晚美东上午发 `Show HN` + 同步 X 6 连英文 Thread；周四发 `r/LocalLLaMA`（主打 Zero-SDK MCP + 推理模型自动扩容）与 `r/algotrading`（主打 `next_open` 涨停不可成交 + BH-FDR） | `t.co` / `news.ycombinator` / `reddit` Referral 峰值、Fork 启用数、Discussions 首批讨论帖 |
 | **Week 3：中文技术社区沉淀长尾搜索** | 知乎深度剖析长文 + 掘金 Docker/MCP 上手实战 + 公众号图文推送（均配 `promo-card-2/3` 与 `daily-report.png`） | Google/Bing/Baidu 长尾词收录、Strategy Proposal / Discussions 数量 |
 | **Week 4：10 日实盘 AI 对照复盘闭环** | 攒满 ≥10 个同日配对日后，提取真实 `Rules vs AI` 净超额与 `AI Added / AI Dropped` 案例发布首期“实证月报”，反哺 README 与全网二次传播 | 看板自然复访率（`Views / Uniques` 比值提升）、外部 Strategy / Pattern PR 贡献 |

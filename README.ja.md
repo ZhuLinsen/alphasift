@@ -13,6 +13,7 @@
 *世界7市場（中国A株・米国・香港・日本・韓国・台湾・インド）のマルチファクター選定 → AI 開示リスク再評価 → 公開 T+N 検証*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
+[![PyPI](https://img.shields.io/pypi/v/alphasift?color=2563eb)](https://pypi.org/project/alphasift/)
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://alphasift.zhulinsen.tech/?lang=ja)
 [![MCP Ready](https://img.shields.io/badge/MCP-STDIO%20Ready-8b5cf6.svg)](docs/ecosystem.md)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3b82f6.svg)](https://www.python.org/downloads/)
@@ -105,11 +106,11 @@
 
 ### 2. ローカル CLI・Web Workbench (`/ui`)・Docker
 
-[`v0.3.1` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1) から wheel を直接導入するか、リポジトリから開発インストールできます：
+[PyPI (`alphasift`)](https://pypi.org/project/alphasift/)、[`v0.3.1` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1) の wheel、またはリポジトリから開発インストールできます：
 
 ```bash
-# 方法 A：v0.3.1 Release Wheel を直接インストール
-pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.1/alphasift-0.3.1-py3-none-any.whl
+# 方法 A：PyPI からインストール（pip / uvx 対応）
+pip install alphasift
 
 # 方法 B：ソースコードからインストール
 git clone https://github.com/ZhuLinsen/alphasift.git && cd alphasift

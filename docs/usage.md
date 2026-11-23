@@ -5,10 +5,10 @@
 ## 安装
 
 ```bash
-# 方式 A：直接安装 v0.3.1 Release Wheel
-pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.1/alphasift-0.3.1-py3-none-any.whl
+# 方式 A：从 PyPI 安装（推荐，也支持 uvx alphasift）
+pip install alphasift
 
-# 方式 B：源码克隆安装
+# 方式 B：源码克隆安装（或直接下载 v0.3.1 Release Wheel）
 pip install -e .
 cp .env.example .env
 ```

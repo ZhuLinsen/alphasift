@@ -13,6 +13,7 @@
 *Full-market YAML screening across 7 markets -> Red-flag AI re-ranking -> Public `next_open` T+N paper benchmark*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
+[![PyPI](https://img.shields.io/pypi/v/alphasift?color=2563eb)](https://pypi.org/project/alphasift/)
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://alphasift.zhulinsen.tech/?lang=en)
 [![MCP Ready](https://img.shields.io/badge/MCP-STDIO%20Ready-8b5cf6.svg)](docs/ecosystem.md)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3b82f6.svg)](https://www.python.org/downloads/)
@@ -105,11 +106,11 @@ Register the zero-dependency read-only MCP server (`10` tools, `2` resources; ru
 
 ### 2. Local CLI, Interactive Web Workbench (`/ui`) & Docker
 
-Install from the [`v0.3.1` Release wheel](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1) or editable source checkout:
+Install directly from [PyPI (`alphasift`)](https://pypi.org/project/alphasift/), the [`v0.3.1` Release wheel](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1), or editable source checkout:
 
 ```bash
-# Option A: Direct v0.3.1 Release Wheel
-pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.1/alphasift-0.3.1-py3-none-any.whl
+# Option A: Install from PyPI (supports pip / uvx)
+pip install alphasift
 
 # Option B: Editable source install
 git clone https://github.com/ZhuLinsen/alphasift.git && cd alphasift

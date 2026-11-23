@@ -13,6 +13,7 @@
 *A股 / 美股 / 港股 / 日韩台印全市场多因子筛选 → AI 情报复核与排雷 → 公开 T+N 纸面跟踪验证*
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/alphasift?style=social)](https://github.com/ZhuLinsen/alphasift/stargazers)
+[![PyPI](https://img.shields.io/pypi/v/alphasift?color=2563eb)](https://pypi.org/project/alphasift/)
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-0ea5e9.svg)](https://alphasift.zhulinsen.tech/?lang=zh)
 [![MCP Ready](https://img.shields.io/badge/MCP-STDIO%20Ready-8b5cf6.svg)](docs/ecosystem.md)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3b82f6.svg)](https://www.python.org/downloads/)
@@ -105,11 +106,11 @@
 
 ### 2. 本机命令行、交互式 Web 工作台 & Docker
 
-可直接从 [`v0.3.1` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1) 安装独立 wheel 包，或源码可编辑安装：
+可直接从 [PyPI (`alphasift`)](https://pypi.org/project/alphasift/) 一键安装（或从 [`v0.3.1` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1) / 源码可编辑安装）：
 
 ```bash
-# 方式 A：直接安装 v0.3.1 Release Wheel
-pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.1/alphasift-0.3.1-py3-none-any.whl
+# 方式 A：从 PyPI 安装（推荐，支持 pip / uvx）
+pip install alphasift
 
 # 方式 B：源码克隆安装
 git clone https://github.com/ZhuLinsen/alphasift.git && cd alphasift
