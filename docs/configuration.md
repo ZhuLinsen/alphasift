@@ -50,7 +50,7 @@ TUSHARE_TOKEN=...
 | `LLM_MIN_COVERAGE` | 否 | LLM 输出必须覆盖候选池的最低比例 | `0.60` |
 | `LLM_CONTEXT_MAX_CHARS` | 否 | 拼接后传给 LLM 的上下文最大长度 | `4000` |
 | `LLM_TIMEOUT_SEC` | 否 | 单次 LLM 请求超时秒数 | `60` |
-| `LLM_MAX_TOKENS` | 否 | 单次 LLM 最大输出 token 预算；推理模型（`deepseek-reasoner` / `deepseek-v4-flash` / `o3` / `gemini-2.5+`）建议设为 `8192`–`16384`，避免思考链占满额度 | `2048` |
+| `LLM_MAX_TOKENS` | 否 | 单次 LLM 最大输出 token 严格硬上限（绝不自动扩容）；若重度推理模型在默认值下截断，可显式调大（如 `16384`） | `8192` |
 | `LLM_CANDIDATE_CONTEXT_ENABLED` | 否 | 是否默认对 LLM Top K 候选抓取新闻、公告、资金流线索 | `false` |
 | `LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES` | 否 | 候选级上下文最多抓取前 N 只 | `8` |
 | `LLM_CANDIDATE_CONTEXT_PROVIDERS` | 否 | 候选级抓取来源，逗号分隔：`news,fund_flow,announcement,quote` | `news,fund_flow,announcement,quote` |

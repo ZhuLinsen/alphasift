@@ -414,3 +414,10 @@ def test_default_data_dir_uses_writable_user_dir_for_non_checkout_installs(monke
     assert cfg.fallback_snapshot_path == custom / "snapshot.last_good.json"
     assert cfg.notify_state_path == custom / "notify_state.json"
 
+
+def test_config_defaults_llm_max_tokens_to_8192(monkeypatch):
+    monkeypatch.delenv("LLM_MAX_TOKENS", raising=False)
+    assert Config().llm_max_tokens == 8192
+    assert Config.from_env().llm_max_tokens == 8192
+
+

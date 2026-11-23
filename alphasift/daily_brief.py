@@ -548,10 +548,14 @@ def generate_ai_daily_brief(
             raw_text = llm_caller(prompt)
             parsed = _parse_brief_json(raw_text)
         else:
+            from alphasift.llm_client import DEFAULT_LLM_MAX_TOKENS
             from alphasift.ranker import _call_llm_with_metadata
 
             assert config is not None
-            brief_max_tokens = min(max(4096, int(getattr(config, "llm_max_tokens", 2048) or 2048)), 8192)
+            brief_max_tokens = max(
+                1,
+                int(getattr(config, "llm_max_tokens", DEFAULT_LLM_MAX_TOKENS) or DEFAULT_LLM_MAX_TOKENS),
+            )
             raw_text, used_model = _call_llm_with_metadata(
                 prompt,
                 api_key=config.llm_api_key,

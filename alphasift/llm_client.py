@@ -83,23 +83,7 @@ class LLMClientError(RuntimeError):
         self.max_tokens = max_tokens
 
 
-# One truncation may raise the budget once: reasoning models spend thousands of
-# tokens before answering, so the retry gets a real floor, and the ceiling keeps a
-# single bad response from requesting an unbounded budget.
-TRUNCATION_RETRY_MIN_TOKENS = 8192
-TRUNCATION_RETRY_MAX_TOKENS = 32768
-
-
-def truncation_retry_max_tokens(sent: int | None) -> int | None:
-    """Return the budget for the single retry after a truncation, or None.
-
-    None means a retry cannot add room: no budget was sent (the provider default
-    is unknown, so a fixed value could be smaller) or the ceiling is reached.
-    """
-    if sent is None or sent <= 0:
-        return None
-    budget = min(max(sent * 2, TRUNCATION_RETRY_MIN_TOKENS), TRUNCATION_RETRY_MAX_TOKENS)
-    return budget if budget > sent else None
+DEFAULT_LLM_MAX_TOKENS = 8192
 
 
 @dataclass(frozen=True)
@@ -263,8 +247,6 @@ def complete(
     eff_tokens: int | None = None
     if max_tokens is not None and int(max_tokens) > 0:
         eff_tokens = int(max_tokens)
-        if reasoning_effort and supports_reasoning_effort(attempt):
-            eff_tokens = max(eff_tokens, 8192)
         payload["max_tokens"] = eff_tokens
     if reasoning_effort and supports_reasoning_effort(attempt):
         payload["reasoning_effort"] = str(reasoning_effort)
@@ -294,7 +276,9 @@ def complete(
     try:
         choice = response.json()["choices"][0]
         message = choice["message"]
-        content = message["content"]
+        if not isinstance(message, dict) or ("content" not in message and "reasoning_content" not in message):
+            raise KeyError("content")
+        content = message.get("content")
     except (ValueError, KeyError, IndexError, TypeError):
         raise LLMClientError("Invalid LLM chat completion response", status_code=status) from None
     if content is None or isinstance(content, str):

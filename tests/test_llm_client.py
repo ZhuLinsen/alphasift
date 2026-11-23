@@ -511,6 +511,6 @@ def test_reasoning_effort_only_sent_to_thinking_models(monkeypatch):
         reasoning_effort="low",
     )
     assert seen_payloads[0]["reasoning_effort"] == "low"
-    assert seen_payloads[0]["max_tokens"] >= 8192
+    assert seen_payloads[0]["max_tokens"] == 2048
     assert "reasoning_effort" not in seen_payloads[1]
     assert seen_payloads[1]["max_tokens"] == 2048
