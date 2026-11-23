@@ -298,7 +298,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 24px 20px 72px; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .kpi-foot {
-  font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 11.5px; color: var(--muted); line-height: 1.35;
 }
 
 /* Section Headers */
@@ -681,6 +681,10 @@ footer {
       <div class="meta" id="meta"></div>
     </div>
     <div class="masthead-right">
+      <button type="button" class="action-btn" id="btn-share">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        <span data-i18n="btn_share">分享视图</span>
+      </button>
       <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift#readme" target="_blank" rel="noopener">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
         <span data-i18n="btn_docs">使用文档</span>
@@ -871,6 +875,8 @@ const I18N = {
     hero_sub: "每交易日收盘自动运行全市场 YAML 策略、公告排雷与可选 AI 重排，按 <code>T+5 / T+10 / T+20</code> 真实行情与一字涨停不可成交口径公开验证超额收益。",
     btn_docs: "使用文档",
     btn_strategies: "内置策略",
+    btn_share: "分享视图",
+    btn_copied: "已复制链接",
     loading: "加载中",
     loading_sub: "读取公开战绩与盘面统计…",
     loading_consensus: "正在分析今日跨策略共识候选…",
@@ -1117,6 +1123,8 @@ const I18N = {
     hero_sub: "Automated post-close screening across 7 markets with auditable YAML strategies, announcement risk screening, optional LLM re-ranking, and public <code>T+5 / T+10 / T+20</code> verification including untradable limit-up accounting.",
     btn_docs: "Docs",
     btn_strategies: "Strategies",
+    btn_share: "Share View",
+    btn_copied: "Link Copied",
     loading: "Loading",
     loading_sub: "Fetching audited track record & market breadth…",
     loading_consensus: "Aggregating cross-strategy consensus picks…",
@@ -1213,7 +1221,7 @@ const I18N = {
     live_agg_chip: "{d} · Live Aggregated",
     ai_brief_badge: "AI Brief",
     rule_brief_badge: "Rule Summary",
-    brief_headline_lbl: "Post-Close Brief:",
+    brief_headline_lbl: "Post-Close Brief: ",
     ann_alert_head: "⚠️ Announcement Risk Alerts ({checked} checked · {flagged} flagged):",
     ann_ok_msg: "✓ Screened {n} shortlisted candidates — no adverse filing keywords detected",
     col_stock: "Security",
@@ -1363,6 +1371,8 @@ const I18N = {
     hero_sub: "毎営業日の引け後に全市場 YAML 戦略・開示リスクチェック・任意の AI 再ランクを自動実行し、<code>T+5 / T+10 / T+20</code> の実測値とストップ高成行不可判定で超過リターンを公開検証します。",
     btn_docs: "ドキュメント",
     btn_strategies: "内蔵戦略",
+    btn_share: "URLコピー",
+    btn_copied: "コピー済",
     loading: "読込中",
     loading_sub: "公開トラックレコードと市場データを読込中…",
     loading_consensus: "戦略間のコンセンサス候補を集計中…",
@@ -3322,6 +3332,36 @@ async function init() {
   restoreQueryState();
   initLang();
   initExplorerControls();
+  const shareBtn = $("btn-share");
+  if (shareBtn) {
+    shareBtn.addEventListener("click", () => {
+      syncQueryState();
+      const url = window.location.href;
+      const lbl = shareBtn.querySelector("span");
+      const flashCopied = () => {
+        if (!lbl) return;
+        if (shareBtn._copyTimer) clearTimeout(shareBtn._copyTimer);
+        lbl.textContent = t("btn_copied");
+        shareBtn._copyTimer = setTimeout(() => { lbl.textContent = t("btn_share"); }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(flashCopied).catch(() => {});
+      } else {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = url;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          flashCopied();
+        } catch (_) {}
+      }
+    });
+  }
   try {
     const res = await fetch("site/summary.json", { cache: "no-cache" });
     state.summary = await res.json();

@@ -8,7 +8,7 @@
   "stale_reason": null,
   "detail_url": "",
   "market": "cn",
-  "generated_at": "2026-11-23T10:34:20.820932+00:00",
+  "generated_at": "2026-11-23T12:03:43.034426+00:00",
   "usage_policy": "cn_only_regime_slice_only",
   "strategy_display_names": {
     "balanced_alpha": "均衡多因子",
@@ -27,63 +27,63 @@
   "strategy_track_stats": {
     "balanced_alpha": {
       "track": "rules",
-      "t5_matched": 15,
-      "t5_avg_excess_pct": 1.02,
-      "t5_beat_rate_pct": 53.3
+      "t5_matched": 20,
+      "t5_avg_excess_pct": 1.07,
+      "t5_beat_rate_pct": 65.0
     },
     "blue_chip_income": {
       "track": "rules",
-      "t5_matched": 15,
-      "t5_avg_excess_pct": 2.72,
-      "t5_beat_rate_pct": 80.0
+      "t5_matched": 20,
+      "t5_avg_excess_pct": 2.27,
+      "t5_beat_rate_pct": 85.0
     },
     "capital_heat": {
       "track": "rules",
-      "t5_matched": 15,
-      "t5_avg_excess_pct": -6.81,
-      "t5_beat_rate_pct": 33.3
+      "t5_matched": 20,
+      "t5_avg_excess_pct": -7.49,
+      "t5_beat_rate_pct": 25.0
     },
     "dual_low": {
       "track": "rules",
-      "t5_matched": 15,
-      "t5_avg_excess_pct": 1.47,
-      "t5_beat_rate_pct": 73.3
+      "t5_matched": 20,
+      "t5_avg_excess_pct": 1.26,
+      "t5_beat_rate_pct": 75.0
     },
     "low_volatility_quality": {
       "track": "rules",
-      "t5_matched": 15,
-      "t5_avg_excess_pct": 2.43,
-      "t5_beat_rate_pct": 73.3
+      "t5_matched": 20,
+      "t5_avg_excess_pct": 2.08,
+      "t5_beat_rate_pct": 80.0
     },
     "momentum_quality": {
       "track": "rules",
-      "t5_matched": 15,
-      "t5_avg_excess_pct": 3.36,
-      "t5_beat_rate_pct": 80.0
+      "t5_matched": 20,
+      "t5_avg_excess_pct": 2.86,
+      "t5_beat_rate_pct": 85.0
     },
     "oversold_reversal": {
       "track": "rules",
-      "t5_matched": 15,
-      "t5_avg_excess_pct": -5.14,
-      "t5_beat_rate_pct": 13.3
+      "t5_matched": 20,
+      "t5_avg_excess_pct": -4.04,
+      "t5_beat_rate_pct": 20.0
     },
     "quality_value": {
       "track": "rules",
-      "t5_matched": 15,
-      "t5_avg_excess_pct": 2.06,
-      "t5_beat_rate_pct": 73.3
+      "t5_matched": 20,
+      "t5_avg_excess_pct": 1.69,
+      "t5_beat_rate_pct": 75.0
     },
     "shrink_pullback": {
       "track": "rules",
-      "t5_matched": 14,
-      "t5_avg_excess_pct": 3.44,
-      "t5_beat_rate_pct": 85.7
+      "t5_matched": 19,
+      "t5_avg_excess_pct": 2.92,
+      "t5_beat_rate_pct": 84.2
     },
     "volume_breakout": {
       "track": "rules",
-      "t5_matched": 8,
-      "t5_avg_excess_pct": -0.83,
-      "t5_beat_rate_pct": 12.5
+      "t5_matched": 13,
+      "t5_avg_excess_pct": -4.07,
+      "t5_beat_rate_pct": 15.4
     }
   },
   "market_regime": {
