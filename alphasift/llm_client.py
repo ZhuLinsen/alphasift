@@ -68,11 +68,38 @@ class LLMClientError(RuntimeError):
         status_code: int | None = None,
         timed_out: bool = False,
         json_mode_rejected: bool = False,
+        truncated: bool = False,
+        partial_content: str = "",
+        max_tokens: int | None = None,
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
         self.timed_out = timed_out
         self.json_mode_rejected = json_mode_rejected
+        # The completion ran out of output budget: ``partial_content`` holds any
+        # text emitted before the cut, ``max_tokens`` the budget actually sent.
+        self.truncated = truncated
+        self.partial_content = partial_content
+        self.max_tokens = max_tokens
+
+
+# One truncation may raise the budget once: reasoning models spend thousands of
+# tokens before answering, so the retry gets a real floor, and the ceiling keeps a
+# single bad response from requesting an unbounded budget.
+TRUNCATION_RETRY_MIN_TOKENS = 8192
+TRUNCATION_RETRY_MAX_TOKENS = 32768
+
+
+def truncation_retry_max_tokens(sent: int | None) -> int | None:
+    """Return the budget for the single retry after a truncation, or None.
+
+    None means a retry cannot add room: no budget was sent (the provider default
+    is unknown, so a fixed value could be smaller) or the ceiling is reached.
+    """
+    if sent is None or sent <= 0:
+        return None
+    budget = min(max(sent * 2, TRUNCATION_RETRY_MIN_TOKENS), TRUNCATION_RETRY_MAX_TOKENS)
+    return budget if budget > sent else None
 
 
 @dataclass(frozen=True)
@@ -233,6 +260,7 @@ def complete(
     """Make one request and return the first assistant message's text."""
     endpoint_base = _validated_endpoint(attempt.base_url)
     payload: dict[str, object] = {"model": attempt.model, "messages": messages, "temperature": temperature}
+    eff_tokens: int | None = None
     if max_tokens is not None and int(max_tokens) > 0:
         eff_tokens = int(max_tokens)
         if reasoning_effort and supports_reasoning_effort(attempt):
@@ -264,9 +292,29 @@ def complete(
         raise _response_error(response, check_json_mode=response_format is not None, api_key=attempt.api_key)
 
     try:
-        content = response.json()["choices"][0]["message"]["content"]
+        choice = response.json()["choices"][0]
+        message = choice["message"]
+        content = message["content"]
     except (ValueError, KeyError, IndexError, TypeError):
         raise LLMClientError("Invalid LLM chat completion response", status_code=status) from None
+    if content is None or isinstance(content, str):
+        text = content or ""
+        finish_reason = str(choice.get("finish_reason") or "").strip().lower()
+        reasoning = message.get("reasoning_content") if isinstance(message, dict) else None
+        # A reasoning model can spend the whole budget before answering (empty
+        # content) or be cut off mid-answer; both look like an ordinary bad
+        # response unless finish_reason is checked.
+        if finish_reason == "length" or (
+            not text.strip() and isinstance(reasoning, str) and reasoning.strip()
+        ):
+            raise LLMClientError(
+                f"LLM completion truncated (finish_reason={finish_reason or 'unknown'}, "
+                f"max_tokens={eff_tokens if eff_tokens is not None else 'unset'})",
+                status_code=status,
+                truncated=True,
+                partial_content=text if text.strip() else "",
+                max_tokens=eff_tokens,
+            )
     if not isinstance(content, str):
         raise LLMClientError("Invalid LLM assistant text", status_code=status)
     if not content.strip():

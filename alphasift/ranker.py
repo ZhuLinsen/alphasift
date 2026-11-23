@@ -9,7 +9,14 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
-from alphasift.llm_client import LLMClientError, build_attempts, complete, configuration_error
+from alphasift.llm_client import (
+    LLMAttempt,
+    LLMClientError,
+    build_attempts,
+    complete,
+    configuration_error,
+    truncation_retry_max_tokens,
+)
 from alphasift.models import Pick
 from alphasift.normalize import (
     bounded_float as _bounded_float,
@@ -228,6 +235,7 @@ def rank_candidates_with_metadata(
                 config_path=config_path,
                 timeout_sec=timeout_sec,
                 max_tokens=max_tokens,
+                degradation=degradation,
             )
             parsed = _parse_ranking_response_detail(
                 response,
@@ -301,6 +309,16 @@ def rank_candidates_with_metadata(
     except Exception as e:
         logger.warning("LLM ranking failed, falling back to screen_score: %s", e)
         return LLMRankingResult(picks=candidates, errors=[str(e)])
+
+
+def _note_truncation(degradation: list[str] | None, exc: LLMClientError) -> None:
+    """Record a truncated ranking completion so the run report cannot hide it."""
+    note = f"LLM ranking: {exc}; raise LLM_MAX_TOKENS"
+    if exc.partial_content:
+        note += f"; partial answer discarded ({len(exc.partial_content)} chars)"
+    logger.warning(note)
+    if degradation is not None:
+        degradation.append(note)
 
 
 def _unresolved_adverse_reasons(
@@ -636,6 +654,7 @@ def _call_llm_with_metadata(
     max_tokens: int | None = 2048,
     reasoning_effort: str | None = None,
     validator: Callable[[str], Any] | None = None,
+    degradation: list[str] | None = None,
 ) -> tuple[str, str]:
     """Try configured OpenAI-compatible endpoints and return (content, used_model)."""
     if error := configuration_error(channels or [], config_path):
@@ -655,11 +674,12 @@ def _call_llm_with_metadata(
     response_format = {"type": "json_object"} if json_mode else None
     formats = (response_format, None) if json_mode else (None,)
     last_error: LLMClientError | None = None
+    truncation_noted = False
 
     for attempt in attempts:
         for requested_format in formats:
             try:
-                text = complete(
+                text = _complete_with_truncation_retry(
                     attempt,
                     messages=messages,
                     temperature=temperature,
@@ -671,6 +691,11 @@ def _call_llm_with_metadata(
                 )
             except LLMClientError as exc:
                 last_error = exc
+                if exc.truncated and not truncation_noted:
+                    # Recorded here rather than by the caller: a fallback model can
+                    # still rescue the run, and the truncation must survive that.
+                    _note_truncation(degradation, exc)
+                    truncation_noted = True
                 if exc.timed_out:
                     # Do not blindly retry the SAME endpoint without response_format
                     # after a timeout, but fall through to remaining fallback models/channels.
@@ -691,6 +716,33 @@ def _call_llm_with_metadata(
     raise RuntimeError("No LLM model configured")
 
 
+def _complete_with_truncation_retry(
+    attempt: LLMAttempt,
+    *,
+    max_tokens: int | None,
+    **kwargs: Any,
+) -> str:
+    """Call ``complete`` and, on a truncated completion, retry once with more room.
+
+    The retry stays on the same endpoint and format so a budget problem is fixed
+    before any fallback model or channel is tried. A second truncation, or one
+    that cannot be given a larger budget, is raised to the caller.
+    """
+    try:
+        return complete(attempt, max_tokens=max_tokens, **kwargs)
+    except LLMClientError as exc:
+        retry_budget = truncation_retry_max_tokens(exc.max_tokens) if exc.truncated else None
+        if retry_budget is None:
+            raise
+        logger.warning(
+            "LLM %s hit its output budget (max_tokens=%s); retrying once with max_tokens=%s",
+            attempt.model,
+            exc.max_tokens,
+            retry_budget,
+        )
+        return complete(attempt, max_tokens=retry_budget, **kwargs)
+
+
 def _call_llm(
     prompt: str,
     api_key: str,
@@ -705,6 +757,7 @@ def _call_llm(
     config_path: str = "",
     timeout_sec: float = 60.0,
     max_tokens: int | None = 2048,
+    degradation: list[str] | None = None,
 ) -> str:
     """Try configured OpenAI-compatible endpoints for one LLM prompt."""
     text, _ = _call_llm_with_metadata(
@@ -720,6 +773,7 @@ def _call_llm(
         config_path=config_path,
         timeout_sec=timeout_sec,
         max_tokens=max_tokens,
+        degradation=degradation,
     )
     return text
 
