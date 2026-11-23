@@ -1,0 +1,780 @@
+{
+  "strategy": "capital_heat",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "momentum",
+  "snapshot_count": 5573,
+  "after_filter_count": 92,
+  "picks": [
+    {
+      "rank": 1,
+      "code": "688519",
+      "name": "南亚新材",
+      "final_score": 80.2449,
+      "screen_score": 72.07481391304346,
+      "llm_score": 88.0,
+      "ranking_reason": "发布回购股份公告且获科创板主力资金大额净流入，PE仅23倍，兼具流动性与稳健估值支撑。",
+      "risk_summary": "下游消费电子与服务器PCB需求不及预期导致出货放缓。",
+      "price": 147.6,
+      "change_pct": 2.79,
+      "amount": 2049850793.0,
+      "total_mv": 35203270842.0,
+      "turnover_rate": 5.95,
+      "volume_ratio": 1.68,
+      "pe_ratio": 22.96167569,
+      "pb_ratio": 6.20646459,
+      "industry": "电子设备制造",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 48.1282,
+        "liquidity": 97.8261,
+        "momentum": 65.5675,
+        "reversal": 10.41,
+        "activity": 82.363,
+        "stability": 69.63,
+        "size": 90.2174,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.85,
+      "llm_sector": "电子设备制造",
+      "llm_theme": "覆铜板与算力硬件",
+      "llm_tags": [
+        "趋势",
+        "流动性",
+        "事件",
+        "sector:电子设备制造",
+        "theme:覆铜板与算力硬件",
+        "style_fit:完美契合量价配合且有回购催化的成长动量策略"
+      ],
+      "llm_catalysts": [
+        "回购方案逐步落地实施",
+        "AI高频高速PCB基材需求持续爆发"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "机构持仓高度集中且公司启动股份回购，主力资金持续净流入，量价温和突破。",
+      "llm_style_fit": "完美契合量价配合且有回购催化的成长动量策略",
+      "llm_watch_items": [
+        "回购股份实施进展",
+        "主力资金持续流入情况"
+      ],
+      "llm_invalidators": [
+        "大盘整体失水导致成长板块遭遇无差别抛压",
+        "回购金额不及预期"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: 未发现额外加分项"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 1.8
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": []
+        }
+      },
+      "post_analysis_tags": [],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 2,
+      "code": "002080",
+      "name": "中材科技",
+      "final_score": 80.1594,
+      "screen_score": 69.9322597826087,
+      "llm_score": 85.0,
+      "ranking_reason": "披露回购股份事项，知名投资人深度介入且价值因子高达78.99，估值具极强吸引力。",
+      "risk_summary": "风电叶片及锂膜价格竞争加剧压制毛利率表现。",
+      "price": 31.2,
+      "change_pct": 3.79,
+      "amount": 1943150737.93,
+      "total_mv": 55077530820.0,
+      "turnover_rate": 3.81,
+      "volume_ratio": 1.69,
+      "pe_ratio": 24.50273071,
+      "pb_ratio": 2.14843577,
+      "industry": "合成纤维及树脂",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 78.9934,
+        "liquidity": 94.5652,
+        "momentum": 68.8175,
+        "reversal": 5.0,
+        "activity": 74.7044,
+        "stability": 66.63,
+        "size": 93.4783,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.82,
+      "llm_sector": "合成纤维及树脂",
+      "llm_theme": "复合材料与玻纤风电",
+      "llm_tags": [
+        "价值",
+        "事件",
+        "趋势",
+        "sector:合成纤维及树脂",
+        "theme:复合材料与玻纤风电",
+        "style_fit:符合低估值+大额资金沉淀与回购催化的选股逻辑"
+      ],
+      "llm_catalysts": [
+        "国内海风装机需求超预期释放",
+        "玻纤产品价格提价催化"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "知名资金重仓且公司实施回购，PE处低位，安全边际高。",
+      "llm_style_fit": "符合低估值+大额资金沉淀与回购催化的选股逻辑",
+      "llm_watch_items": [
+        "风电装机招投标节奏",
+        "玻纤周期价格拐点"
+      ],
+      "llm_invalidators": [
+        "行业竞争进一步恶化引发价格战",
+        "重要股东减持"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 3,
+      "code": "002028",
+      "name": "思源电气",
+      "final_score": 79.6244,
+      "screen_score": 69.70731760869566,
+      "llm_score": 84.0,
+      "ranking_reason": "动量因子高达76.39，PE处于25倍合理中枢，换手率2.39%显示筹码锁定良好。",
+      "risk_summary": "海外市场贸易保护及电网项目建设进度不及预期。",
+      "price": 106.65,
+      "change_pct": 6.12,
+      "amount": 1538033071.86,
+      "total_mv": 83951443097.0,
+      "turnover_rate": 2.39,
+      "volume_ratio": 1.83,
+      "pe_ratio": 24.97163357,
+      "pb_ratio": 4.77890151,
+      "industry": "输变电设备",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 52.2182,
+        "liquidity": 90.2174,
+        "momentum": 76.39,
+        "reversal": 5.0,
+        "activity": 70.2276,
+        "stability": 59.64,
+        "size": 97.8261,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.8,
+      "llm_sector": "输变电设备",
+      "llm_theme": "电网设备与特高压出海",
+      "llm_tags": [
+        "趋势",
+        "价值",
+        "防守",
+        "sector:输变电设备",
+        "theme:电网设备与特高压出海",
+        "style_fit:契合景气度高企、走势稳健的成长核心资产配置"
+      ],
+      "llm_catalysts": [
+        "海外电网设备大额订单中标",
+        "国家电网特高压招标提速"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "全球电网升级驱动景气周期向上，海外订单与国内电网投资共振。",
+      "llm_style_fit": "契合景气度高企、走势稳健的成长核心资产配置",
+      "llm_watch_items": [
+        "海外订单季度交付数据",
+        "原材料铜价波动"
+      ],
+      "llm_invalidators": [
+        "海外地缘政治摩擦导致出口受限",
+        "国内电网投资增速放缓"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 4,
+      "code": "002050",
+      "name": "三花智控",
+      "final_score": 76.0046,
+      "screen_score": 69.00773195652174,
+      "llm_score": 82.0,
+      "ranking_reason": "成交额超29亿元居候选池首位，流动性与市值容量顶格，量比1.89温和放量。",
+      "risk_summary": "新能源汽车销量增速放缓及人形机器人量产进度推迟。",
+      "price": 33.88,
+      "change_pct": 7.9,
+      "amount": 2907383312.01,
+      "total_mv": 142567512118.0,
+      "turnover_rate": 2.4,
+      "volume_ratio": 1.89,
+      "pe_ratio": 36.67020989,
+      "pb_ratio": 4.34969813,
+      "industry": "通用设备",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 47.1066,
+        "liquidity": 98.913,
+        "momentum": 71.255,
+        "reversal": 5.0,
+        "activity": 70.5359,
+        "stability": 54.3,
+        "size": 100.0,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.82,
+      "llm_sector": "通用设备",
+      "llm_theme": "热管理与机器人执行器",
+      "llm_tags": [
+        "流动性",
+        "趋势",
+        "sector:通用设备",
+        "theme:热管理与机器人执行器",
+        "style_fit:高流动性大市值白马龙头，适合承接主流资金"
+      ],
+      "llm_catalysts": [
+        "人形机器人产业链定点进展",
+        "新能源车热泵系统渗透率提升"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "新能源热管理龙头地位稳固，人形机器人执行器带来长期估值溢价。",
+      "llm_style_fit": "高流动性大市值白马龙头，适合承接主流资金",
+      "llm_watch_items": [
+        "机器人执行器业务送样与定点动态",
+        "海外建厂投产进度"
+      ],
+      "llm_invalidators": [
+        "核心大客户订单流失",
+        "机器人产业化落地不及预期"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: 未发现额外加分项"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 1.8
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": []
+        }
+      },
+      "post_analysis_tags": [],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 5,
+      "code": "301200",
+      "name": "大族数控",
+      "final_score": 71.3278,
+      "screen_score": 67.21298739130435,
+      "llm_score": 75.0,
+      "ranking_reason": "量比2.34显示资金明显介入，换手率仅2.0%处于低位筹码沉淀状态。",
+      "risk_summary": "PCB下游厂商资本开支周期波动较大。",
+      "price": 127.71,
+      "change_pct": 3.58,
+      "amount": 1086327952.83,
+      "total_mv": 62451178603.0,
+      "turnover_rate": 2.0,
+      "volume_ratio": 2.34,
+      "pe_ratio": 33.27737725,
+      "pb_ratio": 5.03753712,
+      "industry": "专用设备",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 41.0166,
+        "liquidity": 84.7826,
+        "momentum": 68.135,
+        "reversal": 5.0,
+        "activity": 71.1378,
+        "stability": 67.26,
+        "size": 95.6522,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.74,
+      "llm_sector": "专用设备",
+      "llm_theme": "PCB专用数控设备",
+      "llm_tags": [
+        "趋势",
+        "事件",
+        "sector:专用设备",
+        "theme:PCB专用数控设备",
+        "style_fit:适合捕捉AI硬件扩散带来的专用装备需求放量标的"
+      ],
+      "llm_catalysts": [
+        "高精度机械钻孔机与激光钻孔机渗透率提升",
+        "海外客户设备交付放量"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "AI服务器带动高端高多层PCB与载板扩产，拉动专用钻孔机需求。",
+      "llm_style_fit": "适合捕捉AI硬件扩散带来的专用装备需求放量标的",
+      "llm_watch_items": [
+        "PCB头部厂商资本开支指引",
+        "设备出货交付周期"
+      ],
+      "llm_invalidators": [
+        "载板投资热潮降温",
+        "下游扩产计划大幅推迟"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: 未发现额外加分项"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 1.0
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": []
+        }
+      },
+      "post_analysis_tags": [],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    }
+  ],
+  "run_id": "91b40e722ac3-ai",
+  "track": "ai",
+  "llm_ranked": true,
+  "llm_market_view": "市场普涨且中位涨幅达2.41%，候选池全线飘红且成交活跃，适合顺势布局景气度共振与有业绩、回购支撑的优质高端制造及科技龙头。",
+  "llm_selection_logic": "一是优先选取具备回购催化与业绩支撑的高流动性个股；二是坚决规避严重亏损与高估值透支标的实施排雷降权；三是综合量比和换手率筛选走势健康、未现短期耗竭的稳健品种。",
+  "llm_portfolio_risk": "整体偏向电子设备、通用机械和新能源产业链，若市场风格向大金融或防御板块轮动可能导致组合阶段性震荡。",
+  "llm_coverage": 0.6666666666666666,
+  "llm_parse_errors": [],
+  "degradation": [
+    "Candidate context collected rows=12",
+    "Candidate context row errors: 688519 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 300759 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 002028 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 300903 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 002050 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | +6 more",
+    "LLM context truncated: trimmed=candidate_collected_context",
+    "LLM ranking prompt truncated: trimmed=candidate_details"
+  ],
+  "snapshot_source": "em_datacenter",
+  "source_errors": [],
+  "deep_analysis_requested": false,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "risk_enabled": true,
+  "portfolio_diversity_enabled": true,
+  "portfolio_concentration_notes": [
+    "Portfolio concentration bucket=新能源: penalized=2, codes=002850:金属制品(-5.0),603799:稀有金属(-10.0)",
+    "Portfolio concentration bucket=通用设备: penalized=2, codes=300083:通用设备(-5.0),000410:通用设备(-10.0)",
+    "Portfolio concentration bucket=专用设备: penalized=1, codes=688700:专用设备(-5.0)",
+    "Portfolio concentration bucket=科技电子: penalized=4, codes=603328:电子元件(-5.0),002552:电子元件(-10.0),300739:电子元件(-15.0),603936:电子元件(-15.0)",
+    "Portfolio concentration bucket=周期资源: penalized=1, codes=688268:化学原料(-5.0)",
+    "Portfolio concentration bucket=金属非金属新材料: penalized=1, codes=300835:金属非金属新材料(-5.0)",
+    "Portfolio concentration bucket=电子设备制造: penalized=1, codes=300903:电子设备制造(-5.0)",
+    "Portfolio hard cap bucket=新能源: max=1, deferred=002850,603799",
+    "Portfolio hard cap bucket=通用设备: max=1, deferred=300083,000410",
+    "Portfolio hard cap bucket=专用设备: max=1, deferred=688700",
+    "Portfolio hard cap bucket=科技电子: max=1, deferred=603328,002552,300739,603936",
+    "Portfolio hard cap bucket=周期资源: max=1, deferred=688268",
+    "Portfolio hard cap bucket=金属非金属新材料: max=1, deferred=300835",
+    "Portfolio hard cap bucket=电子设备制造: max=1, deferred=300903"
+  ],
+  "saved_path": "track/data/runs/91b40e722ac3-ai.json",
+  "created_at": "2026-11-23T14:13:34.342652+00:00",
+  "portfolio_topic_exposure": {
+    "AI算力": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "688519"
+      ],
+      "overconcentrated": false
+    },
+    "专用设备": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "301200"
+      ],
+      "overconcentrated": false
+    },
+    "合成纤维及树脂": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "002080"
+      ],
+      "overconcentrated": false
+    },
+    "新能源": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "002028"
+      ],
+      "overconcentrated": false
+    },
+    "通用设备": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "002050"
+      ],
+      "overconcentrated": false
+    }
+  },
+  "overconcentrated_topics": [],
+  "replacement_candidates": [
+    {
+      "code": "600580",
+      "name": "卧龙电驱",
+      "bucket": "电机",
+      "sector": "电机",
+      "final_score": 69.7737
+    },
+    {
+      "code": "603002",
+      "name": "宏昌电子",
+      "bucket": "化学制品",
+      "sector": "化学制品",
+      "final_score": 68.041
+    },
+    {
+      "code": "002472",
+      "name": "双环传动",
+      "bucket": "汽车",
+      "sector": "汽车",
+      "final_score": 67.4084
+    },
+    {
+      "code": "300638",
+      "name": "广和通",
+      "bucket": "科技电子",
+      "sector": "通信设备",
+      "final_score": 67.2288
+    },
+    {
+      "code": "300296",
+      "name": "利亚德",
+      "bucket": "光电子器件",
+      "sector": "光电子器件",
+      "final_score": 65.2435
+    }
+  ],
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {}
+}

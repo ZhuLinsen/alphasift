@@ -1,0 +1,35 @@
+{
+  "schema_version": 3,
+  "run_id": "6ba53358a405-ai",
+  "strategy": "low_volatility_quality",
+  "market": "cn",
+  "strategy_version": "1.2",
+  "strategy_category": "quality",
+  "created_at": "2026-11-23T14:16:31.212202+00:00",
+  "picks": 5,
+  "snapshot_count": 5573,
+  "after_filter_count": 63,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 4,
+  "degradation": [
+    "Candidate context collected rows=12",
+    "Candidate context row errors: 000538 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 601000 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 000100 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 600398 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 600027 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | +7 more",
+    "LLM context truncated: trimmed=candidate_collected_context",
+    "LLM ranking prompt truncated: trimmed=candidate_details"
+  ],
+  "llm_ranked": true,
+  "llm_coverage": 0.6333333333333333,
+  "daily_enriched": true,
+  "daily_enrich_count": 367,
+  "daily_source_counts": {
+    "pack": 367
+  },
+  "daily_quality_flag_counts": {},
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/6ba53358a405-ai.json",
+  "report_path": "track/data/runs/6ba53358a405-ai.md"
+}

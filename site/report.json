@@ -8,7 +8,7 @@
   "stale_reason": null,
   "detail_url": "",
   "market": "cn",
-  "generated_at": "2026-11-23T13:18:54.136465+00:00",
+  "generated_at": "2026-11-23T14:23:36.287814+00:00",
   "usage_policy": "cn_only_regime_slice_only",
   "strategy_display_names": {
     "balanced_alpha": "均衡多因子",
@@ -439,6 +439,110 @@
       ]
     },
     {
+      "run_id": "91b40e722ac3-ai",
+      "strategy": "capital_heat",
+      "display_name": "资金热度",
+      "market": "cn",
+      "track": "ai",
+      "llm_ranked": true,
+      "llm_market_view": "市场普涨且中位涨幅达2.41%，候选池全线飘红且成交活跃，适合顺势布局景气度共振与有业绩、回购支撑的优质高端制造及科技龙头。",
+      "created_at": "2026-11-23T14:13:34.342652+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Candidate context collected rows=12",
+        "Candidate context row errors: 688519 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 300759 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 002028 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 300903 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 002050 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | +6 more",
+        "LLM context truncated: trimmed=candidate_collected_context",
+        "LLM ranking prompt truncated: trimmed=candidate_details"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "688519",
+          "name": "南亚新材",
+          "industry": "电子设备制造",
+          "price": 147.6,
+          "pe_ratio": 23.0,
+          "pb_ratio": 6.21,
+          "market_cap_yi": 352.0,
+          "final_score": 80.24,
+          "screen_score": 72.07,
+          "change_pct": 2.79,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "发布回购股份公告且获科创板主力资金大额净流入，PE仅23倍，兼具流动性与稳健估值支撑。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "002080",
+          "name": "中材科技",
+          "industry": "合成纤维及树脂",
+          "price": 31.2,
+          "pe_ratio": 24.5,
+          "pb_ratio": 2.15,
+          "market_cap_yi": 550.8,
+          "final_score": 80.16,
+          "screen_score": 69.93,
+          "change_pct": 3.79,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "披露回购股份事项，知名投资人深度介入且价值因子高达78.99，估值具极强吸引力。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "002028",
+          "name": "思源电气",
+          "industry": "输变电设备",
+          "price": 106.65,
+          "pe_ratio": 25.0,
+          "pb_ratio": 4.78,
+          "market_cap_yi": 839.5,
+          "final_score": 79.62,
+          "screen_score": 69.71,
+          "change_pct": 6.12,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "动量因子高达76.39，PE处于25倍合理中枢，换手率2.39%显示筹码锁定良好。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "002050",
+          "name": "三花智控",
+          "industry": "通用设备",
+          "price": 33.88,
+          "pe_ratio": 36.7,
+          "pb_ratio": 4.35,
+          "market_cap_yi": 1425.7,
+          "final_score": 76.0,
+          "screen_score": 69.01,
+          "change_pct": 7.9,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "成交额超29亿元居候选池首位，流动性与市值容量顶格，量比1.89温和放量。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "301200",
+          "name": "大族数控",
+          "industry": "专用设备",
+          "price": 127.71,
+          "pe_ratio": 33.3,
+          "pb_ratio": 5.04,
+          "market_cap_yi": 624.5,
+          "final_score": 71.33,
+          "screen_score": 67.21,
+          "change_pct": 3.58,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "量比2.34显示资金明显介入，换手率仅2.0%处于低位筹码沉淀状态。",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
       "run_id": "b567a26340f8",
       "strategy": "dual_low",
       "display_name": "双低选股",
@@ -639,6 +743,121 @@
       ]
     },
     {
+      "run_id": "6ba53358a405-ai",
+      "strategy": "low_volatility_quality",
+      "display_name": "低波质量",
+      "market": "cn",
+      "track": "ai",
+      "llm_ranked": true,
+      "llm_market_view": "全市场大面积普涨但候选防御池逆势微调，资金偏好低波稳健标的，契合防守型观察仓构建。",
+      "created_at": "2026-11-23T14:16:31.212202+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Candidate context collected rows=12",
+        "Candidate context row errors: 000538 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 601000 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 000100 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 600398 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 600027 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | +7 more",
+        "LLM context truncated: trimmed=candidate_collected_context",
+        "LLM ranking prompt truncated: trimmed=candidate_details"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "601000",
+          "name": "唐山港",
+          "industry": "港口航运",
+          "price": 5.25,
+          "pe_ratio": 14.8,
+          "pb_ratio": 1.43,
+          "market_cap_yi": 311.1,
+          "final_score": 78.75,
+          "screen_score": 72.75,
+          "change_pct": -0.76,
+          "risk_level": "low",
+          "risk_flags": [
+            "rsi_overbought",
+            "短期超买"
+          ],
+          "ranking_reason": "PE仅14.8倍，主力连续5日净流入且价格维持高位突破结构，波动小抗风险能力强。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "000538",
+          "name": "云南白药",
+          "industry": "中药生产",
+          "price": 56.01,
+          "pe_ratio": 19.2,
+          "pb_ratio": 2.48,
+          "market_cap_yi": 999.4,
+          "final_score": 75.8,
+          "screen_score": 74.99,
+          "change_pct": -0.69,
+          "risk_level": "low",
+          "risk_flags": [
+            "板块主力资金净流出"
+          ],
+          "ranking_reason": "波动与回撤控制极佳（振幅7.8%），但情报端显示板块主力资金大幅流出，压制短期向上弹性。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "600027",
+          "name": "华电国际",
+          "industry": "电力",
+          "price": 5.25,
+          "pe_ratio": 17.2,
+          "pb_ratio": 1.2,
+          "market_cap_yi": 609.6,
+          "final_score": 75.62,
+          "screen_score": 70.04,
+          "change_pct": -1.13,
+          "risk_level": "low",
+          "risk_flags": [
+            "燃料成本波动"
+          ],
+          "ranking_reason": "PB仅1.20倍，20日振幅9.07%，回撤极低，抗周期属性明确。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "600398",
+          "name": "海澜之家",
+          "industry": "服装家纺",
+          "price": 6.23,
+          "pe_ratio": 14.7,
+          "pb_ratio": 1.79,
+          "market_cap_yi": 299.2,
+          "final_score": 75.33,
+          "screen_score": 70.88,
+          "change_pct": 0.48,
+          "risk_level": "low",
+          "risk_flags": [
+            "存货减值风险"
+          ],
+          "ranking_reason": "PE 14.7倍，20日振幅12.2%，当日逆势收涨，防守弹性良好。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "000100",
+          "name": "TCL科技",
+          "industry": "电子元件",
+          "price": 4.89,
+          "pe_ratio": 16.3,
+          "pb_ratio": 1.58,
+          "market_cap_yi": 1073.2,
+          "final_score": 68.04,
+          "screen_score": 71.74,
+          "change_pct": -0.2,
+          "risk_level": "low",
+          "risk_flags": [
+            "周期波动风险"
+          ],
+          "ranking_reason": "流动性充沛但60日涨幅为负（-2.78%），走势弱于大盘，防守属性不足。",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
       "run_id": "f4fb8c477098",
       "strategy": "momentum_quality",
       "display_name": "趋势质量",
@@ -735,6 +954,109 @@
           "risk_level": "low",
           "risk_flags": [],
           "ranking_reason": "低波稳健+动量因子靠前",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
+      "run_id": "095041bc869c-ai",
+      "strategy": "momentum_quality",
+      "display_name": "趋势质量",
+      "market": "cn",
+      "track": "ai",
+      "llm_ranked": true,
+      "llm_market_view": "全市场呈现普涨反弹但候选池分化明显，宜精选估值稳健、有扎实产业逻辑支撑且未极端透支的趋势标的，严防踩雷品控与减持股。",
+      "created_at": "2026-11-23T14:17:37.874077+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Candidate context collected rows=11",
+        "Candidate context row errors: 688169 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 301606 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 002223 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 000400 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 600566 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | +6 more",
+        "LLM context truncated: trimmed=candidate_collected_context"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "688169",
+          "name": "石头科技",
+          "industry": "机器人",
+          "price": 138.99,
+          "pe_ratio": 20.1,
+          "pb_ratio": 2.4,
+          "market_cap_yi": 360.8,
+          "final_score": 85.92,
+          "screen_score": 77.53,
+          "change_pct": 3.42,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "10月家电出口大增且公司具备回购托底，流动性满分且PE仅20倍，趋势确认且未极端超买。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "000400",
+          "name": "许继电气",
+          "industry": "输变电设备",
+          "price": 25.72,
+          "pe_ratio": 30.2,
+          "pb_ratio": 2.11,
+          "market_cap_yi": 262.0,
+          "final_score": 78.75,
+          "screen_score": 68.92,
+          "change_pct": -0.08,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "突破年线确立中长期拐点，回踩20日线幅度温和(4.9%)，稳定性得分达82，机构关注度高。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "600285",
+          "name": "羚锐制药",
+          "industry": "中药生产",
+          "price": 24.0,
+          "pe_ratio": 16.5,
+          "pb_ratio": 3.94,
+          "market_cap_yi": 136.1,
+          "final_score": 76.47,
+          "screen_score": 66.45,
+          "change_pct": 0.0,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "稳定性高达83，PE仅16.5倍，无负面情报且走势贴合MA20稳步抬升。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "603345",
+          "name": "安井食品",
+          "industry": "食品",
+          "price": 89.52,
+          "pe_ratio": 19.2,
+          "pb_ratio": 1.92,
+          "market_cap_yi": 298.4,
+          "final_score": 74.14,
+          "screen_score": 63.57,
+          "change_pct": -0.47,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "市净率不足2倍处于历史估值低位，大市值容量匹配稳步筑底结构，公告面干净。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "002690",
+          "name": "美亚光电",
+          "industry": "专用设备",
+          "price": 17.67,
+          "pe_ratio": 20.7,
+          "pb_ratio": 5.52,
+          "market_cap_yi": 155.9,
+          "final_score": 70.14,
+          "screen_score": 61.9,
+          "change_pct": 1.2,
+          "risk_level": "low",
+          "risk_flags": [],
+          "ranking_reason": "技术形态处于收敛三角形末端，回踩20日线确认有效，估值适中无负面事件冲击。",
           "announcement_risk_flags": []
         }
       ]
@@ -940,6 +1262,122 @@
       ]
     },
     {
+      "run_id": "66eff3d86d52-ai",
+      "strategy": "quality_value",
+      "display_name": "稳健价值",
+      "market": "cn",
+      "track": "ai",
+      "llm_ranked": true,
+      "llm_market_view": "全市场呈现普涨反弹而候选池主要聚焦低波动、防御性与高股息资产，适合震荡市中兼顾防守与稳健收益的配置策略。",
+      "created_at": "2026-11-23T14:20:42.037065+00:00",
+      "pick_count": 5,
+      "degradation": [
+        "Candidate context collected rows=12",
+        "Candidate context row errors: 600674 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 600060 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 600795 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 600801 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 601156 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | +1 more",
+        "LLM context truncated: trimmed=candidate_collected_context",
+        "LLM ranking prompt truncated: trimmed=candidate_details"
+      ],
+      "picks": [
+        {
+          "rank": 1,
+          "code": "601000",
+          "name": "唐山港",
+          "industry": "港口航运",
+          "price": 5.25,
+          "pe_ratio": 14.8,
+          "pb_ratio": 1.43,
+          "market_cap_yi": 311.1,
+          "final_score": 82.7,
+          "screen_score": 76.33,
+          "change_pct": -0.76,
+          "risk_level": "low",
+          "risk_flags": [
+            "rsi_overbought",
+            "短期超买指标"
+          ],
+          "ranking_reason": "PE仅14.8倍，价值因子达83.9，主力资金连续5日净流入且价格创新高，量价结构极其稳固。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 2,
+          "code": "600060",
+          "name": "海信视像",
+          "industry": "视听器材",
+          "price": 27.71,
+          "pe_ratio": 13.5,
+          "pb_ratio": 1.63,
+          "market_cap_yi": 361.6,
+          "final_score": 80.38,
+          "screen_score": 74.96,
+          "change_pct": -0.96,
+          "risk_level": "low",
+          "risk_flags": [
+            "海外需求疲软"
+          ],
+          "ranking_reason": "PE仅13.5倍，价值评分80.2，处于低位震荡整理期，回撤风险可控且成交平稳。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 3,
+          "code": "600674",
+          "name": "川投能源",
+          "industry": "电力",
+          "price": 18.53,
+          "pe_ratio": 18.3,
+          "pb_ratio": 1.93,
+          "market_cap_yi": 903.3,
+          "final_score": 79.92,
+          "screen_score": 75.2,
+          "change_pct": -3.19,
+          "risk_level": "low",
+          "risk_flags": [
+            "资金短线流出"
+          ],
+          "ranking_reason": "流动性与市值容量评分超90，回撤后快速企稳，反转信号高达97.5分，长线资金底仓标的。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 4,
+          "code": "600566",
+          "name": "济川药业",
+          "industry": "化学制药",
+          "price": 30.6,
+          "pe_ratio": 15.5,
+          "pb_ratio": 2.0,
+          "market_cap_yi": 282.2,
+          "final_score": 75.16,
+          "screen_score": 73.77,
+          "change_pct": -1.7,
+          "risk_level": "low",
+          "risk_flags": [
+            "rsi_overbought",
+            "集采预期风险"
+          ],
+          "ranking_reason": "PE约15.5倍，60日动量25.5%，短期技术性消化超买，业绩基本面稳扎稳打。",
+          "announcement_risk_flags": []
+        },
+        {
+          "rank": 5,
+          "code": "600066",
+          "name": "宇通客车",
+          "industry": "汽车",
+          "price": 31.78,
+          "pe_ratio": 12.9,
+          "pb_ratio": 4.93,
+          "market_cap_yi": 703.6,
+          "final_score": 73.08,
+          "screen_score": 70.14,
+          "change_pct": -3.14,
+          "risk_level": "low",
+          "risk_flags": [
+            "海外地缘政治摩擦"
+          ],
+          "ranking_reason": "反转因子高达98.2，PE仅12.9倍，回调后资金吸筹意愿明显，海外盈利持续验证。",
+          "announcement_risk_flags": []
+        }
+      ]
+    },
+    {
       "run_id": "ce96177ab2fd",
       "strategy": "shrink_pullback",
       "display_name": "缩量回踩",
@@ -1054,7 +1492,112 @@
       "picks": []
     }
   ],
-  "ai_highlights": [],
+  "ai_highlights": [
+    {
+      "strategy": "capital_heat",
+      "run_id": "91b40e722ac3-ai",
+      "rules_pick_count": 5,
+      "ai_pick_count": 5,
+      "overlap_pct": 66.7,
+      "added_by_ai": [
+        {
+          "code": "301200",
+          "name": "大族数控",
+          "final_score": 71.33,
+          "ranking_reason": "量比2.34显示资金明显介入，换手率仅2.0%处于低位筹码沉淀状态。"
+        }
+      ],
+      "dropped_by_ai": [
+        {
+          "code": "300759",
+          "name": "康龙化成"
+        }
+      ],
+      "llm_market_view": "市场普涨且中位涨幅达2.41%，候选池全线飘红且成交活跃，适合顺势布局景气度共振与有业绩、回购支撑的优质高端制造及科技龙头。",
+      "llm_selection_logic": "一是优先选取具备回购催化与业绩支撑的高流动性个股；二是坚决规避严重亏损与高估值透支标的实施排雷降权；三是综合量比和换手率筛选走势健康、未现短期耗竭的稳健品种。",
+      "llm_portfolio_risk": "整体偏向电子设备、通用机械和新能源产业链，若市场风格向大金融或防御板块轮动可能导致组合阶段性震荡。"
+    },
+    {
+      "strategy": "low_volatility_quality",
+      "run_id": "6ba53358a405-ai",
+      "rules_pick_count": 5,
+      "ai_pick_count": 5,
+      "overlap_pct": 100.0,
+      "added_by_ai": [],
+      "dropped_by_ai": [],
+      "llm_market_view": "全市场大面积普涨但候选防御池逆势微调，资金偏好低波稳健标的，契合防守型观察仓构建。",
+      "llm_selection_logic": "重点考量20日波动与振幅可控度、低估值防守属性及基本面情报干净度，剔除资金大幅撤离与估值偏高的品种。",
+      "llm_portfolio_risk": "标的多集中于医药、电力公用、交运及消费等传统防守板块，在强进攻性贝塔行情下易跑输大盘并面临医药行业资金持续流出风险。"
+    },
+    {
+      "strategy": "momentum_quality",
+      "run_id": "095041bc869c-ai",
+      "rules_pick_count": 5,
+      "ai_pick_count": 5,
+      "overlap_pct": 42.9,
+      "added_by_ai": [
+        {
+          "code": "600285",
+          "name": "羚锐制药",
+          "final_score": 76.47,
+          "ranking_reason": "稳定性高达83，PE仅16.5倍，无负面情报且走势贴合MA20稳步抬升。"
+        },
+        {
+          "code": "603345",
+          "name": "安井食品",
+          "final_score": 74.14,
+          "ranking_reason": "市净率不足2倍处于历史估值低位，大市值容量匹配稳步筑底结构，公告面干净。"
+        }
+      ],
+      "dropped_by_ai": [
+        {
+          "code": "002223",
+          "name": "鱼跃医疗"
+        },
+        {
+          "code": "301606",
+          "name": "绿联科技"
+        }
+      ],
+      "llm_market_view": "全市场呈现普涨反弹但候选池分化明显，宜精选估值稳健、有扎实产业逻辑支撑且未极端透支的趋势标的，严防踩雷品控与减持股。",
+      "llm_selection_logic": "一是核查舆情公告严厉排雷品控缺陷与业绩成长暴雷标的；二是兼顾估值安全边际与产业出海/电网建设景气；三是防范高位超买与题材同质化集中。",
+      "llm_portfolio_risk": "消费与医药消费类个股占比偏高，且部分高动量标的短期偏离均线过远存在均值回归压力。"
+    },
+    {
+      "strategy": "quality_value",
+      "run_id": "66eff3d86d52-ai",
+      "rules_pick_count": 5,
+      "ai_pick_count": 5,
+      "overlap_pct": 42.9,
+      "added_by_ai": [
+        {
+          "code": "600566",
+          "name": "济川药业",
+          "final_score": 75.16,
+          "ranking_reason": "PE约15.5倍，60日动量25.5%，短期技术性消化超买，业绩基本面稳扎稳打。"
+        },
+        {
+          "code": "600066",
+          "name": "宇通客车",
+          "final_score": 73.08,
+          "ranking_reason": "反转因子高达98.2，PE仅12.9倍，回调后资金吸筹意愿明显，海外盈利持续验证。"
+        }
+      ],
+      "dropped_by_ai": [
+        {
+          "code": "600801",
+          "name": "华新建材"
+        },
+        {
+          "code": "000538",
+          "name": "云南白药"
+        }
+      ],
+      "llm_market_view": "全市场呈现普涨反弹而候选池主要聚焦低波动、防御性与高股息资产，适合震荡市中兼顾防守与稳健收益的配置策略。",
+      "llm_selection_logic": "重点考量低估值与盈利稳定性匹配度、主力资金持续流入及量价健康度、严防高位情绪透支与题材炒作风险。",
+      "llm_portfolio_risk": "组合偏向公用事业、医药消费及传统制造等防御性资产，若市场风格大幅切换向高弹性成长与题材炒作，可能面临相对收益跑输风险。"
+    }
+  ],
   "patterns": {
     "active": [],
     "experimental": [
@@ -7628,6 +8171,21 @@
         "recency": "old",
         "consensus_count": 2
       },
+      "600066": {
+        "code": "600066",
+        "name": "宇通客车",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "业绩",
+          "诉讼担保"
+        ],
+        "announcement_summary": "2026-11-10 关于担保计划范围内担保进展的公告 | 2026-11-04 2026年10月份产销数据快报 | 2026-10-15 关于召开2026年第三季度业绩说明会的公告",
+        "matched_announcement": "关于担保计划范围内担保进展的公告",
+        "announcement_date": "2026-11-10",
+        "days_ago": 13,
+        "recency": "mid",
+        "consensus_count": 2
+      },
       "000538": {
         "code": "000538",
         "name": "云南白药",
@@ -7654,6 +8212,58 @@
         "recency": "recent",
         "consensus_count": 2
       },
+      "301200": {
+        "code": "301200",
+        "name": "大族数控",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-23 17:50:27 H股公告-翌日披露报表 | 2026-11-20 19:08:11 H股公告-翌日披露报表 | 2026-11-20 19:08:09 第三届董事会第三次会议决议公告",
+        "matched_announcement": "H股公告-翌日披露报表",
+        "announcement_date": "2026-11-23",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "600285": {
+        "code": "600285",
+        "name": "羚锐制药",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "业绩"
+        ],
+        "announcement_summary": "2026-11-17 羚锐制药关于获得药品注册证书的公告 | 2026-10-30 羚锐制药2026年第三季度报告 | 2026-10-30 羚锐制药关于召开2026年第三季度业绩说明会的公告",
+        "matched_announcement": "羚锐制药关于获得药品注册证书的公告",
+        "announcement_date": "2026-11-17",
+        "days_ago": 6,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "603345": {
+        "code": "603345",
+        "name": "安井食品",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-06 H股公告（截至2026年10月31日止之股份发行人的证券变动月报表） | 2026-10-29 上海市方达律师事务所关于安井食品集团股份有限公司2023年股票期权激励计划注销部分股票期权的法律意见书 | 2026-10-29 安井食品2026年第三季度报告",
+        "matched_announcement": "H股公告（截至2026年10月31日止之股份发行人的证券变动月报表）",
+        "announcement_date": "2026-11-06",
+        "days_ago": 17,
+        "recency": "mid",
+        "consensus_count": 1
+      },
+      "600566": {
+        "code": "600566",
+        "name": "济川药业",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-19 湖北济川药业股份有限公司关于全资子公司开立募集资金现金管理专用结算账户并利用闲置募集资金进行现金管理的进展公告 | 2026-11-10 北京博星证券投资顾问有限公司关于曹飞要约收购湖北济川药业股份有限公司之2026年第三季度持续督导意见暨总结报告 | 2026-11-04 湖北济川药业股份有限公司关于以集中竞价交易方式回购股份的进展公告",
+        "matched_announcement": "湖北济川药业股份有限公司关于全资子公司开立募集资金现金管理专用结算账户并利用闲置募集资金进行现金管理的进展公告",
+        "announcement_date": "2026-11-19",
+        "days_ago": 4,
+        "recency": "recent",
+        "consensus_count": 1
+      },
       "002245": {
         "code": "002245",
         "name": "蔚蓝锂芯",
@@ -7676,6 +8286,20 @@
         "announcement_date": "2026-10-30",
         "days_ago": 24,
         "recency": "old",
+        "consensus_count": 1
+      },
+      "688519": {
+        "code": "688519",
+        "name": "南亚新材",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-19 关于回购股份事项前十大股东和前十大无限售条件股东持股情况的公告 | 2026-11-14 公司章程（2026年11月） | 2026-11-14 董事会议事规则（2026年11月）",
+        "matched_announcement": "关于回购股份事项前十大股东和前十大无限售条件股东持股情况的公告",
+        "announcement_date": "2026-11-19",
+        "days_ago": 4,
+        "recency": "recent",
         "consensus_count": 1
       },
       "601577": {
@@ -7772,80 +8396,6 @@
         "matched_announcement": "关于2023年度员工持股计划首次受让部分第三个锁定期和预留受让部分第二个锁定期届满的公告",
         "announcement_date": "2026-11-18",
         "days_ago": 5,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "600801": {
-        "code": "600801",
-        "name": "华新建材",
-        "negative_event_flags": [],
-        "announcement_categories": [],
-        "announcement_summary": "2026-11-19 湖北松之盛律师事务所关于华新建材集团股份有限公司2026年第五次临时股东会的法律意见书 | 2026-11-19 2026年第五次临时股东会决议公告 | 2026-11-18 2026年第六次临时股东会会议资料",
-        "matched_announcement": "湖北松之盛律师事务所关于华新建材集团股份有限公司2026年第五次临时股东会的法律意见书",
-        "announcement_date": "2026-11-19",
-        "days_ago": 4,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "600887": {
-        "code": "600887",
-        "name": "伊利股份",
-        "negative_event_flags": [],
-        "announcement_categories": [],
-        "announcement_summary": "2026-11-21 北京天驰君泰律师事务所关于内蒙古伊利实业集团股份有限公司2026年第二次临时股东会的法律意见书 | 2026-11-21 内蒙古伊利实业集团股份有限公司2026年第二次临时股东会决议公告 | 2026-11-20 内蒙古伊利实业集团股份有限公司关于出资设立风险投资基金的进展公告",
-        "matched_announcement": "北京天驰君泰律师事务所关于内蒙古伊利实业集团股份有限公司2026年第二次临时股东会的法律意见书",
-        "announcement_date": "2026-11-21",
-        "days_ago": 2,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "601668": {
-        "code": "601668",
-        "name": "中国建筑",
-        "negative_event_flags": [],
-        "announcement_categories": [],
-        "announcement_summary": "2026-11-20 中国建筑2026年1-10月经营情况简报 | 2026-10-31 中国建筑关于聘任公司副总裁的公告 | 2026-10-31 中国建筑2026年第三季度报告",
-        "matched_announcement": "中国建筑2026年1-10月经营情况简报",
-        "announcement_date": "2026-11-20",
-        "days_ago": 3,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "002028": {
-        "code": "002028",
-        "name": "思源电气",
-        "negative_event_flags": [],
-        "announcement_categories": [],
-        "announcement_summary": "2026-11-13 关于聘任2026年度审计机构的公告 | 2026-11-13 关于召开2026年第一次临时股东会的通知 | 2026-11-13 第九届董事会第七次会议决议公告",
-        "matched_announcement": "关于聘任2026年度审计机构的公告",
-        "announcement_date": "2026-11-13",
-        "days_ago": 10,
-        "recency": "mid",
-        "consensus_count": 1
-      },
-      "600741": {
-        "code": "600741",
-        "name": "华域汽车",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "业绩"
-        ],
-        "announcement_summary": "2026-11-10 华域汽车关于公司股权收购相关事项监管工作函的回复公告 | 2026-11-05 华域汽车关于召开2026年第三季度业绩说明会的公告 | 2026-10-29 华域汽车2026年第三季度报告",
-        "matched_announcement": "华域汽车关于公司股权收购相关事项监管工作函的回复公告",
-        "announcement_date": "2026-11-10",
-        "days_ago": 13,
-        "recency": "mid",
-        "consensus_count": 1
-      },
-      "600027": {
-        "code": "600027",
-        "name": "华电国际",
-        "negative_event_flags": [],
-        "announcement_categories": [],
-        "announcement_summary": "2026-11-21 关于召开2026年第一次临时股东会的通知 | 2026-11-21 关于中期票据发行的公告 | 2026-11-21 关于归还部分临时补充流动资金的闲置募集资金的公告",
-        "matched_announcement": "关于召开2026年第一次临时股东会的通知",
-        "announcement_date": "2026-11-21",
-        "days_ago": 2,
         "recency": "recent",
         "consensus_count": 1
       }
@@ -7950,6 +8500,16 @@
           "published_at": "11-19"
         }
       ],
+      "600066": [
+        {
+          "title": "界面新闻 机构风向标",
+          "published_at": "10-15"
+        },
+        {
+          "title": "宇通客车6000662026年三季度已披露前十大机构持股比例合计下跌2.92个百分点",
+          "published_at": ""
+        }
+      ],
       "000538": [
         {
           "title": "证券时报网 医药生物行业今日净流出资金32.43亿元，九安医疗等10股净流出资金超5000万元",
@@ -7958,16 +8518,6 @@
         {
           "title": "证券时报网 25.91亿元主力资金今日撤离医药生物板块",
           "published_at": "11-18"
-        }
-      ],
-      "002080": [
-        {
-          "title": "证券时报网 002080，股价回调，牛散重仓不减持",
-          "published_at": "11-17"
-        },
-        {
-          "title": "证券时报网 002080，跌停！葛卫东刚7亿元重仓",
-          "published_at": "10-14"
         }
       ]
     },
@@ -8053,9 +8603,10 @@
           "稳健价值"
         ],
         "tracks": [
+          "ai",
           "rules"
         ],
-        "avg_final_score": 77.34,
+        "avg_final_score": 79.03,
         "change_pct": -0.76,
         "announcement_risk_flags": [],
         "price": 5.25,
@@ -8064,9 +8615,39 @@
         "market_cap_yi": 311.1,
         "reasons": [
           "活跃度+低波稳健因子靠前",
-          "估值+活跃度因子靠前"
+          "PE仅14.8倍，主力连续5日净流入且价格维持高位突破结构，波动小抗风险能力强。"
         ],
         "news_headline": "证券时报网 强势股追踪 主力资金连续5日净流入101股"
+      },
+      {
+        "code": "600066",
+        "name": "宇通客车",
+        "industry": "汽车",
+        "strategy_count": 2,
+        "strategies": [
+          "oversold_reversal",
+          "quality_value"
+        ],
+        "strategy_display_names": [
+          "超跌反转",
+          "稳健价值"
+        ],
+        "tracks": [
+          "ai",
+          "rules"
+        ],
+        "avg_final_score": 76.54,
+        "change_pct": -3.14,
+        "announcement_risk_flags": [],
+        "price": 31.78,
+        "pe_ratio": 12.9,
+        "pb_ratio": 4.93,
+        "market_cap_yi": 703.6,
+        "reasons": [
+          "超跌反转+市值规模因子靠前",
+          "反转因子高达98.2，PE仅12.9倍，回调后资金吸筹意愿明显，海外盈利持续验证。"
+        ],
+        "news_headline": "界面新闻 机构风向标"
       },
       {
         "code": "000538",
@@ -8082,9 +8663,10 @@
           "稳健价值"
         ],
         "tracks": [
+          "ai",
           "rules"
         ],
-        "avg_final_score": 75.92,
+        "avg_final_score": 75.88,
         "change_pct": -0.69,
         "announcement_risk_flags": [],
         "price": 56.01,
@@ -8093,7 +8675,7 @@
         "market_cap_yi": 999.4,
         "reasons": [
           "流动性+市值规模因子靠前",
-          "市值规模+流动性因子靠前"
+          "波动与回撤控制极佳（振幅7.8%），但情报端显示板块主力资金大幅流出，压制短期向上弹性。"
         ],
         "news_headline": "证券时报网 医药生物行业今日净流出资金32.43亿元，九安医疗等10股净流出资金超5000万元"
       },
@@ -8111,9 +8693,10 @@
           "资金热度"
         ],
         "tracks": [
+          "ai",
           "rules"
         ],
-        "avg_final_score": 71.24,
+        "avg_final_score": 74.21,
         "change_pct": 3.79,
         "announcement_risk_flags": [],
         "price": 31.2,
@@ -8123,8 +8706,7 @@
         "reasons": [
           "市值规模+流动性因子靠前",
           "流动性+市值规模因子靠前"
-        ],
-        "news_headline": "证券时报网 002080，股价回调，牛散重仓不减持"
+        ]
       }
     ],
     "sector_concentration": [
@@ -8132,49 +8714,49 @@
         "industry": "银行",
         "pick_count": 5,
         "unique_codes": 4,
-        "share_pct": 11.1
+        "share_pct": 10.0
+      },
+      {
+        "industry": "专用设备",
+        "pick_count": 3,
+        "unique_codes": 3,
+        "share_pct": 6.0
       },
       {
         "industry": "输变电设备",
         "pick_count": 3,
         "unique_codes": 3,
-        "share_pct": 6.7
+        "share_pct": 6.0
+      },
+      {
+        "industry": "中药生产",
+        "pick_count": 3,
+        "unique_codes": 2,
+        "share_pct": 6.0
       },
       {
         "industry": "医疗器械",
         "pick_count": 3,
         "unique_codes": 2,
-        "share_pct": 6.7
+        "share_pct": 6.0
       },
       {
-        "industry": "专用设备",
-        "pick_count": 2,
+        "industry": "汽车",
+        "pick_count": 3,
         "unique_codes": 2,
-        "share_pct": 4.4
+        "share_pct": 6.0
       },
       {
         "industry": "建筑施工",
         "pick_count": 2,
         "unique_codes": 2,
-        "share_pct": 4.4
-      },
-      {
-        "industry": "汽车",
-        "pick_count": 2,
-        "unique_codes": 2,
-        "share_pct": 4.4
+        "share_pct": 4.0
       },
       {
         "industry": "电力",
         "pick_count": 2,
         "unique_codes": 2,
-        "share_pct": 4.4
-      },
-      {
-        "industry": "中药生产",
-        "pick_count": 2,
-        "unique_codes": 1,
-        "share_pct": 4.4
+        "share_pct": 4.0
       }
     ],
     "strategy_pattern_resonance": [
@@ -8215,11 +8797,54 @@
         "source": "announcement"
       },
       {
+        "code": "601000",
+        "name": "唐山港",
+        "severity": "medium",
+        "flags": [
+          "rsi_overbought",
+          "短期超买",
+          "短期超买指标"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      },
+      {
+        "code": "600566",
+        "name": "济川药业",
+        "severity": "medium",
+        "flags": [
+          "rsi_overbought",
+          "集采预期风险"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      },
+      {
         "code": "000001",
         "name": "平安银行",
         "severity": "medium",
         "flags": [
           "portfolio_sector_concentration:金融"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      },
+      {
+        "code": "000100",
+        "name": "TCL科技",
+        "severity": "medium",
+        "flags": [
+          "周期波动风险"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      },
+      {
+        "code": "000538",
+        "name": "云南白药",
+        "severity": "medium",
+        "flags": [
+          "板块主力资金净流出"
         ],
         "summary": "",
         "source": "pick_risk"
@@ -8235,11 +8860,31 @@
         "source": "pick_risk"
       },
       {
-        "code": "601000",
-        "name": "唐山港",
+        "code": "600027",
+        "name": "华电国际",
         "severity": "medium",
         "flags": [
-          "rsi_overbought"
+          "燃料成本波动"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      },
+      {
+        "code": "600060",
+        "name": "海信视像",
+        "severity": "medium",
+        "flags": [
+          "海外需求疲软"
+        ],
+        "summary": "",
+        "source": "pick_risk"
+      },
+      {
+        "code": "600066",
+        "name": "宇通客车",
+        "severity": "medium",
+        "flags": [
+          "海外地缘政治摩擦"
         ],
         "summary": "",
         "source": "pick_risk"
@@ -8247,22 +8892,23 @@
     ]
   },
   "ai_brief": {
-    "mode": "rule_fallback",
-    "model": null,
-    "headline": "盘面处于主升阶段，上涨 83.6%（中位数 +2.41%），涨跌停 147/3（封板率 86.0%），公告排雷命中 1 只预警",
-    "regime_interpretation": "2026-11-23 全市场情绪处于「主升」阶段：全市场上涨占比 83.6%、中位数 +2.41%，成交额 15640亿；非 ST 涨停 147 只 / 跌停 3 只，首板封板率 86.0%，连板最高 5 板，昨涨停今日均表现 +7.69%。",
-    "consensus_and_ai_edge": "多策略共振标的前列：601939建设银行(2策略)、002432九安医疗(2策略)、601000唐山港(2策略)；行业主要集中在 银行(11.1%)、输变电设备(6.7%)、医疗器械(6.7%)。",
+    "mode": "llm",
+    "model": "gemini-3.8-flash",
+    "headline": "A股放量普涨进入主升阶段，全市场中位涨幅2.41%，防守与低估值标的逆势显现分化",
+    "regime_interpretation": "市场状态定位于主升阶段，全市场上涨占比达83.63%，涨跌幅中位数达2.41%，两市成交额达1.56万亿元。非ST涨停147家，封板率85.96%，最高连板达5板，昨日涨停股今日平均收益达7.69%，跌停仅3家，涨幅超3%的个股超2200家，呈现普涨格局。盘后要闻显示产业资本运作活跃，涉及并购、资产处置及智能化落地。在进攻情绪活跃的同时，候选防御与大盘蓝筹板块出现小幅逆市调整。",
+    "consensus_and_ai_edge": "多策略共识主要分布在银行、专用设备、输变电与医药板块。建设银行、九安医疗、唐山港及宇通客车等获得超跌反转、缩量回踩及稳健价值等策略多重覆盖。AI端在资金热度与趋势质量等策略中进行增删优化，调入了估值或量价结构稳健的大族数控、羚锐制药及宇通客车等，剔除了存在质押冻结风险的康龙化成等标的；同时许继电气和平高电气呈现单阳不破技术形态共振。",
     "risk_warnings": [
-      "公告预警：300759 康龙化成 命中 [质押冻结]"
+      "康龙化成公告提示实际控制人存在质押股份延期购回风险，已被AI规则识别排雷。",
+      "唐山港、济川药业提示短期RSI超买风险，且济川药业面临集采预期扰动。",
+      "银行等金融及防御性板块在普涨环境中出现资金流出与逆市微调，若风格偏向成长易产生相对跑输压力。"
     ],
     "watch_points": [
-      "观察次日上涨占比能否从 83.6% 修复、跌停家数（3 只）是否收敛；",
-      "跟踪昨日涨停溢价（+7.69%）与连板梯队（5 板）高度延续情况；",
-      "复盘多策略共识标的（601939 建设银行 等）次日开盘承接与换手。"
+      "观察1.56万亿两市成交额能否持续维持或进一步放大，以支撑主升阶段的板块轮动。",
+      "跟踪昨日涨停表现（7.69%）与5板高度接力情况，检验连板情绪与封板率（85.96%）是否维持高位韧性。"
     ],
     "disclaimer": "仅供量化研究与复盘观察，不构成投资建议。",
-    "fallback_reason": "no_llm_configured"
+    "fallback_reason": null
   },
-  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-23)**\n> 盘面 **主升**｜上涨 83.6% · 中位 +2.41%｜涨跌停 147/3（封板 86.0%）｜最高 5板 · 昨涨停 +7.69% · 成交 15,640亿\n**⚠️ 公告排雷预警（20检/1中）**\n- 300759 康龙化成 [11-03·质押冻结]: 关于公司实际控制人部分质押股份延期购回的公告\n**策略概览**：规则 10 组共 45 只候选\n**多策略共识(5)**：601939 建设银行(2策略)、002432 九安医疗(2策略)、601000 唐山港(2策略)、000538 云南白药(2策略)\n**盘后摘要**：盘面处于主升阶段，上涨 83.6%（中位数 +2.41%），涨跌停 147/3（封板率 86.0%），公告排雷命中 1 只预警\n**形态雷达**：低波趋势稳健突破(2只·观察期：浙商银行、雅戈尔)；红三兵(1只·观察期：京东方A)\n**盘后要闻**：*ST英飞：拟1元出售新普互联及英飞拓系统100%股权\n注：量化形态观测与回测基准，非投资建议。",
-  "im_card_chars": 479
+  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-23)**\n> 盘面 **主升**｜上涨 83.6% · 中位 +2.41%｜涨跌停 147/3（封板 86.0%）｜最高 5板 · 昨涨停 +7.69% · 成交 15,640亿\n**⚠️ 公告排雷预警（20检/1中）**\n- 300759 康龙化成 [11-03·质押冻结]: 关于公司实际控制人部分质押股份延期购回的公告\n**策略与 [AI]**：规则 10 组(45只) / [AI] 4 组(20只)，AI调仓 +5/-5（市场普涨且中位涨幅达2.41%，候选池全线飘红且成交活跃，适合顺势布局景气度共振与有）\n**多策略共识(6)**：601939 建设银行(2策略)、002432 九安医疗(2策略)、601000 唐山港(2策略)、600066 宇通客车(2策略)\n**[AI] 简评**：A股放量普涨进入主升阶段，全市场中位涨幅2.41%，防守与低估值标的逆势显现分化\n**形态雷达**：低波趋势稳健突破(2只·观察期：浙商银行、雅戈尔)；红三兵(1只·观察期：京东方A)\n**盘后要闻**：*ST英飞：拟1元出售新普互联及英飞拓系统100%股权\n注：量化形态观测与回测基准，非投资建议。",
+  "im_card_chars": 531
 }

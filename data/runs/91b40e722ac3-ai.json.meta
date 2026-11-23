@@ -1,0 +1,33 @@
+{
+  "schema_version": 3,
+  "run_id": "91b40e722ac3-ai",
+  "strategy": "capital_heat",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "momentum",
+  "created_at": "2026-11-23T14:13:34.342652+00:00",
+  "picks": 5,
+  "snapshot_count": 5573,
+  "after_filter_count": 92,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 4,
+  "degradation": [
+    "Candidate context collected rows=12",
+    "Candidate context row errors: 688519 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 300759 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 002028 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 300903 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | 002050 fund_flow: stock_individual_fund_flow 已在 1.20.45 更名为 stock_fund_flow_individual_hist_em，请改用 ak.stock_fund_flow_individual_hist_em；参数与返回的列也可能有调整，用 ak.interface_info(\"stock_fund_flow_individual_hist_em\") 查看。完整对照见 https://akshare.akfamily.xyz/changelog.html#changelog-rename | +6 more",
+    "LLM context truncated: trimmed=candidate_collected_context",
+    "LLM ranking prompt truncated: trimmed=candidate_details"
+  ],
+  "llm_ranked": true,
+  "llm_coverage": 0.6666666666666666,
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {},
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/91b40e722ac3-ai.json",
+  "report_path": "track/data/runs/91b40e722ac3-ai.md"
+}
