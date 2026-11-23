@@ -105,11 +105,11 @@ Register the zero-dependency read-only MCP server (`10` tools, `2` resources; ru
 
 ### 2. Local CLI, Interactive Web Workbench (`/ui`) & Docker
 
-Install from the [`v0.3.0` Release wheel](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.0) or editable source checkout:
+Install from the [`v0.3.1` Release wheel](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1) or editable source checkout:
 
 ```bash
-# Option A: Direct v0.3.0 Release Wheel
-pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.0/alphasift-0.3.0-py3-none-any.whl
+# Option A: Direct v0.3.1 Release Wheel
+pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.1/alphasift-0.3.1-py3-none-any.whl
 
 # Option B: Editable source install
 git clone https://github.com/ZhuLinsen/alphasift.git && cd alphasift
@@ -267,7 +267,7 @@ See [docs/ecosystem.md](docs/ecosystem.md) for MCP tool schemas and Docker detai
 
 > This repository is built purely for research, engineering verification, and educational experiments — never investment advice or buy/sell recommendations. Market data, LLM rankings, and pattern signals can be incomplete or delayed.
 
-[Usage](docs/usage.md) · [Configuration](docs/configuration.md) · [Ecosystem & MCP](docs/ecosystem.md) · [Deployment & Mirror](docs/deployment.md) · [Strategy Guide](docs/strategy-guide.md) · [Scoring](docs/scoring.md) · [Result Schema](docs/result-schema.md) · [Reference](docs/reference.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
+[Usage](docs/usage.md) · [Configuration](docs/configuration.md) · [Regime Research](docs/pattern-regime-research.md) · [Ecosystem & MCP](docs/ecosystem.md) · [Deployment & Mirror](docs/deployment.md) · [Strategy Guide](docs/strategy-guide.md) · [Scoring](docs/scoring.md) · [Result Schema](docs/result-schema.md) · [Reference](docs/reference.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Changelog](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
 Licensed under the [Apache License 2.0](LICENSE).
 

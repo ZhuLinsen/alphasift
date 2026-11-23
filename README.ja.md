@@ -105,11 +105,11 @@
 
 ### 2. ローカル CLI・Web Workbench (`/ui`)・Docker
 
-[`v0.3.0` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.0) から wheel を直接導入するか、リポジトリから開発インストールできます：
+[`v0.3.1` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1) から wheel を直接導入するか、リポジトリから開発インストールできます：
 
 ```bash
-# 方法 A：v0.3.0 Release Wheel を直接インストール
-pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.0/alphasift-0.3.0-py3-none-any.whl
+# 方法 A：v0.3.1 Release Wheel を直接インストール
+pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.1/alphasift-0.3.1-py3-none-any.whl
 
 # 方法 B：ソースコードからインストール
 git clone https://github.com/ZhuLinsen/alphasift.git && cd alphasift
@@ -266,7 +266,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 
 > 本プロジェクトは学習・調査・エンジニアリング検証を目的としており、投資助言や売買推奨を行うものではありません。
 
-[使い方](docs/usage.md) · [設定](docs/configuration.md) · [エコシステム＆MCP](docs/ecosystem.md) · [デプロイガイド](docs/deployment.md) · [戦略ガイド](docs/strategy-guide.md) · [スコアリング](docs/scoring.md) · [出力スキーマ](docs/result-schema.md) · [リファレンス](docs/reference.md) · [コントリビュート](CONTRIBUTING.md) · [セキュリティ](SECURITY.md) · [変更履歴](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
+[使い方](docs/usage.md) · [設定](docs/configuration.md) · [レジーム実証研究](docs/pattern-regime-research.md) · [エコシステム＆MCP](docs/ecosystem.md) · [デプロイガイド](docs/deployment.md) · [戦略ガイド](docs/strategy-guide.md) · [スコアリング](docs/scoring.md) · [出力スキーマ](docs/result-schema.md) · [リファレンス](docs/reference.md) · [コントリビュート](CONTRIBUTING.md) · [セキュリティ](SECURITY.md) · [変更履歴](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
 [Apache License 2.0](LICENSE) の下で公開されています。
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """alphasift — 自动选股 Skill"""
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 from alphasift.pipeline import screen
 from alphasift.evaluate import evaluate_saved_run, evaluate_saved_runs

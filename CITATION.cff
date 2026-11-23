@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use AlphaSift in quantitative research or benchmarks, please cite it using the metadata below."
 title: "AlphaSift: Auditable Multi-Market Quantitative Discovery & Anti-Survivorship T+N Benchmark"
-version: "0.3.0"
-date-released: "2026-11-21"
+version: "0.3.1"
+date-released: "2026-11-23"
 license: "Apache-2.0"
 repository-code: "https://github.com/ZhuLinsen/alphasift"
 url: "https://alphasift.zhulinsen.tech/"

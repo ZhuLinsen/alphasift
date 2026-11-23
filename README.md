@@ -105,11 +105,11 @@
 
 ### 2. 本机命令行、交互式 Web 工作台 & Docker
 
-可直接从 [`v0.3.0` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.0) 安装独立 wheel 包，或源码可编辑安装：
+可直接从 [`v0.3.1` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1) 安装独立 wheel 包，或源码可编辑安装：
 
 ```bash
-# 方式 A：直接安装 v0.3.0 Release Wheel
-pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.0/alphasift-0.3.0-py3-none-any.whl
+# 方式 A：直接安装 v0.3.1 Release Wheel
+pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.1/alphasift-0.3.1-py3-none-any.whl
 
 # 方式 B：源码克隆安装
 git clone https://github.com/ZhuLinsen/alphasift.git && cd alphasift
@@ -269,7 +269,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 
 > 本项目仅用于量化研究、开源工程验证与个人学习，不构成任何投资建议、收益承诺或买卖指令。行情源、大模型输出与形态统计均可能存在延迟或偏差。
 
-[使用指南](docs/usage.md) · [配置参考](docs/configuration.md) · [生态与 MCP](docs/ecosystem.md) · [部署与镜像](docs/deployment.md) · [策略指南](docs/strategy-guide.md) · [评分体系](docs/scoring.md) · [输出契约](docs/result-schema.md) · [参考资料](docs/reference.md) · [参与贡献](CONTRIBUTING.md) · [安全策略](SECURITY.md) · [更新记录](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
+[使用指南](docs/usage.md) · [配置参考](docs/configuration.md) · [情绪实证研究](docs/pattern-regime-research.md) · [生态与 MCP](docs/ecosystem.md) · [部署与镜像](docs/deployment.md) · [策略指南](docs/strategy-guide.md) · [评分体系](docs/scoring.md) · [输出契约](docs/result-schema.md) · [参考资料](docs/reference.md) · [参与贡献](CONTRIBUTING.md) · [安全策略](SECURITY.md) · [更新记录](docs/CHANGELOG.md) · [SKILL.md](SKILL.md)
 
 基于 [Apache License 2.0](LICENSE) 开源。
 

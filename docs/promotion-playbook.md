@@ -2,7 +2,7 @@
 
 - **Repo**: [https://github.com/ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift)
 - **Live Benchmark**: [https://alphasift.zhulinsen.tech/](https://alphasift.zhulinsen.tech/)
-- **Baseline Snapshot（2026-11-23）**：`540★` · `254 Forks` · `7 Watchers` · `v0.3.0` 已发布 · `620+ pytest tests`；14 天内 `2,523` views / `1,180` unique visitors、`6,450` clones / `1,880` unique cloners；对比同作者生态 `ZhuLinsen/daily_stock_analysis`（`73.7k★`）与 `ZhuLinsen/alphaevo`（`235★`）仍有显著漏斗放大空间。
+- **Baseline Snapshot（2026-11-23）**：`547★` · `256 Forks` · `7 Watchers` · `v0.3.1` 已发布 · `655+ pytest tests` · **`T+5` 样本池已解锁（`2026-11-23` 榜单 `momentum_quality` `+2.86%` 净超额 / `85%` 胜率, `n=20`）**；14 天内 `2,523` views / `1,180` unique visitors、`6,450` clones / `1,880` unique cloners；对比同作者生态 `ZhuLinsen/daily_stock_analysis`（`73.7k★`）与 `ZhuLinsen/alphaevo`（`235★`）仍有显著漏斗放大空间。
 - **线上 SEO 与埋点基建**：已上线 `social-preview.png`（1280×640）、`robots.txt`、`sitemap.xml`、`SoftwareApplication` JSON-LD、Atom 1.0 `site/feed.xml` 及可选零 Cookie Cloudflare Web Analytics（`CF_WEB_ANALYTICS_TOKEN`）。各渠道宣传统一附带 `?utm_source=<channel>` 参数便于归因。
 
 ---
@@ -80,13 +80,13 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 
 ### 3.1 LINUX DO 发帖终稿（`/开发调优` 或 `/开源分享`）
 
-- **标题**：`【开源】AlphaSift v0.3.0：形态雷达 + AI 多市场选股引擎，带可审计 T+N 策略跟踪曲线（零成本 Actions + 原生 MCP）`
+- **标题**：`【开源】AlphaSift v0.3.1：形态雷达 + Walk-Forward 情绪门控 + T+5 (+2.86%/85% 胜率) 公开跟踪榜（零成本 Actions + 原生 MCP）`
 - **链接（带归因）**：`https://alphasift.zhulinsen.tech/?lang=zh&utm_source=linuxdo` · `https://github.com/ZhuLinsen/alphasift`
 - **配图顺序**：`docs/assets/dashboard-preview.gif`（或 `promo-card-1-overview.png`）→ `docs/assets/dashboard-zh.png` → `docs/assets/daily-report.png`
 - **正文终稿**：
 
 ```markdown
-继 `daily_stock_analysis` 之后，顺手把“全市场初筛 + 形态实证 + 公开事后账本”这段独立开源成了 **AlphaSift（v0.3.0）**。
+继 `daily_stock_analysis` 之后，顺手把“全市场初筛 + Walk-Forward 情绪门控形态实证 + 公开事后账本”这段独立开源成了 **AlphaSift（v0.3.1）**。今天（2026-11-23）公开看板刚解锁首个达到 20 笔以上的 **`T+5` 榜单**：`momentum_quality`（趋势质量）净超额 **`+2.86%` / `85%` 胜率**（全策略加权 `+0.37%` / 297 股次 / 150 次运行）。
 
 起因很简单：做单只股票的 AI 深度分析已经有很多方案了，但每天收盘后面对 A 股 5,000+ 只标的，“先看哪几只”一直缺少一个**透明、无 API Key 也能跑、并且敢把每天选出来的结果按同一口径持续核算 T+5/10/20 胜率**的上游筛选器。
 
@@ -102,9 +102,9 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
    - 内置 9 套无状态 K 线形态（红三兵、红三兵回踩确认、箱体突破等），结合私有 250 日离线日线包做样本外回放，必须同时过 25bp 成本扣除、Bartlett HAC t>=2.0、BH-FDR 多重检验校正及前后半样本稳定性门槛才会标为 `active`（当前阶段严苛门槛下 9 套全诚实标为 `experimental` 观察期，绝不强行美化）。
    - 所有线上跟踪统一按次日开盘价 **`next_open`** 计价，并单独剔除、标注**开盘一字涨停无法成交**的样本，拒绝用信号日收盘价算纸面富贵。
 3. **30 秒本地跑通 / 原生接入 Claude Code & Cursor MCP**
-   - 直接安装 `v0.3.0` Wheel 或源码安装：
+   - 直接安装 `v0.3.1` Wheel 或源码安装：
      ```bash
-     pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.0/alphasift-0.3.0-py3-none-any.whl
+     pip install https://github.com/ZhuLinsen/alphasift/releases/download/v0.3.1/alphasift-0.3.1-py3-none-any.whl
      alphasift quickstart                          # 无 Key 30 秒看全链路结果
      alphasift screen dual_low --no-llm            # 纯规则 A 股双低选股
      alphasift serve --host 127.0.0.1 --port 8765  # 本机离线安全 Web 工作台 (/ui)
@@ -159,11 +159,11 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 
 ---
 
-### 3.3 V2EX `/go/share` 终稿（配合 v0.3.0 发布）
+### 3.3 V2EX `/go/share` 终稿（配合 v0.3.1 发布）
 
-- **Title**: `开源了一个可验证的 7 市场量化初筛与 T+N 公开账本引擎 AlphaSift v0.3.0（支持原生 MCP / 本地 Web UI / 形态雷达）`
+- **Title**: `开源了一个可验证的 7 市场量化初筛与 T+N 公开账本引擎 AlphaSift v0.3.1（刚解锁 T+5 +2.86% 实时榜单 / 原生 MCP / Walk-Forward 情绪门控）`
 - **Url**: `https://alphasift.zhulinsen.tech/?lang=zh&utm_source=v2ex`
-- **要点**：重点写清楚“上次分享后完善了 v0.3.0 闭环”——新增 A 股全市场 250 日离线日线包、9 套形态雷达（FDR + HAC 检验下全部诚实标观察期）、规则 vs AI 同日配对赛道、`next_open` 涨停不可成交核算、独立可打印盘后 HTML 日报、10 工具零依赖 STDIO MCP 与本地 `/ui` 工作台。附 `promo-card-1-overview.png` + `dashboard-preview.gif`。
+- **要点**：重点写清楚“上次分享后完善了 v0.3.1 闭环”——新增 A 股全市场 250 日离线日线包与 `walk_forward_regime_audit` 零前视 H1→H2 情绪门控校验、9 套形态雷达（FDR + HAC 检验下全部诚实标观察期）、`T+5` 榜单首个达成 `n>=20` 解锁（`momentum_quality` `+2.86% / 85% 胜率`）、`next_open` 涨停不可成交核算、独立可打印盘后 HTML 日报、10 工具零依赖 STDIO MCP 与本地 `/ui` 工作台。附 `promo-card-1-overview.png` + `dashboard-preview.gif`。
 
 ---
 
@@ -175,12 +175,12 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 
 > Hey HN — author here. I built **AlphaSift** after getting frustrated with two common failure modes in "AI stock picking" tools: (1) backtests that silently book paper profits on untradable limit-up opens, and (2) LLM agents overriding bad financial filings just because a stock is famous.
 >
-> Key design choices in AlphaSift v0.3.0:
+> Key design choices in AlphaSift v0.3.1:
 > - **Deterministic L1/L2 base**: 12 auditable YAML strategies across 7 markets (CN/HK/US/JP/KR/TW/IN) with piecewise-linear quantile scoring and orthogonal sector caps (`hard_cap`).
-> - **Code-enforced LLM guardrails**: optional L2 re-ranking runs via a zero-SDK `requests` OpenAI/Gemini client (works with OpenAI, Gemini, DeepSeek, Ollama), but adverse filings cap LLM score at `35.0` in Python—not just in a prompt—and omitted picks never keep stale scores.
-> - **Empirical 250D pattern radar (no cherry-picking)**: 9 stateless pattern detectors must pass 25bp round-trip costs, Bartlett HAC `t >= 2.0`, Benjamini-Hochberg FDR `q <= 0.05`, and H1/H2 subsample stability before leaving `experimental` status (today all 9 are honestly marked `experimental`).
-> - **Paired attribution**: CN sessions are architected to log both deterministic `rules` and `ai` tracks side-by-side so anyone can measure whether AI adds excess return over rules (`T+5 / T+10 / T+20` vs index benchmark at `next_open`).
-> - **MCP + Local Workbench**: `alphasift mcp` speaks zero-dependency STDIO JSON-RPC 2.0 (10 tools, 2 resources; read-only without outbound pushes); `alphasift serve --port 8765` launches an offline-safe local Web UI at `/ui`. Install directly via the v0.3.0 release wheel or `pip install -e .`.
+> - **Code-enforced LLM guardrails**: optional L2 re-ranking runs via a zero-SDK `requests` OpenAI/Gemini client (works with OpenAI, Gemini, DeepSeek, Ollama), but adverse filings cap LLM score at `35.0` in Python—not just in a prompt—and omitted picks never keep stale scores (flagged `1` live case on `2026-11-23`).
+> - **Empirical 250D pattern radar & Walk-Forward regime gate (no cherry-picking)**: 9 stateless pattern detectors must pass 25bp round-trip costs, Bartlett HAC `t >= 2.0`, Benjamini-Hochberg FDR `q <= 0.05`, H1/H2 subsample stability, and zero-snooping H1→H2 regime selection (`--allowed-regimes` / `--exclude-regimes`) before leaving `experimental` status (today all 9 are honestly marked `experimental`).
+> - **Paired attribution & unlocked T+5 milestone**: CN sessions log `rules` and `ai` tracks side-by-side (`next_open` entry); first `n >= 20` cohort unlocked `2026-11-23` with `momentum_quality` at `+2.86%` net excess / `85%` beat rate across `150` runs.
+> - **MCP + Local Workbench**: `alphasift mcp` speaks zero-dependency STDIO JSON-RPC 2.0 (10 tools, 2 resources; read-only without outbound pushes); `alphasift serve --port 8765` launches an offline-safe local Web UI at `/ui`. Install directly via the v0.3.1 release wheel or `pip install -e .`.
 >
 > Live verifiable ledger: https://alphasift.zhulinsen.tech/?lang=en&utm_source=hn
 > Happy to answer questions on `next_open` entry timing and limit-up accounting, FDR/HAC pattern graduation, or MCP safety boundaries!
@@ -202,7 +202,7 @@ Factors discovered cleanly in `AlphaEvo` can be promoted into deterministic YAML
 
 ### 3.6 X / Twitter 6-Post Thread（已验证 `t.co` 为站外第一流量引擎）
 
-1. **1/6 (Hook + `promo-card-1-overview.png`)**: Most AI stock tools fail at two basic engineering checks: booking fake gains on untradable limit-up opens, and letting LLM vibes override regulatory probe filings. Introducing **AlphaSift v0.3.0** (Apache-2.0): 7 markets, 12 YAML strategies, 9 FDR-checked patterns, zero-SDK MCP, and a public `T+5/10/20` ledger.
+1. **1/6 (Hook + `promo-card-1-overview.png`)**: Most AI stock tools fail at two basic engineering checks: booking fake gains on untradable limit-up opens, and letting LLM vibes override regulatory probe filings. Introducing **AlphaSift v0.3.1** (Apache-2.0): 7 markets, 12 YAML strategies, 9 FDR + Walk-Forward checked patterns, zero-SDK MCP, and a live `T+5` ledger just unlocked at `+2.86%` / `85%` beat rate (`n=20`).
 2. **2/6 (`dashboard-dark.png`)**: Every session logs real picks publicly (`https://alphasift.zhulinsen.tech/?lang=en&utm_source=x`). No cherry-picked screenshots: `next_open` entry pricing, matched index benchmarks (CSI 300 / S&P 500 / Nikkei / Hang Seng), and explicit `untradable_limit_up` tracking.
 3. **3/6 (`promo-card-3-benchmark.png`)**: We refuse to overfit: our 250-day pattern radar requires beating both CSI 300 & All-A equal-weight after 25bp costs, plus Bartlett HAC `t >= 2.0`, BH-FDR `q <= 0.05`, and H1/H2 stability — so today all 9 detectors stay honestly flagged `experimental`.
 4. **4/6**: Why prompts alone aren't safety: in AlphaSift, adverse regulatory/delisting/stake-sale keywords are capped at `35.0` in Python (`_LLM_RED_FLAG_MAX_SCORE`), with negated-phrase filtering (`"无立案调查"`). Zero `litellm` bloat—just clean `requests` + key redaction.

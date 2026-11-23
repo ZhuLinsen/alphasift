@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.1 (2026-11-23)
+
+- **Walk-Forward 市场情绪阶段门控与零前视审计（v0.4 研究基础）**：
+  - 在 `alphasift/pattern_replay.py` 中新增 `_summarize_walk_forward_regime_audit`（严格按前半段 `H1` 选正超额/剔除逆风阶段，固定投影到后半段 `H2` 进行零前视样本外对照，杜绝“看全样本事后挑阶段”）并写入 `site/patterns.json` 与 `render_replay_markdown`。
+  - `replay_patterns`、CLI（`alphasift patterns replay`）及 `scripts/replay_patterns.py` 新增 `--allowed-regimes` 与 `--exclude-regimes` 参数（支持阶段英文 key 与中文标签及输入校验）。
+  - 新增 250 日（5,577 只 A 股 / 180 有效日）情绪分化实证研究报告 [`docs/pattern-regime-research.md`](pattern-regime-research.md)。
+- **T+5 实证里程碑解锁与 LLM 鲁棒性加固**：
+  - 公开跟踪站 `2026-11-23` 正式解锁 `T+5 (n=20)`：`momentum_quality`（趋势质量）`+2.86%` 净超额 / `85%` 胜率领跑规则赛道。
+  - 默认 `LLM_MAX_TOKENS` 上调至 `4096`（上限 `8192`，不自动扩写），完善 OpenAI-compatible 兼容客户端与多策略去重鲁棒性，同步刷新 `2026-11-23` 看板与盘后日报可视化素材。
+
 ## v0.3.0 (2026-11-22)
 
 - **Issue #34 P1–P7 完整闭环与离线基准**：
