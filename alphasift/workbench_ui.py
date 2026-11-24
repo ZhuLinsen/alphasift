@@ -156,6 +156,7 @@ def render_workbench_html() -> str:
   <section id="panel-strategies" class="hidden"></section>
   <section id="panel-patterns" class="hidden"></section>
   <section id="panel-runs" class="hidden"></section>
+  <section id="panel-digest" class="hidden"></section>
   <section id="panel-mcp" class="hidden"></section>
 </div>
 
@@ -171,7 +172,7 @@ def render_workbench_html() -> str:
       sub: "Zero-dependency local UI for strategies, live pattern scans, saved runs & AI readiness",
       btn_report: "Daily Report",
       refresh: "Refresh",
-      tabs: { overview: "Overview", strategies: "Strategies", patterns: "Patterns", runs: "Runs & Picks", mcp: "MCP & API" },
+      tabs: { overview: "Overview", strategies: "Strategies", patterns: "Patterns", runs: "Runs & Picks", digest: "Markets Digest", mcp: "MCP & API" },
       kpi_strats: "Built-in Strategies",
       kpi_pats: "Pattern Catalog",
       kpi_runs: "Saved Runs",
@@ -186,7 +187,17 @@ def render_workbench_html() -> str:
       no_runs: "No saved runs found yet. Run `alphasift screen <strategy> --save-run` first.",
       exposure_title: "Portfolio Topic Exposure & Replacement Candidates",
       picks_title: "Top Picks & Topic Alignment",
+      digest_load: "Load Digest",
+      digest_loading: "Building multi-market digest...",
+      digest_date_ph: "YYYY-MM-DD (optional)",
+      digest_empty: "No saved runs found for selected markets yet. Run `alphasift screen <strategy> --market us --save-run` first.",
+      digest_no_picks: "No saved runs for this market on selected date.",
+      digest_cols: ["Security", "Strategies", "Avg Score", "Chg%"],
+      digest_card_title: "IM Push Card Preview (<1200 chars)",
+      copy_card: "Copy IM Card",
       mcp_title: "STDIO MCP Client Configuration (Claude Code / Cursor / OpenClaw)",
+      mcp_caps: "13 read-only tools · 3 resources · Zero-dependency STDIO JSON-RPC 2.0 (never spends LLM credits by default)",
+      mcp_tools_lbl: "Highlighted Tools",
       codex_title: "Codex CLI Quick Add",
       copy_cli: "Copy CLI",
       copy_json: "Copy JSON",
@@ -223,7 +234,7 @@ def render_workbench_html() -> str:
       sub: "零外部依赖本地 Web UI — 策略对比、本地形态扫描、历史归因与就绪自检",
       btn_report: "盘后日报",
       refresh: "刷新数据",
-      tabs: { overview: "总览与自检", strategies: "内置策略", patterns: "形态扫描", runs: "历史运行与持仓暴露", mcp: "MCP 与 API" },
+      tabs: { overview: "总览与自检", strategies: "内置策略", patterns: "形态扫描", runs: "历史运行与持仓暴露", digest: "多市场摘要", mcp: "MCP 与 API" },
       kpi_strats: "内置 YAML 策略",
       kpi_pats: "形态模板",
       kpi_runs: "已保存运行",
@@ -238,7 +249,17 @@ def render_workbench_html() -> str:
       no_runs: "暂无保存的选股记录，可先运行 `alphasift screen <strategy> --save-run`。",
       exposure_title: "组合主题暴露、集中度预警与替补候选",
       picks_title: "入选标的与热点对齐明细",
+      digest_load: "生成摘要",
+      digest_loading: "正在汇总多市场选股摘要…",
+      digest_date_ph: "YYYY-MM-DD（可选）",
+      digest_empty: "所选市场暂无已保存运行记录，可先执行 `alphasift screen <strategy> --market us --save-run`。",
+      digest_no_picks: "该市场在所选日期暂无已保存候选。",
+      digest_cols: ["标的", "共振策略", "均分", "涨跌%"],
+      digest_card_title: "IM 推送卡片预览（<1200 字）",
+      copy_card: "复制卡片",
       mcp_title: "STDIO MCP 客户端配置 (Claude Code / Cursor / OpenClaw)",
+      mcp_caps: "13 个只读工具 · 3 项资源 · 零依赖 STDIO JSON-RPC 2.0（默认零 LLM 消耗）",
+      mcp_tools_lbl: "核心工具一览",
       codex_title: "Codex CLI 一键接入",
       copy_cli: "复制命令",
       copy_json: "复制 JSON",
@@ -311,6 +332,11 @@ def render_workbench_html() -> str:
     activeRun: null,
     compareResult: null,
     runReqId: 0,
+    digestMarkets: ["us", "hk", "jp", "kr", "tw", "in"],
+    digestDate: "",
+    digestData: null,
+    digestErr: "",
+    digestLoading: false,
   };
 
   function t(key) {
@@ -451,16 +477,20 @@ def render_workbench_html() -> str:
     if (repLink) repLink.textContent = t("btn_report");
     document.getElementById("btn-refresh").textContent = t("refresh");
     const tabLabels = t("tabs");
+    const tabIds = ["overview", "strategies", "patterns", "runs", "digest", "mcp"];
     const bar = clear(document.getElementById("tab-bar"));
-    for (const id of ["overview", "strategies", "patterns", "runs", "mcp"]) {
+    for (const id of tabIds) {
       const btn = el("button", { type: "button", class: state.tab === id ? "active" : "", text: tabLabels[id] });
       btn.addEventListener("click", function () {
         state.tab = id;
+        if (id === "digest" && !state.digestData && !state.digestLoading && !state.digestErr) {
+          loadMarketsDigest();
+        }
         renderAll();
       });
       bar.appendChild(btn);
     }
-    for (const id of ["overview", "strategies", "patterns", "runs", "mcp"]) {
+    for (const id of tabIds) {
       const sec = document.getElementById("panel-" + id);
       if (state.tab === id) sec.classList.remove("hidden");
       else sec.classList.add("hidden");
@@ -950,6 +980,149 @@ def render_workbench_html() -> str:
     root.appendChild(picksCard);
   }
 
+  const ALL_DIGEST_MARKETS = ["us", "hk", "jp", "kr", "tw", "in", "cn"];
+
+  async function loadMarketsDigest() {
+    const mkts = state.digestMarkets.length ? state.digestMarkets : ["us", "hk", "jp", "kr", "tw", "in"];
+    let url = "/markets-digest?markets=" + encodeURIComponent(mkts.join(","));
+    const td = String(state.digestDate || "").trim();
+    if (td) url += "&trade_date=" + encodeURIComponent(td);
+    state.digestLoading = true;
+    state.digestErr = "";
+    renderDigest();
+    try {
+      state.digestData = await fetchJson(url);
+    } catch (err) {
+      state.digestData = null;
+      state.digestErr = String(err.message || err);
+    } finally {
+      state.digestLoading = false;
+      renderDigest();
+    }
+  }
+
+  function renderDigest() {
+    const root = clear(document.getElementById("panel-digest"));
+    const bar = el("div", { class: "toolbar" });
+    for (const m of ALL_DIGEST_MARKETS) {
+      const active = state.digestMarkets.includes(m);
+      const mBtn = el("button", { type: "button", class: active ? "active" : "", text: m.toUpperCase() });
+      mBtn.addEventListener("click", function () {
+        if (state.digestMarkets.includes(m)) {
+          if (state.digestMarkets.length <= 1) return;
+          state.digestMarkets = state.digestMarkets.filter((x) => x !== m);
+        } else {
+          const next = state.digestMarkets.concat([m]);
+          state.digestMarkets = ALL_DIGEST_MARKETS.filter((x) => next.includes(x));
+        }
+        state.digestData = null;
+        state.digestErr = "";
+        loadMarketsDigest();
+      });
+      bar.appendChild(mBtn);
+    }
+    const dateInp = el("input", {
+      type: "text",
+      id: "digest-date-input",
+      placeholder: t("digest_date_ph"),
+      value: state.digestDate,
+      style: "flex:0 1 170px;min-width:140px;",
+    });
+    dateInp.addEventListener("input", function () {
+      state.digestDate = dateInp.value;
+    });
+    bar.appendChild(dateInp);
+    const loadBtn = el("button", {
+      type: "button",
+      id: "btn-load-digest",
+      text: state.digestLoading ? t("digest_loading") : t("digest_load"),
+    });
+    if (state.digestLoading) loadBtn.disabled = true;
+    loadBtn.addEventListener("click", loadMarketsDigest);
+    bar.appendChild(loadBtn);
+    root.appendChild(bar);
+
+    if (state.digestErr) {
+      root.appendChild(el("div", { class: "card bad", text: t("err_prefix") + state.digestErr }));
+      return;
+    }
+    const d = state.digestData;
+    if (!d) {
+      root.appendChild(el("div", { class: "card empty", text: state.digestLoading ? t("digest_loading") : t("digest_empty") }));
+      return;
+    }
+
+    const metaRow = el("div", { style: "margin-bottom:12px;" }, [
+      makeBadge(String(d.trade_date || "-"), "accent"),
+      makeBadge(String(d.im_card_chars || 0) + " chars", "ok"),
+    ]);
+    root.appendChild(metaRow);
+
+    const sections = Array.isArray(d.market_sections) ? d.market_sections : [];
+    const dCols = t("digest_cols");
+    const grid = el("div", { class: "cards" });
+    let anyPick = false;
+    for (const sec of sections) {
+      const top = Array.isArray(sec.top_picks) ? sec.top_picks : [];
+      if (top.length) anyPick = true;
+      const card = el("div", { class: "card" }, [
+        el("div", { class: "card-head-row" }, [
+          el("strong", { text: String(sec.market_name || sec.market || "").toUpperCase() + " (" + String(sec.market || "").toUpperCase() + ")" }),
+          makeBadge(String(sec.strategy_count || 0) + " · " + String(sec.trade_date || "-"), top.length ? "accent" : ""),
+        ]),
+      ]);
+      if (!top.length) {
+        card.appendChild(el("div", { class: "kpi-sub", text: t("digest_no_picks") }));
+      } else {
+        const innerWrap = el("div", { class: "table-wrap" });
+        const tbl = el("table");
+        tbl.appendChild(el("thead", null, el("tr", null, dCols.map((c, idx) => el("th", { class: idx >= 2 ? "mono" : "", text: c })))));
+        const tbody = el("tbody");
+        for (const p of top) {
+          const scoreTxt = p.avg_final_score !== null && p.avg_final_score !== undefined
+            ? Number(p.avg_final_score).toFixed(1)
+            : "-";
+          const hasChg = p.change_pct !== null && p.change_pct !== undefined && Number.isFinite(Number(p.change_pct));
+          const chgNum = hasChg ? Number(p.change_pct) : 0;
+          const chgCls = hasChg ? ("mono " + (chgNum >= 0 ? "chg-up" : "chg-down")) : "mono";
+          const chgTxt = hasChg ? ((chgNum > 0 ? "+" : "") + chgNum.toFixed(2) + "%") : "-";
+          const stratList = Array.isArray(p.strategy_display_names) && p.strategy_display_names.length
+            ? p.strategy_display_names
+            : (p.strategies || []);
+          tbody.appendChild(el("tr", null, [
+            el("td", null, [el("strong", { text: String(p.name || p.code || "") }), el("div", { class: "kpi-sub mono", text: String(p.code || "") })]),
+            el("td", { class: "kpi-sub", text: String(p.strategy_count || 1) + " · " + stratList.slice(0, 2).join(", ") }),
+            el("td", { class: "mono", text: scoreTxt }),
+            el("td", { class: chgCls, text: chgTxt }),
+          ]));
+        }
+        tbl.appendChild(tbody);
+        innerWrap.appendChild(tbl);
+        card.appendChild(innerWrap);
+      }
+      grid.appendChild(card);
+    }
+    root.appendChild(grid);
+    if (!anyPick) {
+      root.appendChild(el("div", { class: "card empty", style: "margin-top:12px;", text: t("digest_empty") }));
+    }
+
+    const cardMd = String(d.im_card_markdown || "");
+    const btnCopyCard = el("button", { type: "button", class: "mini-btn", text: t("copy_card") });
+    btnCopyCard.addEventListener("click", function () { copyText(cardMd, btnCopyCard, t("copy_card")); });
+    root.appendChild(el("div", { class: "card", style: "margin-top:14px;" }, [
+      el("div", { class: "card-head-row" }, [
+        el("h3", { class: "section-title", text: t("digest_card_title") }),
+        btnCopyCard,
+      ]),
+      el("pre", { text: cardMd }),
+      el("details", { class: "raw-toggle" }, [
+        el("summary", { text: t("raw_json") }),
+        el("pre", { text: JSON.stringify(d, null, 2) }),
+      ]),
+    ]));
+  }
+
   function renderMcp() {
     const root = clear(document.getElementById("panel-mcp"));
     const mcpJson = JSON.stringify({
@@ -962,11 +1135,17 @@ def render_workbench_html() -> str:
     }, null, 2);
     const btnCopyJson = el("button", { type: "button", class: "mini-btn", text: t("copy_json") });
     btnCopyJson.addEventListener("click", function () { copyText(mcpJson, btnCopyJson, t("copy_json")); });
+    const toolRow = el("div", { style: "margin:8px 0;" }, [el("span", { class: "kpi-sub", style: "margin-right:6px;", text: t("mcp_tools_lbl") + ":" })]);
+    for (const tn of ["alphasift_screen", "alphasift_replay_patterns", "alphasift_markets_digest", "alphasift_daily_report", "alphasift_overview", "alphasift_list_strategies"]) {
+      toolRow.appendChild(makeBadge(tn, "accent"));
+    }
     const mcpCard = el("div", { class: "card", style: "margin-bottom:14px;" }, [
       el("div", { class: "card-head-row" }, [
         el("h3", { class: "section-title", text: t("mcp_title") }),
         btnCopyJson,
       ]),
+      el("div", { class: "kpi-sub", text: t("mcp_caps") }),
+      toolRow,
       el("pre", { text: mcpJson }),
     ]);
     root.appendChild(mcpCard);
@@ -986,7 +1165,8 @@ def render_workbench_html() -> str:
     const epCard = el("div", { class: "card" }, [el("h3", { class: "section-title", text: t("api_title") })]);
     const eps = (state.index && state.index.endpoints) || [
       "/health", "/overview", "/strategies", "/patterns", "/runs",
-      "/doctor/radar", "/doctor/data-sources", "/result-schema", "/daily-report.html",
+      "/doctor/radar", "/doctor/data-sources", "/result-schema", "/daily-report-schema",
+      "/daily-report", "/daily-report.html", "/markets-digest",
     ];
     const box = el("div");
     for (const ep of eps) {
@@ -1004,6 +1184,7 @@ def render_workbench_html() -> str:
     renderStrategies();
     renderPatterns();
     renderRuns();
+    renderDigest();
     renderMcp();
   }
 
@@ -1025,7 +1206,12 @@ def render_workbench_html() -> str:
     state.radar = radar;
     state.sources = src;
     state.activeRun = null;
+    state.digestData = null;
+    state.digestErr = "";
     renderAll();
+    if (state.tab === "digest") {
+      loadMarketsDigest();
+    }
   }
 
   document.getElementById("btn-refresh").addEventListener("click", refreshAll);

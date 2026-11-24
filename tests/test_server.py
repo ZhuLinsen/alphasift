@@ -564,6 +564,11 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
     assert "cols_strat" in html_text
     assert "cols_fresh" in html_text
     assert "btn-daily-report" in html_text
+    assert "panel-digest" in html_text
+    assert "loadMarketsDigest" in html_text
+    assert "/markets-digest?markets=" in html_text
+    assert "btn-load-digest" in html_text
+    assert "13 read-only tools" in html_text
     assert "codex mcp add alphasift -- alphasift mcp" in html_text
     assert "Copy CLI" in html_text
 
