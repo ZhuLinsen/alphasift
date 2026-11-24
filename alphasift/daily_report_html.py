@@ -241,6 +241,15 @@ def render_daily_report_html(
     trade_date = _esc(report.get("trade_date") or "-")
     pack_date = _esc(report.get("pack_trade_date") or "-")
     detail_url = _safe_detail_url(report.get("detail_url"), fallback="../index.html")
+    dash_base = detail_url.split("#", 1)[0].split("?", 1)[0]
+
+    def _dash_link(hash_frag: str, i18n_key: str, zh_text: str, *, pat_id: str | None = None) -> str:
+        href = f"{dash_base}?pat={pat_id}#{hash_frag}" if pat_id else f"{dash_base}#{hash_frag}"
+        pat_attr = f' data-dash-pat="{_esc(pat_id)}"' if pat_id else ""
+        return (
+            f'<a class="dash-link no-print" data-dash-hash="{_esc(hash_frag)}"{pat_attr}'
+            f' href="{_esc(href)}" {_i18n(i18n_key)}>{zh_text}</a>'
+        )
     is_stale = bool(report.get("pack_is_stale"))
     stale_reason = str(report.get("stale_reason") or "").strip()
 
@@ -484,7 +493,7 @@ def render_daily_report_html(
 
     synthesis_block = f"""
     <section class="panel">
-      <div class="sec-head"><h2 {_i18n("sec_syn")}>跨策略共识、行业分布与 AI 归因</h2></div>
+      <div class="sec-head"><h2 {_i18n("sec_syn")}>跨策略共识、行业分布与 AI 归因</h2>{_dash_link("track-comparison-section", "link_ai_board", "历史 AI 归因 →")}</div>
       <h3 class="subhead" {_i18n("sub_multi_cons")}>多策略共识标的</h3>
       {consensus_html}
       <div class="grid two-col" style="margin-top:12px;">
@@ -530,7 +539,7 @@ def render_daily_report_html(
         )
     strat_block = f"""
     <section class="panel">
-      <div class="sec-head"><h2 {_i18n("sec_strats")}>今日策略精选全览</h2><span class="badge" {_i18n("strat_runs_badge", n=len(strategies))}>{len(strategies)} 组运行</span></div>
+      <div class="sec-head"><h2 {_i18n("sec_strats")}>今日策略精选全览</h2><span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;"><span class="badge" {_i18n("strat_runs_badge", n=len(strategies))}>{len(strategies)} 组运行</span>{_dash_link("leaderboard", "link_leaderboard", "T+N 排行 →")}</span></div>
       {f'<div class="grid">{"".join(strat_cards)}</div>' if strat_cards else f'<div class="empty" {_i18n("no_strats")}>未附加策略运行结果。</div>'}
     </section>
     """
@@ -601,13 +610,14 @@ def render_daily_report_html(
             else:
                 body = f'<div class="empty" {_i18n("no_pat_sig")}>今日无触发信号</div>'
             hits_n = int(pat.get("hit_count") or 0)
+            pat_link = _dash_link("walk-forward-wrap", "link_pat_wf", "样本外回放 →", pat_id=pkey) if pkey else ""
             pat_cards.append(
                 f'<div class="card {"muted-card" if not is_active else ""}"><div class="card-top"><h3><span data-pattern="{_esc(pkey)}">{_esc(dname)}</span><span style="display:inline-flex;flex-wrap:wrap;gap:4px;">{badge}{wf_adv_badge}</span></h3>'
-                f'<div class="sub"><span {_i18n("pat_hits_cnt", n=hits_n)}>命中 {hits_n} 只</span>{replay_note}</div></div>{body}</div>'
+                f'<div class="sub"><span {_i18n("pat_hits_cnt", n=hits_n)}>命中 {hits_n} 只</span>{replay_note}{pat_link}</div></div>{body}</div>'
             )
     pat_block = f"""
     <section class="panel">
-      <div class="sec-head"><h2 {_i18n("sec_patterns")}>无状态形态雷达命中</h2></div>
+      <div class="sec-head"><h2 {_i18n("sec_patterns")}>无状态形态雷达命中</h2>{_dash_link("walk-forward-wrap", "link_wf_board", "250日 Walk-Forward 回放 →")}</div>
       <div class="grid">{"".join(pat_cards) if pat_cards else f'<div class="empty" {_i18n("no_pats")}>无形态扫描记录</div>'}</div>
     </section>
     """
@@ -741,6 +751,14 @@ main {{ max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }}
 .badge.active, .badge.ok {{ color: var(--down); background: var(--down-soft); border-color: rgba(52,211,153,0.3); }}
 .badge.bad {{ color: var(--up); background: var(--up-soft); border-color: rgba(248,113,113,0.3); }}
 .badge.warn {{ color: var(--warn); background: var(--warn-soft); border-color: rgba(251,191,36,0.3); }}
+.dash-link {{
+  display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600;
+  color: var(--accent-hi); padding: 2px 8px; border-radius: 5px;
+  background: var(--accent-soft); border: 1px solid rgba(59,130,246,0.22);
+  text-decoration: none; white-space: nowrap; font-family: var(--font-sans);
+}}
+.dash-link:hover {{ background: rgba(59,130,246,0.22); text-decoration: none; }}
+.card .sub .dash-link {{ margin-left: 6px; padding: 0 6px; font-size: 10.5px; vertical-align: middle; }}
 
 .rank-num {{
   display: inline-flex; align-items: center; justify-content: center;
@@ -946,6 +964,10 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       footer_tag: "量化形态观测与回测基准",
       footer_repo: "GitHub 开源仓库",
       dist_flat: "平盘",
+      link_ai_board: "历史 AI 归因 →",
+      link_leaderboard: "T+N 排行 →",
+      link_wf_board: "250日 Walk-Forward 回放 →",
+      link_pat_wf: "样本外回放 →",
     }},
     en: {{
       page_title: "AlphaSift · CN Post-Close Research Brief (" + TRADE_DATE + ")",
@@ -1053,6 +1075,10 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       footer_tag: "Quantitative Discovery & Benchmark",
       footer_repo: "GitHub Repository",
       dist_flat: "Flat",
+      link_ai_board: "Historical AI Attribution →",
+      link_leaderboard: "T+N Leaderboard →",
+      link_wf_board: "250D Walk-Forward Audit →",
+      link_pat_wf: "OOS Audit →",
     }},
     ja: {{
       page_title: "AlphaSift · 中国A株 引け後クオンツレポート (" + TRADE_DATE + ")",
@@ -1160,6 +1186,10 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       footer_tag: "クオンツ観測・T+N検証ベンチマーク",
       footer_repo: "GitHub リポジトリ",
       dist_flat: "横ばい",
+      link_ai_board: "AI 帰属履歴 →",
+      link_leaderboard: "T+N ランキング →",
+      link_wf_board: "250日 Walk-Forward 検証 →",
+      link_pat_wf: "OOS 検証 →",
     }},
   }};
   var REGIME_MAP = {{
@@ -1218,11 +1248,23 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
     var link = document.getElementById("back-dashboard-link");
     if (!link) return;
     if (DETAIL_BASE.indexOf("http") !== 0 && DETAIL_BASE.indexOf("../index.html") !== 0) return;
+    var baseClean = DETAIL_BASE.split("#")[0].split("?")[0];
     var p = new URLSearchParams();
     if (lang !== "zh") p.set("lang", lang);
     if (theme !== "dark") p.set("theme", theme);
     var q = p.toString();
-    link.setAttribute("href", q ? DETAIL_BASE.split("?")[0] + "?" + q : DETAIL_BASE);
+    link.setAttribute("href", q ? baseClean + "?" + q : DETAIL_BASE);
+    document.querySelectorAll("a[data-dash-hash]").forEach(function (a) {{
+      var h = a.getAttribute("data-dash-hash");
+      if (!h) return;
+      var ap = new URLSearchParams();
+      if (lang !== "zh") ap.set("lang", lang);
+      if (theme !== "dark") ap.set("theme", theme);
+      var patId = a.getAttribute("data-dash-pat");
+      if (patId) ap.set("pat", patId);
+      var aq = ap.toString();
+      a.setAttribute("href", (aq ? baseClean + "?" + aq : baseClean) + "#" + h);
+    }});
   }}
   function applyLang(nextLang) {{
     lang = (nextLang === "en" || nextLang === "ja") ? nextLang : "zh";

@@ -458,3 +458,65 @@ def test_im_card_and_html_prioritize_non_adverse_joint_oos_and_flag_adverse() ->
     assert html.index('data-pattern="ma20_shrink_pullback"') < html.index('data-pattern="shooting_star_confirm"')
 
 
+def test_daily_report_html_contextual_dashboard_deep_links() -> None:
+    import re
+    import shutil
+    import subprocess
+    import tempfile
+
+    base_report: dict = {
+        "trade_date": "2026-11-24",
+        "pack_trade_date": "2026-11-24",
+        "expected_trade_date": "2026-11-24",
+        "pack_is_stale": False,
+        "market_regime": {"regime_stage": "divergence", "regime_stage_label": "分歧"},
+        "strategies": [],
+        "ai_highlights": [],
+        "patterns": {
+            "active": [],
+            "experimental": [
+                {
+                    "pattern": "double_bottom_breakout",
+                    "display_name": "双底突破",
+                    "status": "experimental",
+                    "expectancy_tier": "negative_watch",
+                    "hit_count": 3,
+                    "wf_today_adverse": False,
+                    "wf_non_adverse_low_overhead_pct": 0.24,
+                    "wf_non_adverse_low_overhead_days": 60,
+                    "signals": [{"code": "000001", "name": "平安银行"}],
+                }
+            ],
+        },
+        "announcement_risks": {"checked_count": 0, "flagged_count": 0, "flagged_items": [], "errors": []},
+        "market_news": {"items": [], "sources": [], "candidate_news": {}, "errors": []},
+        "degradation": [],
+        "cross_strategy_synthesis": {},
+        "ai_brief": {},
+    }
+
+    rel_html = render_daily_report_html(base_report)
+    assert 'data-dash-hash="track-comparison-section"' in rel_html
+    assert 'data-dash-hash="leaderboard"' in rel_html
+    assert 'data-dash-hash="walk-forward-wrap"' in rel_html
+    assert 'data-dash-pat="double_bottom_breakout"' in rel_html
+    assert 'class="dash-link no-print"' in rel_html
+    assert 'href="../index.html?pat=double_bottom_breakout#walk-forward-wrap"' in rel_html
+    assert 'link_pat_wf: "OOS Audit →"' in rel_html
+    assert 'link_wf_board: "250D Walk-Forward Audit →"' in rel_html
+
+    custom_report = dict(base_report, detail_url="https://example.com/dash")
+    custom_html = render_daily_report_html(custom_report)
+    assert 'href="https://example.com/dash?pat=double_bottom_breakout#walk-forward-wrap"' in custom_html
+
+    node = shutil.which("node")
+    if node is not None:
+        match = re.search(r"<script>(.*)</script>", rel_html, flags=re.DOTALL)
+        assert match is not None
+        with tempfile.TemporaryDirectory() as td:
+            js_file = Path(td) / "daily_report.js"
+            js_file.write_text(match.group(1), encoding="utf-8")
+            proc = subprocess.run([node, "--check", str(js_file)], capture_output=True, text=True, check=False)
+            assert proc.returncode == 0, proc.stderr
+
+
