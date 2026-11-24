@@ -459,6 +459,8 @@ tbody tr { transition: background 0.12s; }
 tbody tr:hover { background: var(--surface-hover); }
 tr:last-child td { border-bottom: 0; }
 tr.low-sample td, td.muted-cell { color: var(--muted); opacity: 0.78; }
+tr.pat-focus-row td { background: var(--accent-soft) !important; opacity: 1 !important; color: var(--ink) !important; }
+tr.pat-focus-row td:first-child { box-shadow: inset 3px 0 0 var(--accent-hi); font-weight: 700; }
 .ico { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; flex-shrink: 0; }
 
 .rank-num {
@@ -1820,6 +1822,7 @@ const state = {
   latestMarket: null,
   explorerMode: "latest",
   patFilter: "all",
+  patFocus: "",
   searchQuery: "",
   dayCache: {},
   currentDay: null,
@@ -1972,6 +1975,7 @@ function syncQueryState() {
     setOrDel("q", (state.searchQuery || "").trim(), "");
     setOrDel("mode", state.explorerMode, "latest");
     setOrDel("pf", state.patFilter, "all");
+    setOrDel("pat", state.patFocus, "");
     window.history.replaceState(null, "", url.pathname + url.search + url.hash);
   } catch (_) {}
 }
@@ -1991,6 +1995,8 @@ function restoreQueryState() {
     if (mode === "latest" || mode === "history") state.explorerMode = mode;
     const pf = qs.get("pf");
     if (pf === "all" || pf === "active" || pf === "experimental") state.patFilter = pf;
+    const pat = (qs.get("pat") || "").trim();
+    if (pat && /^[a-z0-9_]+$/i.test(pat)) state.patFocus = pat;
   } catch (_) {}
 }
 
@@ -3045,7 +3051,9 @@ function renderPatternRadar() {
         : '<span class="dim">–</span>';
       const grossEx = h5.gross_excess_mean_pct ?? h5.excess_mean_pct;
       const netEx = grad.t5_net_excess_mean_pct ?? h5.net_excess_mean_pct;
-      return `<tr class="${muted ? "low-sample" : ""}">
+      const isFocus = state.patFocus && p.pattern === state.patFocus;
+      const repCls = [muted ? "low-sample" : "", isFocus ? "pat-focus-row" : ""].filter(Boolean).join(" ");
+      return `<tr${repCls ? ` class="${repCls}"` : ""} data-pat-row="${esc(p.pattern)}">
         <td class="l"><strong>${esc(pname(p.pattern, p.display_name))}</strong><div class="mono dim small">${esc(p.pattern)}</div></td>
         <td class="l dim">${esc(p.family)}<div class="small">${esc(p.mode)}</div></td>
         <td class="mono">${esc(String(totalSigN))}</td>
@@ -3071,7 +3079,8 @@ function renderPatternRadar() {
         const small = n < MIN_SLICE_SAMPLE;
         return `<td class="mono ${small ? "muted-cell" : ""}">${n}${small ? "*" : ""} / ${pct(cell.t5_excess_mean_pct)}</td>`;
       }).join("");
-      return `<tr><td class="l">${esc(pname(p.pattern, p.display_name))}</td>${cells}</tr>`;
+      const isFocus = state.patFocus && p.pattern === state.patFocus;
+      return `<tr${isFocus ? ' class="pat-focus-row"' : ""} data-pat-row="${esc(p.pattern)}"><td class="l">${esc(pname(p.pattern, p.display_name))}</td>${cells}</tr>`;
     }).join("");
     $("regime-slice-wrap").innerHTML = `<h3 class="subhead">${t("sl_subhead", { n: MIN_SLICE_SAMPLE })}</h3>
       <div class="panel scroll"><table>${slHead}<tbody>${slRows}</tbody></table></div>`;
@@ -3087,7 +3096,8 @@ function renderPatternRadar() {
           const small = n < MIN_SLICE_SAMPLE;
           return `<td class="mono ${small ? "muted-cell" : ""}">${n}${small ? "*" : ""} / ${pct(cell.t5_excess_mean_pct)} <span class="dim small">${sharePct(cell.t5_win_rate_pct)}</span></td>`;
         }).join("");
-        return `<tr><td class="l">${esc(pname(p.pattern, p.display_name))}</td>${cells}</tr>`;
+        const isFocus = state.patFocus && p.pattern === state.patFocus;
+        return `<tr${isFocus ? ' class="pat-focus-row"' : ""} data-pat-row="${esc(p.pattern)}"><td class="l">${esc(pname(p.pattern, p.display_name))}</td>${cells}</tr>`;
       }).join("");
       $("overhead-slice-wrap").innerHTML = `<h3 class="subhead">${t("ov_subhead", { n: MIN_SLICE_SAMPLE })}</h3>
         <div class="panel scroll"><table>${ovHead}<tbody>${ovRows}</tbody></table></div>`;
@@ -3145,8 +3155,9 @@ function renderPatternRadar() {
         const h2Base = wf.h2_baseline || {};
         const h2Pos = wf.h2_positive_only || {};
         const h2Na = wf.h2_non_adverse || {};
-        const mutedRow = wf.status !== "ok" ? "low-sample" : "";
-        return `<tr class="${mutedRow}">
+        const isFocus = state.patFocus && p.pattern === state.patFocus;
+        const rowCls = [wf.status !== "ok" ? "low-sample" : "", isFocus ? "pat-focus-row" : ""].filter(Boolean).join(" ");
+        return `<tr${rowCls ? ` class="${rowCls}"` : ""} data-pat-row="${esc(p.pattern)}">
           <td class="l">${esc(pname(p.pattern, p.display_name))}</td>
           <td class="l small">${fmtStages(wf.h1_positive_regimes)}</td>
           <td class="l small">${fmtStages(wf.h1_adverse_regimes)}</td>
@@ -3507,7 +3518,6 @@ function initExplorerControls() {
 
 function openRadarAccordionsForHash(hashStr) {
   const h = (hashStr || window.location.hash || "").toLowerCase();
-  if (!h) return;
   const detPat = $("details-patterns");
   const detRep = $("details-replay");
   if (h === "#radar-section") {
@@ -3517,6 +3527,19 @@ function openRadarAccordionsForHash(hashStr) {
     if (detPat) detPat.open = true;
   } else if (h === "#details-replay" || h === "#walk-forward-wrap") {
     if (detRep) detRep.open = true;
+  } else if (state.patFocus && !h) {
+    if (detRep) detRep.open = true;
+  }
+  if ((h === "#walk-forward-wrap" || state.patFocus) && detRep && detRep.open) {
+    requestAnimationFrame(() => {
+      const focused = state.patFocus
+        ? document.querySelector(`#walk-forward-wrap tr[data-pat-row="${state.patFocus}"]`)
+        : null;
+      const target = focused || (h === "#walk-forward-wrap" ? $("walk-forward-wrap") : null);
+      if (target && typeof target.scrollIntoView === "function") {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
   }
 }
 
