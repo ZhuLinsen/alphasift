@@ -339,3 +339,55 @@ def test_brief_think_stripping_degradation_logging_and_html_jargon_cleanup() -> 
     assert "[仅切片]" not in html_out
     assert "盘后稳增长政策落地" in html_out
     assert "双低选股" in html_out
+
+
+def test_daily_report_walk_forward_regime_and_joint_oos() -> None:
+    pack = _pack()
+    runs = _sample_runs()
+    probe = build_daily_report(
+        pack,
+        strategy_runs=runs,
+        include_announcements=False,
+        include_news=False,
+    )
+    cur_stage = probe["market_regime"]["regime_stage"]
+    target_pat = (probe["patterns"]["experimental"] or probe["patterns"]["active"])[0]["pattern"]
+    mock_replay = {
+        "replay": {
+            "cost_bps": 25.0,
+            "patterns": [
+                {
+                    "pattern": target_pat,
+                    "horizons": {"t5": {"net_excess_mean_pct": 0.42, "excess_win_rate_pct": 54.0, "scored": 120}},
+                    "graduation": {"t5_net_excess_mean_pct": 0.42},
+                    "walk_forward_regime_audit": {
+                        "status": "ok",
+                        "h1_adverse_regimes": [cur_stage],
+                        "h2_non_adverse_low_overhead": {"days": 16, "signals": 82, "daily_mean_pct": 2.85},
+                        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": 2.13,
+                    },
+                }
+            ],
+        }
+    }
+    report = build_daily_report(
+        pack,
+        strategy_runs=runs,
+        include_announcements=False,
+        include_news=False,
+        pattern_replay=mock_replay,
+    )
+    items = (report["patterns"]["active"] or []) + (report["patterns"]["experimental"] or [])
+    matched = [p for p in items if p["pattern"] == target_pat][0]
+    assert matched["wf_today_adverse"] is True
+    assert matched["wf_non_adverse_low_overhead_pct"] == 2.85
+    assert matched["wf_non_adverse_low_overhead_days"] == 16
+    assert matched["wf_joint_delta_pct"] == 2.13
+
+    html_text = render_daily_report_html(report)
+    assert 'data-i18n="pat_wf_adverse"' in html_text
+    assert 'data-i18n="pat_wf_joint"' in html_text
+    assert "+2.85%(16d)" in html_text
+    assert 'pat_wf_adverse: "WF Adverse Regime"' in html_text
+    assert 'pat_wf_joint: " · Joint OOS {v}({d}d)"' in html_text
+

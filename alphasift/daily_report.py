@@ -490,10 +490,22 @@ def _extract_pattern_replay_map(
         samples = h5.get("excess_scored")
         if samples is None:
             samples = h5.get("scored")
+        wf = p.get("walk_forward_regime_audit") if isinstance(p.get("walk_forward_regime_audit"), dict) else {}
+        wf_adv = [str(s) for s in (wf.get("h1_adverse_regimes") or []) if str(s).strip()] if wf else []
+        wf_joint = wf.get("h2_non_adverse_low_overhead") if isinstance(wf.get("h2_non_adverse_low_overhead"), dict) else {}
+        wf_joint_days = int(wf_joint.get("days") or 0)
+        wf_joint_mean = wf_joint.get("daily_mean_pct")
+        wf_joint_delta = wf.get("delta_non_adverse_low_overhead_vs_h2_baseline_pct")
         out[pname] = {
             "replay_t5_net_excess_pct": round(float(net_val), 2) if net_val is not None else None,
             "replay_t5_win_rate_pct": round(float(win_val), 1) if win_val is not None else None,
             "replay_samples": int(samples) if samples is not None else None,
+            "wf_h1_adverse_regimes": wf_adv,
+            "wf_non_adverse_low_overhead_pct": (
+                round(float(wf_joint_mean), 2) if wf_joint_days > 0 and wf_joint_mean is not None else None
+            ),
+            "wf_non_adverse_low_overhead_days": wf_joint_days,
+            "wf_joint_delta_pct": round(float(wf_joint_delta), 2) if wf_joint_delta is not None else None,
         }
     return out
 
@@ -596,6 +608,7 @@ def build_daily_report(
         else (track_summary.get("track_comparison") if isinstance(track_summary, dict) else None)
     )
 
+    cur_stage = str(getattr(scan.market_regime, "regime_stage", "") or "").strip()
     active_patterns: list[dict[str, Any]] = []
     experimental_patterns: list[dict[str, Any]] = []
     for pat_name in scan.patterns_evaluated:
@@ -626,6 +639,9 @@ def build_daily_report(
         }
         if rep_stats:
             entry.update(rep_stats)
+            entry["wf_today_adverse"] = bool(
+                cur_stage and cur_stage in (rep_stats.get("wf_h1_adverse_regimes") or [])
+            )
         if status == "active":
             active_patterns.append(entry)
         else:

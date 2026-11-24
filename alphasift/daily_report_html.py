@@ -554,12 +554,24 @@ def render_daily_report_html(
                 if exp_tier == "negative_watch"
                 else f'<span class="badge" {_i18n("pat_exp_watch")}>观察期</span>'
             )
+            wf_adv_badge = (
+                f'<span class="badge bad" {_i18n("pat_wf_adverse")}>今日情绪逆风</span>'
+                if pat.get("wf_today_adverse")
+                else ""
+            )
             net_ex = pat.get("replay_t5_net_excess_pct")
             replay_note = (
                 f'<span {_i18n("pat_t5_net", v=f"{float(net_ex):+.2f}%")}> · T+5净超额 {float(net_ex):+.2f}%</span>'
                 if net_ex is not None
                 else ""
             )
+            wf_joint_pct = pat.get("wf_non_adverse_low_overhead_pct")
+            wf_joint_days = int(pat.get("wf_non_adverse_low_overhead_days") or 0)
+            if wf_joint_pct is not None and wf_joint_days > 0:
+                replay_note += (
+                    f'<span {_i18n("pat_wf_joint", v=f"{float(wf_joint_pct):+.2f}%", d=wf_joint_days)}>'
+                    f' · 联合OOS {float(wf_joint_pct):+.2f}%({wf_joint_days}d)</span>'
+                )
             sigs = pat.get("signals") or []
             if sigs:
                 s_rows = "".join(
@@ -580,7 +592,7 @@ def render_daily_report_html(
                 body = f'<div class="empty" {_i18n("no_pat_sig")}>今日无触发信号</div>'
             hits_n = int(pat.get("hit_count") or 0)
             pat_cards.append(
-                f'<div class="card {"muted-card" if not is_active else ""}"><div class="card-top"><h3><span data-pattern="{_esc(pkey)}">{_esc(dname)}</span>{badge}</h3>'
+                f'<div class="card {"muted-card" if not is_active else ""}"><div class="card-top"><h3><span data-pattern="{_esc(pkey)}">{_esc(dname)}</span><span style="display:inline-flex;flex-wrap:wrap;gap:4px;">{badge}{wf_adv_badge}</span></h3>'
                 f'<div class="sub"><span {_i18n("pat_hits_cnt", n=hits_n)}>命中 {hits_n} 只</span>{replay_note}</div></div>{body}</div>'
             )
     pat_block = f"""
@@ -916,6 +928,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       no_pats: "无形态扫描记录",
       pat_neg_watch: "负期望·观察",
       pat_exp_watch: "观察期",
+      pat_wf_adverse: "今日情绪逆风",
+      pat_wf_joint: " · 联合OOS {{v}}({{d}}d)",
       policy_cn_slice: "仅A股 · 情绪仅切片观察",
       policy_cn: "仅A股",
       deg_prefix: "降级说明：",
@@ -1019,6 +1033,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       pat_neg_watch: "Neg Exp · Watch",
       pat_exp_watch: "Observational",
       pat_t5_net: " · T+5 Net {{v}}",
+      pat_wf_adverse: "WF Adverse Regime",
+      pat_wf_joint: " · Joint OOS {{v}}({{d}}d)",
       policy_cn_slice: "CN Only · Regime Slice",
       policy_cn: "CN Only",
       stale_banner: "⚠️ <b>Stale Pack Mode</b>: Pack date <code>{{pack}}</code> trails target <code>{{exp}}</code> ({{reason}}). Rendered in observation mode; unforced IM push suppressed.",
@@ -1124,6 +1140,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       pat_neg_watch: "負期待・観測",
       pat_exp_watch: "観測期間",
       pat_t5_net: " · T+5純超過 {{v}}",
+      pat_wf_adverse: "WF 本日逆風局面",
+      pat_wf_joint: " · 複合OOS {{v}}({{d}}日)",
       policy_cn_slice: "中国A株のみ・局面スライス",
       policy_cn: "中国A株のみ",
       stale_banner: "⚠️ <b>旧パック縮退モード</b>：パック日付 <code>{{pack}}</code> が目標日 <code>{{exp}}</code> より古い状態です（{{reason}}）。観測用表示のみとし、強制指定なしの通知は抑制しました。",
