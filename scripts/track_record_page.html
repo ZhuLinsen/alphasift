@@ -567,6 +567,7 @@ details.sec-details > summary.sec-summary {
   cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
   font-size: 15px; font-weight: 700; letter-spacing: -0.01em;
 }
+.sec-summary-left { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 details.sec-details > summary.sec-summary::-webkit-details-marker { display: none; }
 details.sec-details > summary.sec-summary::after {
   content: "展开 ▾"; font-size: 12px; font-weight: 500; color: var(--muted);
@@ -816,7 +817,7 @@ footer {
 
   <section id="radar-section">
     <details class="sec-details" id="details-patterns">
-      <summary class="sec-summary"><span data-i18n="details_pat_title">A 股无状态形态雷达命中（20 日迷你 K 线）</span></summary>
+      <summary class="sec-summary"><span class="sec-summary-left"><span data-i18n="details_pat_title">A 股无状态形态雷达命中（20 日迷你 K 线）</span><span class="badge" id="pat-summary-badge" style="display:none;"></span></span></summary>
       <div class="sec-body">
         <p class="sec-hint" style="margin:0 0 12px;" data-i18n-html="details_pat_hint">未通过 250 日 <code>next_open</code> 严苛门槛（N ≥ 200、扣 25bp 净超额 &gt; 0%、同日跑赢全A等权、H1/H2 各 ≥15d 且 ≥30 样本同号正超额、Newey-West t ≥ 1.96 且 BH-FDR q ≤ 0.05）的形态一律置灰标 <code>experimental</code>，仅作研究观察。</p>
         <div id="pattern-hits-wrap"><div class="empty" data-i18n="loading_pat">加载形态命中…</div></div>
@@ -824,7 +825,7 @@ footer {
     </details>
 
     <details class="sec-details" id="details-replay">
-      <summary class="sec-summary"><span data-i18n="details_replay_title">250 日 next_open 形态回放、聚日稳定性与切片验证</span></summary>
+      <summary class="sec-summary"><span class="sec-summary-left"><span data-i18n="details_replay_title">250 日 next_open 形态回放、聚日稳定性与切片验证</span><span class="badge" id="replay-summary-badge" style="display:none;"></span></span></summary>
       <div class="sec-body">
         <div id="universe-baseline-wrap"></div>
         <div id="replay-summary-wrap"><div class="empty" data-i18n="no_replay_yet">暂无 250 日形态回放结果</div></div>
@@ -1059,6 +1060,8 @@ const I18N = {
     wf_subhead: "Walk-Forward 情绪门控样本外检验（仅 H1 选阶段 → 冻结检验 H2）",
     wf_cols: ["形态", "H1 正超额阶段", "H1 剔除逆风", "H2 基线 (日数)", "H2 仅正阶段 (OOS)", "Δ 正阶段", "H2 剔逆风 (OOS)", "Δ 剔逆风"],
     wf_none: "无",
+    pat_sum_badge: "{m} 套形态 · 今日命中 {h} 只",
+    replay_sum_badge: "{s}日 · {p} 套 · Walk-Forward",
     chart_empty: "该市场 T+{w} 所选赛道还没有到期的选股",
     chart_tip_excess: "超额",
     chart_tip_picks: "{n} 只",
@@ -1310,6 +1313,8 @@ const I18N = {
     wf_subhead: "Walk-Forward Regime Gate (Zero-Snooping: H1 Selection → H2 OOS)",
     wf_cols: ["Pattern", "H1 Positive Regimes", "H1 Adverse Excluded", "H2 Baseline", "H2 Positive Only (OOS)", "Delta Pos", "H2 Non-Adverse (OOS)", "Delta Non-Adv"],
     wf_none: "None",
+    pat_sum_badge: "{m} patterns · {h} hits today",
+    replay_sum_badge: "{s}d · {p} patterns · Walk-Forward",
     chart_empty: "No matured T+{w} picks for the selected market/track",
     chart_tip_excess: "Excess",
     chart_tip_picks: "{n} picks",
@@ -1561,6 +1566,8 @@ const I18N = {
     wf_subhead: "Walk-Forward 相場局面ゲート（H1のみで選択 → H2でOOS検証）",
     wf_cols: ["パターン", "H1 正超過局面", "H1 逆風除外", "H2 基準", "H2 正局面のみ (OOS)", "Δ 正局面", "H2 非逆風 (OOS)", "Δ 除外後"],
     wf_none: "なし",
+    pat_sum_badge: "{m} 種 · 本日 {h} 件検出",
+    replay_sum_badge: "{s}日 · {p} 種 · Walk-Forward",
     chart_empty: "選択した市場・トラックで満期到来の T+{w} 銘柄がありません",
     chart_tip_excess: "超過",
     chart_tip_picks: "{n} 銘柄",
@@ -2822,6 +2829,9 @@ function renderPatternRadar() {
     $("replay-summary-wrap").innerHTML = `<div class="empty">${esc(t("pat_no_replay"))}</div>`;
     $("regime-slice-wrap").innerHTML = "";
     $("overhead-slice-wrap").innerHTML = "";
+    if ($("walk-forward-wrap")) $("walk-forward-wrap").innerHTML = "";
+    if ($("pat-summary-badge")) $("pat-summary-badge").style.display = "none";
+    if ($("replay-summary-badge")) $("replay-summary-badge").style.display = "none";
     return;
   }
   const dpEl = $("details-patterns");
@@ -2844,6 +2854,7 @@ function renderPatternRadar() {
 
   if (!patNames.length) {
     $("pattern-hits-wrap").innerHTML = `<div class="empty">${esc(t("pat_no_entries"))}</div>`;
+    if ($("pat-summary-badge")) $("pat-summary-badge").style.display = "none";
   } else {
     const pcols = t("pat_cols");
     const patMeta = patNames.map((name) => {
@@ -2905,6 +2916,12 @@ function renderPatternRadar() {
         syncQueryState();
         renderPatternRadar();
       });
+    }
+    const patSumBadge = $("pat-summary-badge");
+    if (patSumBadge) {
+      const totalHits = patMeta.reduce((acc, x) => acc + Number(x.total || 0), 0);
+      patSumBadge.textContent = t("pat_sum_badge", { m: patMeta.length, h: totalHits });
+      patSumBadge.style.display = "";
     }
   }
 
@@ -3034,8 +3051,14 @@ function renderPatternRadar() {
     } else {
       $("walk-forward-wrap").innerHTML = "";
     }
+    const repSumBadge = $("replay-summary-badge");
+    if (repSumBadge) {
+      repSumBadge.textContent = t("replay_sum_badge", { s: ps.eval_sessions ?? "-", p: replay.patterns.length });
+      repSumBadge.style.display = "";
+    }
   } else {
     $("universe-baseline-wrap").innerHTML = "";
+    $("replay-summary-badge") && ($("replay-summary-badge").style.display = "none");
     $("replay-summary-wrap").innerHTML = `<div class="empty">${esc(t("pat_no_replay"))}</div>`;
     $("regime-slice-wrap").innerHTML = "";
     $("overhead-slice-wrap").innerHTML = "";
@@ -3370,6 +3393,21 @@ function initExplorerControls() {
   }
 }
 
+function openRadarAccordionsForHash(hashStr) {
+  const h = (hashStr || window.location.hash || "").toLowerCase();
+  if (!h) return;
+  const detPat = $("details-patterns");
+  const detRep = $("details-replay");
+  if (h === "#radar-section") {
+    if (detPat) detPat.open = true;
+    if (detRep) detRep.open = true;
+  } else if (h === "#details-patterns") {
+    if (detPat) detPat.open = true;
+  } else if (h === "#details-replay" || h === "#walk-forward-wrap") {
+    if (detRep) detRep.open = true;
+  }
+}
+
 async function init() {
   initTheme();
   restoreQueryState();
@@ -3450,6 +3488,11 @@ async function init() {
   renderPatternRadar();
   renderChart();
   renderLatest();
+  openRadarAccordionsForHash(window.location.hash);
+  window.addEventListener("hashchange", () => openRadarAccordionsForHash(window.location.hash));
+  document.querySelectorAll('.nav-center a[href^="#"]').forEach((a) => {
+    a.addEventListener("click", () => openRadarAccordionsForHash(a.getAttribute("href")));
+  });
   const days = (state.summary.days || []).map((d) => d.date);
   $("day").innerHTML = days.map((d) => `<option value="${d}">${esc(t("day_opt", { d, n: state.summary.days.find((x) => x.date === d).runs }))}</option>`).join("");
   $("day").addEventListener("change", (e) => renderDay(e.target.value));

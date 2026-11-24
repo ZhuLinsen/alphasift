@@ -237,6 +237,10 @@ def test_render_and_write_daily_report_html_and_cli(tmp_path: Path, monkeypatch,
     assert written == html_out and html_out.is_file()
     html_text = html_out.read_text(encoding="utf-8")
     assert "@media print" in html_text
+    assert "@page" in html_text
+    assert ".card, tr" in html_text
+    assert "pat_exp_watch" in html_text or "pat_neg_watch" in html_text
+    assert "policy_cn_slice" in html_text
     assert "旧包降级模式" in html_text
     assert "多策略共识" in html_text
     assert "贵州茅台" in html_text

@@ -222,6 +222,15 @@ def _render_case_studies(track_summary: dict[str, Any] | None) -> str:
     return f'<div style="margin-top:14px;"><h3 class="subhead" {_i18n("case_section_title")}>历史同日配对 · AI 个股级案例复盘</h3><div class="grid">{"".join(cards)}</div></div>'
 
 
+def _policy_html(raw: object) -> str:
+    policy = str(raw or "cn_only").strip() or "cn_only"
+    if policy == "cn_only_regime_slice_only":
+        return f'<code {_i18n("policy_cn_slice")}>仅A股 · 情绪仅切片观察</code>'
+    if policy == "cn_only":
+        return f'<code {_i18n("policy_cn")}>仅A股</code>'
+    return f"<code>{_esc(policy)}</code>"
+
+
 def render_daily_report_html(
     report: dict[str, Any],
     *,
@@ -541,13 +550,13 @@ def render_daily_report_html(
             dname = str(pat.get("display_name") or pkey)
             exp_tier = str(pat.get("expectancy_tier") or "")
             badge = '<span class="badge active">active</span>' if is_active else (
-                '<span class="badge warn">负期望·观察</span>'
+                f'<span class="badge warn" {_i18n("pat_neg_watch")}>负期望·观察</span>'
                 if exp_tier == "negative_watch"
-                else '<span class="badge">观察期</span>'
+                else f'<span class="badge" {_i18n("pat_exp_watch")}>观察期</span>'
             )
             net_ex = pat.get("replay_t5_net_excess_pct")
             replay_note = (
-                f' · T+5净超额 {float(net_ex):+.2f}%'
+                f'<span {_i18n("pat_t5_net", v=f"{float(net_ex):+.2f}%")}> · T+5净超额 {float(net_ex):+.2f}%</span>'
                 if net_ex is not None
                 else ""
             )
@@ -756,11 +765,15 @@ tr:last-child td {{ border-bottom: 0; }}
 .empty {{ padding: 14px; text-align: center; color: var(--muted); font-size: 12.5px; }}
 footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }}
 @media print {{
+  @page {{ margin: 12mm; }}
   .no-print, .topbar {{ display: none !important; }}
   :root {{ --bg: #ffffff; --surface: #ffffff; --sub: #f8fafc; --ink: #111111; --ink-2: #222222; --muted: #555555; --border: #dddddd; }}
-  body {{ background: #ffffff; color: #111111; }}
+  body {{ background: #ffffff; color: #111111; font-size: 12px; }}
   main {{ max-width: 100%; padding: 0; }}
   .panel {{ box-shadow: none; break-inside: avoid; border-color: #dddddd; }}
+  .card, tr {{ break-inside: avoid; }}
+  .grid, .grid.two-col {{ grid-template-columns: 1fr; }}
+  table {{ font-size: 11px; }}
 }}
 </style>
 </head>
@@ -807,7 +820,7 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       <span><span {_i18n("meta_tdate")}>交易日</span> <b>{trade_date}</b></span>
       <span>· <span {_i18n("meta_pdate")}>数据包</span> <code>{pack_date}</code></span>
       <span class="badge {'warn' if is_stale else 'ok'}" {_i18n("badge_stale" if is_stale else "badge_sync")}>{'旧包降级' if is_stale else '数据同步'}</span>
-      <span>· <span {_i18n("meta_policy")}>口径：</span><code>{_esc(report.get('usage_policy') or 'cn_only')}</code></span>
+      <span>· <span {_i18n("meta_policy")}>口径：</span>{_policy_html(report.get('usage_policy'))}</span>
     </div>
   </header>
   {stale_html}
@@ -901,6 +914,10 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       col_kline: "近20日K线",
       no_pat_sig: "今日无触发信号",
       no_pats: "无形态扫描记录",
+      pat_neg_watch: "负期望·观察",
+      pat_exp_watch: "观察期",
+      policy_cn_slice: "仅A股 · 情绪仅切片观察",
+      policy_cn: "仅A股",
       deg_prefix: "降级说明：",
       footer_tag: "量化形态观测与回测基准",
       footer_repo: "GitHub 开源仓库",
@@ -999,6 +1016,11 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       no_pat_sig: "No signals triggered today",
       no_pats: "No pattern scan recorded",
       pat_hits_cnt: "{{n}} hits",
+      pat_neg_watch: "Neg Exp · Watch",
+      pat_exp_watch: "Observational",
+      pat_t5_net: " · T+5 Net {{v}}",
+      policy_cn_slice: "CN Only · Regime Slice",
+      policy_cn: "CN Only",
       stale_banner: "⚠️ <b>Stale Pack Mode</b>: Pack date <code>{{pack}}</code> trails target <code>{{exp}}</code> ({{reason}}). Rendered in observation mode; unforced IM push suppressed.",
       deg_prefix: "Degradation: ",
       disclaimer: "Research & observational metrics only — not investment advice or buy/sell instructions.",
@@ -1099,6 +1121,11 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       no_pat_sig: "本日のシグナルなし",
       no_pats: "パターン検出記録なし",
       pat_hits_cnt: "{{n}} 件検出",
+      pat_neg_watch: "負期待・観測",
+      pat_exp_watch: "観測期間",
+      pat_t5_net: " · T+5純超過 {{v}}",
+      policy_cn_slice: "中国A株のみ・局面スライス",
+      policy_cn: "中国A株のみ",
       stale_banner: "⚠️ <b>旧パック縮退モード</b>：パック日付 <code>{{pack}}</code> が目標日 <code>{{exp}}</code> より古い状態です（{{reason}}）。観測用表示のみとし、強制指定なしの通知は抑制しました。",
       deg_prefix: "縮退説明：",
       disclaimer: "本レポートは研究・エンジニアリング観測目的であり、投資助言や売買推奨ではありません。",
