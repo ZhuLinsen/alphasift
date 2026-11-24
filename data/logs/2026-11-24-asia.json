@@ -1,221 +1,220 @@
 {
   "session": "asia",
   "date": "2026-11-24",
-  "finished_at": "2026-11-24T09:28:56+00:00",
+  "finished_at": "2026-11-24T10:32:50+00:00",
   "entries": [
     {
       "market": "cn",
       "strategy": "balanced_alpha",
       "track": "rules",
-      "status": "ok",
-      "run_id": "948994dc7901",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 0,
-      "seconds": 0.1
+      "status": "skipped_duplicate",
+      "error": "already recorded 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "blue_chip_income",
       "track": "rules",
-      "status": "ok",
-      "run_id": "2582051054e0",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 0,
+      "status": "skipped_duplicate",
+      "error": "already recorded 2026-11-24",
       "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "capital_heat",
       "track": "rules",
-      "status": "ok",
-      "run_id": "13064d6c5680",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 0,
+      "status": "skipped_duplicate",
+      "error": "already recorded 2026-11-24",
       "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "dual_low",
       "track": "rules",
-      "status": "ok",
-      "run_id": "86cb29c21dd9",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 0,
+      "status": "skipped_duplicate",
+      "error": "already recorded 2026-11-24",
       "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "low_volatility_quality",
       "track": "rules",
-      "status": "ok",
-      "run_id": "ec7aedf6a2c4",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 0,
-      "seconds": 0.2
+      "status": "skipped_duplicate",
+      "error": "already recorded 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "momentum_quality",
       "track": "rules",
-      "status": "ok",
-      "run_id": "236c711f2b82",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 0,
-      "seconds": 0.1
+      "status": "skipped_duplicate",
+      "error": "already recorded 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "oversold_reversal",
       "track": "rules",
-      "status": "ok",
-      "run_id": "a63ea3f085a3",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 0,
-      "seconds": 0.1
+      "status": "skipped_duplicate",
+      "error": "already recorded 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "quality_value",
       "track": "rules",
-      "status": "ok",
-      "run_id": "3e1727fd25ee",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 0,
-      "seconds": 0.1
+      "status": "skipped_duplicate",
+      "error": "already recorded 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "shrink_pullback",
       "track": "rules",
-      "status": "ok",
-      "run_id": "5a9582023d2c",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 0,
-      "seconds": 0.2
+      "status": "skipped_duplicate",
+      "error": "already recorded 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "volume_breakout",
       "track": "rules",
+      "status": "skipped_duplicate",
+      "error": "already recorded 2026-11-24",
+      "seconds": 0.0
+    },
+    {
+      "market": "hk",
+      "strategy": "global_value",
+      "track": "rules",
       "status": "ok",
-      "run_id": "4ff9b6a68e04",
-      "picks": 0,
-      "snapshot_source": "em_datacenter",
-      "degradation": 1,
+      "run_id": "f6b388583e82",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
       "seconds": 0.1
+    },
+    {
+      "market": "jp",
+      "strategy": "global_value",
+      "track": "rules",
+      "status": "ok",
+      "run_id": "5b275de35104",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.1
+    },
+    {
+      "market": "kr",
+      "strategy": "global_value",
+      "track": "rules",
+      "status": "ok",
+      "run_id": "b3988bbe95ba",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.0
+    },
+    {
+      "market": "tw",
+      "strategy": "global_value",
+      "track": "rules",
+      "status": "ok",
+      "run_id": "1bfc5266997c",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.0
+    },
+    {
+      "market": "in",
+      "strategy": "global_value",
+      "track": "rules",
+      "status": "skipped_holiday",
+      "error": "market closed (quotes 2026-11-23, benchmark 2026-11-23 < 2026-11-24)",
+      "seconds": 0.0
     }
   ],
   "effective_dates": {
-    "cn": "2026-11-24"
+    "cn": "2026-11-24",
+    "hk": "2026-11-24",
+    "jp": "2026-11-24",
+    "kr": "2026-11-24",
+    "tw": "2026-11-24"
   },
   "ai_entries": [
     {
       "market": "cn",
       "strategy": "balanced_alpha",
       "track": "ai",
-      "status": "ok",
-      "run_id": "4614730a0fd2-ai",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 3,
-      "seconds": 61.9
+      "status": "skipped_duplicate",
+      "error": "already recorded ai 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "blue_chip_income",
       "track": "ai",
-      "status": "ok",
-      "run_id": "83b4c487a532-ai",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 3,
-      "seconds": 43.1
+      "status": "skipped_duplicate",
+      "error": "already recorded ai 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "capital_heat",
       "track": "ai",
-      "status": "ok",
-      "run_id": "b3bbfa484255-ai",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 2,
-      "seconds": 44.3
+      "status": "skipped_duplicate",
+      "error": "already recorded ai 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "dual_low",
       "track": "ai",
-      "status": "ok",
-      "run_id": "f830727f326e-ai",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 2,
-      "seconds": 52.3
+      "status": "skipped_duplicate",
+      "error": "already recorded ai 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "low_volatility_quality",
       "track": "ai",
-      "status": "ok",
-      "run_id": "144207f07026-ai",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 3,
-      "seconds": 51.8
+      "status": "skipped_duplicate",
+      "error": "already recorded ai 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "momentum_quality",
       "track": "ai",
-      "status": "ok",
-      "run_id": "b9552882ae4e-ai",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 3,
-      "seconds": 59.8
+      "status": "skipped_duplicate",
+      "error": "already recorded ai 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "oversold_reversal",
       "track": "ai",
-      "status": "ok",
-      "run_id": "dc00ca356c47-ai",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 3,
-      "seconds": 65.3
+      "status": "skipped_duplicate",
+      "error": "already recorded ai 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "quality_value",
       "track": "ai",
-      "status": "ok",
-      "run_id": "32d2d83a2aa9-ai",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 2,
-      "seconds": 34.1
+      "status": "skipped_duplicate",
+      "error": "already recorded ai 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",
       "strategy": "shrink_pullback",
       "track": "ai",
-      "status": "ok",
-      "run_id": "c6459845708d-ai",
-      "picks": 5,
-      "snapshot_source": "em_datacenter",
-      "degradation": 2,
-      "seconds": 40.1
+      "status": "skipped_duplicate",
+      "error": "already recorded ai 2026-11-24",
+      "seconds": 0.0
     },
     {
       "market": "cn",

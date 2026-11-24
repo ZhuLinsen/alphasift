@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "run_id": "5b275de35104",
+  "strategy": "global_value",
+  "market": "jp",
+  "strategy_version": "1.1",
+  "strategy_category": "value",
+  "created_at": "2026-11-24T10:32:41.810718+00:00",
+  "picks": 5,
+  "snapshot_count": 760,
+  "after_filter_count": 387,
+  "snapshot_source": "yahoo_screener",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 0,
+  "degradation": [],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {},
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/5b275de35104.json",
+  "report_path": "track/data/runs/5b275de35104.md"
+}
