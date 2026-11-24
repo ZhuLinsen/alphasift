@@ -82,6 +82,7 @@ jobs:
       LLM_BACKUP_MODELS: ${{ vars.LLM_BACKUP_MODELS }}
       LLM_CANDIDATE_CONTEXT_ENABLED: ${{ vars.LLM_CANDIDATE_CONTEXT_ENABLED || 'true' }}
       LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES: "12"
+      LLM_MAX_CANDIDATES: ${{ vars.LLM_MAX_CANDIDATES || '15' }}
     steps:
       - uses: actions/checkout@v7
         with:

@@ -655,3 +655,15 @@ def test_topic_alignment_fields_do_not_bloat_ranking_prompt():
     assert _build_ranking_prompt([enriched_pick], "hints", "ctx") == _build_ranking_prompt(
         [base_pick], "hints", "ctx"
     )
+
+
+def test_build_ranking_prompt_includes_concise_full_coverage_instructions():
+    picks = [
+        Pick(rank=1, code="600519", name="贵州茅台", final_score=80.0, screen_score=80.0),
+        Pick(rank=2, code="000001", name="平安银行", final_score=78.0, screen_score=78.0),
+    ]
+    prompt = _build_ranking_prompt(picks, "重价值轻炒作", "测试上下文")
+    assert "必须覆盖候选列表中全部股票代码" in prompt
+    assert "控制输出精简以防截断" in prompt
+    for field in ('"code"', '"llm_score"', '"confidence"', '"ranked"', '"catalysts"', '"invalidators"'):
+        assert field in prompt

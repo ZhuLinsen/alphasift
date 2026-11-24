@@ -348,7 +348,21 @@ def fetch_stock_fund_flow_summary(code: str) -> str:
     market = _market_for_code(code)
     if not market:
         return ""
-    df = ak.stock_individual_fund_flow(stock=str(code).zfill(6), market=market)
+    stock_code = str(code).zfill(6)
+    hist_fn = getattr(ak, "stock_fund_flow_individual_hist_em", None)
+    if callable(hist_fn):
+        try:
+            params = inspect.signature(hist_fn).parameters
+        except (TypeError, ValueError):
+            params = {}
+        if "symbol" in params and "market" in params:
+            df = hist_fn(symbol=stock_code, market=market)
+        elif "symbol" in params or not params:
+            df = hist_fn(symbol=stock_code)
+        else:
+            df = hist_fn(stock=stock_code, market=market)
+    else:
+        df = ak.stock_individual_fund_flow(stock=stock_code, market=market)
     if df is None or df.empty:
         return ""
     row = df.iloc[-1]

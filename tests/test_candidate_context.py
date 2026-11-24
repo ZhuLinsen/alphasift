@@ -8,6 +8,7 @@ from alphasift.candidate_context import (
     classify_announcement_categories,
     classify_negative_events,
     collect_candidate_context,
+    fetch_stock_fund_flow_summary,
     fetch_stock_quote_summary,
 )
 
@@ -374,3 +375,33 @@ def test_fetch_cn_market_news_dedupes_filters_noise_and_falls_back(monkeypatch, 
     monkeypatch.setattr("alphasift.market_news.requests.post", broken_post)
     monkeypatch.setenv("TAVILY_API_KEYS", "tvly-super-secret-xyz")
     assert search_stock_news_via_web("test query") == []
+
+
+def test_fetch_stock_fund_flow_summary_supports_akshare_1_20_rename(monkeypatch):
+    seen_calls: list[tuple[str, dict[str, object]]] = []
+
+    class FakeAkNew:
+        @staticmethod
+        def stock_fund_flow_individual_hist_em(symbol):
+            seen_calls.append(("new", {"symbol": symbol}))
+            return pd.DataFrame([
+                {"日期": "2026-11-24", "主力净流入-净额": "2.1亿", "主力净流入-净占比": "6.2%"},
+            ])
+
+    monkeypatch.setitem(__import__("sys").modules, "akshare", FakeAkNew)
+    summary_new = fetch_stock_fund_flow_summary("600519")
+    assert seen_calls == [("new", {"symbol": "600519"})]
+    assert "主力净流入-净额=2.1亿" in summary_new
+
+    class FakeAkLegacy:
+        @staticmethod
+        def stock_individual_fund_flow(stock, market):
+            seen_calls.append(("legacy", {"stock": stock, "market": market}))
+            return pd.DataFrame([
+                {"日期": "2026-11-24", "主力净流入-净额": "-800万"},
+            ])
+
+    monkeypatch.setitem(__import__("sys").modules, "akshare", FakeAkLegacy)
+    summary_legacy = fetch_stock_fund_flow_summary("000001")
+    assert seen_calls[-1] == ("legacy", {"stock": "000001", "market": "sz"})
+    assert "主力净流入-净额=-800万" in summary_legacy

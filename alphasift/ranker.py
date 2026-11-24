@@ -398,6 +398,8 @@ def _render_ranking_prompt(hints: str, context: str, candidates_text: str) -> st
 
 ## 输出要求
 只返回 JSON，不要 Markdown，不要解释 JSON 以外的文本。
+- 必须覆盖候选列表中全部股票代码（`code` 与输入精确一致），不得遗漏或中途截断。
+- 控制输出精简以防截断：`market_view` / `selection_logic` / `portfolio_risk` 与每只股票的 `theme` / `thesis` / `reason` / `risk` / `style_fit` 均用 1 句精炼短语（建议 ≤ 35 字）；列表字段 `catalysts` / `risk_flags` / `tags` / `watch_items` / `invalidators` 各保留 1~2 个短词（无则用 `[]`）。
 格式：
 {{
   "market_view": "一句话概括当前候选池和市场背景是否适合该策略",
