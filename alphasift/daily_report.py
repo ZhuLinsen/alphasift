@@ -960,6 +960,45 @@ def _clean_announcement_snippet(text: object, *, max_len: int = 44) -> str:
     return cleaned
 
 
+def _is_wf_joint_positive(pat: dict[str, Any]) -> bool:
+    """Return True when today is non-adverse and H2 Joint OOS (>=15d) is positive."""
+    if pat.get("wf_today_adverse"):
+        return False
+    joint_pct = pat.get("wf_non_adverse_low_overhead_pct")
+    if joint_pct is None:
+        return False
+    return (
+        int(pat.get("wf_non_adverse_low_overhead_days") or 0) >= 15
+        and float(joint_pct) > 0.0
+    )
+
+
+def _im_pattern_rank_key(pat: dict[str, Any]) -> tuple[int, int, float, str]:
+    is_active = pat.get("status") == "active"
+    adverse = bool(pat.get("wf_today_adverse"))
+    non_neg = pat.get("expectancy_tier") != "negative_watch"
+    if is_active:
+        tier = 1 if adverse else 0
+    elif non_neg and not adverse:
+        tier = 2
+    elif _is_wf_joint_positive(pat):
+        tier = 3
+    elif non_neg:
+        tier = 4
+    elif not adverse:
+        tier = 5
+    else:
+        tier = 6
+    joint_val = pat.get("wf_non_adverse_low_overhead_pct")
+    joint_sort = -float(joint_val) if joint_val is not None else 999.0
+    return (
+        tier,
+        -int(pat.get("hit_count") or 0),
+        joint_sort,
+        str(pat.get("pattern") or ""),
+    )
+
+
 def render_daily_im_card(
     report: dict[str, Any],
     *,
@@ -1077,19 +1116,24 @@ def render_daily_im_card(
         p for p in (*active, *experimental)
         if int(p.get("hit_count") or 0) > 0
     ]
-    top_hit_pats.sort(
-        key=lambda p: (
-            0 if p.get("status") == "active" else (1 if p.get("expectancy_tier") != "negative_watch" else 2),
-            -int(p.get("hit_count") or 0),
-        )
-    )
-    preferred_pats = [p for p in top_hit_pats if p.get("expectancy_tier") != "negative_watch"] or top_hit_pats
+    top_hit_pats.sort(key=_im_pattern_rank_key)
+    preferred_pats = [
+        p for p in top_hit_pats
+        if p.get("status") == "active" or p.get("expectancy_tier") != "negative_watch" or _is_wf_joint_positive(p)
+    ] or top_hit_pats
     if preferred_pats:
         pat_parts = []
         for p in preferred_pats[:3]:
             dname = str(p.get("display_name") or p.get("pattern") or "")
             sigs = "、".join(str(s.get("name") or s.get("code") or "")[:6] for s in (p.get("signals") or [])[:2])
-            tag = "" if p.get("status") == "active" else "·观察期"
+            tag_parts: list[str] = []
+            if p.get("status") != "active":
+                tag_parts.append("观察期")
+            if p.get("wf_today_adverse"):
+                tag_parts.append("逆风")
+            elif _is_wf_joint_positive(p):
+                tag_parts.append(f"联合OOS{float(p['wf_non_adverse_low_overhead_pct']):+.2f}%")
+            tag = ("·" + "·".join(tag_parts)) if tag_parts else ""
             sig_txt = f"：{sigs}" if sigs else ""
             pat_parts.append(f"{dname}({int(p.get('hit_count') or 0)}只{tag}{sig_txt})")
         lines.append("**形态雷达**：" + "；".join(pat_parts))

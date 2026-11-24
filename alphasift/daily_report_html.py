@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from alphasift.daily_brief import BRIEF_DISCLAIMER, resolve_strategy_display_names
+from alphasift.daily_report import _is_wf_joint_positive
 
 _DIST_BUCKETS: tuple[tuple[str, str, str], ...] = (
     ("le_neg7", "≤-7%", "down"),
@@ -541,8 +542,17 @@ def render_daily_report_html(
         if not is_active:
             pats_list.sort(
                 key=lambda p: (
-                    0 if p.get("expectancy_tier") == "positive_watch" else (1 if p.get("expectancy_tier") != "negative_watch" else 2),
+                    0 if p.get("expectancy_tier") == "positive_watch" and not p.get("wf_today_adverse") else (
+                        1 if _is_wf_joint_positive(p) else (
+                            2 if p.get("expectancy_tier") != "negative_watch" and not p.get("wf_today_adverse") else (
+                                3 if p.get("expectancy_tier") != "negative_watch" else (
+                                    4 if not p.get("wf_today_adverse") else 5
+                                )
+                            )
+                        )
+                    ),
                     -int(p.get("hit_count") or 0),
+                    str(p.get("pattern") or ""),
                 )
             )
         for pat in pats_list:

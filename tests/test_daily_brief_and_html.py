@@ -17,7 +17,7 @@ from alphasift.daily_brief import (
     build_cross_strategy_synthesis,
     generate_ai_daily_brief,
 )
-from alphasift.daily_report import build_daily_report
+from alphasift.daily_report import build_daily_report, render_daily_im_card
 from alphasift.daily_report_html import render_daily_report_html, write_daily_report_html
 from alphasift.models import Pick, ScreenResult
 from alphasift.pack import DailyPack, FIELDS
@@ -390,4 +390,71 @@ def test_daily_report_walk_forward_regime_and_joint_oos() -> None:
     assert "+2.85%(16d)" in html_text
     assert 'pat_wf_adverse: "WF Adverse Regime"' in html_text
     assert 'pat_wf_joint: " · Joint OOS {v}({d}d)"' in html_text
+
+
+def test_im_card_and_html_prioritize_non_adverse_joint_oos_and_flag_adverse() -> None:
+    report: dict = {
+        "trade_date": "2026-11-24",
+        "pack_trade_date": "2026-11-24",
+        "expected_trade_date": "2026-11-24",
+        "pack_is_stale": False,
+        "market_regime": {"regime_stage": "divergence", "regime_stage_label": "分歧"},
+        "strategies": [],
+        "ai_highlights": [],
+        "patterns": {
+            "active": [],
+            "experimental": [
+                {
+                    "pattern": "ma20_shrink_pullback",
+                    "display_name": "20日线低波缩量回踩",
+                    "status": "experimental",
+                    "expectancy_tier": "neutral_watch",
+                    "hit_count": 30,
+                    "wf_today_adverse": True,
+                    "wf_non_adverse_low_overhead_pct": -0.38,
+                    "wf_non_adverse_low_overhead_days": 14,
+                    "signals": [{"code": "300760", "name": "迈瑞医疗"}, {"code": "601766", "name": "中国中车"}],
+                },
+                {
+                    "pattern": "double_bottom_breakout",
+                    "display_name": "双底突破",
+                    "status": "experimental",
+                    "expectancy_tier": "negative_watch",
+                    "hit_count": 3,
+                    "wf_today_adverse": False,
+                    "wf_non_adverse_low_overhead_pct": 0.24,
+                    "wf_non_adverse_low_overhead_days": 60,
+                    "signals": [{"code": "000001", "name": "平安银行"}, {"code": "600036", "name": "招商银行"}],
+                },
+                {
+                    "pattern": "shooting_star_confirm",
+                    "display_name": "仙人指路确认",
+                    "status": "experimental",
+                    "expectancy_tier": "negative_watch",
+                    "hit_count": 5,
+                    "wf_today_adverse": False,
+                    "wf_non_adverse_low_overhead_pct": 1.21,
+                    "wf_non_adverse_low_overhead_days": 8,
+                    "signals": [{"code": "600519", "name": "贵州茅台"}],
+                },
+            ],
+        },
+        "announcement_risks": {"checked_count": 0, "flagged_count": 0, "flagged_items": [], "errors": []},
+        "market_news": {"items": [], "sources": [], "candidate_news": {}, "errors": []},
+        "degradation": [],
+        "cross_strategy_synthesis": {},
+        "ai_brief": {},
+    }
+
+    card = render_daily_im_card(report)
+    assert len(card) < 1200
+    assert "双底突破(3只·观察期·联合OOS+0.24%" in card
+    assert "20日线低波缩量回踩(30只·观察期·逆风" in card
+    assert card.index("双底突破") < card.index("20日线低波缩量回踩")
+    assert "仙人指路" not in card
+
+    html = render_daily_report_html(report)
+    assert html.index('data-pattern="double_bottom_breakout"') < html.index('data-pattern="ma20_shrink_pullback"')
+    assert html.index('data-pattern="ma20_shrink_pullback"') < html.index('data-pattern="shooting_star_confirm"')
+
 
