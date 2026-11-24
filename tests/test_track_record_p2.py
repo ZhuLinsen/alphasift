@@ -361,3 +361,29 @@ def test_evaluate_markets_switchover_cn_pack_raw_limit_and_paired_ai_comparison(
     assert cases["best_ai_avoids"][0]["code"] == "000002"
     assert cases["best_ai_avoids"][0]["excess_return_pct"] == -3.0
     assert cases["missed_by_ai"][0]["excess_return_pct"] == 2.5
+
+
+def test_track_record_page_html_js_syntax_and_drilldown_hooks(tmp_path: Path) -> None:
+    import re
+    import shutil
+    import subprocess
+
+    page_path = Path(__file__).resolve().parents[1] / "scripts" / "track_record_page.html"
+    html = page_path.read_text(encoding="utf-8")
+    for token in (
+        "drillDownStrategy",
+        "strat-drill-btn",
+        "explorer-clear-btn",
+        "sc_drill_title",
+        "clear_filter",
+    ):
+        assert token in html, f"missing hook {token}"
+
+    scripts = re.findall(r"<script(?![^>]*src=)[^>]*>(.*?)</script>", html, flags=re.DOTALL)
+    assert scripts
+    node = shutil.which("node")
+    if node is not None:
+        js_file = tmp_path / "track_record_page.js"
+        js_file.write_text(scripts[-1], encoding="utf-8")
+        proc = subprocess.run([node, "--check", str(js_file)], capture_output=True, text=True, check=False)
+        assert proc.returncode == 0, proc.stderr

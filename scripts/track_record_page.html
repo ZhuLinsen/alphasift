@@ -468,6 +468,18 @@ tr.pat-focus-row td:first-child { box-shadow: inset 3px 0 0 var(--accent-hi); fo
   text-decoration: none; white-space: nowrap; vertical-align: middle;
 }
 .pat-report-link:hover { background: rgba(59, 130, 246, 0.22); text-decoration: none; }
+.strat-drill-btn {
+  background: transparent; border: 0; padding: 0; margin: 0; font: inherit; color: var(--ink);
+  cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-align: left;
+}
+.strat-drill-btn:hover { color: var(--accent-hi); }
+.strat-drill-btn .drill-arrow { opacity: 0.45; font-size: 11px; transition: opacity 0.12s, transform 0.12s; }
+.strat-drill-btn:hover .drill-arrow { opacity: 1; transform: translate(1px, -1px); color: var(--accent-hi); }
+.clear-search-btn {
+  display: none; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted);
+  border-radius: 7px; padding: 4px 8px; font: inherit; font-size: 11.5px; cursor: pointer; white-space: nowrap;
+}
+.clear-search-btn:hover { color: var(--ink); border-color: var(--border-strong); }
 .ico { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; flex-shrink: 0; }
 
 .rank-num {
@@ -803,6 +815,7 @@ footer {
         <select id="market-latest" data-i18n-aria="mkt_filter_aria" aria-label="市场筛选"></select>
         <select id="day" data-i18n-aria="day_filter_aria" aria-label="历史交易日" style="display:none;"></select>
         <input type="search" class="search-input" id="pick-search" data-i18n-placeholder="search_ph" data-i18n-aria="search_aria" placeholder="搜索代码 / 名称 / 行业 / 策略…" aria-label="过滤选股">
+        <button type="button" class="clear-search-btn" id="explorer-clear-btn" data-i18n="clear_filter">× 清除筛选</button>
       </div>
     </div>
     <div class="tab-panel active" id="tab-latest">
@@ -923,6 +936,7 @@ const I18N = {
     mkt_filter_aria: "市场筛选",
     day_filter_aria: "历史交易日",
     search_ph: "搜索代码 / 名称 / 行业 / 策略…",
+    clear_filter: "× 清除筛选",
     search_aria: "过滤选股",
     sec5_title: "规则榜 vs AI 榜同日配对归因",
     sec5_hint: "仅针对同一策略在同一交易日的双轨运行严格配对对比（同日配对 < 10 日时隐藏差值，单列 AI 缺失率与重合度）。",
@@ -1035,6 +1049,7 @@ const I18N = {
     sc_empty: "当前筛选暂无运行记录",
     sc_cols: ["#", "市场", "策略", "入场口径", "运行", "已评估", "待定", "不可成交", "平均收益", "胜率", "同期基准", "超额收益 (T+{w})", "跑赢基准"],
     sc_low_sample_title: "少于 {n} 只，样本偏小",
+    sc_drill_title: "点击联动聚焦走势图并在选股浏览器过滤该策略",
     sc_unassessed: "未评估",
     sc_unassessed_title: "切换前收盘口径，未评估开盘一字涨停",
     tc_empty_all: "AI 对照赛道尚未积累成对交易日（当前 0/10 配对日），满足 10 个同日配对后将自动披露 AI vs 规则归因差值 · 自部署接入说明见 <a href=\"https://github.com/ZhuLinsen/alphasift/blob/main/docs/deployment.md\" target=\"_blank\" rel=\"noopener\">部署文档</a>。",
@@ -1191,6 +1206,7 @@ const I18N = {
     mkt_filter_aria: "Filter market",
     day_filter_aria: "Trading session",
     search_ph: "Filter symbol / name / sector / strategy…",
+    clear_filter: "× Clear",
     search_aria: "Filter picks",
     sec5_title: "Rules vs AI Same-Day Paired Attribution",
     sec5_hint: "Strict same-date, same-strategy paired comparison between rules and AI tracks (delta hidden when paired sessions < 10).",
@@ -1303,6 +1319,7 @@ const I18N = {
     sc_empty: "No matching track-record rows",
     sc_cols: ["#", "Market", "Strategy", "Entry", "Runs", "Matured", "Pending", "Untradable", "Raw Ret", "Win Rate", "Benchmark", "Excess (T+{w})", "Beat Rate"],
     sc_low_sample_title: "Below {n} samples (noisy)",
+    sc_drill_title: "Click to isolate trend curve & filter picks in Explorer",
     sc_unassessed: "Unassessed",
     sc_unassessed_title: "Legacy close entry before next_open switchover",
     tc_empty_all: "AI benchmark track has not accumulated paired sessions yet (0/10 paired days). Attribution delta unlocks automatically at ≥10 same-day pairs · see <a href=\"https://github.com/ZhuLinsen/alphasift/blob/main/docs/deployment.md\" target=\"_blank\" rel=\"noopener\">Deployment Docs</a> for self-hosting.",
@@ -1459,6 +1476,7 @@ const I18N = {
     mkt_filter_aria: "市場フィルタ",
     day_filter_aria: "営業日選択",
     search_ph: "コード / 銘柄名 / 業種 / 戦略を検索…",
+    clear_filter: "× 解除",
     search_aria: "銘柄フィルタ",
     sec5_title: "ルール vs AI 同日ペア帰属分析",
     sec5_hint: "同一戦略・同一営業日の両トラック実行のみを厳密にペア比較します（ペア日数 < 10 日の場合、差分は非表示）。",
@@ -1571,6 +1589,7 @@ const I18N = {
     sc_empty: "該当するトラックレコードはありません",
     sc_cols: ["#", "市場", "戦略", "基準", "実行", "評価済", "保留", "不可", "平均騰落", "勝率", "ベンチマーク", "超過 (T+{w})", "対指数勝率"],
     sc_low_sample_title: "{n} 件未満のため参考値",
+    sc_drill_title: "クリックして推移チャートと銘柄一覧をこの戦略で絞り込む",
     sc_unassessed: "未評価",
     sc_unassessed_title: "next_open 切替前の終値基準",
     tc_empty_all: "AI ベンチマークは現在ペア営業日を蓄積中です（0/10 ペア日）。同日ペアが 10 日以上に達すると差分を自動表示します · 自前設定は <a href=\"https://github.com/ZhuLinsen/alphasift/blob/main/docs/deployment.md\" target=\"_blank\" rel=\"noopener\">デプロイガイド</a> をご参照ください。",
@@ -2741,6 +2760,18 @@ function initScoreMarketPills() {
   });
   const sortEl = $("sort-score");
   if (sortEl) sortEl.addEventListener("change", () => { state.scoreSort = sortEl.value; renderScorecard(); });
+  const scoreTbl = $("scorecard");
+  if (scoreTbl) {
+    scoreTbl.addEventListener("click", (e) => {
+      const btn = e.target.closest("button.strat-drill-btn");
+      if (!btn) return;
+      drillDownStrategy(
+        btn.getAttribute("data-drill-market") || "",
+        btn.getAttribute("data-drill-strategy") || "",
+        btn.getAttribute("data-drill-track") || "rules",
+      );
+    });
+  }
 }
 
 function renderScorecard() {
@@ -2786,7 +2817,7 @@ function renderScorecard() {
     return `<tr class="${lowSample ? "low-sample" : ""}">
       <td><span class="rank-num ${idx < 3 && !lowSample ? "top" : ""}">${idx + 1}</span></td>
       <td>${esc(mname(r.market))}</td>
-      <td class="l"><strong>${sname(r.strategy)}</strong>${trBadge}</td>
+      <td class="l"><button type="button" class="strat-drill-btn" data-drill-market="${esc(r.market)}" data-drill-strategy="${esc(r.strategy)}" data-drill-track="${esc(r.track || "rules")}" title="${esc(t("sc_drill_title"))}"><strong>${sname(r.strategy)}</strong>${trBadge}<span class="drill-arrow" aria-hidden="true">↗</span></button></td>
       <td class="l"><span class="badge mode">${esc(modes)}</span></td>
       <td class="mono">${r.runs}</td>
       <td class="mono">${x.evaluated ?? 0}${few}</td>
@@ -3508,26 +3539,67 @@ async function renderDay(day) {
   }).join("") : `<div class="empty">${esc(t("no_match_day"))}</div>`;
 }
 
-function initExplorerControls() {
+function setExplorerMode(mode) {
+  state.explorerMode = mode;
   const modeWrap = $("explorer-mode");
   const mktSel = $("market-latest");
   const daySel = $("day");
+  if (modeWrap) modeWrap.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+  $("tab-latest").classList.toggle("active", mode === "latest");
+  $("tab-history").classList.toggle("active", mode === "history");
+  if (mktSel) mktSel.style.display = mode === "latest" ? "" : "none";
+  if (daySel) daySel.style.display = mode === "history" ? "" : "none";
+}
+
+function syncClearSearchBtn() {
+  const clearBtn = $("explorer-clear-btn");
+  if (clearBtn) clearBtn.style.display = (state.searchQuery || "").trim() ? "inline-flex" : "none";
+}
+
+function drillDownStrategy(market, strategy, track) {
+  const normTrack = track === "ai" ? "ai" : "rules";
+  const trendSel = $("market-trend");
+  if (trendSel && market && [...trendSel.options].some((o) => o.value === market)) {
+    state.trendMarket = market;
+    trendSel.value = market;
+  }
+  if ((state.trendTrack === "rules" && normTrack === "ai") || (state.trendTrack === "ai" && normTrack === "rules")) {
+    state.trendTrack = "both";
+    document.querySelectorAll("#track-trend button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.t === "both")));
+  }
+  if (strategy) state.trendFocus = `${strategy}:${normTrack}`;
+  renderChart();
+
+  setExplorerMode("latest");
+  const mktSel = $("market-latest");
+  if (mktSel && market && [...mktSel.options].some((o) => o.value === market)) {
+    state.latestMarket = market;
+    mktSel.value = market;
+  }
   const searchEl = $("pick-search");
-  const applyMode = (mode) => {
-    state.explorerMode = mode;
-    if (modeWrap) modeWrap.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
-    $("tab-latest").classList.toggle("active", mode === "latest");
-    $("tab-history").classList.toggle("active", mode === "history");
-    if (mktSel) mktSel.style.display = mode === "latest" ? "" : "none";
-    if (daySel) daySel.style.display = mode === "history" ? "" : "none";
-  };
-  applyMode(state.explorerMode);
+  state.searchQuery = strategy || "";
+  if (searchEl) searchEl.value = state.searchQuery;
+  syncClearSearchBtn();
+  syncQueryState();
+  renderLatest();
+  if (state.currentDay) renderDay(state.currentDay);
+  const explorerEl = $("explorer");
+  if (explorerEl && typeof explorerEl.scrollIntoView === "function") {
+    explorerEl.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function initExplorerControls() {
+  const modeWrap = $("explorer-mode");
+  const searchEl = $("pick-search");
+  const clearBtn = $("explorer-clear-btn");
+  setExplorerMode(state.explorerMode);
   if (modeWrap) {
     modeWrap.addEventListener("click", (e) => {
       const btn = e.target.closest("button");
       const mode = btn && btn.dataset && btn.dataset.mode;
       if (!mode) return;
-      applyMode(mode);
+      setExplorerMode(mode);
       syncQueryState();
     });
   }
@@ -3535,11 +3607,25 @@ function initExplorerControls() {
     if (state.searchQuery) searchEl.value = state.searchQuery;
     searchEl.addEventListener("input", () => {
       state.searchQuery = searchEl.value || "";
+      syncClearSearchBtn();
       syncQueryState();
       renderLatest();
       if (state.currentDay) renderDay(state.currentDay);
     });
   }
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      state.searchQuery = "";
+      if (searchEl) searchEl.value = "";
+      state.trendFocus = null;
+      syncClearSearchBtn();
+      syncQueryState();
+      renderChart();
+      renderLatest();
+      if (state.currentDay) renderDay(state.currentDay);
+    });
+  }
+  syncClearSearchBtn();
 }
 
 function openRadarAccordionsForHash(hashStr) {
