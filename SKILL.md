@@ -74,7 +74,7 @@ alphasift patterns replay --pack-dir data/pack/cn --exclude-regimes freezing,ebb
 alphasift daily-report --pack-dir data/pack/cn --output-html report.html --push
 alphasift notify status
 alphasift notify test --dry-run
-alphasift mcp   # Exposes 12 tools (incl. alphasift_replay_patterns, alphasift_markets_digest) & 3 resources (incl. alphasift://patterns)
+alphasift mcp   # Exposes 13 tools (incl. alphasift_replay_patterns, alphasift_markets_digest, alphasift_daily_report) & 3 resources (incl. alphasift://patterns)
 alphasift serve --host 127.0.0.1 --port 8765
 ```
 

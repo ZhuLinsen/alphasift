@@ -17,6 +17,7 @@ from typing import Any, BinaryIO
 
 from alphasift import __version__
 from alphasift.config import Config
+from alphasift.daily_report import build_daily_report, load_daily_report_runs
 from alphasift.doctor import doctor_data_sources
 from alphasift.market_digest import build_markets_digest, load_multi_market_runs
 from alphasift.markets import get_market
@@ -104,6 +105,28 @@ def _require_str(args: dict[str, Any], key: str) -> str:
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError(f"Missing or invalid required string parameter: {key!r}")
     return raw.strip()
+
+
+def _optional_iso_date(args: dict[str, Any], key: str) -> str | None:
+    value = _optional_str(args, key) or None
+    if value is not None:
+        if len(value) != 10:
+            raise ValueError(f"Invalid {key} (expected YYYY-MM-DD): {value!r}")
+        try:
+            date.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError(f"Invalid {key} (expected YYYY-MM-DD): {value!r}") from exc
+    return value
+
+
+def _optional_http_url(args: dict[str, Any], key: str, *, default: str = "") -> str:
+    if key in args and args[key] is not None:
+        url = _optional_str(args, key)
+    else:
+        url = str(default or "").strip()
+    if url and (len(url) > 500 or not url.startswith(("http://", "https://"))):
+        raise ValueError(f"Parameter {key!r} must be an http:// or https:// URL (<= 500 chars)")
+    return url
 
 
 def _json_safe(obj: Any) -> Any:
@@ -369,6 +392,38 @@ def _tool_definitions() -> list[dict[str, Any]]:
                 "additionalProperties": False,
             },
         },
+        {
+            "name": "alphasift_daily_report",
+            "description": (
+                "Build the offline-safe CN post-close DailyReport JSON + <1200-char IM card "
+                "(market regime, multi-strategy consensus, AI rebalance diff, and pattern radar) "
+                "from the local CN DailyPack and saved runs (never spends LLM credits)."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "trade_date": {
+                        "type": "string",
+                        "description": "Optional YYYY-MM-DD trade date (defaults to latest session in DailyPack).",
+                    },
+                    "include_runs": {
+                        "type": "boolean",
+                        "default": True,
+                        "description": "Include saved CN strategy runs for the trade date.",
+                    },
+                    "include_experimental_patterns": {
+                        "type": "boolean",
+                        "default": True,
+                        "description": "Include observation/experimental CN chart patterns.",
+                    },
+                    "detail_url": {
+                        "type": "string",
+                        "description": "Optional http(s) dashboard URL included in the IM card (empty string omits link).",
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
     ]
 
 
@@ -395,6 +450,7 @@ class MCPServer:
             "alphasift_notify_status": self._handle_notify_status,
             "alphasift_list_runs": self._handle_list_runs,
             "alphasift_markets_digest": self._handle_markets_digest,
+            "alphasift_daily_report": self._handle_daily_report,
         }
 
     def _handle_list_strategies(self, args: dict[str, Any]) -> Any:
@@ -606,22 +662,9 @@ class MCPServer:
         for m in markets:
             get_market(m)
 
-        trade_date = _optional_str(args, "trade_date") or None
-        if trade_date is not None:
-            if len(trade_date) != 10:
-                raise ValueError(f"Invalid trade_date (expected YYYY-MM-DD): {trade_date!r}")
-            try:
-                date.fromisoformat(trade_date)
-            except ValueError as exc:
-                raise ValueError(f"Invalid trade_date (expected YYYY-MM-DD): {trade_date!r}") from exc
-
+        trade_date = _optional_iso_date(args, "trade_date")
         include_news = _optional_bool(args, "include_news", False)
-        if "detail_url" in args and args["detail_url"] is not None:
-            detail_url = _optional_str(args, "detail_url")
-        else:
-            detail_url = str(self.config.dashboard_url or "").strip()
-        if detail_url and (len(detail_url) > 500 or not detail_url.startswith(("http://", "https://"))):
-            raise ValueError("Parameter 'detail_url' must be an http:// or https:// URL (<= 500 chars)")
+        detail_url = _optional_http_url(args, "detail_url", default=self.config.dashboard_url)
 
         runs_by_mkt = load_multi_market_runs(
             self.config,
@@ -635,6 +678,44 @@ class MCPServer:
             detail_url=detail_url,
             include_news=include_news,
             config=self.config,
+        )
+
+    def _handle_daily_report(self, args: dict[str, Any]) -> Any:
+        trade_date = _optional_iso_date(args, "trade_date")
+        include_runs = _optional_bool(args, "include_runs", True)
+        include_exp = _optional_bool(args, "include_experimental_patterns", True)
+        detail_url = _optional_http_url(args, "detail_url", default=self.config.dashboard_url)
+
+        daily_pack = self._load_cn_pack()
+        strategy_runs = (
+            load_daily_report_runs(
+                self.config,
+                trade_date=trade_date or daily_pack.trade_date,
+            )
+            if include_runs
+            else []
+        )
+        pattern_replay: dict[str, Any] | None = None
+        replay_path = self.config.data_dir / "patterns" / "replay.json"
+        if replay_path.is_file():
+            try:
+                loaded = json.loads(replay_path.read_text(encoding="utf-8"))
+                if isinstance(loaded, dict):
+                    pattern_replay = loaded
+            except (OSError, ValueError):
+                pattern_replay = None
+
+        return build_daily_report(
+            daily_pack,
+            trade_date=trade_date,
+            detail_url=detail_url,
+            strategy_runs=strategy_runs,
+            include_experimental_patterns=include_exp,
+            include_announcements=False,
+            include_news=False,
+            ai_brief_mode="off",
+            config=self.config,
+            pattern_replay=pattern_replay,
         )
 
     def _read_skill_markdown(self) -> str:

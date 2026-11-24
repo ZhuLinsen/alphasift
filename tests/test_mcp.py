@@ -39,6 +39,7 @@ def test_mcp_initialize_tools_and_resources(tmp_path):
         "alphasift_list_runs",
         "alphasift_replay_patterns",
         "alphasift_markets_digest",
+        "alphasift_daily_report",
     }
 
     res_list = server.handle_request({"jsonrpc": "2.0", "id": 4, "method": "resources/list"})
@@ -204,7 +205,7 @@ def test_mcp_stdio_subprocess_supports_line_and_content_length_framing(tmp_path)
         decoded_msgs.append(json.loads(raw[body_start : body_start + length].decode("utf-8")))
         pos = body_start + length
     assert [m["id"] for m in decoded_msgs] == [10, 11]
-    assert len(decoded_msgs[1]["result"]["tools"]) == 12
+    assert len(decoded_msgs[1]["result"]["tools"]) == 13
 
 
 def test_mcp_round9_security_and_strict_schema_validation(tmp_path):
@@ -522,4 +523,125 @@ def test_mcp_markets_digest_tool_and_validation_guards(tmp_path):
     })
     assert proto_err is not None
     assert proto_err["error"]["code"] == -32602
+
+
+def test_mcp_daily_report_tool_and_validation_guards(tmp_path):
+    import numpy as np
+    import pandas as pd
+
+    from alphasift.models import Pick, ScreenResult
+    from alphasift.pack import DailyPack, FIELDS, pack_dir, save_pack
+    from alphasift.store import save_screen_result
+
+    cfg = Config(data_dir=tmp_path)
+    server = MCPServer(cfg)
+
+    missing_pack = server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 300,
+        "method": "tools/call",
+        "params": {"name": "alphasift_daily_report", "arguments": {}},
+    })
+    assert missing_pack is not None
+    assert missing_pack["result"]["isError"] is True
+    assert "CN DailyPack unavailable" in missing_pack["result"]["content"][0]["text"]
+
+    n_d = 25
+    mat = {f: np.full((n_d, 1), 10.0, dtype=np.float32) for f in FIELDS}
+    mat["open"][:, 0] = 10.0
+    mat["high"][:, 0] = 10.2
+    mat["low"][:, 0] = 9.9
+    mat["close"][:, 0] = 10.1
+    mat["volume"][:, 0] = 5_000_000.0
+    mat["amount"][:, 0] = 50_000_000.0
+    dates = [d.strftime("%Y-%m-%d") for d in pd.bdate_range("2026-10-01", periods=n_d)]
+    last_date = dates[-1]
+    save_pack(
+        pack_dir(cfg),
+        DailyPack(
+            dates=np.asarray(dates, dtype=str),
+            codes=np.asarray(["000001"], dtype=str),
+            matrices=mat,
+            meta=pd.DataFrame([{"code": "000001", "name": "平安", "industry": "银行", "pe_ratio": 5.0, "pb_ratio": 0.6, "total_mv": 1e11, "circ_mv": 9e10, "list_date": "1991-04-03", "is_st": False}]),
+            sources=("test",),
+        ),
+    )
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="cn_dr_1",
+            track="rules",
+            created_at=f"{last_date}T08:00:00Z",
+            snapshot_count=100,
+            after_filter_count=5,
+            picks=[Pick(rank=1, code="000001", name="平安", final_score=85.0, screen_score=85.0)],
+        ),
+        data_dir=cfg.data_dir,
+    )
+    replay_dir = tmp_path / "patterns"
+    replay_dir.mkdir(parents=True, exist_ok=True)
+    (replay_dir / "replay.json").write_text(
+        json.dumps({
+            "cost_bps": 25.0,
+            "patterns": [
+                {
+                    "pattern": "double_bottom_breakout",
+                    "horizons": {"t5": {"net_excess_mean_pct": 0.24, "excess_win_rate_pct": 54.0, "excess_scored": 40}},
+                    "graduation": {"recommended_status": "experimental", "t5_net_excess_mean_pct": 0.24},
+                    "walk_forward_regime_audit": {
+                        "h2_non_adverse_low_overhead": {"days": 16, "signals": 28, "daily_mean_pct": 0.31},
+                    },
+                }
+            ],
+        }),
+        encoding="utf-8",
+    )
+
+    ok = server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 301,
+        "method": "tools/call",
+        "params": {
+            "name": "alphasift_daily_report",
+            "arguments": {"include_runs": True, "detail_url": "https://alphasift.zhulinsen.tech/"},
+        },
+    })
+    assert ok is not None
+    assert ok["result"]["isError"] is False
+    body = json.loads(ok["result"]["content"][0]["text"])
+    assert body["object"] == "DailyReport"
+    assert body["ai_brief"]["mode"] == "rule_fallback"
+    assert body["im_card_chars"] < 1200
+    assert len(body["strategies"]) == 1
+    assert "https://alphasift.zhulinsen.tech/" in body["im_card_markdown"]
+
+    for idx, bad_args in enumerate(
+        [
+            {"trade_date": "2026/11/24"},
+            {"trade_date": "2026-99-99"},
+            {"include_runs": "yes"},
+            {"include_experimental_patterns": "no"},
+            {"detail_url": "javascript:alert(1)"},
+        ],
+        start=302,
+    ):
+        err = server.handle_request({
+            "jsonrpc": "2.0",
+            "id": idx,
+            "method": "tools/call",
+            "params": {"name": "alphasift_daily_report", "arguments": bad_args},
+        })
+        assert err is not None
+        assert err["result"]["isError"] is True, bad_args
+
+    proto_dr_err = server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 399,
+        "method": "tools/call",
+        "params": {"name": "alphasift_daily_report", "arguments": {"bogus": 1}},
+    })
+    assert proto_dr_err is not None
+    assert proto_dr_err["error"]["code"] == -32602
+
 

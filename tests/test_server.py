@@ -35,6 +35,7 @@ def test_api_health_and_index(tmp_path):
     assert "/data-source-history" in index["endpoints"]
     assert "/strategy-performance" in index["endpoints"]
     assert "/strategy-templates" in index["endpoints"]
+    assert "/markets-digest" in index["endpoints"]
     assert health_status == 200
     assert health == {"status": "ok", "service": "alphasift", "schema_version": 1}
 
@@ -708,3 +709,72 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_api_markets_digest_endpoint_and_validation(tmp_path):
+    cfg = _config(tmp_path)
+    save_screen_result(
+        ScreenResult(
+            strategy="us_momentum_quality",
+            market="us",
+            run_id="srv_us_mom",
+            track="rules",
+            created_at="2026-11-20T22:00:00Z",
+            snapshot_count=400,
+            after_filter_count=10,
+            picks=[
+                Pick(rank=1, code="MSFT", name="Microsoft", final_score=92.0, screen_score=92.0),
+                Pick(rank=2, code="AAPL", name="Apple", final_score=85.0, screen_score=85.0),
+            ],
+        ),
+        data_dir=cfg.data_dir,
+    )
+    save_screen_result(
+        ScreenResult(
+            strategy="global_value",
+            market="us",
+            run_id="srv_us_val",
+            track="rules",
+            created_at="2026-11-20T22:05:00Z",
+            snapshot_count=400,
+            after_filter_count=8,
+            picks=[
+                Pick(rank=1, code="AAPL", name="Apple", final_score=83.0, screen_score=83.0),
+            ],
+        ),
+        data_dir=cfg.data_dir,
+    )
+    save_screen_result(
+        ScreenResult(
+            strategy="global_value",
+            market="hk",
+            run_id="srv_hk_val",
+            track="rules",
+            created_at="2026-11-20T09:00:00Z",
+            snapshot_count=300,
+            after_filter_count=5,
+            picks=[
+                Pick(rank=1, code="00700", name="Tencent", final_score=87.0, screen_score=87.0),
+            ],
+        ),
+        data_dir=cfg.data_dir,
+    )
+
+    status, payload = build_api_response(cfg, "/markets-digest", query="markets=us,hk")
+    assert status == 200
+    assert payload["object"] == "MarketDigest"
+    assert payload["markets"] == ["us", "hk"]
+    assert payload["market_sections"][0]["top_picks"][0]["code"] == "AAPL"
+    assert payload["market_sections"][0]["top_picks"][0]["strategy_count"] == 2
+    assert payload["market_news"]["items"] == []
+
+    bad_mkt_status, bad_mkt_payload = build_api_response(cfg, "/markets-digest", query="markets=mars")
+    assert bad_mkt_status == 400
+    assert bad_mkt_payload["error"] == "invalid_request"
+
+    bad_date_status, bad_date_payload = build_api_response(
+        cfg, "/markets-digest", query="markets=us&trade_date=2026/11/20"
+    )
+    assert bad_date_status == 400
+    assert bad_date_payload["error"] == "invalid_request"
+

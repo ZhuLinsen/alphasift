@@ -85,7 +85,7 @@
 
 ### 1. Claude Code・Cursor・Codex・OpenClaw と連携（ネイティブ MCP）
 
-読み取り専用の STDIO MCP サーバー（`12` ツール + `3` リソース、外部通知を送らない `scorecard` 後処理のみ実行）を 5 行の JSON で接続できます：
+読み取り専用の STDIO MCP サーバー（`13` ツール + `3` リソース、外部通知を送らない `scorecard` 後処理のみ実行）を 5 行の JSON で接続できます：
 
 ```json
 {

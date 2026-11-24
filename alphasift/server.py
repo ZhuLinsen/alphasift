@@ -8,6 +8,7 @@ import hashlib
 import html
 import json
 from dataclasses import asdict
+from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import re
@@ -18,7 +19,9 @@ from alphasift.config import Config
 from alphasift.daily_report import build_daily_report, load_daily_report_runs
 from alphasift.daily_report_html import _safe_detail_url, render_daily_report_html
 from alphasift.doctor import doctor_data_sources, doctor_radar_readiness
+from alphasift.market_digest import build_markets_digest, load_multi_market_runs
 from alphasift.market_regime import compute_market_regime, compute_market_regime_series
+from alphasift.markets import get_market
 from alphasift.overview import build_overview
 from alphasift.pack import PackError, load_pack, pack_dir
 from alphasift.patterns import extract_mini_kline_bars, list_patterns, scan_patterns
@@ -256,6 +259,42 @@ def build_api_response(
             "schema_version": 1,
             "patterns": [asdict(item) for item in list_patterns(include_experimental=include_exp)],
         }
+    if path == "/markets-digest":
+        raw_markets = _multi(params, "markets") or _multi(params, "market")
+        if raw_markets:
+            markets = list(dict.fromkeys(m.lower() for m in raw_markets))
+            if len(markets) > 7:
+                return 400, {"error": "invalid_request", "message": "Too many markets requested (max 7)."}
+        else:
+            markets = ["us", "hk", "jp", "kr", "tw", "in"]
+        try:
+            for m in markets:
+                get_market(m)
+            trade_date = _single(params, "trade_date") or None
+            if trade_date is not None:
+                if len(trade_date) != 10:
+                    raise ValueError(f"Invalid trade_date (expected YYYY-MM-DD): {trade_date!r}")
+                try:
+                    date.fromisoformat(trade_date)
+                except ValueError as exc:
+                    raise ValueError(f"Invalid trade_date (expected YYYY-MM-DD): {trade_date!r}") from exc
+            raw_detail = _single(params, "detail_url")
+            detail_url = (
+                _safe_detail_url(raw_detail, fallback="")
+                if raw_detail
+                else _safe_detail_url(config.dashboard_url, fallback="")
+            )
+            runs_by_mkt = load_multi_market_runs(config, markets=markets, trade_date=trade_date)
+            return 200, build_markets_digest(
+                runs_by_mkt,
+                markets=markets,
+                trade_date=trade_date,
+                detail_url=detail_url,
+                include_news=False,
+                config=config,
+            )
+        except ValueError as exc:
+            return 400, {"error": "invalid_request", "message": str(exc)}
     if path in {"/market-stats", "/patterns/scan", "/daily-report"}:
         safe_run_paths: list[str] = []
         if path == "/daily-report":
@@ -568,6 +607,7 @@ def _index_payload() -> dict[str, Any]:
             "/patterns/scan",
             "/daily-report",
             "/daily-report.html",
+            "/markets-digest",
         ],
     }
 

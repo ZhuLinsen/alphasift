@@ -85,7 +85,7 @@
 
 ### 1. 接入 Claude Code / OpenClaw / Cursor / Codex（原生 MCP）
 
-安装 AlphaSift 后，在客户端 MCP 配置加入 5 行 JSON 即可让 AI 助手直接调用 `12` 个只读量化工具与 `3` 项资源（默认不触发外发推送）：
+安装 AlphaSift 后，在客户端 MCP 配置加入 5 行 JSON 即可让 AI 助手直接调用 `13` 个只读量化工具与 `3` 项资源（默认不触发外发推送）：
 
 ```json
 {
