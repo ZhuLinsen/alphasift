@@ -376,6 +376,10 @@ def test_track_record_page_html_js_syntax_and_drilldown_hooks(tmp_path: Path) ->
         "explorer-clear-btn",
         "sc_drill_title",
         "clear_filter",
+        "wf-cli-btn",
+        "copyPlainText",
+        "wf_cli_copied",
+        "renderJointCliCell",
     ):
         assert token in html, f"missing hook {token}"
 
