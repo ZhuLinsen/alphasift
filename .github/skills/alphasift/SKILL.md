@@ -70,10 +70,11 @@ alphasift evaluate <run_id> --with-price-path --explain
 alphasift patterns list --include-experimental
 alphasift patterns scan --pack-dir data/pack/cn
 alphasift patterns replay --pack-dir data/pack/cn --output-md replay.md
+alphasift patterns replay --pack-dir data/pack/cn --exclude-regimes freezing,ebb --max-overhead-pct 15 --cost-bps 25
 alphasift daily-report --pack-dir data/pack/cn --output-html report.html --push
 alphasift notify status
 alphasift notify test --dry-run
-alphasift mcp
+alphasift mcp   # Exposes 11 tools (incl. alphasift_replay_patterns) & 3 resources (incl. alphasift://patterns)
 alphasift serve --host 127.0.0.1 --port 8765
 ```
 

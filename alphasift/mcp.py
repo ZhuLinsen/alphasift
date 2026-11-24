@@ -22,6 +22,7 @@ from alphasift.markets import get_market
 from alphasift.notify import notify_readiness
 from alphasift.overview import build_overview
 from alphasift.pack import PackError, load_pack, pack_dir
+from alphasift.pattern_replay import load_cn_benchmark, replay_patterns
 from alphasift.patterns import list_patterns, scan_patterns
 from alphasift.pipeline import screen
 from alphasift.store import list_saved_runs
@@ -59,6 +60,41 @@ def _optional_str(args: dict[str, Any], key: str) -> str:
     if not isinstance(val, str):
         raise ValueError(f"Parameter {key!r} must be a string")
     return val.strip()
+
+
+def _optional_float(
+    args: dict[str, Any],
+    key: str,
+    *,
+    default: float | None,
+    minimum: float,
+    maximum: float,
+    exclusive_min: bool = False,
+) -> float | None:
+    if key not in args or args[key] is None:
+        return default
+    raw = args[key]
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        raise ValueError(f'Parameter {key!r} must be a number, got {type(raw).__name__}')
+    val = float(raw)
+    if not math.isfinite(val):
+        raise ValueError(f'Parameter {key!r} must be finite')
+    if (val <= minimum if exclusive_min else val < minimum) or val > maximum:
+        op = '>' if exclusive_min else '>='
+        raise ValueError(f'Parameter {key!r} must satisfy {op} {minimum} and <= {maximum}')
+    return val
+
+
+def _optional_str_list(args: dict[str, Any], key: str, *, max_items: int = 16) -> list[str] | None:
+    if key not in args or args[key] is None:
+        return None
+    raw = args[key]
+    if not isinstance(raw, list) or not all(isinstance(x, str) for x in raw):
+        raise ValueError(f'Parameter {key!r} must be a list of strings')
+    items = [x.strip() for x in raw if x.strip()]
+    if len(items) > max_items:
+        raise ValueError(f'Too many entries in {key!r} (max {max_items})')
+    return items or None
 
 
 def _require_str(args: dict[str, Any], key: str) -> str:
@@ -204,6 +240,54 @@ def _tool_definitions() -> list[dict[str, Any]]:
             },
         },
         {
+            "name": "alphasift_replay_patterns",
+            "description": (
+                "Replay CN chart patterns point-in-time on the local CN DailyPack with next_open fills "
+                "and zero-snooping H1->H2 Walk-Forward (Regime x Overhead) audit."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "patterns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of built-in pattern names.",
+                    },
+                    "warmup_days": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 200,
+                        "default": 60,
+                        "description": "Warmup sessions before evaluating signals (10-200).",
+                    },
+                    "cost_bps": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 200,
+                        "default": 25.0,
+                        "description": "Round-trip trading cost in bps (0-200).",
+                    },
+                    "allowed_regimes": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional permitted regime stages (e.g. startup, main_up).",
+                    },
+                    "excluded_regimes": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional excluded regime stages (e.g. freezing, ebb).",
+                    },
+                    "max_overhead_pct": {
+                        "type": "number",
+                        "minimum": 0.1,
+                        "maximum": 100.0,
+                        "description": "Keep only signals with top-10% overhead supply strictly below this % (e.g. 15).",
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
             "name": "alphasift_overview",
             "description": "Build the AlphaSift operational overview (strategies, source health, history, performance).",
             "inputSchema": {
@@ -272,6 +356,7 @@ class MCPServer:
             "alphasift_screen": self._handle_screen,
             "alphasift_list_patterns": self._handle_list_patterns,
             "alphasift_scan_patterns": self._handle_scan_patterns,
+            "alphasift_replay_patterns": self._handle_replay_patterns,
             "alphasift_overview": self._handle_overview,
             "alphasift_doctor_data_sources": self._handle_doctor_data_sources,
             "alphasift_notify_status": self._handle_notify_status,
@@ -338,43 +423,101 @@ class MCPServer:
         include_exp = _optional_bool(args, "include_experimental", False)
         return {"patterns": [asdict(item) for item in list_patterns(include_experimental=include_exp)]}
 
-    def _handle_scan_patterns(self, args: dict[str, Any]) -> Any:
-        raw_patterns = args.get("patterns")
-        patterns: list[str] | None = None
-        if raw_patterns is not None:
-            if not isinstance(raw_patterns, list) or not all(isinstance(p, str) for p in raw_patterns):
-                raise ValueError("Parameter 'patterns' must be a list of strings.")
-            known = {spec.name for spec in list_patterns(include_experimental=True)}
-            selected: list[str] = []
-            seen: set[str] = set()
-            for raw_item in raw_patterns:
-                cleaned = raw_item.strip()
-                if not cleaned:
-                    continue
-                if "/" in cleaned or "\\" in cleaned or ".." in cleaned or cleaned not in known:
-                    raise ValueError(f"Unknown or unsafe pattern name: {cleaned!r}")
-                if cleaned not in seen:
-                    seen.add(cleaned)
-                    selected.append(cleaned)
-            if len(selected) > _MAX_PATTERN_SELECTION:
-                raise ValueError(f"Too many patterns requested (max {_MAX_PATTERN_SELECTION})")
-            patterns = selected or None
+    def _validate_pattern_names(self, raw_patterns: Any) -> list[str] | None:
+        if raw_patterns is None:
+            return None
+        if not isinstance(raw_patterns, list) or not all(isinstance(p, str) for p in raw_patterns):
+            raise ValueError("Parameter 'patterns' must be a list of strings.")
+        known = {spec.name for spec in list_patterns(include_experimental=True)}
+        selected: list[str] = []
+        seen: set[str] = set()
+        for raw_item in raw_patterns:
+            cleaned = raw_item.strip()
+            if not cleaned:
+                continue
+            if "/" in cleaned or "\\" in cleaned or ".." in cleaned or cleaned not in known:
+                raise ValueError(f"Unknown or unsafe pattern name: {cleaned!r}")
+            if cleaned not in seen:
+                seen.add(cleaned)
+                selected.append(cleaned)
+        if len(selected) > _MAX_PATTERN_SELECTION:
+            raise ValueError(f"Too many patterns requested (max {_MAX_PATTERN_SELECTION})")
+        return selected or None
 
-        trade_date = _optional_str(args, "trade_date") or None
-        include_exp = _optional_bool(args, "include_experimental", False)
+    def _load_cn_pack(self) -> Any:
         try:
-            daily_pack = load_pack(pack_dir(self.config))
+            return load_pack(pack_dir(self.config))
         except (OSError, PackError, ValueError) as exc:
             raise RuntimeError(
                 f"CN DailyPack unavailable: {type(exc).__name__}. "
                 "Build a pack with `alphasift pack build` first."
             ) from exc
+
+    def _handle_scan_patterns(self, args: dict[str, Any]) -> Any:
+        patterns = self._validate_pattern_names(args.get("patterns"))
+        trade_date = _optional_str(args, "trade_date") or None
+        include_exp = _optional_bool(args, "include_experimental", False)
+        daily_pack = self._load_cn_pack()
         return scan_patterns(
             daily_pack,
             patterns=patterns,
             trade_date=trade_date,
             include_experimental=include_exp,
         ).to_dict()
+
+    def _handle_replay_patterns(self, args: dict[str, Any]) -> Any:
+        patterns = self._validate_pattern_names(args.get("patterns"))
+        warmup_days = _clamp_int(args.get("warmup_days"), default=60, minimum=10, maximum=200)
+        cost_bps = _optional_float(args, "cost_bps", default=25.0, minimum=0.0, maximum=200.0)
+        assert cost_bps is not None
+        allowed_regimes = _optional_str_list(args, "allowed_regimes", max_items=16)
+        excluded_regimes = _optional_str_list(args, "excluded_regimes", max_items=16)
+        max_overhead_pct = _optional_float(
+            args,
+            "max_overhead_pct",
+            default=None,
+            minimum=0.0,
+            maximum=100.0,
+            exclusive_min=True,
+        )
+        daily_pack = self._load_cn_pack()
+        bench = load_cn_benchmark(lookback_days=max(len(daily_pack.dates) + 40, 320))
+        report = replay_patterns(
+            daily_pack,
+            patterns=patterns,
+            benchmark_df=bench,
+            warmup_days=warmup_days,
+            cost_bps=cost_bps,
+            allowed_regimes=allowed_regimes,
+            excluded_regimes=excluded_regimes,
+            max_overhead_pct=max_overhead_pct,
+        )
+        return {
+            "generated_at": report.get("generated_at"),
+            "entry_mode": report.get("entry_mode"),
+            "benchmark": report.get("benchmark"),
+            "cost_bps": report.get("cost_bps"),
+            "regime_filter": report.get("regime_filter"),
+            "overhead_filter": report.get("overhead_filter"),
+            "graduation_rule": report.get("graduation_rule"),
+            "pack_summary": report.get("pack_summary"),
+            "universe_baseline": report.get("universe_baseline"),
+            "patterns": [
+                {
+                    "pattern": item.get("pattern"),
+                    "display_name": item.get("display_name"),
+                    "family": item.get("family"),
+                    "mode": item.get("mode"),
+                    "total_signals": item.get("total_signals"),
+                    "untradable_share_pct": item.get("untradable_share_pct"),
+                    "horizons": item.get("horizons"),
+                    "graduation": item.get("graduation"),
+                    "stability": item.get("stability"),
+                    "walk_forward_regime_audit": item.get("walk_forward_regime_audit"),
+                }
+                for item in (report.get("patterns") or [])
+            ],
+        }
 
     def _handle_overview(self, args: dict[str, Any]) -> Any:
         strategy = _optional_str(args, "strategy") or None
@@ -555,6 +698,12 @@ class MCPServer:
                         "description": "Complete catalog of built-in screening strategies.",
                         "mimeType": "application/json",
                     },
+                    {
+                        "uri": "alphasift://patterns",
+                        "name": "AlphaSift Pattern Catalog",
+                        "description": "Complete catalog of stateless empirical K-line & trend pattern specs.",
+                        "mimeType": "application/json",
+                    },
                 ]
             }
         if method == "resources/read":
@@ -566,6 +715,17 @@ class MCPServer:
                 return {"contents": [{"uri": uri, "mimeType": "text/markdown", "text": text}]}
             if uri == "alphasift://strategies":
                 payload = {"strategies": [asdict(item) for item in list_strategies(self.config.strategies_dir)]}
+                return {
+                    "contents": [
+                        {
+                            "uri": uri,
+                            "mimeType": "application/json",
+                            "text": json.dumps(_json_safe(payload), ensure_ascii=False, indent=2, allow_nan=False),
+                        }
+                    ]
+                }
+            if uri == "alphasift://patterns":
+                payload = {"patterns": [asdict(item) for item in list_patterns(include_experimental=True)]}
                 return {
                     "contents": [
                         {

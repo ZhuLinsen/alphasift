@@ -37,11 +37,12 @@ def test_mcp_initialize_tools_and_resources(tmp_path):
         "alphasift_doctor_data_sources",
         "alphasift_notify_status",
         "alphasift_list_runs",
+        "alphasift_replay_patterns",
     }
 
     res_list = server.handle_request({"jsonrpc": "2.0", "id": 4, "method": "resources/list"})
     uris = {item["uri"] for item in res_list["result"]["resources"]}
-    assert uris == {"alphasift://skill", "alphasift://strategies"}
+    assert uris == {"alphasift://skill", "alphasift://strategies", "alphasift://patterns"}
 
     skill_res = server.handle_request(
         {"jsonrpc": "2.0", "id": 5, "method": "resources/read", "params": {"uri": "alphasift://skill"}}
@@ -53,6 +54,12 @@ def test_mcp_initialize_tools_and_resources(tmp_path):
     )
     strat_catalog = json.loads(strat_res["result"]["contents"][0]["text"])
     assert len(strat_catalog["strategies"]) >= 8
+
+    pat_res = server.handle_request(
+        {"jsonrpc": "2.0", "id": 61, "method": "resources/read", "params": {"uri": "alphasift://patterns"}}
+    )
+    pat_catalog = json.loads(pat_res["result"]["contents"][0]["text"])
+    assert len(pat_catalog["patterns"]) >= 9
 
 
 def test_mcp_tool_calls_and_safety_guards(tmp_path, monkeypatch):
@@ -196,7 +203,7 @@ def test_mcp_stdio_subprocess_supports_line_and_content_length_framing(tmp_path)
         decoded_msgs.append(json.loads(raw[body_start : body_start + length].decode("utf-8")))
         pos = body_start + length
     assert [m["id"] for m in decoded_msgs] == [10, 11]
-    assert len(decoded_msgs[1]["result"]["tools"]) == 10
+    assert len(decoded_msgs[1]["result"]["tools"]) == 11
 
 
 def test_mcp_round9_security_and_strict_schema_validation(tmp_path):
@@ -310,3 +317,99 @@ def test_mcp_reads_skill_markdown_from_user_base_fallback(monkeypatch, tmp_path)
     server = MCPServer(Config(data_dir=tmp_path))
     assert server._read_skill_markdown() == "# User Base Skill\n"
 
+
+
+def test_mcp_replay_patterns_tool_and_validation_guards(tmp_path, monkeypatch):
+    class _DummyPack:
+        dates = ["2026-02-01", "2026-06-01", "2026-11-01"]
+
+    captured: dict[str, object] = {}
+
+    def _fake_load_pack(_path):
+        return _DummyPack()
+
+    def _fake_load_cn_benchmark(*, lookback_days):
+        captured["lookback_days"] = lookback_days
+        return "BENCH"
+
+    def _fake_replay_patterns(daily_pack, **kwargs):
+        captured["kwargs"] = kwargs
+        return {
+            "generated_at": "2026-11-24T15:00:00Z",
+            "entry_mode": "next_open",
+            "benchmark": "sh000300",
+            "cost_bps": kwargs["cost_bps"],
+            "regime_filter": {"active": True, "effective_regimes": ["startup", "main_up"]},
+            "overhead_filter": {"active": True, "max_overhead_pct": kwargs["max_overhead_pct"]},
+            "graduation_rule": {"min_samples": 200},
+            "pack_summary": {"eval_sessions": 180},
+            "universe_baseline": {"t5": {"equal_weight_excess_mean_pct": -0.3}},
+            "patterns": [
+                {
+                    "pattern": "bottom_volume_yang",
+                    "display_name": "底部倍量阳",
+                    "family": "bottom_reversal",
+                    "mode": "direct",
+                    "total_signals": 82,
+                    "untradable_share_pct": 1.2,
+                    "horizons": {"t5": {"net_excess_mean_pct": 2.8}},
+                    "graduation": {"recommended_status": "experimental"},
+                    "stability": {"t_stat": 1.07},
+                    "walk_forward_regime_audit": {
+                        "h2_non_adverse_low_overhead": {"days": 16, "signals": 82, "daily_mean_pct": 2.848},
+                    },
+                }
+            ],
+        }
+
+    monkeypatch.setattr("alphasift.mcp.load_pack", _fake_load_pack)
+    monkeypatch.setattr("alphasift.mcp.load_cn_benchmark", _fake_load_cn_benchmark)
+    monkeypatch.setattr("alphasift.mcp.replay_patterns", _fake_replay_patterns)
+
+    server = MCPServer(Config(data_dir=tmp_path))
+    ok = server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 100,
+        "method": "tools/call",
+        "params": {
+            "name": "alphasift_replay_patterns",
+            "arguments": {
+                "patterns": ["bottom_volume_yang"],
+                "excluded_regimes": ["freezing"],
+                "max_overhead_pct": 15.0,
+                "cost_bps": 25.0,
+            },
+        },
+    })
+    assert ok["result"]["isError"] is False
+    assert captured["lookback_days"] == 320
+    assert captured["kwargs"] == {
+        "patterns": ["bottom_volume_yang"],
+        "benchmark_df": "BENCH",
+        "warmup_days": 60,
+        "cost_bps": 25.0,
+        "allowed_regimes": None,
+        "excluded_regimes": ["freezing"],
+        "max_overhead_pct": 15.0,
+    }
+    body = json.loads(ok["result"]["content"][0]["text"])
+    assert body["overhead_filter"] == {"active": True, "max_overhead_pct": 15.0}
+    assert body["patterns"][0]["walk_forward_regime_audit"]["h2_non_adverse_low_overhead"]["daily_mean_pct"] == 2.848
+
+    for idx, bad_args in enumerate(
+        [
+            {"max_overhead_pct": 0},
+            {"max_overhead_pct": True},
+            {"cost_bps": -1},
+            {"patterns": ["../evil"]},
+            {"excluded_regimes": "freezing"},
+        ],
+        start=101,
+    ):
+        err = server.handle_request({
+            "jsonrpc": "2.0",
+            "id": idx,
+            "method": "tools/call",
+            "params": {"name": "alphasift_replay_patterns", "arguments": bad_args},
+        })
+        assert err["result"]["isError"] is True, bad_args
