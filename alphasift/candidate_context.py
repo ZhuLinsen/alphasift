@@ -9,6 +9,8 @@ import inspect
 import json
 from pathlib import Path
 import re
+import threading
+import time
 
 import pandas as pd
 import requests
@@ -89,6 +91,58 @@ _SOURCE_WEIGHTS = {
     "fund_flow": 0.75,
 }
 _DEFAULT_MAX_WORKERS = 6
+_PROVIDER_COOLDOWN_SEC = 300.0
+_RATE_LIMIT_ERROR_MARKERS = (
+    "限流",
+    "断开了连接",
+    "remotedisconnected",
+    "connection aborted",
+    "connection reset",
+    "too many requests",
+    "429",
+)
+_PROVIDER_COOLDOWN_UNTIL: dict[str, float] = {}
+_PROVIDER_COOLDOWN_LOCK = threading.Lock()
+_FUND_FLOW_CALL_LOCK = threading.Lock()
+_FUND_FLOW_COOLDOWN_SENTINEL = "fund_flow: skipped (provider cooldown active)"
+
+
+def reset_provider_cooldowns() -> None:
+    """Clear in-process provider rate-limit cooldown state (useful in tests)."""
+    with _PROVIDER_COOLDOWN_LOCK:
+        _PROVIDER_COOLDOWN_UNTIL.clear()
+
+
+def _is_rate_limit_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return any(marker in msg for marker in _RATE_LIMIT_ERROR_MARKERS)
+
+
+def _provider_in_cooldown(provider: str, *, now: float | None = None) -> bool:
+    current = time.monotonic() if now is None else now
+    with _PROVIDER_COOLDOWN_LOCK:
+        until = _PROVIDER_COOLDOWN_UNTIL.get(provider, 0.0)
+        if until > current:
+            return True
+        if provider in _PROVIDER_COOLDOWN_UNTIL:
+            _PROVIDER_COOLDOWN_UNTIL.pop(provider, None)
+        return False
+
+
+def _trip_provider_cooldown(
+    provider: str,
+    *,
+    cooldown_sec: float = _PROVIDER_COOLDOWN_SEC,
+    now: float | None = None,
+) -> None:
+    current = time.monotonic() if now is None else now
+    until = current + max(float(cooldown_sec), 0.0)
+    with _PROVIDER_COOLDOWN_LOCK:
+        _PROVIDER_COOLDOWN_UNTIL[provider] = max(_PROVIDER_COOLDOWN_UNTIL.get(provider, 0.0), until)
+
+
+def _format_provider_error(exc: Exception, *, max_len: int = 120) -> str:
+    return _compress_text(str(exc), max_len=max_len) or type(exc).__name__
 
 
 def collect_candidate_context(
@@ -163,14 +217,24 @@ def collect_candidate_context(
                     results[index] = (None, [f"{tasks[index]['code']} context: {exc}"])
 
     rows: list[dict[str, object]] = []
-    errors: list[str] = []
+    raw_errors: list[str] = []
     for result in results:
         if result is None:
             continue
         row, row_errors = result
-        errors.extend(row_errors)
+        raw_errors.extend(row_errors)
         if row is not None:
             rows.append(row)
+
+    errors: list[str] = []
+    cooldown_skipped = 0
+    for err in raw_errors:
+        if _FUND_FLOW_COOLDOWN_SENTINEL in err:
+            cooldown_skipped += 1
+            continue
+        errors.append(err)
+    if cooldown_skipped:
+        errors.append(f"fund_flow: provider cooldown active (skipped {cooldown_skipped} candidates)")
     return rows, errors
 
 
@@ -219,12 +283,18 @@ def _collect_candidate_context_row(
             except Exception as exc:
                 errors.append(f"{code} announcement: {exc}")
         if "fund_flow" in providers or "fundflow" in providers:
-            try:
-                row["fund_flow"] = fetch_stock_fund_flow_summary(code)
-                if row["fund_flow"]:
-                    successful_sources.append("fund_flow")
-            except Exception as exc:
-                errors.append(f"{code} fund_flow: {exc}")
+            with _FUND_FLOW_CALL_LOCK:
+                if _provider_in_cooldown("fund_flow"):
+                    errors.append(f"{code} {_FUND_FLOW_COOLDOWN_SENTINEL}")
+                else:
+                    try:
+                        row["fund_flow"] = fetch_stock_fund_flow_summary(code)
+                        if row["fund_flow"]:
+                            successful_sources.append("fund_flow")
+                    except Exception as exc:
+                        if _is_rate_limit_error(exc):
+                            _trip_provider_cooldown("fund_flow")
+                        errors.append(f"{code} fund_flow: {_format_provider_error(exc)}")
         if "quote" in providers:
             try:
                 row["quote"] = fetch_stock_quote_summary(code)
