@@ -230,6 +230,8 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
         "site/daily_report.html",
         "universe_baseline",
         "by_overhead_supply",
+        "walk_forward_regime_audit",
+        "walk-forward-wrap",
         "muted-cell",
         "site/patterns.json",
         "site/report.json",

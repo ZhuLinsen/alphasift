@@ -830,6 +830,7 @@ footer {
         <div id="replay-summary-wrap"><div class="empty" data-i18n="no_replay_yet">暂无 250 日形态回放结果</div></div>
         <div id="regime-slice-wrap"></div>
         <div id="overhead-slice-wrap"></div>
+        <div id="walk-forward-wrap"></div>
       </div>
     </details>
   </section>
@@ -1055,6 +1056,9 @@ const I18N = {
     sl_subhead: "形态 × 市场阶段切片（带 * 且置灰表示样本 &lt; {n}）",
     ov_head_lbl: "形态 × 上方套牢盘切片（T+5 匹配样本 / 超额 / 胜率）",
     ov_subhead: "形态 × 上方 10% 套牢筹码切片（带 * 且置灰表示样本 &lt; {n}）",
+    wf_subhead: "Walk-Forward 情绪门控样本外检验（仅 H1 选阶段 → 冻结检验 H2）",
+    wf_cols: ["形态", "H1 正超额阶段", "H1 剔除逆风", "H2 基线 (日数)", "H2 仅正阶段 (OOS)", "Δ 正阶段", "H2 剔逆风 (OOS)", "Δ 剔逆风"],
+    wf_none: "无",
     chart_empty: "该市场 T+{w} 所选赛道还没有到期的选股",
     chart_tip_excess: "超额",
     chart_tip_picks: "{n} 只",
@@ -1303,6 +1307,9 @@ const I18N = {
     sl_subhead: "Regime Slices (* & muted = matched N < {n})",
     ov_head_lbl: "Pattern × Top-10% Overhead Supply (T+5 Matched / Excess / Win Rate)",
     ov_subhead: "Overhead Supply Slices (* & muted = matched N < {n})",
+    wf_subhead: "Walk-Forward Regime Gate (Zero-Snooping: H1 Selection → H2 OOS)",
+    wf_cols: ["Pattern", "H1 Positive Regimes", "H1 Adverse Excluded", "H2 Baseline", "H2 Positive Only (OOS)", "Delta Pos", "H2 Non-Adverse (OOS)", "Delta Non-Adv"],
+    wf_none: "None",
     chart_empty: "No matured T+{w} picks for the selected market/track",
     chart_tip_excess: "Excess",
     chart_tip_picks: "{n} picks",
@@ -1551,6 +1558,9 @@ const I18N = {
     sl_subhead: "市場局面スライス（* と薄字は標本 &lt; {n}）",
     ov_head_lbl: "パターン × 上値10%しこり玉（T+5 一致 / 超過 / 勝率）",
     ov_subhead: "上値しこり玉スライス（* と薄字は標本 &lt; {n}）",
+    wf_subhead: "Walk-Forward 相場局面ゲート（H1のみで選択 → H2でOOS検証）",
+    wf_cols: ["パターン", "H1 正超過局面", "H1 逆風除外", "H2 基準", "H2 正局面のみ (OOS)", "Δ 正局面", "H2 非逆風 (OOS)", "Δ 除外後"],
+    wf_none: "なし",
     chart_empty: "選択した市場・トラックで満期到来の T+{w} 銘柄がありません",
     chart_tip_excess: "超過",
     chart_tip_picks: "{n} 銘柄",
@@ -2992,11 +3002,44 @@ function renderPatternRadar() {
     } else {
       $("overhead-slice-wrap").innerHTML = "";
     }
+
+    const hasWf = replay.patterns.some((p) => p.walk_forward_regime_audit && typeof p.walk_forward_regime_audit === "object");
+    if (hasWf) {
+      const wcols = t("wf_cols");
+      const wfHead = `<thead><tr><th class="l">${esc(wcols[0])}</th><th class="l">${esc(wcols[1])}</th><th class="l">${esc(wcols[2])}</th><th>${esc(wcols[3])}</th><th>${esc(wcols[4])}</th><th>${esc(wcols[5])}</th><th>${esc(wcols[6])}</th><th>${esc(wcols[7])}</th></tr></thead>`;
+      const fmtStages = (arr) => (Array.isArray(arr) && arr.length ? esc(arr.map((s) => rname(s)).join(" / ")) : `<span class="dim">${esc(t("wf_none"))}</span>`);
+      const fmtH2 = (blk) => {
+        if (!blk || !blk.days) return '<span class="dim">–</span>';
+        return `${pct(blk.daily_mean_pct)} <span class="dim small">(${esc(String(blk.days))}d)</span>`;
+      };
+      const wfRows = replay.patterns.map((p) => {
+        const wf = p.walk_forward_regime_audit || {};
+        const h2Base = wf.h2_baseline || {};
+        const h2Pos = wf.h2_positive_only || {};
+        const h2Na = wf.h2_non_adverse || {};
+        const mutedRow = wf.status !== "ok" ? "low-sample" : "";
+        return `<tr class="${mutedRow}">
+          <td class="l">${esc(pname(p.pattern, p.display_name))}</td>
+          <td class="l small">${fmtStages(wf.h1_positive_regimes)}</td>
+          <td class="l small">${fmtStages(wf.h1_adverse_regimes)}</td>
+          <td class="mono">${fmtH2(h2Base)}</td>
+          <td class="mono">${fmtH2(h2Pos)}</td>
+          <td class="mono"><b>${pct(wf.delta_positive_vs_h2_baseline_pct)}</b></td>
+          <td class="mono">${fmtH2(h2Na)}</td>
+          <td class="mono"><b>${pct(wf.delta_non_adverse_vs_h2_baseline_pct)}</b></td>
+        </tr>`;
+      }).join("");
+      $("walk-forward-wrap").innerHTML = `<h3 class="subhead">${esc(t("wf_subhead"))}</h3>
+        <div class="panel scroll"><table class="compact-tbl">${wfHead}<tbody>${wfRows}</tbody></table></div>`;
+    } else {
+      $("walk-forward-wrap").innerHTML = "";
+    }
   } else {
     $("universe-baseline-wrap").innerHTML = "";
     $("replay-summary-wrap").innerHTML = `<div class="empty">${esc(t("pat_no_replay"))}</div>`;
     $("regime-slice-wrap").innerHTML = "";
     $("overhead-slice-wrap").innerHTML = "";
+    $("walk-forward-wrap").innerHTML = "";
   }
 }
 
