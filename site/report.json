@@ -8,7 +8,7 @@
   "stale_reason": null,
   "detail_url": "",
   "market": "cn",
-  "generated_at": "2026-11-24T14:32:49.215353+00:00",
+  "generated_at": "2026-11-24T15:31:24.922469+00:00",
   "usage_policy": "cn_only_regime_slice_only",
   "strategy_display_names": {
     "balanced_alpha": "均衡多因子",
@@ -2415,7 +2415,18 @@
         ],
         "replay_t5_net_excess_pct": -0.54,
         "replay_t5_win_rate_pct": 42.4,
-        "replay_samples": 1541
+        "replay_samples": 1541,
+        "wf_h1_adverse_regimes": [
+          "freezing",
+          "startup",
+          "divergence",
+          "ebb",
+          "neutral"
+        ],
+        "wf_non_adverse_low_overhead_pct": 2.85,
+        "wf_non_adverse_low_overhead_days": 16,
+        "wf_joint_delta_pct": 2.13,
+        "wf_today_adverse": true
       },
       {
         "pattern": "box_breakout",
@@ -3850,7 +3861,15 @@
         ],
         "replay_t5_net_excess_pct": -0.61,
         "replay_t5_win_rate_pct": 40.9,
-        "replay_samples": 5099
+        "replay_samples": 5099,
+        "wf_h1_adverse_regimes": [
+          "freezing",
+          "divergence"
+        ],
+        "wf_non_adverse_low_overhead_pct": -1.27,
+        "wf_non_adverse_low_overhead_days": 56,
+        "wf_joint_delta_pct": -0.17,
+        "wf_today_adverse": true
       },
       {
         "pattern": "double_bottom_breakout",
@@ -4291,7 +4310,15 @@
         ],
         "replay_t5_net_excess_pct": -0.41,
         "replay_t5_win_rate_pct": 41.0,
-        "replay_samples": 1218
+        "replay_samples": 1218,
+        "wf_h1_adverse_regimes": [
+          "freezing",
+          "neutral"
+        ],
+        "wf_non_adverse_low_overhead_pct": 0.24,
+        "wf_non_adverse_low_overhead_days": 60,
+        "wf_joint_delta_pct": 0.78,
+        "wf_today_adverse": false
       },
       {
         "pattern": "ma20_shrink_pullback",
@@ -5726,7 +5753,18 @@
         ],
         "replay_t5_net_excess_pct": 0.0,
         "replay_t5_win_rate_pct": 45.1,
-        "replay_samples": 2281
+        "replay_samples": 2281,
+        "wf_h1_adverse_regimes": [
+          "freezing",
+          "main_up",
+          "divergence",
+          "ebb",
+          "neutral"
+        ],
+        "wf_non_adverse_low_overhead_pct": -0.38,
+        "wf_non_adverse_low_overhead_days": 14,
+        "wf_joint_delta_pct": -1.31,
+        "wf_today_adverse": true
       },
       {
         "pattern": "shooting_star_confirm",
@@ -6025,7 +6063,18 @@
         ],
         "replay_t5_net_excess_pct": -1.64,
         "replay_t5_win_rate_pct": 37.4,
-        "replay_samples": 1009
+        "replay_samples": 1009,
+        "wf_h1_adverse_regimes": [
+          "freezing",
+          "startup",
+          "main_up",
+          "divergence",
+          "ebb"
+        ],
+        "wf_non_adverse_low_overhead_pct": 1.21,
+        "wf_non_adverse_low_overhead_days": 8,
+        "wf_joint_delta_pct": 1.67,
+        "wf_today_adverse": true
       },
       {
         "pattern": "single_yang_hold",
@@ -7460,7 +7509,16 @@
         ],
         "replay_t5_net_excess_pct": -0.56,
         "replay_t5_win_rate_pct": 43.2,
-        "replay_samples": 9382
+        "replay_samples": 9382,
+        "wf_h1_adverse_regimes": [
+          "freezing",
+          "divergence",
+          "neutral"
+        ],
+        "wf_non_adverse_low_overhead_pct": -1.83,
+        "wf_non_adverse_low_overhead_days": 43,
+        "wf_joint_delta_pct": -0.66,
+        "wf_today_adverse": true
       },
       {
         "pattern": "steady_trend_breakout",
@@ -7617,7 +7675,17 @@
         ],
         "replay_t5_net_excess_pct": 0.12,
         "replay_t5_win_rate_pct": 46.8,
-        "replay_samples": 453
+        "replay_samples": 453,
+        "wf_h1_adverse_regimes": [
+          "freezing",
+          "main_up",
+          "divergence",
+          "neutral"
+        ],
+        "wf_non_adverse_low_overhead_pct": -0.46,
+        "wf_non_adverse_low_overhead_days": 16,
+        "wf_joint_delta_pct": -0.58,
+        "wf_today_adverse": true
       },
       {
         "pattern": "three_white_soldiers",
@@ -7631,7 +7699,19 @@
         "signals": [],
         "replay_t5_net_excess_pct": 0.22,
         "replay_t5_win_rate_pct": 48.3,
-        "replay_samples": 1321
+        "replay_samples": 1321,
+        "wf_h1_adverse_regimes": [
+          "freezing",
+          "startup",
+          "main_up",
+          "divergence",
+          "ebb",
+          "neutral"
+        ],
+        "wf_non_adverse_low_overhead_pct": null,
+        "wf_non_adverse_low_overhead_days": 0,
+        "wf_joint_delta_pct": null,
+        "wf_today_adverse": true
       },
       {
         "pattern": "three_white_soldiers_pullback",
@@ -7645,18 +7725,300 @@
         "signals": [],
         "replay_t5_net_excess_pct": 0.16,
         "replay_t5_win_rate_pct": 44.9,
-        "replay_samples": 847
+        "replay_samples": 847,
+        "wf_h1_adverse_regimes": [
+          "freezing",
+          "main_up",
+          "divergence",
+          "neutral"
+        ],
+        "wf_non_adverse_low_overhead_pct": -1.8,
+        "wf_non_adverse_low_overhead_days": 18,
+        "wf_joint_delta_pct": -1.79,
+        "wf_today_adverse": true
       }
     ]
   },
   "announcement_risks": {
     "checked_count": 20,
     "flagged_count": 0,
-    "by_code": {},
+    "by_code": {
+      "002432": {
+        "code": "002432",
+        "name": "九安医疗",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-21 关于召开2026年第三次临时股东会的通知 | 2026-11-21 第七届董事会第十次会议决议公告 | 2026-11-21 关于出售已回购股份结果、股份变动及注销已回购股份的公告",
+        "matched_announcement": "关于召开2026年第三次临时股东会的通知",
+        "announcement_date": "2026-11-21",
+        "days_ago": 3,
+        "recency": "recent",
+        "consensus_count": 2
+      },
+      "688169": {
+        "code": "688169",
+        "name": "石头科技",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-03 北京石头世纪科技股份有限公司关于以集中竞价交易方式回购公司股份的进展公告 | 2026-10-31 北京石头世纪科技股份有限公司关于开展外汇套期保值业务的公告 | 2026-10-31 北京石头世纪科技股份有限公司2026年第三季度报告",
+        "matched_announcement": "北京石头世纪科技股份有限公司关于以集中竞价交易方式回购公司股份的进展公告",
+        "announcement_date": "2026-11-03",
+        "days_ago": 21,
+        "recency": "mid",
+        "consensus_count": 2
+      },
+      "600901": {
+        "code": "600901",
+        "name": "江苏金租",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-24 江苏金租：江苏世纪同仁律师事务所关于江苏金融租赁股份有限公司2026年第二次临时股东会的法律意见书 | 2026-11-24 江苏金租：2026年第二次临时股东会决议公告 | 2026-11-24 江苏金租：北京市中伦（上海）律师事务所关于中证中小投资者服务中心有限责任公司公开征集江苏金融租赁股份有限公司投票权的法律意见书",
+        "matched_announcement": "江苏金租：江苏世纪同仁律师事务所关于江苏金融租赁股份有限公司2026年第二次临时股东会的法律意见书",
+        "announcement_date": "2026-11-24",
+        "days_ago": 0,
+        "recency": "recent",
+        "consensus_count": 2
+      },
+      "601689": {
+        "code": "601689",
+        "name": "拓普集团",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "业绩"
+        ],
+        "announcement_summary": "2026-11-11 拓普集团2026年三季报业绩说明会预告公告 | 2026-11-10 拓普集团关于发行境外上市股份（H股）获得中国证监会备案的公告 | 2026-10-30 拓普集团2026年第三季度报告",
+        "matched_announcement": "拓普集团2026年三季报业绩说明会预告公告",
+        "announcement_date": "2026-11-11",
+        "days_ago": 13,
+        "recency": "mid",
+        "consensus_count": 2
+      },
+      "002738": {
+        "code": "002738",
+        "name": "中矿资源",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "诉讼担保"
+        ],
+        "announcement_summary": "2026-11-20 中矿资源集团股份有限公司关于控股股东、实际控制人及其一致行动人权益变动触及1%及5%整数倍暨披露权益变动报告书的提示性公告 | 2026-11-20 简式权益变动报告书（中色矿业及其一致行动人） | 2026-11-13 关于为子公司提供担保的公告",
+        "matched_announcement": "中矿资源集团股份有限公司关于控股股东、实际控制人及其一致行动人权益变动触及1%及5%整数倍暨披露权益变动报告书的提示性公告",
+        "announcement_date": "2026-11-20",
+        "days_ago": 4,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "688257": {
+        "code": "688257",
+        "name": "新锐股份",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-20 新锐股份关于以集中竞价交易方式回购公司股份的回购报告书（修订稿） | 2026-11-20 新锐股份关于以集中竞价交易方式回购公司股份的回购报告书 | 2026-11-20 新锐股份第五届董事会第三十一次会议决议公告",
+        "matched_announcement": "新锐股份关于以集中竞价交易方式回购公司股份的回购报告书（修订稿）",
+        "announcement_date": "2026-11-20",
+        "days_ago": 4,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "300394": {
+        "code": "300394",
+        "name": "天孚通信",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持",
+          "重大合同"
+        ],
+        "announcement_summary": "2026-11-23 00:00:00 关于公司签订产业项目投资发展合作协议的公告 | 2026-11-18 18:36:08 关于公司近期经营情况和回购公司股份进展的公告 | 2026-11-18 00:00:00 关于修订H股发行并上市后适用的《公司章程》草案及其附件的公告",
+        "matched_announcement": "关于公司签订产业项目投资发展合作协议的公告",
+        "announcement_date": "2026-11-23",
+        "days_ago": 1,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "601665": {
+        "code": "601665",
+        "name": "齐鲁银行",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-03 齐鲁银行股份有限公司关于高级管理人员任职资格获得核准的公告 | 2026-10-30 齐鲁银行股份有限公司第十届董事会第三次会议决议公告 | 2026-10-30 齐鲁银行股份有限公司2026年第三季度报告",
+        "matched_announcement": "齐鲁银行股份有限公司关于高级管理人员任职资格获得核准的公告",
+        "announcement_date": "2026-11-03",
+        "days_ago": 21,
+        "recency": "mid",
+        "consensus_count": 1
+      },
+      "002223": {
+        "code": "002223",
+        "name": "鱼跃医疗",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持",
+          "股权激励"
+        ],
+        "announcement_summary": "2026-11-18 关于2023年度员工持股计划首次受让部分第三个锁定期和预留受让部分第二个锁定期届满的公告 | 2026-11-04 关于回购公司股份进展的公告 | 2026-10-27 关于公司子公司产品获得美国FDA 510(k)许可的公告",
+        "matched_announcement": "关于2023年度员工持股计划首次受让部分第三个锁定期和预留受让部分第二个锁定期届满的公告",
+        "announcement_date": "2026-11-18",
+        "days_ago": 6,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "000729": {
+        "code": "000729",
+        "name": "燕京啤酒",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-19 关于中证中小投资者服务中心有限责任公司公开征集表决权的公告 | 2026-11-14 关于增加经营范围及修订公司章程的公告 | 2026-11-14 公司章程（修订预案，待股东会审批）",
+        "matched_announcement": "关于中证中小投资者服务中心有限责任公司公开征集表决权的公告",
+        "announcement_date": "2026-11-19",
+        "days_ago": 5,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "600285": {
+        "code": "600285",
+        "name": "羚锐制药",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "业绩"
+        ],
+        "announcement_summary": "2026-11-17 羚锐制药关于获得药品注册证书的公告 | 2026-10-30 羚锐制药2026年第三季度报告 | 2026-10-30 羚锐制药关于召开2026年第三季度业绩说明会的公告",
+        "matched_announcement": "羚锐制药关于获得药品注册证书的公告",
+        "announcement_date": "2026-11-17",
+        "days_ago": 7,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "000703": {
+        "code": "000703",
+        "name": "恒逸石化",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "诉讼担保"
+        ],
+        "announcement_summary": "2026-11-14 关于解除对控股子公司担保责任的进展公告 | 2026-11-13 2026年第六次独立董事专门会议决议 | 2026-11-13 关于新增控股股东向公司提供资金支持额度暨关联交易的公告",
+        "matched_announcement": "关于解除对控股子公司担保责任的进展公告",
+        "announcement_date": "2026-11-14",
+        "days_ago": 10,
+        "recency": "mid",
+        "consensus_count": 1
+      },
+      "600066": {
+        "code": "600066",
+        "name": "宇通客车",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "业绩",
+          "诉讼担保"
+        ],
+        "announcement_summary": "2026-11-10 关于担保计划范围内担保进展的公告 | 2026-11-04 2026年10月份产销数据快报 | 2026-10-15 关于召开2026年第三季度业绩说明会的公告",
+        "matched_announcement": "关于担保计划范围内担保进展的公告",
+        "announcement_date": "2026-11-10",
+        "days_ago": 14,
+        "recency": "mid",
+        "consensus_count": 1
+      },
+      "600312": {
+        "code": "600312",
+        "name": "平高电气",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "重大合同"
+        ],
+        "announcement_summary": "2026-11-17 河南平高电气股份有限公司第九届董事会第二十五次会议决议公告 | 2026-11-04 河南平高电气股份有限公司中标公告 | 2026-10-22 河南平高电气股份有限公司第九届董事会第二十四次会议决议公告",
+        "matched_announcement": "河南平高电气股份有限公司第九届董事会第二十五次会议决议公告",
+        "announcement_date": "2026-11-17",
+        "days_ago": 7,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "600699": {
+        "code": "600699",
+        "name": "均胜电子",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-21 均胜电子关于回购股份事项前十大股东及前十大无限售条件股东持股情况的公告 | 2026-11-10 均胜电子关于回购股份事项前十大股东及前十大无限售条件股东持股情况的公告 | 2026-11-06 均胜电子2026年第三次临时股东会会议资料",
+        "matched_announcement": "均胜电子关于回购股份事项前十大股东及前十大无限售条件股东持股情况的公告",
+        "announcement_date": "2026-11-21",
+        "days_ago": 3,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "601166": {
+        "code": "601166",
+        "name": "兴业银行",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-10-30 兴业银行2026年第三季度报告 | 2026-10-30 兴业银行关于变更会计师事务所的公告 | 2026-10-30 兴业银行第十一届董事会第十七次会议（临时会议）决议公告",
+        "matched_announcement": "兴业银行2026年第三季度报告",
+        "announcement_date": "2026-10-30",
+        "days_ago": 25,
+        "recency": "old",
+        "consensus_count": 1
+      },
+      "300274": {
+        "code": "300274",
+        "name": "阳光电源",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-20 17:10:11 关于回购公司股份的进展公告 | 2026-11-03 17:36:10 关于回购公司股份的进展公告 | 2026-10-31 00:00:00 第六届董事会第四次会议决议公告",
+        "matched_announcement": "关于回购公司股份的进展公告",
+        "announcement_date": "2026-11-20",
+        "days_ago": 4,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "300476": {
+        "code": "300476",
+        "name": "胜宏科技",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "回购增持"
+        ],
+        "announcement_summary": "2026-11-21 00:00:00 关于召开2026年第四次临时股东会的通知 | 2026-11-21 00:00:00 回购股份报告书 | 2026-11-18 18:56:08 关于取得金融机构股票回购专项贷款承诺函的公告",
+        "matched_announcement": "关于召开2026年第四次临时股东会的通知",
+        "announcement_date": "2026-11-21",
+        "days_ago": 3,
+        "recency": "recent",
+        "consensus_count": 1
+      },
+      "601997": {
+        "code": "601997",
+        "name": "贵阳银行",
+        "negative_event_flags": [],
+        "announcement_categories": [],
+        "announcement_summary": "2026-11-11 贵阳银行股份有限公司优先股股息派发实施公告 | 2026-10-31 贵阳银行股份有限公司信息披露事务管理制度（2026年版） | 2026-10-31 贵阳银行股份有限公司第六届董事会2026年度第四次临时会议决议公告",
+        "matched_announcement": "贵阳银行股份有限公司优先股股息派发实施公告",
+        "announcement_date": "2026-11-11",
+        "days_ago": 13,
+        "recency": "mid",
+        "consensus_count": 1
+      },
+      "601128": {
+        "code": "601128",
+        "name": "常熟银行",
+        "negative_event_flags": [],
+        "announcement_categories": [
+          "业绩"
+        ],
+        "announcement_summary": "2026-11-17 江苏常熟农村商业银行股份有限公司2026年第三次临时股东会决议公告 | 2026-11-17 江苏世纪同仁律师事务所关于江苏常熟农村商业银行股份有限公司2026年第三次临时股东会的法律意见书 | 2026-11-12 江苏常熟农村商业银行股份有限公司关于召开2026年第三季度业绩说明会的公告",
+        "matched_announcement": "江苏常熟农村商业银行股份有限公司2026年第三次临时股东会决议公告",
+        "announcement_date": "2026-11-17",
+        "days_ago": 7,
+        "recency": "recent",
+        "consensus_count": 1
+      }
+    },
     "flagged_items": [],
-    "errors": [
-      "announcement screening skipped: announcement risk screening timed out after 25s"
-    ]
+    "errors": []
   },
   "market_news": {
     "items": [
@@ -7761,9 +8123,7 @@
     },
     "errors": []
   },
-  "degradation": [
-    "Announcement screening: announcement screening skipped: announcement risk screening timed out after 25s"
-  ],
+  "degradation": [],
   "non_goals": [
     "量化形态观测与回测基准，非投资建议。",
     "Market regime stage is reporting and slice metadata only; never adjusts strategy weights.",
@@ -8075,20 +8435,20 @@
   "ai_brief": {
     "mode": "llm",
     "model": "gemini-3.8-flash",
-    "headline": "A股处于分歧阶段，全市场中位数收益-0.67%，策略共识聚焦银行与汽车产业链龙头",
-    "regime_interpretation": "2026年11月24日市场定性为分歧阶段。全市场成交额16678.0亿元，上涨个股占比35.01%，涨跌幅中位数为-0.67%，超3200只个股跌幅在0%至-3%之间。非ST涨停55家、跌停2家，封板率仅42.31%，最高连板高度压制在4板，但前日涨停平均溢价达4.09%，资金接力偏向局部。消息面上，海外特斯拉获券商上调目标价及比亚迪海外收购谈判等动态，使高端制造与汽车链维持关注。",
-    "consensus_and_ai_edge": "跨策略共识集中于银行（占比12.3%）与汽车（占比8.8%）。多策略重合个股包括拓普集团、九安医疗、石头科技与江苏金租。AI优化层面：资金热度策略引入天孚通信与拓普集团，剔除四川长虹等；均衡多因子策略增选低PE标的中矿资源与新锐股份；双低选股策略增配抗跌的齐鲁银行以优化稳定性。各策略AI视角普遍强调防范高位硬件回调及金融资产集中度风险。",
+    "headline": "2026年11月24日A股全天成交1.67万亿，盘面进入分歧阶段，上涨个股占比仅35.01%，策略共识偏向银行与汽车防御龙头。",
+    "regime_interpretation": "市场状态定性为分歧，全天成交额16678.0亿元。上涨占比35.01%，涨跌中位数为-0.67%，非ST涨停55家、跌停2家，封板率仅42.31%，连板最高4板，炸板率高且跌幅在0%至-3%区间的股票达3217只，呈现普跌态势。昨日涨停个股今日平均涨幅为4.09%，接力情绪尚存但赚钱效应收窄。盘后比亚迪收购海外工厂等车企动态与瑞银上调特斯拉目标价等海外要闻或对汽车链情绪带来边际扰动，但整体市场流动性承压。",
+    "consensus_and_ai_edge": "行业配置集中于银行（12.3%）与汽车（8.8%）。跨策略共识聚焦于九安医疗、石头科技、江苏金租与拓普集团。AI跟踪显示，在均衡多因子中AI引入中矿资源与新锐股份以强化低估值反转，资金热度中AI纳入天孚通信与拓普集团顺应龙头容量，双低选股中AI替换出齐鲁银行以抗跌防守，整体表现出从高位题材向稳健估值与流动性充裕品种迁移的特征。",
     "risk_warnings": [
-      "拓普集团出现RSI超买及短期超买风险提示，天孚通信存在较高PB估值压力",
-      "九安医疗面临盈利模式持续性存疑提示，策略持仓整体在银行及金融板块集中度偏高"
+      "拓普集团出现RSI短期超买信号，天孚通信存在高PB估值敞口风险",
+      "持仓在银行及金融板块集中度较高，九安医疗存在盈利模式持续性存疑提示，中材科技呈现股价剧烈波动"
     ],
     "watch_points": [
-      "观察全市场成交额能否维持在1.6万亿元上方及封板率是否脱离42.31%低位",
-      "跟踪许继电气、平高电气等实验性单阳不破形态标的的后续动量承接"
+      "观察次日全市场成交额能否维持在1.66万亿以上及炸板率（42.31%封板率）能否改善",
+      "跟踪许继电气与平高电气的单阳不破形态能否形成多头持续性，以及非ST涨跌停比值变化"
     ],
     "disclaimer": "仅供量化研究与复盘观察，不构成投资建议。",
     "fallback_reason": null
   },
-  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-24)**\n> 盘面 **分歧**｜上涨 35.0% · 中位 -0.67%｜涨跌停 55/2（封板 42.3%）｜最高 4板 · 昨涨停 +4.09% · 成交 16,678亿\n**⚠️ 公告排雷**：抽检 20 只（降级：announcement screening skipped: announce）\n**策略与 [AI]**：规则 10 组(45只) / [AI] 9 组(45只)，AI调仓 +12/-12（市场结构性分化明显，宜精选低估值修复且有回购或产业催化支撑的标的。）\n**多策略共识(4)**：002432 九安医疗(2策略)、688169 石头科技(2策略)、600901 江苏金租(2策略)、601689 拓普集团(2策略)\n**[AI] 简评**：A股处于分歧阶段，全市场中位数收益-0.67%，策略共识聚焦银行与汽车产业链龙头\n**形态雷达**：20日线低波缩量回踩(30只·观察期：迈瑞医疗、中国中车)；低波趋势稳健突破(1只·观察期：中国核电)\n**盘后要闻**：瑞银上调特斯拉目标价\n注：量化形态观测与回测基准，非投资建议。",
-  "im_card_chars": 508
+  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-24)**\n> 盘面 **分歧**｜上涨 35.0% · 中位 -0.67%｜涨跌停 55/2（封板 42.3%）｜最高 4板 · 昨涨停 +4.09% · 成交 16,678亿\n**✅ 公告排雷**：抽检 20 只暂未见减持/立案/监管等负面关键词\n**策略与 [AI]**：规则 10 组(45只) / [AI] 9 组(45只)，AI调仓 +12/-12（市场结构性分化明显，宜精选低估值修复且有回购或产业催化支撑的标的。）\n**多策略共识(4)**：002432 九安医疗(2策略)、688169 石头科技(2策略)、600901 江苏金租(2策略)、601689 拓普集团(2策略)\n**[AI] 简评**：2026年11月24日A股全天成交1.67万亿，盘面进入分歧阶段，上涨个股占比仅35.01%，策略共识偏向银行与汽车防御龙头。\n**形态雷达**：20日线低波缩量回踩(30只·观察期：迈瑞医疗、中国中车)；低波趋势稳健突破(1只·观察期：中国核电)\n**盘后要闻**：瑞银上调特斯拉目标价\n注：量化形态观测与回测基准，非投资建议。",
+  "im_card_chars": 502
 }
