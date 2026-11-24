@@ -8,7 +8,7 @@
   "stale_reason": null,
   "detail_url": "",
   "market": "cn",
-  "generated_at": "2026-11-24T14:11:09.986273+00:00",
+  "generated_at": "2026-11-24T14:32:49.215353+00:00",
   "usage_policy": "cn_only_regime_slice_only",
   "strategy_display_names": {
     "balanced_alpha": "均衡多因子",
@@ -7652,327 +7652,55 @@
   "announcement_risks": {
     "checked_count": 20,
     "flagged_count": 0,
-    "by_code": {
-      "002432": {
-        "code": "002432",
-        "name": "九安医疗",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "回购增持"
-        ],
-        "announcement_summary": "2026-11-21 关于召开2026年第三次临时股东会的通知 | 2026-11-21 第七届董事会第十次会议决议公告 | 2026-11-21 关于出售已回购股份结果、股份变动及注销已回购股份的公告",
-        "matched_announcement": "关于召开2026年第三次临时股东会的通知",
-        "announcement_date": "2026-11-21",
-        "days_ago": 3,
-        "recency": "recent",
-        "consensus_count": 2
-      },
-      "688169": {
-        "code": "688169",
-        "name": "石头科技",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "回购增持"
-        ],
-        "announcement_summary": "2026-11-03 北京石头世纪科技股份有限公司关于以集中竞价交易方式回购公司股份的进展公告 | 2026-10-31 北京石头世纪科技股份有限公司关于开展外汇套期保值业务的公告 | 2026-10-31 北京石头世纪科技股份有限公司2026年第三季度报告",
-        "matched_announcement": "北京石头世纪科技股份有限公司关于以集中竞价交易方式回购公司股份的进展公告",
-        "announcement_date": "2026-11-03",
-        "days_ago": 21,
-        "recency": "mid",
-        "consensus_count": 2
-      },
-      "600901": {
-        "code": "600901",
-        "name": "江苏金租",
-        "negative_event_flags": [],
-        "announcement_categories": [],
-        "announcement_summary": "2026-11-24 江苏金租：江苏世纪同仁律师事务所关于江苏金融租赁股份有限公司2026年第二次临时股东会的法律意见书 | 2026-11-24 江苏金租：2026年第二次临时股东会决议公告 | 2026-11-24 江苏金租：北京市中伦（上海）律师事务所关于中证中小投资者服务中心有限责任公司公开征集江苏金融租赁股份有限公司投票权的法律意见书",
-        "matched_announcement": "江苏金租：江苏世纪同仁律师事务所关于江苏金融租赁股份有限公司2026年第二次临时股东会的法律意见书",
-        "announcement_date": "2026-11-24",
-        "days_ago": 0,
-        "recency": "recent",
-        "consensus_count": 2
-      },
-      "601689": {
-        "code": "601689",
-        "name": "拓普集团",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "业绩"
-        ],
-        "announcement_summary": "2026-11-11 拓普集团2026年三季报业绩说明会预告公告 | 2026-11-10 拓普集团关于发行境外上市股份（H股）获得中国证监会备案的公告 | 2026-10-30 拓普集团2026年第三季度报告",
-        "matched_announcement": "拓普集团2026年三季报业绩说明会预告公告",
-        "announcement_date": "2026-11-11",
-        "days_ago": 13,
-        "recency": "mid",
-        "consensus_count": 2
-      },
-      "002738": {
-        "code": "002738",
-        "name": "中矿资源",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "诉讼担保"
-        ],
-        "announcement_summary": "2026-11-20 中矿资源集团股份有限公司关于控股股东、实际控制人及其一致行动人权益变动触及1%及5%整数倍暨披露权益变动报告书的提示性公告 | 2026-11-20 简式权益变动报告书（中色矿业及其一致行动人） | 2026-11-13 关于为子公司提供担保的公告",
-        "matched_announcement": "中矿资源集团股份有限公司关于控股股东、实际控制人及其一致行动人权益变动触及1%及5%整数倍暨披露权益变动报告书的提示性公告",
-        "announcement_date": "2026-11-20",
-        "days_ago": 4,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "688257": {
-        "code": "688257",
-        "name": "新锐股份",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "回购增持"
-        ],
-        "announcement_summary": "2026-11-20 新锐股份关于以集中竞价交易方式回购公司股份的回购报告书（修订稿） | 2026-11-20 新锐股份关于以集中竞价交易方式回购公司股份的回购报告书 | 2026-11-20 新锐股份第五届董事会第三十一次会议决议公告",
-        "matched_announcement": "新锐股份关于以集中竞价交易方式回购公司股份的回购报告书（修订稿）",
-        "announcement_date": "2026-11-20",
-        "days_ago": 4,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "300394": {
-        "code": "300394",
-        "name": "天孚通信",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "回购增持",
-          "重大合同"
-        ],
-        "announcement_summary": "2026-11-23 00:00:00 关于公司签订产业项目投资发展合作协议的公告 | 2026-11-18 18:36:08 关于公司近期经营情况和回购公司股份进展的公告 | 2026-11-18 00:00:00 关于修订H股发行并上市后适用的《公司章程》草案及其附件的公告",
-        "matched_announcement": "关于公司签订产业项目投资发展合作协议的公告",
-        "announcement_date": "2026-11-23",
-        "days_ago": 1,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "601665": {
-        "code": "601665",
-        "name": "齐鲁银行",
-        "negative_event_flags": [],
-        "announcement_categories": [],
-        "announcement_summary": "2026-11-03 齐鲁银行股份有限公司关于高级管理人员任职资格获得核准的公告 | 2026-10-30 齐鲁银行股份有限公司第十届董事会第三次会议决议公告 | 2026-10-30 齐鲁银行股份有限公司2026年第三季度报告",
-        "matched_announcement": "齐鲁银行股份有限公司关于高级管理人员任职资格获得核准的公告",
-        "announcement_date": "2026-11-03",
-        "days_ago": 21,
-        "recency": "mid",
-        "consensus_count": 1
-      },
-      "002223": {
-        "code": "002223",
-        "name": "鱼跃医疗",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "回购增持",
-          "股权激励"
-        ],
-        "announcement_summary": "2026-11-18 关于2023年度员工持股计划首次受让部分第三个锁定期和预留受让部分第二个锁定期届满的公告 | 2026-11-04 关于回购公司股份进展的公告 | 2026-10-27 关于公司子公司产品获得美国FDA 510(k)许可的公告",
-        "matched_announcement": "关于2023年度员工持股计划首次受让部分第三个锁定期和预留受让部分第二个锁定期届满的公告",
-        "announcement_date": "2026-11-18",
-        "days_ago": 6,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "000729": {
-        "code": "000729",
-        "name": "燕京啤酒",
-        "negative_event_flags": [],
-        "announcement_categories": [],
-        "announcement_summary": "2026-11-19 关于中证中小投资者服务中心有限责任公司公开征集表决权的公告 | 2026-11-14 关于增加经营范围及修订公司章程的公告 | 2026-11-14 公司章程（修订预案，待股东会审批）",
-        "matched_announcement": "关于中证中小投资者服务中心有限责任公司公开征集表决权的公告",
-        "announcement_date": "2026-11-19",
-        "days_ago": 5,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "600285": {
-        "code": "600285",
-        "name": "羚锐制药",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "业绩"
-        ],
-        "announcement_summary": "2026-11-17 羚锐制药关于获得药品注册证书的公告 | 2026-10-30 羚锐制药2026年第三季度报告 | 2026-10-30 羚锐制药关于召开2026年第三季度业绩说明会的公告",
-        "matched_announcement": "羚锐制药关于获得药品注册证书的公告",
-        "announcement_date": "2026-11-17",
-        "days_ago": 7,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "000703": {
-        "code": "000703",
-        "name": "恒逸石化",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "诉讼担保"
-        ],
-        "announcement_summary": "2026-11-14 关于解除对控股子公司担保责任的进展公告 | 2026-11-13 2026年第六次独立董事专门会议决议 | 2026-11-13 关于新增控股股东向公司提供资金支持额度暨关联交易的公告",
-        "matched_announcement": "关于解除对控股子公司担保责任的进展公告",
-        "announcement_date": "2026-11-14",
-        "days_ago": 10,
-        "recency": "mid",
-        "consensus_count": 1
-      },
-      "600066": {
-        "code": "600066",
-        "name": "宇通客车",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "业绩",
-          "诉讼担保"
-        ],
-        "announcement_summary": "2026-11-10 关于担保计划范围内担保进展的公告 | 2026-11-04 2026年10月份产销数据快报 | 2026-10-15 关于召开2026年第三季度业绩说明会的公告",
-        "matched_announcement": "关于担保计划范围内担保进展的公告",
-        "announcement_date": "2026-11-10",
-        "days_ago": 14,
-        "recency": "mid",
-        "consensus_count": 1
-      },
-      "600312": {
-        "code": "600312",
-        "name": "平高电气",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "重大合同"
-        ],
-        "announcement_summary": "2026-11-17 河南平高电气股份有限公司第九届董事会第二十五次会议决议公告 | 2026-11-04 河南平高电气股份有限公司中标公告 | 2026-10-22 河南平高电气股份有限公司第九届董事会第二十四次会议决议公告",
-        "matched_announcement": "河南平高电气股份有限公司第九届董事会第二十五次会议决议公告",
-        "announcement_date": "2026-11-17",
-        "days_ago": 7,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "600699": {
-        "code": "600699",
-        "name": "均胜电子",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "回购增持"
-        ],
-        "announcement_summary": "2026-11-21 均胜电子关于回购股份事项前十大股东及前十大无限售条件股东持股情况的公告 | 2026-11-10 均胜电子关于回购股份事项前十大股东及前十大无限售条件股东持股情况的公告 | 2026-11-06 均胜电子2026年第三次临时股东会会议资料",
-        "matched_announcement": "均胜电子关于回购股份事项前十大股东及前十大无限售条件股东持股情况的公告",
-        "announcement_date": "2026-11-21",
-        "days_ago": 3,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "601166": {
-        "code": "601166",
-        "name": "兴业银行",
-        "negative_event_flags": [],
-        "announcement_categories": [],
-        "announcement_summary": "2026-10-30 兴业银行2026年第三季度报告 | 2026-10-30 兴业银行关于变更会计师事务所的公告 | 2026-10-30 兴业银行第十一届董事会第十七次会议（临时会议）决议公告",
-        "matched_announcement": "兴业银行2026年第三季度报告",
-        "announcement_date": "2026-10-30",
-        "days_ago": 25,
-        "recency": "old",
-        "consensus_count": 1
-      },
-      "300274": {
-        "code": "300274",
-        "name": "阳光电源",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "回购增持"
-        ],
-        "announcement_summary": "2026-11-20 17:10:11 关于回购公司股份的进展公告 | 2026-11-03 17:36:10 关于回购公司股份的进展公告 | 2026-10-31 00:00:00 第六届董事会第四次会议决议公告",
-        "matched_announcement": "关于回购公司股份的进展公告",
-        "announcement_date": "2026-11-20",
-        "days_ago": 4,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "300476": {
-        "code": "300476",
-        "name": "胜宏科技",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "回购增持"
-        ],
-        "announcement_summary": "2026-11-21 00:00:00 关于召开2026年第四次临时股东会的通知 | 2026-11-21 00:00:00 回购股份报告书 | 2026-11-18 18:56:08 关于取得金融机构股票回购专项贷款承诺函的公告",
-        "matched_announcement": "关于召开2026年第四次临时股东会的通知",
-        "announcement_date": "2026-11-21",
-        "days_ago": 3,
-        "recency": "recent",
-        "consensus_count": 1
-      },
-      "601997": {
-        "code": "601997",
-        "name": "贵阳银行",
-        "negative_event_flags": [],
-        "announcement_categories": [],
-        "announcement_summary": "2026-11-11 贵阳银行股份有限公司优先股股息派发实施公告 | 2026-10-31 贵阳银行股份有限公司信息披露事务管理制度（2026年版） | 2026-10-31 贵阳银行股份有限公司第六届董事会2026年度第四次临时会议决议公告",
-        "matched_announcement": "贵阳银行股份有限公司优先股股息派发实施公告",
-        "announcement_date": "2026-11-11",
-        "days_ago": 13,
-        "recency": "mid",
-        "consensus_count": 1
-      },
-      "601128": {
-        "code": "601128",
-        "name": "常熟银行",
-        "negative_event_flags": [],
-        "announcement_categories": [
-          "业绩"
-        ],
-        "announcement_summary": "2026-11-17 江苏常熟农村商业银行股份有限公司2026年第三次临时股东会决议公告 | 2026-11-17 江苏世纪同仁律师事务所关于江苏常熟农村商业银行股份有限公司2026年第三次临时股东会的法律意见书 | 2026-11-12 江苏常熟农村商业银行股份有限公司关于召开2026年第三季度业绩说明会的公告",
-        "matched_announcement": "江苏常熟农村商业银行股份有限公司2026年第三次临时股东会决议公告",
-        "announcement_date": "2026-11-17",
-        "days_ago": 7,
-        "recency": "recent",
-        "consensus_count": 1
-      }
-    },
+    "by_code": {},
     "flagged_items": [],
-    "errors": []
+    "errors": [
+      "announcement screening skipped: announcement risk screening timed out after 25s"
+    ]
   },
   "market_news": {
     "items": [
       {
-        "title": "摩根大通与汇丰首次在伦敦交易数字黄金",
-        "summary": "【摩根大通与汇丰首次在伦敦交易数字黄金】摩根大通等主要贵金属交易商首次在伦敦交易一种新型数字黄金，初步测试一套可能重塑这个全球最大黄金交易中心基础设施的新系统。",
-        "published_at": "11-24 20:23",
+        "title": "瑞银上调特斯拉目标价",
+        "summary": "【瑞银上调特斯拉目标价】瑞银将特斯拉目标价从425美元上调至430美元。",
+        "published_at": "11-24 22:24",
         "source": "东方财富7x24",
         "category": "海外市场"
       },
       {
-        "title": "阿格斯研究公司下调CrowdStrike目标价",
-        "summary": "【阿格斯研究公司下调CrowdStrike目标价】阿格斯研究公司将CrowdStrike目标价从425美元下调至350美元。",
-        "published_at": "11-24 20:16",
+        "title": "岭南控股：全资子公司拟2.07亿元收购都市酒店70%股权",
+        "summary": "【岭南控股：全资子公司拟2.07亿元收购都市酒店70%股权】岭南控股(000524.SZ)公告称，公司全资子公司岭南酒店拟以2.07亿元自有资金收购岭南国际持有的都市酒店70%股权。",
+        "published_at": "11-24 22:07",
         "source": "东方财富7x24",
-        "category": "海外市场"
+        "category": "市场要闻"
       },
       {
-        "title": "小鹏发布图灵世界模型WorldGPT",
-        "summary": "【小鹏发布图灵世界模型WorldGPT】据小鹏汽车消息，近日，小鹏发布图灵世界模型WorldGPT。据介绍，该模型承担了小鹏物理AI体系中“云端teacher model”的使命。更大模型容量做跨本体训练提取共有世界知识/学习通用动作直觉，针对不同本体提炼小型本地模型，做到通用…",
-        "published_at": "11-24 20:12",
+        "title": "比亚迪与英力士汽车就收购法国汉巴赫工厂展开排他性谈判",
+        "summary": "【比亚迪与英力士汽车就收购法国汉巴赫工厂展开排他性谈判】11月24日，比亚迪宣布，已与英力士汽车（INEOS Automotive）就收购其位于法国汉巴赫（Hambach）的汽车制造工厂展开排他性谈判。拟议交易仍需履行相关员工代表委员会的协商程序。比亚迪表示，计划在该工厂生产面…",
+        "published_at": "11-24 21:59",
+        "source": "东方财富7x24",
+        "category": "市场要闻"
+      },
+      {
+        "title": "海南省省长刘小明会见明阳集团客人",
+        "summary": "【海南省省长刘小明会见明阳集团客人】据海南日报消息，11月24日，海南省省长刘小明在海口会见明阳集团董事长张传卫一行。双方围绕发挥海南自由贸易港政策优势和明阳集团海上风电装备领域领军优势，优化明阳东方国际进出口产业母港项目布局、加大风氢一体化技术创新和漂浮式海上风电场景创新、加…",
+        "published_at": "11-24 21:46",
+        "source": "东方财富7x24",
+        "category": "宏观政策"
+      },
+      {
+        "title": "祖名股份：控股股东及高管拟协议转让不超17%股份",
+        "summary": "【祖名股份：控股股东及高管拟协议转让不超17%股份】11月24日，祖名股份(003030.SZ)公告称，公司控股股东、实际控制人蔡祖明、王茶英及其一致行动人杭州纤品投资有限公司，公司董事、高级管理人员李国平及高级管理人员赵大勇，计划自公告披露之日起3个交易日后的3个月内，通过协…",
+        "published_at": "11-24 21:38",
+        "source": "东方财富7x24",
+        "category": "市场要闻"
+      },
+      {
+        "title": "3批次药品不合规 复星医药旗下桂林南药被暂停集采申报资格",
+        "summary": "【3批次药品不合规 复星医药旗下桂林南药被暂停集采申报资格】11月23日，国家组织药品联合采购办公室通报，因3批次盐酸莫西沙星片被检测不符合规定，桂林南药股份有限公司（以下简称“桂林南药”）被暂停国家药品集采申报资格。桂林南药为复星医药（600196.SH）控股孙公司。",
+        "published_at": "11-24 21:37",
         "source": "东方财富7x24",
         "category": "板块产业"
-      },
-      {
-        "title": "软通动力子公司鸿湖万联与南京双京达成战略合作",
-        "summary": "【软通动力子公司鸿湖万联与南京双京达成战略合作】据软通动力消息，11月24日，鸿宁智联（南京）检测认证科技有限公司暨双京集团矿鸿检测中心揭牌仪式在南京举办。会上，软通动力子公司鸿湖万联与南京双京电器集团（简称“南京双京”）达成战略合作，双方将以“场景落地+检测认证”双轮驱动，推…",
-        "published_at": "11-24 20:12",
-        "source": "东方财富7x24",
-        "category": "市场要闻"
-      },
-      {
-        "title": "StoneX下调CrowdStrike目标价",
-        "summary": "【StoneX下调CrowdStrike目标价】StoneX将CrowdStrike目标价从325美元下调至250美元。",
-        "published_at": "11-24 20:05",
-        "source": "东方财富7x24",
-        "category": "海外市场"
-      },
-      {
-        "title": "Applied Optoelectronics与一家一级超大规模数据中心客户签署多年长期协议",
-        "summary": "【Applied Optoelectronics与一家一级超大规模数据中心客户签署多年长期协议】Applied Optoelectronics宣布与一家一级超大规模数据中心客户签署多年长期协议，自2026年12月至2030年12月供应800G光模块与激光二极管。客户承诺2027…",
-        "published_at": "11-24 20:03",
-        "source": "东方财富7x24",
-        "category": "市场要闻"
       }
     ],
     "sources": [
@@ -8033,7 +7761,9 @@
     },
     "errors": []
   },
-  "degradation": [],
+  "degradation": [
+    "Announcement screening: announcement screening skipped: announcement risk screening timed out after 25s"
+  ],
   "non_goals": [
     "量化形态观测与回测基准，非投资建议。",
     "Market regime stage is reporting and slice metadata only; never adjusts strategy weights.",
@@ -8345,20 +8075,20 @@
   "ai_brief": {
     "mode": "llm",
     "model": "gemini-3.8-flash",
-    "headline": "A股处于分歧阶段中位数跌0.67%，全市场成交1.67万亿元，策略聚焦银行与高端制造共识标的",
-    "regime_interpretation": "2026年11月24日市场定调为“分歧”阶段。全市场上涨占比仅35.01%，个股涨跌幅中位数为-0.67%，跌幅在0至-3%区间的股票达3217只，整体呈现普跌分化格局。两市总成交额为16678.0亿元，非ST涨停55家、跌停2家，封板率仅42.31%，最高连板高度压制在4板，但前日涨停标的次日平均收益仍达4.09%，体现局部接力活跃但炸板率高企。资讯端关注到智能模型发布等产业动态，整体盘面呈现增量博弈下的弱平衡特征。",
-    "consensus_and_ai_edge": "行业集中度显示银行（12.3%）与汽车（8.8%）为主要暴露方向。跨策略共识标的覆盖九安医疗、石头科技、江苏金租与拓普集团，其中拓普集团获资金热度与趋势质量策略共同覆盖，当日上涨2.63%。AI端在资金热度策略中增选大成交的天孚通信与拓普集团，在均衡多因子策略中增配低PE的中矿资源与新锐股份，倾向于在分歧市中收敛至兼具估值边际与高流动性的核心资产。",
+    "headline": "A股处于分歧阶段，全市场中位数收益-0.67%，策略共识聚焦银行与汽车产业链龙头",
+    "regime_interpretation": "2026年11月24日市场定性为分歧阶段。全市场成交额16678.0亿元，上涨个股占比35.01%，涨跌幅中位数为-0.67%，超3200只个股跌幅在0%至-3%之间。非ST涨停55家、跌停2家，封板率仅42.31%，最高连板高度压制在4板，但前日涨停平均溢价达4.09%，资金接力偏向局部。消息面上，海外特斯拉获券商上调目标价及比亚迪海外收购谈判等动态，使高端制造与汽车链维持关注。",
+    "consensus_and_ai_edge": "跨策略共识集中于银行（占比12.3%）与汽车（占比8.8%）。多策略重合个股包括拓普集团、九安医疗、石头科技与江苏金租。AI优化层面：资金热度策略引入天孚通信与拓普集团，剔除四川长虹等；均衡多因子策略增选低PE标的中矿资源与新锐股份；双低选股策略增配抗跌的齐鲁银行以优化稳定性。各策略AI视角普遍强调防范高位硬件回调及金融资产集中度风险。",
     "risk_warnings": [
-      "拓普集团出现短期超买（RSI超买）风险信号，且天孚通信PB估值偏高，需防范高位回撤",
-      "蓝筹与双低类策略选股高度扎堆银行与金融板块，行业集中度过高可能放大宏观息差及系统性资金外流冲击"
+      "拓普集团出现RSI超买及短期超买风险提示，天孚通信存在较高PB估值压力",
+      "九安医疗面临盈利模式持续性存疑提示，策略持仓整体在银行及金融板块集中度偏高"
     ],
     "watch_points": [
-      "次日全市场封板率能否从42.31%企稳修复及最高连板（4板）的晋级情况",
-      "两市成交额能否维持在1.65万亿元上方以及上涨个股比例能否回升至50%以上"
+      "观察全市场成交额能否维持在1.6万亿元上方及封板率是否脱离42.31%低位",
+      "跟踪许继电气、平高电气等实验性单阳不破形态标的的后续动量承接"
     ],
     "disclaimer": "仅供量化研究与复盘观察，不构成投资建议。",
     "fallback_reason": null
   },
-  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-24)**\n> 盘面 **分歧**｜上涨 35.0% · 中位 -0.67%｜涨跌停 55/2（封板 42.3%）｜最高 4板 · 昨涨停 +4.09% · 成交 16,678亿\n**✅ 公告排雷**：抽检 20 只暂未见减持/立案/监管等负面关键词\n**策略与 [AI]**：规则 10 组(45只) / [AI] 9 组(45只)，AI调仓 +12/-12（市场结构性分化明显，宜精选低估值修复且有回购或产业催化支撑的标的。）\n**多策略共识(4)**：002432 九安医疗(2策略)、688169 石头科技(2策略)、600901 江苏金租(2策略)、601689 拓普集团(2策略)\n**[AI] 简评**：A股处于分歧阶段中位数跌0.67%，全市场成交1.67万亿元，策略聚焦银行与高端制造共识标的\n**形态雷达**：20日线低波缩量回踩(30只·观察期：迈瑞医疗、中国中车)；低波趋势稳健突破(1只·观察期：中国核电)\n**盘后要闻**：摩根大通与汇丰首次在伦敦交易数字黄金\n注：量化形态观测与回测基准，非投资建议。",
-  "im_card_chars": 493
+  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-24)**\n> 盘面 **分歧**｜上涨 35.0% · 中位 -0.67%｜涨跌停 55/2（封板 42.3%）｜最高 4板 · 昨涨停 +4.09% · 成交 16,678亿\n**⚠️ 公告排雷**：抽检 20 只（降级：announcement screening skipped: announce）\n**策略与 [AI]**：规则 10 组(45只) / [AI] 9 组(45只)，AI调仓 +12/-12（市场结构性分化明显，宜精选低估值修复且有回购或产业催化支撑的标的。）\n**多策略共识(4)**：002432 九安医疗(2策略)、688169 石头科技(2策略)、600901 江苏金租(2策略)、601689 拓普集团(2策略)\n**[AI] 简评**：A股处于分歧阶段，全市场中位数收益-0.67%，策略共识聚焦银行与汽车产业链龙头\n**形态雷达**：20日线低波缩量回踩(30只·观察期：迈瑞医疗、中国中车)；低波趋势稳健突破(1只·观察期：中国核电)\n**盘后要闻**：瑞银上调特斯拉目标价\n注：量化形态观测与回测基准，非投资建议。",
+  "im_card_chars": 508
 }

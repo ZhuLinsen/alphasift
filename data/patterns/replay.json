@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-24T14:10:40.956340+00:00",
+  "generated_at": "2026-11-24T14:31:50.880872+00:00",
   "entry_mode": "next_open",
   "benchmark": "sh000300",
   "cost_bps": 25.0,
@@ -15,6 +15,10 @@
       "ebb",
       "neutral"
     ]
+  },
+  "overhead_filter": {
+    "active": false,
+    "max_overhead_pct": null
   },
   "graduation_rule": {
     "min_samples": 200,
@@ -707,6 +711,7 @@
         "status": "ok",
         "min_regime_days_h1": 3,
         "adverse_threshold_pct": -0.5,
+        "low_overhead_threshold_pct": 15.0,
         "h1_positive_regimes": [],
         "h1_adverse_regimes": [
           "freezing",
@@ -739,10 +744,28 @@
           "ew_daily_mean_pct": 1.453,
           "t_stat": 0.83
         },
+        "h2_low_overhead": {
+          "days": 74,
+          "signals": 310,
+          "daily_mean_pct": 1.723,
+          "ew_daily_mean_pct": 1.204,
+          "t_stat": 1.58
+        },
+        "h2_non_adverse_low_overhead": {
+          "days": 16,
+          "signals": 82,
+          "daily_mean_pct": 2.848,
+          "ew_daily_mean_pct": 2.201,
+          "t_stat": 1.07
+        },
         "delta_positive_vs_h2_baseline_pct": null,
         "delta_non_adverse_vs_h2_baseline_pct": 1.383,
+        "delta_low_overhead_vs_h2_baseline_pct": 1.007,
+        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": 2.132,
         "ew_delta_positive_vs_h2_baseline_pct": null,
         "ew_delta_non_adverse_vs_h2_baseline_pct": 1.179,
+        "ew_delta_low_overhead_vs_h2_baseline_pct": 0.93,
+        "ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct": 1.927,
         "per_regime_oos": {
           "freezing": {
             "label": "冰点",
@@ -1419,6 +1442,7 @@
         "status": "ok",
         "min_regime_days_h1": 3,
         "adverse_threshold_pct": -0.5,
+        "low_overhead_threshold_pct": 15.0,
         "h1_positive_regimes": [
           "startup",
           "ebb"
@@ -1454,10 +1478,28 @@
           "ew_daily_mean_pct": -1.631,
           "t_stat": -1.93
         },
+        "h2_low_overhead": {
+          "days": 89,
+          "signals": 1481,
+          "daily_mean_pct": -1.592,
+          "ew_daily_mean_pct": -2.015,
+          "t_stat": -2.97
+        },
+        "h2_non_adverse_low_overhead": {
+          "days": 56,
+          "signals": 1020,
+          "daily_mean_pct": -1.273,
+          "ew_daily_mean_pct": -1.927,
+          "t_stat": -2.36
+        },
         "delta_positive_vs_h2_baseline_pct": -0.133,
         "delta_non_adverse_vs_h2_baseline_pct": 0.115,
+        "delta_low_overhead_vs_h2_baseline_pct": -0.488,
+        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": -0.169,
         "ew_delta_positive_vs_h2_baseline_pct": -0.167,
         "ew_delta_non_adverse_vs_h2_baseline_pct": -0.112,
+        "ew_delta_low_overhead_vs_h2_baseline_pct": -0.496,
+        "ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct": -0.408,
         "per_regime_oos": {
           "freezing": {
             "label": "冰点",
@@ -2134,6 +2176,7 @@
         "status": "ok",
         "min_regime_days_h1": 3,
         "adverse_threshold_pct": -0.5,
+        "low_overhead_threshold_pct": 15.0,
         "h1_positive_regimes": [
           "startup",
           "divergence"
@@ -2169,10 +2212,28 @@
           "ew_daily_mean_pct": -0.911,
           "t_stat": -0.64
         },
+        "h2_low_overhead": {
+          "days": 80,
+          "signals": 257,
+          "daily_mean_pct": -0.041,
+          "ew_daily_mean_pct": -0.59,
+          "t_stat": -0.05
+        },
+        "h2_non_adverse_low_overhead": {
+          "days": 60,
+          "signals": 213,
+          "daily_mean_pct": 0.236,
+          "ew_daily_mean_pct": -0.229,
+          "t_stat": 0.2
+        },
         "delta_positive_vs_h2_baseline_pct": 0.567,
         "delta_non_adverse_vs_h2_baseline_pct": 0.019,
+        "delta_low_overhead_vs_h2_baseline_pct": 0.502,
+        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": 0.779,
         "ew_delta_positive_vs_h2_baseline_pct": 0.563,
         "ew_delta_non_adverse_vs_h2_baseline_pct": 0.078,
+        "ew_delta_low_overhead_vs_h2_baseline_pct": 0.399,
+        "ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct": 0.76,
         "per_regime_oos": {
           "freezing": {
             "label": "冰点",
@@ -2849,6 +2910,7 @@
         "status": "ok",
         "min_regime_days_h1": 3,
         "adverse_threshold_pct": -0.5,
+        "low_overhead_threshold_pct": 15.0,
         "h1_positive_regimes": [],
         "h1_adverse_regimes": [
           "freezing",
@@ -2881,10 +2943,28 @@
           "ew_daily_mean_pct": -0.198,
           "t_stat": 0.89
         },
+        "h2_low_overhead": {
+          "days": 69,
+          "signals": 336,
+          "daily_mean_pct": 0.43,
+          "ew_daily_mean_pct": -0.476,
+          "t_stat": 0.72
+        },
+        "h2_non_adverse_low_overhead": {
+          "days": 14,
+          "signals": 66,
+          "daily_mean_pct": -0.379,
+          "ew_daily_mean_pct": -1.306,
+          "t_stat": -0.41
+        },
         "delta_positive_vs_h2_baseline_pct": null,
         "delta_non_adverse_vs_h2_baseline_pct": -0.393,
+        "delta_low_overhead_vs_h2_baseline_pct": -0.506,
+        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": -1.315,
         "ew_delta_positive_vs_h2_baseline_pct": null,
         "ew_delta_non_adverse_vs_h2_baseline_pct": -0.548,
+        "ew_delta_low_overhead_vs_h2_baseline_pct": -0.826,
+        "ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct": -1.656,
         "per_regime_oos": {
           "freezing": {
             "label": "冰点",
@@ -3561,6 +3641,7 @@
         "status": "ok",
         "min_regime_days_h1": 3,
         "adverse_threshold_pct": -0.5,
+        "low_overhead_threshold_pct": 15.0,
         "h1_positive_regimes": [],
         "h1_adverse_regimes": [
           "freezing",
@@ -3593,10 +3674,28 @@
           "ew_daily_mean_pct": 1.968,
           "t_stat": 0.85
         },
+        "h2_low_overhead": {
+          "days": 77,
+          "signals": 315,
+          "daily_mean_pct": -0.753,
+          "ew_daily_mean_pct": -0.89,
+          "t_stat": -0.76
+        },
+        "h2_non_adverse_low_overhead": {
+          "days": 8,
+          "signals": 19,
+          "daily_mean_pct": 1.212,
+          "ew_daily_mean_pct": 1.413,
+          "t_stat": 0.54
+        },
         "delta_positive_vs_h2_baseline_pct": null,
         "delta_non_adverse_vs_h2_baseline_pct": 2.185,
+        "delta_low_overhead_vs_h2_baseline_pct": -0.296,
+        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": 1.669,
         "ew_delta_positive_vs_h2_baseline_pct": null,
         "ew_delta_non_adverse_vs_h2_baseline_pct": 2.553,
+        "ew_delta_low_overhead_vs_h2_baseline_pct": -0.305,
+        "ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct": 1.998,
         "per_regime_oos": {
           "freezing": {
             "label": "冰点",
@@ -4273,6 +4372,7 @@
         "status": "ok",
         "min_regime_days_h1": 3,
         "adverse_threshold_pct": -0.5,
+        "low_overhead_threshold_pct": 15.0,
         "h1_positive_regimes": [
           "startup",
           "ebb"
@@ -4308,10 +4408,28 @@
           "ew_daily_mean_pct": -1.583,
           "t_stat": -1.86
         },
+        "h2_low_overhead": {
+          "days": 90,
+          "signals": 2234,
+          "daily_mean_pct": -1.925,
+          "ew_daily_mean_pct": -2.351,
+          "t_stat": -3.33
+        },
+        "h2_non_adverse_low_overhead": {
+          "days": 43,
+          "signals": 1260,
+          "daily_mean_pct": -1.833,
+          "ew_daily_mean_pct": -2.346,
+          "t_stat": -2.56
+        },
         "delta_positive_vs_h2_baseline_pct": 0.04,
         "delta_non_adverse_vs_h2_baseline_pct": 0.112,
+        "delta_low_overhead_vs_h2_baseline_pct": -0.747,
+        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": -0.655,
         "ew_delta_positive_vs_h2_baseline_pct": 0.027,
         "ew_delta_non_adverse_vs_h2_baseline_pct": 0.022,
+        "ew_delta_low_overhead_vs_h2_baseline_pct": -0.746,
+        "ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct": -0.741,
         "per_regime_oos": {
           "freezing": {
             "label": "冰点",
@@ -4988,6 +5106,7 @@
         "status": "ok",
         "min_regime_days_h1": 3,
         "adverse_threshold_pct": -0.5,
+        "low_overhead_threshold_pct": 15.0,
         "h1_positive_regimes": [
           "startup",
           "ebb"
@@ -5023,10 +5142,28 @@
           "ew_daily_mean_pct": -0.79,
           "t_stat": -0.41
         },
+        "h2_low_overhead": {
+          "days": 52,
+          "signals": 187,
+          "daily_mean_pct": -0.021,
+          "ew_daily_mean_pct": -0.401,
+          "t_stat": -0.04
+        },
+        "h2_non_adverse_low_overhead": {
+          "days": 16,
+          "signals": 79,
+          "daily_mean_pct": -0.461,
+          "ew_daily_mean_pct": -0.876,
+          "t_stat": -0.48
+        },
         "delta_positive_vs_h2_baseline_pct": -0.492,
         "delta_non_adverse_vs_h2_baseline_pct": -0.492,
+        "delta_low_overhead_vs_h2_baseline_pct": -0.138,
+        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": -0.578,
         "ew_delta_positive_vs_h2_baseline_pct": -0.528,
         "ew_delta_non_adverse_vs_h2_baseline_pct": -0.528,
+        "ew_delta_low_overhead_vs_h2_baseline_pct": -0.139,
+        "ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct": -0.614,
         "per_regime_oos": {
           "freezing": {
             "label": "冰点",
@@ -5703,6 +5840,7 @@
         "status": "insufficient_data",
         "min_regime_days_h1": 3,
         "adverse_threshold_pct": -0.5,
+        "low_overhead_threshold_pct": 15.0,
         "h1_positive_regimes": [],
         "h1_adverse_regimes": [
           "freezing",
@@ -5734,10 +5872,28 @@
           "ew_daily_mean_pct": null,
           "t_stat": null
         },
+        "h2_low_overhead": {
+          "days": 58,
+          "signals": 423,
+          "daily_mean_pct": -0.307,
+          "ew_daily_mean_pct": -1.141,
+          "t_stat": -0.45
+        },
+        "h2_non_adverse_low_overhead": {
+          "days": 0,
+          "signals": 0,
+          "daily_mean_pct": null,
+          "ew_daily_mean_pct": null,
+          "t_stat": null
+        },
         "delta_positive_vs_h2_baseline_pct": null,
         "delta_non_adverse_vs_h2_baseline_pct": null,
+        "delta_low_overhead_vs_h2_baseline_pct": -0.832,
+        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": null,
         "ew_delta_positive_vs_h2_baseline_pct": null,
         "ew_delta_non_adverse_vs_h2_baseline_pct": null,
+        "ew_delta_low_overhead_vs_h2_baseline_pct": -1.152,
+        "ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct": null,
         "per_regime_oos": {
           "freezing": {
             "label": "冰点",
@@ -6414,6 +6570,7 @@
         "status": "ok",
         "min_regime_days_h1": 3,
         "adverse_threshold_pct": -0.5,
+        "low_overhead_threshold_pct": 15.0,
         "h1_positive_regimes": [
           "ebb"
         ],
@@ -6448,10 +6605,28 @@
           "ew_daily_mean_pct": -1.591,
           "t_stat": -0.76
         },
+        "h2_low_overhead": {
+          "days": 58,
+          "signals": 338,
+          "daily_mean_pct": -1.294,
+          "ew_daily_mean_pct": -1.794,
+          "t_stat": -1.38
+        },
+        "h2_non_adverse_low_overhead": {
+          "days": 18,
+          "signals": 78,
+          "daily_mean_pct": -1.799,
+          "ew_daily_mean_pct": -2.512,
+          "t_stat": -0.9
+        },
         "delta_positive_vs_h2_baseline_pct": 0.077,
         "delta_non_adverse_vs_h2_baseline_pct": -1.121,
+        "delta_low_overhead_vs_h2_baseline_pct": -1.284,
+        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": -1.789,
         "ew_delta_positive_vs_h2_baseline_pct": 0.647,
         "ew_delta_non_adverse_vs_h2_baseline_pct": -1.242,
+        "ew_delta_low_overhead_vs_h2_baseline_pct": -1.445,
+        "ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct": -2.163,
         "per_regime_oos": {
           "freezing": {
             "label": "冰点",
