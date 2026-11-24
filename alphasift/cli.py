@@ -449,6 +449,12 @@ def main():
         default=None,
         help="剔除指定市场情绪阶段（逗号分隔，例如 freezing,ebb）",
     )
+    pat_replay.add_argument(
+        "--max-overhead-pct",
+        type=float,
+        default=None,
+        help="仅保留上方 10% 套牢筹码占比严格低于该百分数的信号（例如 15 表示 <15%）",
+    )
     pat_replay.add_argument("--json", action="store_true", help="以 JSON 输出")
 
     # daily-report (CN daily report + multi-market digest + IM card + idempotent push)
@@ -1123,6 +1129,7 @@ def main():
                         s.strip() for s in (args.exclude_regimes or "").split(",") if s.strip()
                     ]
                     or None,
+                    max_overhead_pct=args.max_overhead_pct,
                 )
             except (OSError, RuntimeError, ValueError, IndexError) as exc:
                 parser.error(str(exc))

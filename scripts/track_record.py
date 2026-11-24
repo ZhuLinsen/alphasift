@@ -1501,6 +1501,7 @@ def _build_pattern_board(track: Path) -> dict[str, Any] | None:
             "regime_distribution": replay.get("regime_distribution"),
             "universe_baseline": replay.get("universe_baseline"),
             "regime_filter": replay.get("regime_filter"),
+            "overhead_filter": replay.get("overhead_filter"),
             "patterns": [
                 {
                     "pattern": item.get("pattern"),

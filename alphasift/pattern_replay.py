@@ -40,6 +40,7 @@ REGIME_SLICE_WEIGHT_READY_SAMPLES = 100
 STABILITY_MIN_HALF_SAMPLES = 30
 STABILITY_MIN_HALF_DAYS = 15
 STABILITY_T_STAT_THRESHOLD = 1.96
+WALK_FORWARD_LOW_OVERHEAD_PCT = 15.0
 
 
 def load_cn_benchmark(
@@ -231,10 +232,12 @@ def _summarize_walk_forward_regime_audit(
     date_to_idx: dict[str, int] | None = None,
     min_regime_days_h1: int = 3,
     adverse_threshold_pct: float = -0.5,
+    max_overhead_pct: float = WALK_FORWARD_LOW_OVERHEAD_PCT,
 ) -> dict[str, Any]:
     """Zero-snooping walk-forward audit: select favorable/non-adverse regimes on H1 only, evaluate strictly OOS on H2."""
     h_key = f"t{horizon}"
     nw_lag = max(NEWEY_WEST_MIN_LAG, int(horizon) - 1)
+    ov_cap = float(max_overhead_pct)
 
     h1_by_stage_date: dict[str, dict[str, list[float]]] = {
         stage: defaultdict(list) for stage in REGIME_STAGE_ORDER
@@ -242,7 +245,7 @@ def _summarize_walk_forward_regime_audit(
     h1_ew_by_stage_date: dict[str, dict[str, list[float]]] = {
         stage: defaultdict(list) for stage in REGIME_STAGE_ORDER
     }
-    h2_records: list[tuple[str, str, float, float | None]] = []
+    h2_records: list[tuple[str, str, float, float | None, float | None]] = []
 
     for item in obs_list:
         res = (item.get("horizons") or {}).get(h_key)
@@ -266,7 +269,13 @@ def _summarize_walk_forward_regime_audit(
             if ew_val is not None:
                 h1_ew_by_stage_date[stage][day].append(ew_val)
         else:
-            h2_records.append((day, stage, ex_val, ew_val))
+            ov_raw = item.get("overhead")
+            ov_val: float | None = None
+            if ov_raw is not None and not isinstance(ov_raw, bool):
+                ov_f = float(ov_raw)
+                if np.isfinite(ov_f):
+                    ov_val = ov_f
+            h2_records.append((day, stage, ex_val, ew_val, ov_val))
 
     def _cluster_metrics(records: list[tuple[str, float, float | None]]) -> dict[str, Any]:
         if not records:
@@ -312,7 +321,7 @@ def _summarize_walk_forward_regime_audit(
         h1_days = len(h1_daily)
         h1_signals = sum(len(v) for v in h1_days_map.values())
 
-        stage_h2 = [(d, ex, ew) for (d, st, ex, ew) in h2_records if st == stage]
+        stage_h2 = [(d, ex, ew) for (d, st, ex, ew, _ov) in h2_records if st == stage]
         stage_h2_stats = _cluster_metrics(stage_h2)
 
         per_regime_oos[stage] = {
@@ -340,10 +349,20 @@ def _summarize_walk_forward_regime_audit(
     pos_set = set(h1_positive_regimes)
     non_adv_set = set(h1_non_adverse_regimes)
 
-    h2_baseline = _cluster_metrics([(d, ex, ew) for (d, _st, ex, ew) in h2_records])
-    h2_positive = _cluster_metrics([(d, ex, ew) for (d, st, ex, ew) in h2_records if st in pos_set])
+    h2_baseline = _cluster_metrics([(d, ex, ew) for (d, _st, ex, ew, _ov) in h2_records])
+    h2_positive = _cluster_metrics([(d, ex, ew) for (d, st, ex, ew, _ov) in h2_records if st in pos_set])
     h2_non_adverse = _cluster_metrics(
-        [(d, ex, ew) for (d, st, ex, ew) in h2_records if st in non_adv_set]
+        [(d, ex, ew) for (d, st, ex, ew, _ov) in h2_records if st in non_adv_set]
+    )
+    h2_low_overhead = _cluster_metrics(
+        [(d, ex, ew) for (d, _st, ex, ew, ov) in h2_records if ov is not None and ov < ov_cap]
+    )
+    h2_non_adverse_low_overhead = _cluster_metrics(
+        [
+            (d, ex, ew)
+            for (d, st, ex, ew, ov) in h2_records
+            if st in non_adv_set and ov is not None and ov < ov_cap
+        ]
     )
 
     def _diff(lhs: float | None, rhs: float | None) -> float | None:
@@ -360,16 +379,27 @@ def _summarize_walk_forward_regime_audit(
         "status": "ok" if has_data else "insufficient_data",
         "min_regime_days_h1": int(min_regime_days_h1),
         "adverse_threshold_pct": float(adverse_threshold_pct),
+        "low_overhead_threshold_pct": ov_cap,
         "h1_positive_regimes": h1_positive_regimes,
         "h1_adverse_regimes": h1_adverse_regimes,
         "h1_non_adverse_regimes": h1_non_adverse_regimes,
         "h2_baseline": h2_baseline,
         "h2_positive_only": h2_positive,
         "h2_non_adverse": h2_non_adverse,
+        "h2_low_overhead": h2_low_overhead,
+        "h2_non_adverse_low_overhead": h2_non_adverse_low_overhead,
         "delta_positive_vs_h2_baseline_pct": _diff(h2_positive["daily_mean_pct"], base_daily),
         "delta_non_adverse_vs_h2_baseline_pct": _diff(h2_non_adverse["daily_mean_pct"], base_daily),
+        "delta_low_overhead_vs_h2_baseline_pct": _diff(h2_low_overhead["daily_mean_pct"], base_daily),
+        "delta_non_adverse_low_overhead_vs_h2_baseline_pct": _diff(
+            h2_non_adverse_low_overhead["daily_mean_pct"], base_daily
+        ),
         "ew_delta_positive_vs_h2_baseline_pct": _diff(h2_positive["ew_daily_mean_pct"], base_ew),
         "ew_delta_non_adverse_vs_h2_baseline_pct": _diff(h2_non_adverse["ew_daily_mean_pct"], base_ew),
+        "ew_delta_low_overhead_vs_h2_baseline_pct": _diff(h2_low_overhead["ew_daily_mean_pct"], base_ew),
+        "ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct": _diff(
+            h2_non_adverse_low_overhead["ew_daily_mean_pct"], base_ew
+        ),
         "per_regime_oos": per_regime_oos,
     }
 
@@ -916,6 +946,7 @@ def replay_patterns(
     patterns_dir: Path | None = None,
     allowed_regimes: Sequence[str] | None = None,
     excluded_regimes: Sequence[str] | None = None,
+    max_overhead_pct: float | None = None,
 ) -> dict[str, Any]:
     """Replay CN patterns point-in-time on ``daily_pack`` using ``next_open`` + tradability rules."""
     sorted_horizons = tuple(sorted({int(h) for h in horizons if int(h) > 0}))
@@ -975,6 +1006,18 @@ def replay_patterns(
         cost_bps=cost_bps,
     )
 
+    ov_ceiling: float | None = None
+    if max_overhead_pct is not None:
+        if isinstance(max_overhead_pct, bool):
+            raise ValueError("max_overhead_pct must be a number in (0, 100]")
+        try:
+            ov_arg = float(max_overhead_pct)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid max_overhead_pct: {max_overhead_pct!r}") from exc
+        if not math.isfinite(ov_arg) or ov_arg <= 0.0 or ov_arg > 100.0:
+            raise ValueError(f"max_overhead_pct must be in (0, 100], got {max_overhead_pct!r}")
+        ov_ceiling = ov_arg
+
     allowed_stage_set, regime_filter_meta = _normalize_regime_filter(
         allowed_regimes,
         excluded_regimes,
@@ -1000,6 +1043,9 @@ def replay_patterns(
             day_str = dates[t]
 
             for pos, j in enumerate(cols.tolist()):
+                ov_val = float(overhead_vals[pos]) if np.isfinite(overhead_vals[pos]) else None
+                if ov_ceiling is not None and (ov_val is None or ov_val >= ov_ceiling):
+                    continue
                 total_signals += 1
                 regime_signal_counts[stage] = regime_signal_counts.get(stage, 0) + 1
 
@@ -1009,7 +1055,7 @@ def replay_patterns(
                         "date": day_str,
                         "code": str(ctx.codes[j]),
                         "stage": stage,
-                        "overhead": float(overhead_vals[pos]) if np.isfinite(overhead_vals[pos]) else None,
+                        "overhead": ov_val,
                         "untradable": False,
                         "horizons": {f"t{h}": {"status": "pending"} for h in sorted_horizons},
                     })
@@ -1024,7 +1070,7 @@ def replay_patterns(
                         "date": day_str,
                         "code": str(ctx.codes[j]),
                         "stage": stage,
-                        "overhead": float(overhead_vals[pos]) if np.isfinite(overhead_vals[pos]) else None,
+                        "overhead": ov_val,
                         "untradable": True,
                         "horizons": {},
                     })
@@ -1082,7 +1128,7 @@ def replay_patterns(
                     "date": day_str,
                     "code": str(ctx.codes[j]),
                     "stage": stage,
-                    "overhead": float(overhead_vals[pos]) if np.isfinite(overhead_vals[pos]) else None,
+                    "overhead": ov_val,
                     "untradable": False,
                     "horizons": h_map,
                 })
@@ -1255,6 +1301,7 @@ def replay_patterns(
         "benchmark": "sh000300",
         "cost_bps": float(cost_bps),
         "regime_filter": regime_filter_meta,
+        "overhead_filter": {"active": ov_ceiling is not None, "max_overhead_pct": ov_ceiling},
         "graduation_rule": {
             "min_samples": GRADUATION_MIN_SAMPLES,
             "net_cost_bps": gate_cost_bps,
@@ -1309,6 +1356,11 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
         eff = regime_filter.get("effective_regimes") or []
         eff_labels = "、".join(f"{REGIME_STAGE_LABELS.get(s, s)}(`{s}`)" for s in eff)
         filter_line = [f"- 情绪过滤: 仅评估阶段 {eff_labels}"]
+    overhead_filter = report.get("overhead_filter") or {}
+    if overhead_filter.get("active") and overhead_filter.get("max_overhead_pct") is not None:
+        filter_line.append(
+            f"- 套牢盘过滤: 仅保留上方 10% 筹码占比 < {float(overhead_filter['max_overhead_pct']):.1f}% 的信号"
+        )
     lines = [
         "# A 股形态 250 日 next_open 回放报告",
         "",
@@ -1425,8 +1477,8 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
         "",
         "## Walk-Forward 情绪门控样本外检验（H1 选阶段 → H2 样本外对比）",
         "",
-        "| 形态 | H1 正超额阶段 | H1 剔除逆风阶段 | H2 基线日均 (日数) | H2 仅正阶段 (OOS) | Δ 正阶段 vs 基线 | H2 剔除逆风 (OOS) | Δ 剔逆风 vs 基线 |",
-        "|---|---|---|---:|---:|---:|---:|---:|",
+        "| 形态 | H1 正超额阶段 | H1 剔除逆风阶段 | H2 基线日均 (日数) | H2 仅正阶段 (OOS) | Δ 正阶段 vs 基线 | H2 剔除逆风 (OOS) | Δ 剔逆风 vs 基线 | H2 非逆风×低套牢<15% (OOS) | Δ 联合 vs 基线 |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ])
     for item in report["patterns"]:
         wf = item.get("walk_forward_regime_audit") or {}
@@ -1435,15 +1487,18 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
         h2_base = wf.get("h2_baseline") or {}
         h2_pos = wf.get("h2_positive_only") or {}
         h2_non_adv = wf.get("h2_non_adverse") or {}
+        h2_joint = wf.get("h2_non_adverse_low_overhead") or {}
         base_str = f"{_fmt_pct(h2_base.get('daily_mean_pct'))} ({h2_base.get('days', 0)}d)"
         pos_str = f"{_fmt_pct(h2_pos.get('daily_mean_pct'))} ({h2_pos.get('days', 0)}d)"
         non_adv_str = f"{_fmt_pct(h2_non_adv.get('daily_mean_pct'))} ({h2_non_adv.get('days', 0)}d)"
+        joint_str = f"{_fmt_pct(h2_joint.get('daily_mean_pct'))} ({h2_joint.get('days', 0)}d)"
         lines.append(
             f"| {item['display_name']} | "
             f"{'、'.join(pos_stages) if pos_stages else '无'} | "
             f"{'、'.join(adv_stages) if adv_stages else '无'} | "
             f"{base_str} | {pos_str} | {_fmt_pct(wf.get('delta_positive_vs_h2_baseline_pct'))} | "
-            f"{non_adv_str} | {_fmt_pct(wf.get('delta_non_adverse_vs_h2_baseline_pct'))} |"
+            f"{non_adv_str} | {_fmt_pct(wf.get('delta_non_adverse_vs_h2_baseline_pct'))} | "
+            f"{joint_str} | {_fmt_pct(wf.get('delta_non_adverse_low_overhead_vs_h2_baseline_pct'))} |"
         )
 
     return "\n".join(lines) + "\n"

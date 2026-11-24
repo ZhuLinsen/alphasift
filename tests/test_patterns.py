@@ -875,3 +875,150 @@ def test_replay_patterns_regime_filter_and_walk_forward_markdown(
     assert builtin_stage not in script_loaded["regime_filter"]["effective_regimes"]
     assert script_loaded["patterns"][0]["by_regime"][builtin_stage]["signals"] == 0
 
+
+def test_walk_forward_joint_low_overhead_oos_and_missing_fallback() -> None:
+    mid_date = "2026-06-01"
+    obs: list[dict[str, object]] = []
+
+    def _add(date: str, stage: str, ret: float, ew: float, overhead: float | None) -> None:
+        obs.append({
+            "date": date,
+            "code": "000001",
+            "stage": stage,
+            "overhead": overhead,
+            "horizons": {
+                "t5": {
+                    "status": "ok",
+                    "net_excess_return_pct": ret,
+                    "excess_return_pct": ret,
+                    "net_over_ew_pct": ew,
+                }
+            },
+        })
+
+    # H1 (< 2026-06-01): startup positive (+2.0%), freezing adverse (-2.0%)
+    for i in range(4):
+        _add(f"2026-05-0{i + 1}", "startup", 2.0, 1.5, 10.0)
+        _add(f"2026-05-1{i + 1}", "freezing", -2.0, -1.8, 40.0)
+
+    # H2 (>= 2026-06-01): startup has clean low-overhead winners (+3.0%) & high-overhead laggards (-1.0%),
+    # freezing has a low-overhead day (-2.5%) and one None-overhead observation (must be ignored safely).
+    for i in range(3):
+        _add(f"2026-06-0{i + 1}", "startup", 3.0, 2.4, 8.0)
+        _add(f"2026-06-1{i + 1}", "startup", -1.0, -1.4, 28.0)
+        _add(f"2026-06-2{i + 1}", "freezing", -2.5, -2.0, 12.0)
+    _add("2026-06-29", "startup", 4.0, 3.0, None)
+
+    audit = _summarize_walk_forward_regime_audit(obs, mid_date=mid_date, horizon=5, min_regime_days_h1=3)
+    assert audit["low_overhead_threshold_pct"] == pytest.approx(15.0)
+    # h2_low_overhead includes 3 startup (<15%) @ +3.0% and 3 freezing (<15%) @ -2.5% -> +0.25%
+    assert audit["h2_low_overhead"]["days"] == 6
+    assert audit["h2_low_overhead"]["daily_mean_pct"] == pytest.approx(0.25)
+    # h2_non_adverse_low_overhead keeps ONLY startup (<15%) @ +3.0%, excluding high-overhead, freezing & None overhead
+    assert audit["h2_non_adverse_low_overhead"]["days"] == 3
+    assert audit["h2_non_adverse_low_overhead"]["daily_mean_pct"] == pytest.approx(3.0)
+    assert audit["delta_non_adverse_low_overhead_vs_h2_baseline_pct"] > 0.0
+    assert audit["ew_delta_non_adverse_low_overhead_vs_h2_baseline_pct"] > 0.0
+
+    # Graceful empty fallback when overhead is absent on all observations
+    no_ov_obs = [{**row, "overhead": None} for row in obs]
+    audit_no_ov = _summarize_walk_forward_regime_audit(no_ov_obs, mid_date=mid_date, horizon=5, min_regime_days_h1=3)
+    assert audit_no_ov["h2_non_adverse_low_overhead"]["days"] == 0
+    assert audit_no_ov["delta_non_adverse_low_overhead_vs_h2_baseline_pct"] is None
+
+
+def test_replay_patterns_max_overhead_pct_filter_and_cli(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    n_days = 100
+    dates = _dates(n_days)
+    pat_dir = tmp_path / "patterns"
+    pat_dir.mkdir()
+    (pat_dir / "ov_filter_test.yaml").write_text(
+        "name: ov_filter_test\ndisplay_name: 低套牢过滤测试\nfamily: breakout\nstatus: experimental\n"
+        "mode: direct\nmarket_scope: [cn]\nmin_history_days: 60\n"
+        "universe:\n  exclude_st: true\n  proxy_amount_min: 50000000\n"
+        "conditions:\n  - feature: body_pct\n    min: 4.0\n",
+        encoding="utf-8",
+    )
+
+    series_by_code = {
+        f"600{idx:03d}": _flat_bars(n_days, price=10.0, vol=10_000_000.0)
+        for idx in range(4)
+    }
+    # 600000: clean overhead (<15%) breakout on day 70
+    series_by_code["600000"][70] = (10.0, 10.6, 9.95, 10.5, 10.0, 20_000_000.0)
+    # 600001: heavy overhead supply (>=35%) in (10.5, 11.55] band over days 51-64, then breakout on day 70
+    series_by_code["600001"][50] = (10.1, 10.9, 10.05, 10.8, 10.0, 15_000_000.0)
+    for d in range(51, 65):
+        pc = series_by_code["600001"][d - 1][3]
+        series_by_code["600001"][d] = (10.9, 11.1, 10.85, 11.0, pc, 60_000_000.0)
+    series_by_code["600001"][65] = (10.8, 10.9, 10.1, 10.2, 11.0, 10_000_000.0)
+    for d in range(66, 70):
+        pc = series_by_code["600001"][d - 1][3]
+        series_by_code["600001"][d] = (10.0, 10.12, 9.88, 10.0, pc, 10_000_000.0)
+    series_by_code["600001"][70] = (10.0, 10.6, 9.95, 10.5, 10.0, 20_000_000.0)
+
+    pack = _make_ohlcv_pack(series_by_code, dates=dates)
+    bench_df = pd.DataFrame({
+        "date": dates,
+        "open": [3000.0] * n_days,
+        "close": [3005.0] * n_days,
+    })
+
+    for bad_ov in (0.0, -5.0, 101.0, float("nan"), True):
+        with pytest.raises(ValueError):
+            replay_patterns(pack, benchmark_df=bench_df, warmup_days=60, patterns_dir=pat_dir, max_overhead_pct=bad_ov)
+
+    unfiltered = replay_patterns(pack, benchmark_df=bench_df, warmup_days=60, patterns_dir=pat_dir)
+    assert unfiltered["overhead_filter"] == {"active": False, "max_overhead_pct": None}
+    unf_ov = unfiltered["patterns"][0]["by_overhead_supply"]
+    assert unf_ov["low_lt15"]["t5_scored"] >= 1
+    assert unf_ov["high_ge35"]["t5_scored"] >= 1
+
+    filtered = replay_patterns(
+        pack, benchmark_df=bench_df, warmup_days=60, patterns_dir=pat_dir, max_overhead_pct=15.0
+    )
+    assert filtered["overhead_filter"] == {"active": True, "max_overhead_pct": 15.0}
+    filt_pat = filtered["patterns"][0]
+    assert filt_pat["by_overhead_supply"]["low_lt15"]["t5_scored"] == unf_ov["low_lt15"]["t5_scored"]
+    assert filt_pat["by_overhead_supply"]["mid_15_35"]["t5_scored"] == 0
+    assert filt_pat["by_overhead_supply"]["high_ge35"]["t5_scored"] == 0
+
+    md_filt = render_replay_markdown(filtered)
+    assert "- 套牢盘过滤:" in md_filt
+    assert "H2 非逆风×低套牢<15% (OOS)" in md_filt
+
+    # CLI end-to-end --exclude-regimes + --max-overhead-pct on `scripts/replay_patterns.py` & `cli_main`
+    pack_dir_path = tmp_path / "pack"
+    save_pack(pack_dir_path, pack)
+    bench_csv = tmp_path / "bench.csv"
+    bench_df.to_csv(bench_csv, index=False)
+    out_json = tmp_path / "cli_joint.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "alphasift",
+            "patterns",
+            "replay",
+            "--pack-dir",
+            str(pack_dir_path),
+            "--benchmark-csv",
+            str(bench_csv),
+            "--warmup-days",
+            "60",
+            "--exclude-regimes",
+            "freezing",
+            "--max-overhead-pct",
+            "15",
+            "--output-json",
+            str(out_json),
+        ],
+    )
+    cli_main()
+    cli_loaded = json.loads(out_json.read_text(encoding="utf-8"))
+    assert cli_loaded["overhead_filter"] == {"active": True, "max_overhead_pct": 15.0}
+    assert "freezing" not in cli_loaded["regime_filter"]["effective_regimes"]
+
+

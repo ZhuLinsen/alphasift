@@ -244,6 +244,8 @@ def test_dashboard_html_p3_sections_and_docs(tmp_path: Path) -> None:
         "nav_github",
         "btn_deploy",
         "utm_source=dashboard",
+        "h2_non_adverse_low_overhead",
+        "wf_tip_joint",
         "site/patterns.json",
         "site/report.json",
         "site/feed.xml",

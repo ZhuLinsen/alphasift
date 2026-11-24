@@ -29,6 +29,12 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Comma-separated excluded regime stages (e.g. freezing,ebb)",
     )
+    parser.add_argument(
+        "--max-overhead-pct",
+        type=float,
+        default=None,
+        help="Keep only signals whose top-10%% overhead supply is strictly below this percentage (e.g. 15)",
+    )
     parser.add_argument("--output-json", default=None, help="Write replay JSON report")
     parser.add_argument("--output-md", default=None, help="Write replay Markdown report")
     args = parser.parse_args(argv)
@@ -54,6 +60,7 @@ def main(argv: list[str] | None = None) -> int:
             s.strip() for s in (args.exclude_regimes or "").split(",") if s.strip()
         ]
         or None,
+        max_overhead_pct=args.max_overhead_pct,
     )
     md = render_replay_markdown(report)
 
