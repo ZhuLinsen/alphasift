@@ -281,7 +281,7 @@ def render_daily_report_html(
     warn_items = "".join(f"<li>{_esc(w)}</li>" for w in (brief.get("risk_warnings") or []))
     watch_items = "".join(f"<li>{_esc(w)}</li>" for w in (brief.get("watch_points") or []))
     brief_block = f"""
-    <section class="panel brief-box">
+    <section class="panel brief-box" id="brief">
       <div class="sec-head"><h2 {_i18n("sec_brief")}>盘后要点综述</h2>{brief_badge}</div>
       <div class="brief-headline">{_esc(brief.get("headline") or "暂无摘要")}</div>
       <div class="grid two-col">
@@ -315,7 +315,7 @@ def render_daily_report_html(
     stage_txt = f"盘面 · {_esc(reg_label)}"
 
     panorama_block = f"""
-    <section class="panel" style="padding:0;overflow:hidden;">
+    <section class="panel" id="panorama" style="padding:0;overflow:hidden;">
       <div class="sec-head" style="padding:14px 18px 10px;margin:0;">
         <h2 {_i18n("sec_panorama", d=report.get("trade_date") or "-")}>A 股盘面全景（{trade_date}）</h2>
         <span class="badge accent" data-regime="{_esc(reg_code)}" data-regime-raw="{_esc(reg_label)}">{stage_txt}</span>
@@ -364,7 +364,7 @@ def render_daily_report_html(
         if r.get("source") != "announcement"
     )
     ann_block = f"""
-    <section class="panel {'alert-hot' if flagged else ''}">
+    <section class="panel {'alert-hot' if flagged else ''}" id="announcements">
       <div class="sec-head">
         <h2 {_i18n("sec_ann")}>⚠️ 公告排雷与风险聚焦</h2>
         <span class="badge {'bad' if flagged else ''}" {_i18n("ann_badge", c=checked, f=len(flagged))}>抽检 {checked} · 高风险 {len(flagged)}</span>
@@ -387,7 +387,7 @@ def render_daily_report_html(
             if isinstance(it, dict) and it.get("title")
         )
         news_block = f"""
-    <section class="panel">
+    <section class="panel" id="news">
       <div class="sec-head">
         <h2 {_i18n("sec_news")}>📰 市场热点与政策快讯</h2>
         {f'<span class="badge">{_esc(news_sources)}</span>' if news_sources else ""}
@@ -492,7 +492,7 @@ def render_daily_report_html(
     )
 
     synthesis_block = f"""
-    <section class="panel">
+    <section class="panel" id="synthesis">
       <div class="sec-head"><h2 {_i18n("sec_syn")}>跨策略共识、行业分布与 AI 归因</h2>{_dash_link("track-comparison-section", "link_ai_board", "历史 AI 归因 →")}</div>
       <h3 class="subhead" {_i18n("sub_multi_cons")}>多策略共识标的</h3>
       {consensus_html}
@@ -500,7 +500,7 @@ def render_daily_report_html(
         <div class="sub-panel"><h3 class="subhead" {_i18n("sub_sector_conc")}>候选行业集中度</h3><div class="ladder-list">{sector_html}</div></div>
         <div class="sub-panel"><h3 class="subhead" {_i18n("sub_res")}>策略 × 形态共振观察</h3>{res_html}</div>
       </div>
-      {f'<div style="margin-top:12px;"><h3 class="subhead" {_i18n("sub_ai_today")}>今日 AI 调仓对比</h3><div class="grid">{ai_cards}</div></div>' if ai_cards else ""}
+      {f'<div id="ai-rebalance" style="margin-top:12px;"><h3 class="subhead" {_i18n("sub_ai_today")}>今日 AI 调仓对比</h3><div class="grid">{ai_cards}</div></div>' if ai_cards else ""}
       {_render_case_studies(track_summary)}
     </section>
     """
@@ -538,7 +538,7 @@ def render_daily_report_html(
             f'<div class="sub" {_i18n("strat_picks_cnt", n=n_picks)}>入选 {n_picks} 只</div></div>{tbl}</div>'
         )
     strat_block = f"""
-    <section class="panel">
+    <section class="panel" id="strategies">
       <div class="sec-head"><h2 {_i18n("sec_strats")}>今日策略精选全览</h2><span style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;"><span class="badge" {_i18n("strat_runs_badge", n=len(strategies))}>{len(strategies)} 组运行</span>{_dash_link("leaderboard", "link_leaderboard", "T+N 排行 →")}</span></div>
       {f'<div class="grid">{"".join(strat_cards)}</div>' if strat_cards else f'<div class="empty" {_i18n("no_strats")}>未附加策略运行结果。</div>'}
     </section>
@@ -611,12 +611,13 @@ def render_daily_report_html(
                 body = f'<div class="empty" {_i18n("no_pat_sig")}>今日无触发信号</div>'
             hits_n = int(pat.get("hit_count") or 0)
             pat_link = _dash_link("walk-forward-wrap", "link_pat_wf", "样本外回放 →", pat_id=pkey) if pkey else ""
+            pat_id_attr = f' id="pat-{_esc(pkey)}"' if pkey else ""
             pat_cards.append(
-                f'<div class="card {"muted-card" if not is_active else ""}"><div class="card-top"><h3><span data-pattern="{_esc(pkey)}">{_esc(dname)}</span><span style="display:inline-flex;flex-wrap:wrap;gap:4px;">{badge}{wf_adv_badge}</span></h3>'
+                f'<div class="card {"muted-card" if not is_active else ""}"{pat_id_attr}><div class="card-top"><h3><span data-pattern="{_esc(pkey)}">{_esc(dname)}</span><span style="display:inline-flex;flex-wrap:wrap;gap:4px;">{badge}{wf_adv_badge}</span></h3>'
                 f'<div class="sub"><span {_i18n("pat_hits_cnt", n=hits_n)}>命中 {hits_n} 只</span>{replay_note}{pat_link}</div></div>{body}</div>'
             )
     pat_block = f"""
-    <section class="panel">
+    <section class="panel" id="patterns">
       <div class="sec-head"><h2 {_i18n("sec_patterns")}>无状态形态雷达命中</h2>{_dash_link("walk-forward-wrap", "link_wf_board", "250日 Walk-Forward 回放 →")}</div>
       <div class="grid">{"".join(pat_cards) if pat_cards else f'<div class="empty" {_i18n("no_pats")}>无形态扫描记录</div>'}</div>
     </section>
@@ -759,6 +760,8 @@ main {{ max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }}
 }}
 .dash-link:hover {{ background: rgba(59,130,246,0.22); text-decoration: none; }}
 .card .sub .dash-link {{ margin-left: 6px; padding: 0 6px; font-size: 10.5px; vertical-align: middle; }}
+section[id], #ai-rebalance, .card[id] {{ scroll-margin-top: 64px; }}
+.card:target {{ border-color: var(--accent-hi); box-shadow: 0 0 0 1px var(--accent-hi); opacity: 1; }}
 
 .rank-num {{
   display: inline-flex; align-items: center; justify-content: center;

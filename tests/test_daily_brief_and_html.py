@@ -520,3 +520,62 @@ def test_daily_report_html_contextual_dashboard_deep_links() -> None:
             assert proc.returncode == 0, proc.stderr
 
 
+def test_daily_report_html_section_and_pattern_anchors() -> None:
+    report: dict = {
+        "trade_date": "2026-11-24",
+        "pack_trade_date": "2026-11-24",
+        "expected_trade_date": "2026-11-24",
+        "pack_is_stale": False,
+        "market_regime": {"regime_stage": "divergence", "regime_stage_label": "分歧"},
+        "strategies": [],
+        "ai_highlights": [
+            {
+                "strategy": "dual_low",
+                "rules_pick_count": 5,
+                "ai_pick_count": 5,
+                "overlap_pct": 80.0,
+                "added_by_ai": [{"code": "600519", "name": "贵州茅台"}],
+                "dropped_by_ai": [{"code": "000001", "name": "平安银行"}],
+            }
+        ],
+        "patterns": {
+            "active": [],
+            "experimental": [
+                {
+                    "pattern": "double_bottom_breakout",
+                    "display_name": "双底突破",
+                    "status": "experimental",
+                    "expectancy_tier": "negative_watch",
+                    "hit_count": 3,
+                    "signals": [{"code": "000001", "name": "平安银行"}],
+                }
+            ],
+        },
+        "announcement_risks": {"checked_count": 0, "flagged_count": 0, "flagged_items": [], "errors": []},
+        "market_news": {
+            "items": [{"category": "政策", "title": "盘后要闻示例", "source": "Test", "published_at": "11-24"}],
+            "sources": ["Test"],
+            "candidate_news": {},
+            "errors": [],
+        },
+        "degradation": [],
+        "cross_strategy_synthesis": {},
+        "ai_brief": {},
+    }
+    html_text = render_daily_report_html(report)
+    for anchor in (
+        'id="brief"',
+        'id="panorama"',
+        'id="announcements"',
+        'id="news"',
+        'id="synthesis"',
+        'id="ai-rebalance"',
+        'id="strategies"',
+        'id="patterns"',
+        'id="pat-double_bottom_breakout"',
+    ):
+        assert anchor in html_text, f"missing anchor {anchor}"
+    assert "scroll-margin-top: 64px" in html_text
+    assert ".card:target" in html_text
+
+

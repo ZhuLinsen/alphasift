@@ -461,6 +461,13 @@ tr:last-child td { border-bottom: 0; }
 tr.low-sample td, td.muted-cell { color: var(--muted); opacity: 0.78; }
 tr.pat-focus-row td { background: var(--accent-soft) !important; opacity: 1 !important; color: var(--ink) !important; }
 tr.pat-focus-row td:first-child { box-shadow: inset 3px 0 0 var(--accent-hi); font-weight: 700; }
+.pat-report-link {
+  display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; padding: 0 6px;
+  border-radius: 5px; font-size: 10.5px; font-weight: 600; font-family: var(--font-sans);
+  color: var(--accent-hi); background: var(--accent-soft); border: 1px solid rgba(59, 130, 246, 0.22);
+  text-decoration: none; white-space: nowrap; vertical-align: middle;
+}
+.pat-report-link:hover { background: rgba(59, 130, 246, 0.22); text-decoration: none; }
 .ico { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; flex-shrink: 0; }
 
 .rank-num {
@@ -981,6 +988,8 @@ const I18N = {
     pane_consensus_title: "多策略共振标的",
     pane_consensus_badge: "{n} 只共振",
     full_report_btn: "完整研报 →",
+    ai_report_link: "今日调仓研报 →",
+    pat_report_link: "研报卡片 →",
     live_agg_chip: "{d} · 实时聚合",
     ai_brief_badge: "AI 综述",
     rule_brief_badge: "规则摘要",
@@ -1247,6 +1256,8 @@ const I18N = {
     pane_consensus_title: "Cross-Strategy Consensus",
     pane_consensus_badge: "{n} resonant",
     full_report_btn: "Full Report →",
+    ai_report_link: "Today's AI Brief →",
+    pat_report_link: "Brief Card →",
     live_agg_chip: "{d} · Live Aggregated",
     ai_brief_badge: "AI Brief",
     rule_brief_badge: "Rule Summary",
@@ -1513,6 +1524,8 @@ const I18N = {
     pane_consensus_title: "複数戦略コンセンサス銘柄",
     pane_consensus_badge: "{n} 銘柄重複",
     full_report_btn: "詳細レポート →",
+    ai_report_link: "本日のAIレポート →",
+    pat_report_link: "レポート詳細 →",
     live_agg_chip: "{d} · リアルタイム集計",
     ai_brief_badge: "AI 要約",
     rule_brief_badge: "統計サマリー",
@@ -1916,12 +1929,14 @@ function syncThemeBtn(theme) {
   btn.innerHTML = theme === "light" ? `${ICO_MOON}<span>${esc(t("theme_dark"))}</span>` : `${ICO_SUN}<span>${esc(t("theme_light"))}</span>`;
 }
 
-function reportHref() {
+function reportHref(hashFrag = "") {
   const params = new URLSearchParams();
   if (state.lang && state.lang !== "zh") params.set("lang", state.lang);
   if (state.theme && state.theme !== "dark") params.set("theme", state.theme);
   const qs = params.toString();
-  return qs ? `site/daily_report.html?${qs}` : "site/daily_report.html";
+  const cleanHash = String(hashFrag || "").replace(/^#/, "").trim();
+  const base = qs ? `site/daily_report.html?${qs}` : "site/daily_report.html";
+  return cleanHash ? `${base}#${cleanHash}` : base;
 }
 
 function syncReportLinks() {
@@ -1929,6 +1944,10 @@ function syncReportLinks() {
   ["report-top-link", "footer-report-link"].forEach((id) => {
     const el = $(id);
     if (el) el.setAttribute("href", href);
+  });
+  document.querySelectorAll("a[data-report-hash]").forEach((el) => {
+    const h = el.getAttribute("data-report-hash") || "";
+    el.setAttribute("href", reportHref(h));
   });
 }
 
@@ -2577,7 +2596,7 @@ function renderConsensusPane() {
     : "";
 
   const reportBtn = rep.trade_date
-    ? `<a class="action-btn" href="${esc(reportHref())}" style="padding:3px 9px;font-size:11.5px;">${esc(t("full_report_btn"))}</a>`
+    ? `<a class="action-btn" data-report-hash="synthesis" href="${esc(reportHref("synthesis"))}" style="padding:3px 9px;font-size:11.5px;">${esc(t("full_report_btn"))}</a>`
     : `<span class="chip">${esc(t("live_agg_chip", { d: tradeDate }))}</span>`;
 
   wrap.innerHTML = `
@@ -2884,12 +2903,16 @@ function renderTrackComparison() {
     </div>`;
   }).filter(Boolean);
 
+  const aiReportBtn = state.reportReady
+    ? `<a class="action-btn" data-report-hash="ai-rebalance" href="${esc(reportHref("ai-rebalance"))}" style="padding:3px 9px;font-size:11.5px;margin-left:auto;">${esc(t("ai_report_link"))}</a>`
+    : "";
   const filterBar = sortedHl.length ? `<div class="controls" id="ai-attr-filter" style="margin-bottom:8px;">
     <span class="small dim" style="font-weight:600;">${esc(t("ai_attr_badge"))}</span>
     <div class="seg" role="group" aria-label="${esc(t("ai_attr_badge"))}">
       <button type="button" data-ai-filter="all" aria-pressed="${activeFilter === "all"}">${esc(t("ai_filter_all", { n: sortedHl.length }))}</button>
       <button type="button" data-ai-filter="changed" aria-pressed="${activeFilter === "changed"}" ${changedCount === 0 ? "disabled" : ""}>${esc(t("ai_filter_changed", { n: changedCount }))}</button>
     </div>
+    ${aiReportBtn}
   </div>` : "";
   const allCards = [...hlCards, ...caseCards];
   hlWrap.innerHTML = (filterBar || allCards.length) ? `${filterBar}${allCards.length ? `<div class="cards">${allCards.join("")}</div>` : ""}` : "";
@@ -2968,8 +2991,11 @@ function renderPatternRadar() {
       const metaBar = rInfo
         ? `<div class="pat-meta-row"><span>${esc(t("pat_card_meta", { g: fmtS(gVal), n: fmtS(nVal), t: tStr, cnt: rh5.excess_scored ?? rh5.scored ?? 0 }))}</span><span title="${esc(t("pat_card_spark"))}">${renderHitSparkline(pb.history, name)}</span></div>`
         : (pb.history && pb.history.length ? `<div class="pat-meta-row"><span>${esc(t("pat_card_spark"))}</span><span>${renderHitSparkline(pb.history, name)}</span></div>` : "");
+      const patReportLink = state.reportReady
+        ? `<a class="pat-report-link" data-report-hash="pat-${esc(name)}" href="${esc(reportHref("pat-" + name))}">${esc(t("pat_report_link"))}</a>`
+        : "";
       if (!items.length) {
-        return `<div class="card"><div class="card-top"><h3><span>${esc(dname)}</span>${badge}</h3><div class="sub">${esc(t("pat_hit_zero", { d: latest.trade_date }))}</div></div>${metaBar}<div class="empty">${esc(t("pat_no_sig"))}</div></div>`;
+        return `<div class="card"><div class="card-top"><h3><span>${esc(dname)}</span>${badge}</h3><div class="sub">${esc(t("pat_hit_zero", { d: latest.trade_date }))}${patReportLink}</div></div>${metaBar}<div class="empty">${esc(t("pat_no_sig"))}</div></div>`;
       }
       const rows = items.slice(0, 6).map((s) => {
         const obs = s.observe_lag_days ? ` <span class="dim small">-${s.observe_lag_days}d</span>` : "";
@@ -2980,7 +3006,7 @@ function renderPatternRadar() {
       return `<div class="card">
         <div class="card-top">
           <h3><span>${esc(dname)}</span>${badge}</h3>
-          <div class="sub">${esc(t("pat_hit_n", { d: latest.trade_date, tot: total, shown: Math.min(6, items.length) }))}</div>
+          <div class="sub">${esc(t("pat_hit_n", { d: latest.trade_date, tot: total, shown: Math.min(6, items.length) }))}${patReportLink}</div>
         </div>
         ${metaBar}
         <div class="scroll"><table><thead><tr><th class="l">${esc(pcols[0])}</th><th>${esc(pcols[1])}</th><th>${esc(pcols[2])}</th><th>${esc(pcols[3])}</th></tr></thead><tbody>${rows}</tbody></table></div>
