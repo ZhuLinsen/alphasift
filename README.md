@@ -2,7 +2,7 @@
 
 Every trading day after the close, a GitHub Action runs each built-in strategy with `--no-llm --save-run` and commits the saved run here. Picks are never edited afterwards; the git history is the timestamped record. Each pick is then measured at T+5 / T+10 / T+20 trading days against its market benchmark.
 
-**Dashboard:** https://alphasift.zhulinsen.tech/ · Code: [ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift) · Updated 2026-11-23T22:35:50+00:00 · 156 saved runs
+**Dashboard:** https://alphasift.zhulinsen.tech/ · Code: [ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift) · Updated 2026-11-24T09:29:53+00:00 · 175 saved runs
 
 > For research only, not investment advice. From 2026-11-21, entry uses `next_open` (explicitly tracking one-price limit-up untradable blocks); legacy pre-switch runs used signal-day `close`. Returns deduct round-trip costs, ignore dividends, and small samples are noisy.
 
@@ -10,20 +10,25 @@ Every trading day after the close, a GitHub Action runs each built-in strategy w
 
 | Market | Strategy | Runs | T+5 n | T+5 excess | T+5 beat | T+20 n | T+20 excess | T+20 beat |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| cn | 均衡多因子 | 9 | 20 | +1.07% | 65% | 0 | – | – |
-| cn | 蓝筹收益质量 | 9 | 20 | +2.27% | 85% | 0 | – | – |
-| cn | 资金热度 [AI] | 1 | 0 | – | – | 0 | – | – |
-| cn | 资金热度 | 9 | 20 | -7.49% | 25% | 0 | – | – |
-| cn | 双低选股 | 9 | 20 | +1.26% | 75% | 0 | – | – |
-| cn | 低波质量 [AI] | 1 | 0 | – | – | 0 | – | – |
-| cn | 低波质量 | 9 | 20 | +2.08% | 80% | 0 | – | – |
-| cn | 趋势质量 [AI] | 1 | 0 | – | – | 0 | – | – |
-| cn | 趋势质量 | 9 | 20 | +2.86% | 85% | 0 | – | – |
-| cn | 超跌反转 | 9 | 20 | -4.04% | 20% | 0 | – | – |
-| cn | 稳健价值 [AI] | 1 | 0 | – | – | 0 | – | – |
-| cn | 稳健价值 | 9 | 20 | +1.69% | 75% | 0 | – | – |
-| cn | 缩量回踩 | 9 | 19 | +2.92% | 84% | 0 | – | – |
-| cn | 放量突破 | 9 | 13 | -4.07% | 15% | 0 | – | – |
+| cn | 均衡多因子 [AI] | 1 | 0 | – | – | 0 | – | – |
+| cn | 均衡多因子 | 10 | 25 | +0.45% | 60% | 0 | – | – |
+| cn | 蓝筹收益质量 [AI] | 1 | 0 | – | – | 0 | – | – |
+| cn | 蓝筹收益质量 | 10 | 25 | +1.94% | 84% | 0 | – | – |
+| cn | 资金热度 [AI] | 2 | 0 | – | – | 0 | – | – |
+| cn | 资金热度 | 10 | 25 | -7.57% | 24% | 0 | – | – |
+| cn | 双低选股 [AI] | 1 | 0 | – | – | 0 | – | – |
+| cn | 双低选股 | 10 | 25 | +1.07% | 72% | 0 | – | – |
+| cn | 低波质量 [AI] | 2 | 0 | – | – | 0 | – | – |
+| cn | 低波质量 | 10 | 25 | +1.71% | 76% | 0 | – | – |
+| cn | 趋势质量 [AI] | 2 | 0 | – | – | 0 | – | – |
+| cn | 趋势质量 | 10 | 25 | +2.03% | 80% | 0 | – | – |
+| cn | 超跌反转 [AI] | 1 | 0 | – | – | 0 | – | – |
+| cn | 超跌反转 | 10 | 25 | -4.18% | 16% | 0 | – | – |
+| cn | 稳健价值 [AI] | 2 | 0 | – | – | 0 | – | – |
+| cn | 稳健价值 | 10 | 25 | +1.42% | 72% | 0 | – | – |
+| cn | 缩量回踩 [AI] | 1 | 0 | – | – | 0 | – | – |
+| cn | 缩量回踩 | 10 | 24 | +2.31% | 79% | 0 | – | – |
+| cn | 放量突破 | 10 | 18 | -4.66% | 28% | 0 | – | – |
 | hk | 全球低估值 | 9 | 15 | +2.17% | 73% | 0 | – | – |
 | in | 全球低估值 | 9 | 15 | -1.76% | 20% | 0 | – | – |
 | jp | 全球低估值 | 8 | 15 | -0.52% | 47% | 0 | – | – |
@@ -34,7 +39,7 @@ Every trading day after the close, a GitHub Action runs each built-in strategy w
 
 ## Latest session
 
-- **asia** finished 2026-11-23T14:22:45+00:00: 0/0 strategies ok (10 skipped)
+- **asia** finished 2026-11-24T09:28:56+00:00: 10/10 strategies ok
 - **us** finished 2026-11-23T22:35:45+00:00: 2/2 strategies ok
 
 Raw runs: [`data/runs/`](data/runs) · derived site data: [`site/`](site)

@@ -1,0 +1,32 @@
+{
+  "schema_version": 3,
+  "run_id": "4614730a0fd2-ai",
+  "strategy": "balanced_alpha",
+  "market": "cn",
+  "strategy_version": "1.3",
+  "strategy_category": "framework",
+  "created_at": "2026-11-24T09:22:22.127879+00:00",
+  "picks": 5,
+  "snapshot_count": 5578,
+  "after_filter_count": 424,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 3,
+  "degradation": [
+    "Candidate context collected rows=12",
+    "Candidate context row errors: 600699 fund_flow: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。 | 688308 fund_flow: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。 | 002414 fund_flow: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。 | 000021 fund_flow: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。 | 688257 fund_flow: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。 | +1 more",
+    "LLM context truncated: trimmed=candidate_collected_context"
+  ],
+  "llm_ranked": true,
+  "llm_coverage": 1.0,
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {},
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/4614730a0fd2-ai.json",
+  "report_path": "track/data/runs/4614730a0fd2-ai.md"
+}
