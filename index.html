@@ -1027,6 +1027,10 @@ const I18N = {
     tc_insuff_title: "需至少 {m} 个同日配对",
     n_picks_sm: "{n}只",
     ai_attr_badge: "AI 当日归因",
+    ai_attr_reranked: "AI 调仓 (+{a}/-{d})",
+    ai_attr_aligned: "与规则一致 (100%)",
+    ai_filter_all: "全部 ({n})",
+    ai_filter_changed: "仅含调仓 ({n})",
     ai_attr_sub: "重合度 {ov} · 规则 {r} 只 / AI {a} 只",
     ai_mkt_view: "市场观点：",
     ai_added: "AI 新增：",
@@ -1060,6 +1064,11 @@ const I18N = {
     wf_subhead: "Walk-Forward 情绪门控样本外检验（仅 H1 选阶段 → 冻结检验 H2）",
     wf_cols: ["形态", "H1 正超额阶段", "H1 剔除逆风", "H2 基线 (日数)", "H2 仅正阶段 (OOS)", "Δ 正阶段", "H2 剔逆风 (OOS)", "Δ 剔逆风"],
     wf_none: "无",
+    wf_note: "注：H2 日数 <{m}d 标有小样本标签并置灰；悬停 H2 / Δ 单元格可查看等权超额 (EW)、Newey-West t 值、信号数及可复现 CLI 命令。",
+    wf_tip_h2: "H2 样本外：{d}日 / {sig} 条信号 · 等权 {ew} · NW t={t}",
+    wf_tip_delta: "等权 Δ {ew} · H2 {d}日 / {sig} 条信号 · NW t={t}",
+    wf_tip_low: "样本偏小（<{m}日），结果需谨慎解读",
+    wf_tip_cli: "复现命令：{cmd}",
     pat_sum_badge: "{m} 套形态 · 今日命中 {h} 只",
     replay_sum_badge: "{s}日 · {p} 套 · Walk-Forward",
     chart_empty: "该市场 T+{w} 所选赛道还没有到期的选股",
@@ -1280,6 +1289,10 @@ const I18N = {
     tc_insuff_title: "Needs ≥{m} paired days",
     n_picks_sm: "{n}",
     ai_attr_badge: "AI Today Delta",
+    ai_attr_reranked: "Re-ranked (+{a}/-{d})",
+    ai_attr_aligned: "Aligned (100%)",
+    ai_filter_all: "All ({n})",
+    ai_filter_changed: "Re-ranked Only ({n})",
     ai_attr_sub: "Overlap {ov} · Rules {r} / AI {a}",
     ai_mkt_view: "Market View: ",
     ai_added: "AI Added: ",
@@ -1313,6 +1326,11 @@ const I18N = {
     wf_subhead: "Walk-Forward Regime Gate (Zero-Snooping: H1 Selection → H2 OOS)",
     wf_cols: ["Pattern", "H1 Positive Regimes", "H1 Adverse Excluded", "H2 Baseline", "H2 Positive Only (OOS)", "Delta Pos", "H2 Non-Adverse (OOS)", "Delta Non-Adv"],
     wf_none: "None",
+    wf_note: "Note: H2 cells tagged <{m}d are muted small-sample estimates. Hover any H2 or Delta cell for Equal-Weight excess, Newey-West t, signal count, and reproducible CLI command.",
+    wf_tip_h2: "H2 OOS: {d}d / {sig} signals · EW {ew} · NW t={t}",
+    wf_tip_delta: "EW Delta {ew} · H2 {d}d / {sig} signals · NW t={t}",
+    wf_tip_low: "Small sample (<{m}d) — interpret cautiously",
+    wf_tip_cli: "CLI: {cmd}",
     pat_sum_badge: "{m} patterns · {h} hits today",
     replay_sum_badge: "{s}d · {p} patterns · Walk-Forward",
     chart_empty: "No matured T+{w} picks for the selected market/track",
@@ -1533,6 +1551,10 @@ const I18N = {
     tc_insuff_title: "{m}日以上のペア比較が必要",
     n_picks_sm: "{n}件",
     ai_attr_badge: "AI 当日帰属",
+    ai_attr_reranked: "AI 入替 (+{a}/-{d})",
+    ai_attr_aligned: "ルール一致 (100%)",
+    ai_filter_all: "すべて ({n})",
+    ai_filter_changed: "入替ありのみ ({n})",
     ai_attr_sub: "重複 {ov} · ルール {r} / AI {a}",
     ai_mkt_view: "市場見通し：",
     ai_added: "AI 追加：",
@@ -1566,6 +1588,11 @@ const I18N = {
     wf_subhead: "Walk-Forward 相場局面ゲート（H1のみで選択 → H2でOOS検証）",
     wf_cols: ["パターン", "H1 正超過局面", "H1 逆風除外", "H2 基準", "H2 正局面のみ (OOS)", "Δ 正局面", "H2 非逆風 (OOS)", "Δ 除外後"],
     wf_none: "なし",
+    wf_note: "注：H2 日数 <{m}d は小標本タグ付きで薄字表示します。H2・Δ セルにカーソルを合わせると等重超過 (EW)・NW t値・シグナル数・再現 CLI を確認できます。",
+    wf_tip_h2: "H2 OOS：{d}日 / {sig} 件 · 等重 {ew} · NW t={t}",
+    wf_tip_delta: "等重 Δ {ew} · H2 {d}日 / {sig} 件 · NW t={t}",
+    wf_tip_low: "小標本（<{m}日）のため慎重に解釈してください",
+    wf_tip_cli: "再現 CLI：{cmd}",
     pat_sum_badge: "{m} 種 · 本日 {h} 件検出",
     replay_sum_badge: "{s}日 · {p} 種 · Walk-Forward",
     chart_empty: "選択した市場・トラックで満期到来の T+{w} 銘柄がありません",
@@ -1768,6 +1795,7 @@ const state = {
   scoreMarket: "all",
   scoreSort: "excess",
   compareWin: "5",
+  aiAttrFilter: "all",
   trendWin: "5",
   trendTrack: "both",
   trendDensity: "top3",
@@ -2780,13 +2808,30 @@ function renderTrackComparison() {
 
   const hlWrap = $("ai-attribution-cards");
   const sep = state.lang === "en" ? "; " : "；";
-  const hlCards = hl.map((item) => {
+  const diffCount = (item) => (item.added_by_ai || []).length + (item.dropped_by_ai || []).length;
+  const sortedHl = [...hl].sort((a, b) => {
+    const dc = diffCount(b) - diffCount(a);
+    if (dc !== 0) return dc;
+    const oa = a.overlap_pct ?? 100;
+    const ob = b.overlap_pct ?? 100;
+    if (oa !== ob) return oa - ob;
+    return String(a.strategy || "").localeCompare(String(b.strategy || ""));
+  });
+  const changedCount = sortedHl.filter((item) => diffCount(item) > 0).length;
+  const activeFilter = state.aiAttrFilter === "changed" && changedCount > 0 ? "changed" : "all";
+  const visibleHl = activeFilter === "changed" ? sortedHl.filter((item) => diffCount(item) > 0) : sortedHl;
+  const hlCards = visibleHl.map((item) => {
+    const addN = (item.added_by_ai || []).length;
+    const dropN = (item.dropped_by_ai || []).length;
+    const badgeHtml = (addN + dropN) > 0
+      ? `<span class="badge ai">${esc(t("ai_attr_reranked", { a: addN, d: dropN }))}</span>`
+      : `<span class="badge exp">${esc(t("ai_attr_aligned"))}</span>`;
     const added = (item.added_by_ai || []).map((a) => `${esc(a.name)}(${esc(a.code)})${a.ranking_reason ? `: ${esc(a.ranking_reason.slice(0, 42))}` : ""}`).join(sep) || t("none_txt");
     const dropped = (item.dropped_by_ai || []).map((d) => `${esc(d.name)}(${esc(d.code)})`).join(sep) || t("none_txt");
     const ovStr = item.overlap_pct === null || item.overlap_pct === undefined ? "–" : `${item.overlap_pct}%`;
     return `<div class="card">
       <div class="card-top">
-        <h3><span>${sname(item.strategy)}</span><span class="badge ai">${esc(t("ai_attr_badge"))}</span></h3>
+        <h3><span>${sname(item.strategy)}</span>${badgeHtml}</h3>
         <div class="sub">${esc(t("ai_attr_sub", { ov: ovStr, r: item.rules_pick_count ?? 0, a: item.ai_pick_count ?? 0 }))}</div>
       </div>
       <div style="padding:10px 14px;font-size:12.5px;display:flex;flex-direction:column;gap:5px;">
@@ -2817,8 +2862,22 @@ function renderTrackComparison() {
     </div>`;
   }).filter(Boolean);
 
+  const filterBar = sortedHl.length ? `<div class="controls" id="ai-attr-filter" style="margin-bottom:8px;">
+    <span class="small dim" style="font-weight:600;">${esc(t("ai_attr_badge"))}</span>
+    <div class="seg" role="group" aria-label="${esc(t("ai_attr_badge"))}">
+      <button type="button" data-ai-filter="all" aria-pressed="${activeFilter === "all"}">${esc(t("ai_filter_all", { n: sortedHl.length }))}</button>
+      <button type="button" data-ai-filter="changed" aria-pressed="${activeFilter === "changed"}" ${changedCount === 0 ? "disabled" : ""}>${esc(t("ai_filter_changed", { n: changedCount }))}</button>
+    </div>
+  </div>` : "";
   const allCards = [...hlCards, ...caseCards];
-  hlWrap.innerHTML = allCards.length ? `<div class="cards">${allCards.join("")}</div>` : "";
+  hlWrap.innerHTML = (filterBar || allCards.length) ? `${filterBar}${allCards.length ? `<div class="cards">${allCards.join("")}</div>` : ""}` : "";
+  hlWrap.querySelectorAll("#ai-attr-filter button[data-ai-filter]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.disabled) return;
+      state.aiAttrFilter = btn.dataset.aiFilter || "all";
+      renderTrackComparison();
+    });
+  });
 }
 
 function renderPatternRadar() {
@@ -3022,12 +3081,33 @@ function renderPatternRadar() {
 
     const hasWf = replay.patterns.some((p) => p.walk_forward_regime_audit && typeof p.walk_forward_regime_audit === "object");
     if (hasWf) {
+      const WF_MIN_DAYS = 15;
       const wcols = t("wf_cols");
       const wfHead = `<thead><tr><th class="l">${esc(wcols[0])}</th><th class="l">${esc(wcols[1])}</th><th class="l">${esc(wcols[2])}</th><th>${esc(wcols[3])}</th><th>${esc(wcols[4])}</th><th>${esc(wcols[5])}</th><th>${esc(wcols[6])}</th><th>${esc(wcols[7])}</th></tr></thead>`;
       const fmtStages = (arr) => (Array.isArray(arr) && arr.length ? esc(arr.map((s) => rname(s)).join(" / ")) : `<span class="dim">${esc(t("wf_none"))}</span>`);
-      const fmtH2 = (blk) => {
-        if (!blk || !blk.days) return '<span class="dim">–</span>';
-        return `${pct(blk.daily_mean_pct)} <span class="dim small">(${esc(String(blk.days))}d)</span>`;
+      const fmtPlainPct = (v) => (v === null || v === undefined || Number.isNaN(Number(v))) ? "–" : `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`;
+      const fmtStat = (v) => (v === null || v === undefined || Number.isNaN(Number(v))) ? "–" : Number(v).toFixed(2);
+      const renderH2Cell = (blk) => {
+        if (!blk || !blk.days) return '<td class="mono"><span class="dim">–</span></td>';
+        const low = blk.days < WF_MIN_DAYS;
+        const tipLines = [
+          t("wf_tip_h2", { d: blk.days, sig: blk.signals ?? 0, ew: fmtPlainPct(blk.ew_daily_mean_pct), t: fmtStat(blk.t_stat) }),
+        ];
+        if (low) tipLines.push(t("wf_tip_low", { m: WF_MIN_DAYS }));
+        return `<td class="mono${low ? " muted-cell" : ""}" title="${esc(tipLines.join("\n"))}">${pct(blk.daily_mean_pct)} <span class="dim small">(${esc(String(blk.days))}d)</span>${low ? `<span class="tag">&lt;${WF_MIN_DAYS}d</span>` : ""}</td>`;
+      };
+      const renderDeltaCell = (deltaVal, ewDeltaVal, blk, patId, cliFlag, stages) => {
+        if (deltaVal === null || deltaVal === undefined || !blk || !blk.days) return '<td class="mono"><span class="dim">–</span></td>';
+        const low = blk.days < WF_MIN_DAYS;
+        const tipLines = [
+          t("wf_tip_delta", { ew: fmtPlainPct(ewDeltaVal), d: blk.days, sig: blk.signals ?? 0, t: fmtStat(blk.t_stat) }),
+        ];
+        if (low) tipLines.push(t("wf_tip_low", { m: WF_MIN_DAYS }));
+        if (Array.isArray(stages) && stages.length && patId) {
+          tipLines.push(t("wf_tip_cli", { cmd: `alphasift patterns replay --pattern ${patId} ${cliFlag} ${stages.join(",")}` }));
+        }
+        const valHtml = low ? pct(deltaVal) : `<b>${pct(deltaVal)}</b>`;
+        return `<td class="mono${low ? " muted-cell" : ""}" title="${esc(tipLines.join("\n"))}">${valHtml}</td>`;
       };
       const wfRows = replay.patterns.map((p) => {
         const wf = p.walk_forward_regime_audit || {};
@@ -3039,15 +3119,16 @@ function renderPatternRadar() {
           <td class="l">${esc(pname(p.pattern, p.display_name))}</td>
           <td class="l small">${fmtStages(wf.h1_positive_regimes)}</td>
           <td class="l small">${fmtStages(wf.h1_adverse_regimes)}</td>
-          <td class="mono">${fmtH2(h2Base)}</td>
-          <td class="mono">${fmtH2(h2Pos)}</td>
-          <td class="mono"><b>${pct(wf.delta_positive_vs_h2_baseline_pct)}</b></td>
-          <td class="mono">${fmtH2(h2Na)}</td>
-          <td class="mono"><b>${pct(wf.delta_non_adverse_vs_h2_baseline_pct)}</b></td>
+          ${renderH2Cell(h2Base)}
+          ${renderH2Cell(h2Pos)}
+          ${renderDeltaCell(wf.delta_positive_vs_h2_baseline_pct, wf.ew_delta_positive_vs_h2_baseline_pct, h2Pos, p.pattern, "--allowed-regimes", wf.h1_positive_regimes)}
+          ${renderH2Cell(h2Na)}
+          ${renderDeltaCell(wf.delta_non_adverse_vs_h2_baseline_pct, wf.ew_delta_non_adverse_vs_h2_baseline_pct, h2Na, p.pattern, "--exclude-regimes", wf.h1_adverse_regimes)}
         </tr>`;
       }).join("");
       $("walk-forward-wrap").innerHTML = `<h3 class="subhead">${esc(t("wf_subhead"))}</h3>
-        <div class="panel scroll"><table class="compact-tbl">${wfHead}<tbody>${wfRows}</tbody></table></div>`;
+        <div class="panel scroll"><table class="compact-tbl">${wfHead}<tbody>${wfRows}</tbody></table></div>
+        <p class="sec-hint" style="margin-top:6px;">${esc(t("wf_note", { m: WF_MIN_DAYS }))}</p>`;
     } else {
       $("walk-forward-wrap").innerHTML = "";
     }
