@@ -657,11 +657,11 @@ footer {
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         <span class="btn-lbl" data-i18n="nav_ledger">原始账本</span>
       </a>
-      <a class="github-btn" href="https://github.com/ZhuLinsen/alphasift" target="_blank" rel="noopener">
+      <a class="github-btn" href="https://github.com/ZhuLinsen/alphasift?utm_source=dashboard" target="_blank" rel="noopener" data-i18n-title="nav_github_title" title="前往 GitHub 点 Star 或 Fork 免费部署">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.11.78-.25.78-.55 0-.27-.01-1.18-.02-2.14-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.06 11.06 0 0 1 5.78 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.15 0 1.55-.01 2.8-.01 3.18 0 .31.21.67.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/>
         </svg>
-        <span>GitHub</span>
+        <span data-i18n="nav_github">Star 开源项目</span>
       </a>
       <div class="lang-switch" id="lang-switch" role="group" aria-label="Language">
         <button type="button" data-lang="zh" aria-pressed="true">中</button>
@@ -693,6 +693,10 @@ footer {
       <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift/tree/main/strategies" target="_blank" rel="noopener">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span data-i18n="btn_strategies">内置策略</span>
+      </a>
+      <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift/blob/main/docs/deployment.md?utm_source=dashboard" target="_blank" rel="noopener">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+        <span data-i18n="btn_deploy">免费云端部署</span>
       </a>
     </div>
   </header>
@@ -870,6 +874,8 @@ const I18N = {
     nav_rss_title: "订阅 Atom 1.0 RSS 每日更新",
     nav_ledger: "原始账本",
     nav_ledger_title: "查看 track-record 分支 Git 可审计原始运行日志",
+    nav_github: "Star 开源项目",
+    nav_github_title: "前往 GitHub 点 Star 或 Fork 免费部署",
     theme_aria: "切换明暗主题",
     theme_light: "亮色",
     theme_dark: "暗色",
@@ -877,6 +883,7 @@ const I18N = {
     hero_sub: "每交易日收盘自动运行全市场 YAML 策略、公告排雷与可选 AI 重排，按 <code>T+5 / T+10 / T+20</code> 真实行情与一字涨停不可成交口径公开验证超额收益。",
     btn_docs: "使用文档",
     btn_strategies: "内置策略",
+    btn_deploy: "免费云端部署",
     btn_share: "分享视图",
     btn_copied: "已复制链接",
     loading: "加载中",
@@ -1132,6 +1139,8 @@ const I18N = {
     nav_rss_title: "Subscribe to Atom 1.0 daily feed",
     nav_ledger: "Raw Ledger",
     nav_ledger_title: "View Git-auditable raw run logs on track-record branch",
+    nav_github: "Star on GitHub",
+    nav_github_title: "Star or Fork on GitHub for free daily Actions runs",
     theme_aria: "Toggle light/dark theme",
     theme_light: "Light",
     theme_dark: "Dark",
@@ -1139,6 +1148,7 @@ const I18N = {
     hero_sub: "Automated post-close screening across 7 markets with auditable YAML strategies, announcement risk screening, optional LLM re-ranking, and public <code>T+5 / T+10 / T+20</code> verification including untradable limit-up accounting.",
     btn_docs: "Docs",
     btn_strategies: "Strategies",
+    btn_deploy: "Free Cloud Deploy",
     btn_share: "Share View",
     btn_copied: "Link Copied",
     loading: "Loading",
@@ -1394,6 +1404,8 @@ const I18N = {
     nav_rss_title: "Atom 1.0 RSS フィードを購読",
     nav_ledger: "生ログ",
     nav_ledger_title: "track-record ブランチの Git 監査可能な生ログを表示",
+    nav_github: "GitHub で Star",
+    nav_github_title: "GitHub で Star / Fork して無料自動実行",
     theme_aria: "ライト／ダーク切替",
     theme_light: "ライト",
     theme_dark: "ダーク",
@@ -1401,6 +1413,7 @@ const I18N = {
     hero_sub: "毎営業日の引け後に全市場 YAML 戦略・開示リスクチェック・任意の AI 再ランクを自動実行し、<code>T+5 / T+10 / T+20</code> の実測値とストップ高成行不可判定で超過リターンを公開検証します。",
     btn_docs: "ドキュメント",
     btn_strategies: "内蔵戦略",
+    btn_deploy: "無料クラウド運用",
     btn_share: "URLコピー",
     btn_copied: "コピー済",
     loading: "読込中",
