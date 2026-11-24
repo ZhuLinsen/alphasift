@@ -68,7 +68,22 @@ alphasift patterns replay --pattern double_bottom_breakout --allowed-regimes sta
 
 # 例 2：全形态剔除“冰点 + 退潮”高危逆风期
 alphasift patterns replay --exclude-regimes freezing,ebb --cost-bps 25
+
+# 例 3：联合门控 —— 剔除逆风期并限制上方 10% 套牢盘严格 < 15%
+alphasift patterns replay --pattern bottom_volume_yang --exclude-regimes freezing,ebb --max-overhead-pct 15 --cost-bps 25
 ```
+
+### 3.1 实测结果：情绪 × 低套牢盘（`<15%`）联合 Walk-Forward 样本外对比
+
+基于同套 `5,577` 只 A 股实证包，将严格前视隔离的 H1 非逆风情绪过滤与结构先验 `overhead_supply_10pct < 15%` 联合投影到 `H2` 样本外窗口后（见线上实时 [Walk-Forward 样本外对比表](https://alphasift.zhulinsen.tech/?lang=zh#walk-forward-wrap) 与 `alphasift/pattern_replay.py` 中的 `h2_non_adverse_low_overhead`），9 套经典形态呈现出清晰的分化与诚实否定对照：
+
+| 形态 ID | H2 基线日均 | H2 非逆风 (OOS) | H2 低套牢 `<15%` (OOS) | H2 联合门控 (`非逆风×<15%`) | 联合 `Δ` vs 基线 | 等权 `EW Δ` | 解读结论 |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `bottom_volume_yang` | `+0.716% (89d)` | `+2.099% (16d)` | `+1.723% (74d)` | **`+2.848% (16d / 82s)`** | **`+2.132%`** | **`+1.927%`** | 正交增益显著（`t=1.07`，持续积累长窗口） |
+| `double_bottom_breakout` | `-0.543% (88d)` | `-0.524% (65d)` | `-0.041% (80d)` | **`+0.236% (60d / 213s)`** | **`+0.779%`** | **`+0.760%`** | 联合过滤后 H2 样本外均值由负翻正（`t=0.20`） |
+| `shooting_star_confirm` | `-0.457% (78d)` | `+1.728% (9d)` | `-0.753% (77d)` | `+1.212% (8d / 19s)` | `+1.669%` | `+1.998%` | 小样本（`<15d`），谨防过拟合 |
+| `box_breakout` | `-1.104% (89d)` | `-0.989% (56d)` | `-1.592% (89d)` | `-1.273% (56d / 1020s)` | `-0.169%` | `-0.408%` | 联合过滤仍显著负期望（`t=-2.36`） |
+| `single_yang_hold` | `-1.178% (90d)` | `-1.066% (43d)` | `-1.925% (90d)` | `-1.833% (43d / 1260s)` | `-0.655%` | `-0.741%` | 联合过滤仍显著负期望（`t=-2.56`） |
 
 ---
 
