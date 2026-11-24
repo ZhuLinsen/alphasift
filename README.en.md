@@ -85,7 +85,7 @@ Most AI stock tools stop at chatting over a pre-picked watchlist or cherry-picki
 
 ### 1. Connect to Claude Code, Cursor, Codex, or OpenClaw (Native STDIO MCP)
 
-Register the zero-dependency read-only MCP server (`10` tools, `2` resources; runs local `scorecard` without outbound notifications):
+Register the zero-dependency read-only MCP server (`12` tools, `3` resources; runs local `scorecard` without outbound notifications):
 
 ```json
 {

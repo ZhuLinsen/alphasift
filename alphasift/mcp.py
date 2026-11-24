@@ -18,6 +18,7 @@ from typing import Any, BinaryIO
 from alphasift import __version__
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
+from alphasift.market_digest import build_markets_digest, load_multi_market_runs
 from alphasift.markets import get_market
 from alphasift.notify import notify_readiness
 from alphasift.overview import build_overview
@@ -33,6 +34,7 @@ _MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 _MAX_HEADER_LINES = 32
 _MAX_HEADER_BYTES = 8192
 _MAX_PATTERN_SELECTION = 32
+_DEFAULT_DIGEST_MARKETS = ("us", "hk", "jp", "kr", "tw", "in")
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -336,6 +338,37 @@ def _tool_definitions() -> list[dict[str, Any]]:
                 "additionalProperties": False,
             },
         },
+        {
+            "name": "alphasift_markets_digest",
+            "description": (
+                "Build a structured multi-market post-close screening digest (MarketDigest JSON + IM card) "
+                "from saved runs under ALPHASIFT_DATA_DIR/runs."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "markets": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Markets to aggregate (default: us, hk, jp, kr, tw, in; also supports cn).",
+                    },
+                    "trade_date": {
+                        "type": "string",
+                        "description": "Optional YYYY-MM-DD market session date filter.",
+                    },
+                    "include_news": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": "Fetch live regional market news headlines (defaults to false for offline speed).",
+                    },
+                    "detail_url": {
+                        "type": "string",
+                        "description": "Optional http(s) dashboard URL included in the IM card.",
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
     ]
 
 
@@ -361,6 +394,7 @@ class MCPServer:
             "alphasift_doctor_data_sources": self._handle_doctor_data_sources,
             "alphasift_notify_status": self._handle_notify_status,
             "alphasift_list_runs": self._handle_list_runs,
+            "alphasift_markets_digest": self._handle_markets_digest,
         }
 
     def _handle_list_strategies(self, args: dict[str, Any]) -> Any:
@@ -560,6 +594,48 @@ class MCPServer:
                 market=market,
             )
         }
+
+    def _handle_markets_digest(self, args: dict[str, Any]) -> Any:
+        if "markets" in args and args["markets"] is not None:
+            parsed_markets = _optional_str_list(args, "markets", max_items=7)
+            if parsed_markets is None:
+                raise ValueError("Parameter 'markets' must contain at least one market code")
+            markets = list(dict.fromkeys(m.lower() for m in parsed_markets))
+        else:
+            markets = list(_DEFAULT_DIGEST_MARKETS)
+        for m in markets:
+            get_market(m)
+
+        trade_date = _optional_str(args, "trade_date") or None
+        if trade_date is not None:
+            if len(trade_date) != 10:
+                raise ValueError(f"Invalid trade_date (expected YYYY-MM-DD): {trade_date!r}")
+            try:
+                date.fromisoformat(trade_date)
+            except ValueError as exc:
+                raise ValueError(f"Invalid trade_date (expected YYYY-MM-DD): {trade_date!r}") from exc
+
+        include_news = _optional_bool(args, "include_news", False)
+        if "detail_url" in args and args["detail_url"] is not None:
+            detail_url = _optional_str(args, "detail_url")
+        else:
+            detail_url = str(self.config.dashboard_url or "").strip()
+        if detail_url and (len(detail_url) > 500 or not detail_url.startswith(("http://", "https://"))):
+            raise ValueError("Parameter 'detail_url' must be an http:// or https:// URL (<= 500 chars)")
+
+        runs_by_mkt = load_multi_market_runs(
+            self.config,
+            markets=markets,
+            trade_date=trade_date,
+        )
+        return build_markets_digest(
+            runs_by_mkt,
+            markets=markets,
+            trade_date=trade_date,
+            detail_url=detail_url,
+            include_news=include_news,
+            config=self.config,
+        )
 
     def _read_skill_markdown(self) -> str:
         candidates = [

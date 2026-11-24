@@ -50,7 +50,7 @@ def load_multi_market_runs(
     trade_date: str | None = None,
 ) -> dict[str, list[ScreenResult]]:
     """Load latest (or trade_date-matched) saved runs grouped by market."""
-    req_markets = [str(m).strip().lower() for m in markets if str(m).strip()]
+    req_markets = list(dict.fromkeys(str(m).strip().lower() for m in markets if str(m).strip()))
     req_set = set(req_markets)
     if not req_set:
         return {}
@@ -79,7 +79,7 @@ def load_multi_market_runs(
         if not candidates:
             out[mkt] = []
             continue
-        target_sess = trade_date or max(sd for sd, _ in candidates if sd) or ""
+        target_sess = trade_date or max((sd for sd, _ in candidates if sd), default="")
         # Deduplicate by (strategy, track) keeping latest created_at for target session date
         by_key: dict[tuple[str, str], ScreenResult] = {}
         for sd, sr in candidates:
@@ -171,7 +171,7 @@ def render_market_digest_im_card(
             top = sec.get("top_picks") or []
             if top:
                 top_txt = "、".join(
-                    f"{p.get('code')} {str(p.get('name') or '')[:8]}({p.get('avg_final_score'):.1f}分)"
+                    f"{p.get('code')} {str(p.get('name') or '')[:8]}({float(p.get('avg_final_score') or 0.0):.1f}分)"
                     for p in top[:3]
                 )
                 lines.append(f"- **{m_name}**（{st_cnt} 组策略 · {sec.get('trade_date', '-')}）：{top_txt}")
@@ -203,7 +203,7 @@ def build_markets_digest(
     regional_news_collector: Callable[..., tuple[list[dict[str, Any]], list[str]]] | None = None,
 ) -> dict[str, Any]:
     """Build a multi-market post-close screening digest (object='MarketDigest')."""
-    req_markets = [str(m).strip().lower() for m in markets if str(m).strip()]
+    req_markets = list(dict.fromkeys(str(m).strip().lower() for m in markets if str(m).strip()))
     summary_names = (
         track_summary.get("strategy_names")
         if isinstance(track_summary, dict) and isinstance(track_summary.get("strategy_names"), dict)

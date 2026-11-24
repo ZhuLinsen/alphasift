@@ -38,6 +38,7 @@ def test_mcp_initialize_tools_and_resources(tmp_path):
         "alphasift_notify_status",
         "alphasift_list_runs",
         "alphasift_replay_patterns",
+        "alphasift_markets_digest",
     }
 
     res_list = server.handle_request({"jsonrpc": "2.0", "id": 4, "method": "resources/list"})
@@ -203,7 +204,7 @@ def test_mcp_stdio_subprocess_supports_line_and_content_length_framing(tmp_path)
         decoded_msgs.append(json.loads(raw[body_start : body_start + length].decode("utf-8")))
         pos = body_start + length
     assert [m["id"] for m in decoded_msgs] == [10, 11]
-    assert len(decoded_msgs[1]["result"]["tools"]) == 11
+    assert len(decoded_msgs[1]["result"]["tools"]) == 12
 
 
 def test_mcp_round9_security_and_strict_schema_validation(tmp_path):
@@ -413,3 +414,112 @@ def test_mcp_replay_patterns_tool_and_validation_guards(tmp_path, monkeypatch):
             "params": {"name": "alphasift_replay_patterns", "arguments": bad_args},
         })
         assert err["result"]["isError"] is True, bad_args
+
+
+def test_mcp_markets_digest_tool_and_validation_guards(tmp_path):
+    from alphasift.models import Pick, ScreenResult
+    from alphasift.store import save_screen_result
+
+    cfg = Config(data_dir=tmp_path)
+    save_screen_result(
+        ScreenResult(
+            strategy="us_momentum_quality",
+            market="us",
+            run_id="us_mom_1",
+            track="rules",
+            created_at="2026-11-20T22:00:00Z",
+            snapshot_count=400,
+            after_filter_count=12,
+            picks=[
+                Pick(rank=1, code="MSFT", name="Microsoft", final_score=94.0, screen_score=94.0),
+                Pick(rank=2, code="AAPL", name="Apple", final_score=86.0, screen_score=86.0),
+            ],
+        ),
+        data_dir=cfg.data_dir,
+    )
+    save_screen_result(
+        ScreenResult(
+            strategy="global_value",
+            market="us",
+            run_id="us_val_1",
+            track="rules",
+            created_at="2026-11-20T22:05:00Z",
+            snapshot_count=400,
+            after_filter_count=8,
+            picks=[
+                Pick(rank=1, code="AAPL", name="Apple", final_score=84.0, screen_score=84.0),
+            ],
+        ),
+        data_dir=cfg.data_dir,
+    )
+    save_screen_result(
+        ScreenResult(
+            strategy="global_value",
+            market="hk",
+            run_id="hk_val_1",
+            track="rules",
+            created_at="2026-11-20T09:00:00Z",
+            snapshot_count=300,
+            after_filter_count=5,
+            picks=[
+                Pick(rank=1, code="00700", name="Tencent", final_score=88.5, screen_score=88.5),
+            ],
+        ),
+        data_dir=cfg.data_dir,
+    )
+
+    server = MCPServer(cfg)
+    ok = server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 200,
+        "method": "tools/call",
+        "params": {
+            "name": "alphasift_markets_digest",
+            "arguments": {
+                "markets": ["us", "US", "hk"],
+                "include_news": False,
+                "detail_url": "https://alphasift.zhulinsen.tech/",
+            },
+        },
+    })
+    assert ok is not None
+    assert ok["result"]["isError"] is False
+    body = json.loads(ok["result"]["content"][0]["text"])
+    assert body["object"] == "MarketDigest"
+    assert body["markets"] == ["us", "hk"]
+    assert len(body["market_sections"]) == 2
+    assert body["market_sections"][0]["market"] == "us"
+    assert body["market_sections"][0]["top_picks"][0]["code"] == "AAPL"
+    assert body["market_sections"][0]["top_picks"][0]["strategy_count"] == 2
+    assert body["im_card_chars"] < 1200
+    assert "https://alphasift.zhulinsen.tech/" in body["im_card_markdown"]
+
+    for idx, bad_args in enumerate(
+        [
+            {"markets": []},
+            {"markets": ["mars"]},
+            {"trade_date": "2026/11/24"},
+            {"trade_date": "2026-13-40"},
+            {"include_news": "yes"},
+            {"detail_url": "javascript:alert(1)"},
+        ],
+        start=201,
+    ):
+        err = server.handle_request({
+            "jsonrpc": "2.0",
+            "id": idx,
+            "method": "tools/call",
+            "params": {"name": "alphasift_markets_digest", "arguments": bad_args},
+        })
+        assert err is not None
+        assert err["result"]["isError"] is True, bad_args
+
+    proto_err = server.handle_request({
+        "jsonrpc": "2.0",
+        "id": 299,
+        "method": "tools/call",
+        "params": {"name": "alphasift_markets_digest", "arguments": {"bogus": 1}},
+    })
+    assert proto_err is not None
+    assert proto_err["error"]["code"] == -32602
+
