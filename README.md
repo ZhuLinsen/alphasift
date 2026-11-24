@@ -2,7 +2,7 @@
 
 Every trading day after the close, a GitHub Action runs each built-in strategy with `--no-llm --save-run` and commits the saved run here. Picks are never edited afterwards; the git history is the timestamped record. Each pick is then measured at T+5 / T+10 / T+20 trading days against its market benchmark.
 
-**Dashboard:** https://alphasift.zhulinsen.tech/ · Code: [ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift) · Updated 2026-11-24T15:31:32+00:00 · 179 saved runs
+**Dashboard:** https://alphasift.zhulinsen.tech/ · Code: [ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift) · Updated 2026-11-24T16:32:22+00:00 · 179 saved runs
 
 > For research only, not investment advice. From 2026-11-21, entry uses `next_open` (explicitly tracking one-price limit-up untradable blocks); legacy pre-switch runs used signal-day `close`. Returns deduct round-trip costs, ignore dividends, and small samples are noisy.
 
@@ -29,11 +29,11 @@ Every trading day after the close, a GitHub Action runs each built-in strategy w
 | cn | 缩量回踩 [AI] | 1 | 0 | – | – | 0 | – | – |
 | cn | 缩量回踩 | 10 | 24 | +2.31% | 79% | 0 | – | – |
 | cn | 放量突破 | 10 | 18 | -4.66% | 28% | 0 | – | – |
-| hk | 全球低估值 | 10 | 25 | +1.18% | 64% | 0 | – | – |
+| hk | 全球低估值 | 10 | 25 | +1.04% | 60% | 0 | – | – |
 | in | 全球低估值 | 9 | 20 | -1.54% | 25% | 0 | – | – |
 | jp | 全球低估值 | 9 | 20 | -0.21% | 50% | 0 | – | – |
 | kr | 全球低估值 | 10 | 25 | +2.90% | 76% | 0 | – | – |
-| tw | 全球低估值 | 10 | 25 | +1.48% | 48% | 0 | – | – |
+| tw | 全球低估值 | 10 | 25 | +3.13% | 56% | 0 | – | – |
 | us | 全球低估值 | 9 | 20 | -0.40% | 40% | 0 | – | – |
 | us | US Momentum Quality | 9 | 20 | -0.37% | 55% | 0 | – | – |
 
