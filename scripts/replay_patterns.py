@@ -7,7 +7,7 @@ import argparse
 from pathlib import Path
 
 from alphasift.config import Config
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text
 from alphasift.pack import load_pack, pack_dir
 from alphasift.pattern_replay import load_cn_benchmark, render_replay_markdown, replay_patterns
 
@@ -65,13 +65,9 @@ def main(argv: list[str] | None = None) -> int:
     md = render_replay_markdown(report)
 
     if args.output_json:
-        out_json = Path(args.output_json)
-        out_json.parent.mkdir(parents=True, exist_ok=True)
-        out_json.write_text(dumps_strict_json(report, indent=2) + "\n", encoding="utf-8")
+        atomic_write_strict_json(args.output_json, report, indent=2, trailing_newline=True)
     if args.output_md:
-        out_md = Path(args.output_md)
-        out_md.parent.mkdir(parents=True, exist_ok=True)
-        out_md.write_text(md, encoding="utf-8")
+        atomic_write_text(args.output_md, md)
 
     print(md)
     return 0

@@ -24,7 +24,7 @@ from alphasift.hotspot import (
     save_hotspots_json,
 )
 from alphasift.industry import fetch_akshare_board_map, save_industry_map
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, dumps_strict_json
 from alphasift.overview import build_overview
 from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.pipeline import screen
@@ -691,11 +691,7 @@ def main():
             price_path_lookback_days=args.price_path_lookback_days,
         )
         if args.output:
-            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-            Path(args.output).write_text(
-                dumps_strict_json(result, indent=2),
-                encoding="utf-8",
-            )
+            atomic_write_strict_json(args.output, result, indent=2)
         if args.explain:
             print(_format_evaluation_batch_explain(result))
         else:
@@ -769,11 +765,7 @@ def main():
             payload["review_window_days"] = result.get("review_window_days")
             payload["window_reviews"] = result.get("window_reviews", [])
         if args.output:
-            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-            Path(args.output).write_text(
-                dumps_strict_json(payload, indent=2),
-                encoding="utf-8",
-            )
+            atomic_write_strict_json(args.output, payload, indent=2)
         if args.explain or not args.json:
             print(_format_evaluate_strategies_explain(payload))
         else:
@@ -807,11 +799,7 @@ def main():
             match_limit=args.match_limit,
         )
         if args.output:
-            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-            Path(args.output).write_text(
-                dumps_strict_json(payload, indent=2),
-                encoding="utf-8",
-            )
+            atomic_write_strict_json(args.output, payload, indent=2)
         if args.explain:
             print(_format_overview_explain(payload))
         else:
@@ -914,12 +902,7 @@ def main():
             fallback_cache_path=args.fallback_cache,
         )
         if args.output:
-            output_path = Path(args.output)
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(
-                dumps_strict_json(hotspot_detail_to_dict(detail), indent=2),
-                encoding="utf-8",
-            )
+            atomic_write_strict_json(args.output, hotspot_detail_to_dict(detail), indent=2)
         if args.explain:
             print(_format_hotspot_detail_explain(detail))
         else:
@@ -1011,8 +994,7 @@ def main():
                 timeout_sec=args.timeout_sec,
             )
             if args.output:
-                Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-                Path(args.output).write_text(dumps_strict_json(result, indent=2), encoding="utf-8")
+                atomic_write_strict_json(args.output, result, indent=2)
             if args.json or not args.explain:
                 print(dumps_strict_json(result, indent=2))
             else:
@@ -1163,13 +1145,9 @@ def main():
             except (OSError, RuntimeError, ValueError, IndexError) as exc:
                 parser.error(str(exc))
             if args.output_json:
-                out_json = Path(args.output_json)
-                out_json.parent.mkdir(parents=True, exist_ok=True)
-                out_json.write_text(dumps_strict_json(report, indent=2) + "\n", encoding="utf-8")
+                atomic_write_strict_json(args.output_json, report, indent=2, trailing_newline=True)
             if args.output_md:
-                out_md = Path(args.output_md)
-                out_md.parent.mkdir(parents=True, exist_ok=True)
-                out_md.write_text(render_replay_markdown(report), encoding="utf-8")
+                atomic_write_text(args.output_md, render_replay_markdown(report))
             if args.json:
                 print(dumps_strict_json(report, indent=2))
             else:
@@ -2598,8 +2576,7 @@ def _write_industry_cache_metadata(
         "history_path": str(history_path) if history_path is not None else "",
         "notes": notes,
     }
-    metadata_path.write_text(dumps_strict_json(metadata, indent=2), encoding="utf-8")
-    return metadata_path
+    return atomic_write_strict_json(metadata_path, metadata, indent=2)
 
 
 def _write_hotspot_cache_metadata(
@@ -2626,8 +2603,7 @@ def _write_hotspot_cache_metadata(
         "source_errors": source_errors or [],
         "history_appended": history_appended,
     }
-    metadata_path.write_text(dumps_strict_json(metadata, indent=2), encoding="utf-8")
-    return metadata_path
+    return atomic_write_strict_json(metadata_path, metadata, indent=2)
 
 
 def _append_industry_cache_history(

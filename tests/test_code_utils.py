@@ -150,3 +150,28 @@ def test_cache_writers_persist_atomically_without_tmp_leftovers(tmp_path):
     save_hotspots_json(hs_path, [HotspotSummary(topic="算力", name="算力", source="test", rank=1)])
     assert hs_path.is_file()
     assert [p.name for p in tmp_path.iterdir() if p.name.endswith(".tmp")] == []
+
+
+def test_cli_metadata_and_no_non_staging_write_text_dumps_strict_json(tmp_path):
+    from pathlib import Path
+    import re
+    from alphasift.cli import _write_hotspot_cache_metadata, _write_industry_cache_metadata
+
+    repo_root = Path(__file__).resolve().parents[1]
+    direct_writes = []
+    for folder in ("alphasift", "scripts"):
+        for path in sorted((repo_root / folder).glob("*.py")):
+            if folder == "alphasift" and path.name in {"jsonutil.py", "pack.py"}:
+                continue
+            if re.search(r"\.write_text\(\s*dumps_strict_json\s*\(", path.read_text(encoding="utf-8")):
+                direct_writes.append(f"{folder}/{path.name}")
+    assert direct_writes == []
+
+    ind_meta = _write_industry_cache_metadata(
+        tmp_path / "ind.json", provider="eastmoney", max_boards=10, rows=5, notes=[]
+    )
+    hs_meta = _write_hotspot_cache_metadata(
+        tmp_path / "hs.json", provider="eastmoney", max_boards=10, rows=3
+    )
+    assert ind_meta.is_file() and hs_meta.is_file()
+    assert [p.name for p in tmp_path.iterdir() if p.name.endswith(".tmp")] == []
