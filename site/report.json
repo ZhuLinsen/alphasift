@@ -8,7 +8,7 @@
   "stale_reason": null,
   "detail_url": "",
   "market": "cn",
-  "generated_at": "2026-11-25T00:34:11.171171+00:00",
+  "generated_at": "2026-11-25T02:39:51.999707+00:00",
   "usage_policy": "cn_only_regime_slice_only",
   "strategy_display_names": {
     "balanced_alpha": "均衡多因子",
@@ -2425,6 +2425,10 @@
         ],
         "wf_h1_positive_regimes": [],
         "wf_low_overhead_threshold_pct": 15,
+        "wf_boundary_policy": "purged_by_exit_date",
+        "wf_boundary_verified": true,
+        "wf_h1_purged_signals": 49,
+        "wf_h1_purged_days": 5,
         "wf_non_adverse_low_overhead_pct": 2.85,
         "wf_non_adverse_low_overhead_days": 16,
         "wf_joint_delta_pct": 2.13,
@@ -3873,6 +3877,10 @@
           "ebb"
         ],
         "wf_low_overhead_threshold_pct": 15,
+        "wf_boundary_policy": "purged_by_exit_date",
+        "wf_boundary_verified": true,
+        "wf_h1_purged_signals": 147,
+        "wf_h1_purged_days": 8,
         "wf_non_adverse_low_overhead_pct": -1.27,
         "wf_non_adverse_low_overhead_days": 56,
         "wf_joint_delta_pct": -0.17,
@@ -4323,10 +4331,13 @@
           "neutral"
         ],
         "wf_h1_positive_regimes": [
-          "startup",
-          "divergence"
+          "startup"
         ],
         "wf_low_overhead_threshold_pct": 15,
+        "wf_boundary_policy": "purged_by_exit_date",
+        "wf_boundary_verified": true,
+        "wf_h1_purged_signals": 11,
+        "wf_h1_purged_days": 4,
         "wf_non_adverse_low_overhead_pct": 0.24,
         "wf_non_adverse_low_overhead_days": 60,
         "wf_joint_delta_pct": 0.78,
@@ -5775,6 +5786,10 @@
         ],
         "wf_h1_positive_regimes": [],
         "wf_low_overhead_threshold_pct": 15,
+        "wf_boundary_policy": "purged_by_exit_date",
+        "wf_boundary_verified": true,
+        "wf_h1_purged_signals": 2,
+        "wf_h1_purged_days": 2,
         "wf_non_adverse_low_overhead_pct": -0.38,
         "wf_non_adverse_low_overhead_days": 14,
         "wf_joint_delta_pct": -1.31,
@@ -6087,6 +6102,10 @@
         ],
         "wf_h1_positive_regimes": [],
         "wf_low_overhead_threshold_pct": 15,
+        "wf_boundary_policy": "purged_by_exit_date",
+        "wf_boundary_verified": true,
+        "wf_h1_purged_signals": 20,
+        "wf_h1_purged_days": 6,
         "wf_non_adverse_low_overhead_pct": 1.21,
         "wf_non_adverse_low_overhead_days": 8,
         "wf_joint_delta_pct": 1.67,
@@ -7536,6 +7555,10 @@
           "ebb"
         ],
         "wf_low_overhead_threshold_pct": 15,
+        "wf_boundary_policy": "purged_by_exit_date",
+        "wf_boundary_verified": true,
+        "wf_h1_purged_signals": 365,
+        "wf_h1_purged_days": 5,
         "wf_non_adverse_low_overhead_pct": -1.83,
         "wf_non_adverse_low_overhead_days": 43,
         "wf_joint_delta_pct": -0.66,
@@ -7708,6 +7731,10 @@
           "ebb"
         ],
         "wf_low_overhead_threshold_pct": 15,
+        "wf_boundary_policy": "purged_by_exit_date",
+        "wf_boundary_verified": true,
+        "wf_h1_purged_signals": 0,
+        "wf_h1_purged_days": 0,
         "wf_non_adverse_low_overhead_pct": -0.46,
         "wf_non_adverse_low_overhead_days": 16,
         "wf_joint_delta_pct": -0.58,
@@ -7736,6 +7763,10 @@
         ],
         "wf_h1_positive_regimes": [],
         "wf_low_overhead_threshold_pct": 15,
+        "wf_boundary_policy": "purged_by_exit_date",
+        "wf_boundary_verified": true,
+        "wf_h1_purged_signals": 10,
+        "wf_h1_purged_days": 4,
         "wf_non_adverse_low_overhead_pct": null,
         "wf_non_adverse_low_overhead_days": 0,
         "wf_joint_delta_pct": null,
@@ -7764,6 +7795,10 @@
           "ebb"
         ],
         "wf_low_overhead_threshold_pct": 15,
+        "wf_boundary_policy": "purged_by_exit_date",
+        "wf_boundary_verified": true,
+        "wf_h1_purged_signals": 16,
+        "wf_h1_purged_days": 4,
         "wf_non_adverse_low_overhead_pct": -1.8,
         "wf_non_adverse_low_overhead_days": 18,
         "wf_joint_delta_pct": -1.79,
@@ -8055,46 +8090,46 @@
   "market_news": {
     "items": [
       {
-        "title": "惠普第四财季净营收160亿美元，同比增长9.3%",
-        "summary": "【惠普第四财季净营收160亿美元，同比增长9.3%】惠普第四财季净营收160亿美元，同比增长9.3%，预期152.6亿美元；调整后每股收益83美分，预估74美分。惠普预计2027财年调整后每股收益为3.15-3.45美元，分析师预期3.18美元。",
-        "published_at": "11-25 07:18",
-        "source": "东方财富7x24",
-        "category": "海外市场"
-      },
-      {
-        "title": "Anthropic推出桌面新功能 Claude生成内容可一键变身独立软件",
-        "summary": "【Anthropic推出桌面新功能 Claude生成内容可一键变身独立软件】北京时间11月25日，Anthropic当地时间11月24日宣布，Claude正式推出“Install as app”（安装为应用）功能测试版，允许用户将AI生成的Artifacts（交互式创作成果）直…",
-        "published_at": "11-25 07:11",
-        "source": "东方财富7x24",
-        "category": "板块产业"
-      },
-      {
-        "title": "锂矿龙头 拟豪掷68.72亿元现金买矿",
-        "summary": "【锂矿龙头 拟豪掷68.72亿元现金买矿】天齐锂业表示，公司将聚焦以锂为核心的新能源材料主业，通过直接或间接收购天齐集团旗下锂矿采矿权与探矿权资产，进一步扩充公司可控锂资源储量、提升资源自给保障能力、强化上游资源成本壁垒，同时理顺集团内部资产业务边界、减少潜在关联交易和同业竞争…",
-        "published_at": "11-25 07:09",
-        "source": "东方财富7x24",
-        "category": "板块产业"
-      },
-      {
-        "title": "黄仁勋主持员工大会：英伟达不需要接班人计划",
-        "summary": "【黄仁勋主持员工大会：英伟达不需要接班人计划】周二，英伟达CEO黄仁勋在复职后首次召开的公司全员大会上向员工公开道歉，承认违反公司行为准则，并透露自己每天接受一个半小时治疗。消息人士表示，他告诉员工，英伟达已打造出一支团队，不需要像普通机构那样制定接班人计划，因为公司运营着一种…",
-        "published_at": "11-25 07:07",
+        "title": "中粮可口可乐瓶身不再标生产日期",
+        "summary": "【中粮可口可乐瓶身不再标生产日期】近日，吉林长春一名网友在社交平台发帖称，其购买的可口可乐瓶身仅标注保质期到期日“2027年7月22日”，未标注生产日期，该网友对该产品的标注方式提出疑问。记者致电中粮可口可乐客服。对方回应称，中粮可口可乐已不再单独印刷生产日期，改为标示保质期到…",
+        "published_at": "11-25 10:32",
         "source": "东方财富7x24",
         "category": "市场要闻"
       },
       {
-        "title": "美媒：黄仁勋向英伟达全体员工致歉 称正接受心理治疗",
-        "summary": "【美媒：黄仁勋向英伟达全体员工致歉 称正接受心理治疗】据美国有线电视新闻网(CNN)援引知情人士报道，当地时间24日，黄仁勋在长达1小时的英伟达全体员工会议上，向员工致歉。",
-        "published_at": "11-25 07:07",
+        "title": "三星电子股价跌幅扩大至9% SK海力士下跌8.6%",
+        "summary": "三星电子股价跌幅扩大至9%，SK海力士下跌8.6%。",
+        "published_at": "11-25 10:23",
         "source": "东方财富7x24",
         "category": "市场要闻"
       },
       {
-        "title": "周三你需要知道的隔夜全球要闻：AI板块疲软费半指数重挫近8%；趋势追踪量化基金削减美债空头头寸；美国消费者信心升至近两年最高",
-        "summary": "【周三你需要知道的隔夜全球要闻：AI板块疲软费半指数重挫近8%；趋势追踪量化基金削减美债空头头寸；美国消费者信心升至近两年最高】1、美三大股指收盘涨跌不一，道琼斯指数涨0.85%，标普500指数跌0.50%，纳斯达克综合指数跌1.48%。AI硬件板块疲软，费城半导体指数重挫近8…",
-        "published_at": "11-25 06:12",
+        "title": "近9亿元押注长鑫科技！神秘女装品牌实控人重金出手",
+        "summary": "【近9亿元押注长鑫科技！神秘女装品牌实控人重金出手】女装品牌玛丝菲尔实控人夫妇押注长鑫科技，持股市值近9亿元。长鑫科技(688825)11月24日晚间披露的股东名册显示，截至11月19日，深圳市恩情投资发展有限公司持有长鑫科技2340万股，占总股本的0.03%，新进入前十大无限…",
+        "published_at": "11-25 10:23",
         "source": "东方财富7x24",
-        "category": "海外市场"
+        "category": "市场要闻"
+      },
+      {
+        "title": "皖通科技等成立智运科技公司 含物联网业务",
+        "summary": "【皖通科技等成立智运科技公司 含物联网业务】企查查APP显示，近日，北京金通智运科技有限公司成立，经营范围包含数字技术服务；网络技术服务；物联网技术研发；物联网技术服务等。企查查股权穿透显示，该公司由皖通科技等共同持股。",
+        "published_at": "11-25 10:22",
+        "source": "东方财富7x24",
+        "category": "市场要闻"
+      },
+      {
+        "title": "友升股份等投资成立汽车科技新公司",
+        "summary": "【友升股份等投资成立汽车科技新公司】企查查APP显示，近日，友升力知茂（江苏）汽车科技有限公司成立，经营范围包含汽车零部件研发；汽车零部件及配件制造；模具销售；汽车零配件零售等。企查查股权穿透显示，该公司由友升股份等共同持股。",
+        "published_at": "11-25 10:18",
+        "source": "东方财富7x24",
+        "category": "市场要闻"
+      },
+      {
+        "title": "国产GPU“四小龙”集体下挫",
+        "summary": "【国产GPU“四小龙”集体下挫】11月25日，国产GPU“四小龙”集体下挫，截至发稿，沐曦股份-U（688802.SH）跌超6%，壁仞科技（06082.HK）跌超14%，摩尔线程-U（688795.SH）跌近3%，天数智芯（09903.HK）跌超12%。",
+        "published_at": "11-25 10:16",
+        "source": "东方财富7x24",
+        "category": "市场要闻"
       }
     ],
     "sources": [
@@ -8467,20 +8502,20 @@
   "ai_brief": {
     "mode": "llm",
     "model": "gemini-3.8-flash",
-    "headline": "市场处于分歧阶段，全市场中位数下跌0.67%，策略聚焦低估值防御与汽车、算力流动性龙头",
-    "regime_interpretation": "当日市场呈现明显分歧特征，全市场上涨占比仅35.01%，涨跌幅中位数为-0.67%，成交额达16678.0亿元。涨停家数55只但封板率偏低至42.31%，跌超3%个股达281只，赚钱效应明显承压。连板高度压制在4板，不过昨日涨停个股次日平均溢价达4.09%，短线接力仍有局部韧性。海外传出Anthropic软件创新及锂矿收购等产业动向，但整体交投情绪仍受制于结构分化与低封板率约束。",
-    "consensus_and_ai_edge": "跨策略共识高度集中于银行（占比12.3%）和汽车（占比8.8%）等具备估值安全垫与流动性的板块。九安医疗、石头科技、江苏金租与拓普集团均获得双策略交叉验证。AI在均衡多因子策略中增配低估值的反转资源与机械股如中矿资源，并在资金热度策略中纳入高成交龙头天孚通信与拓普集团，但在蓝筹收益质量策略中维持与规则100%重合，整体偏向顺势聚焦龙头与防守。",
+    "headline": "A股处于分歧阶段，上涨占比仅35.01%，全市场成交1.67万亿，资金向银行及高流动性龙头避险收缩",
+    "regime_interpretation": "2026年11月24日市场状态归属于分歧期。全市场上涨个股占比35.01%，涨跌幅中位数录得-0.67%，超3200只个股跌幅在0%至-3%之间，呈现典型普跌分化格局。两市成交额为16678.0亿元，非ST涨停55家、跌停2家，但封板率偏低仅为42.31%，最高连板压缩至4板，反映短线追高情绪受阻，昨涨停均值溢价4.09%显示赚钱效应仅局限于少数头部连板。外围科技震荡下，场内资金风险偏好受压，防御情绪上升。",
+    "consensus_and_ai_edge": "行业配置集中于银行（12.3%）和汽车（8.8%）。跨策略共识标的包括九安医疗、石头科技、江苏金租与拓普集团。AI轨道在资金热度策略中纳入高成交龙头天孚通信与拓普集团，在均衡多因子中增配低PE的中矿资源与新锐股份；蓝筹收益质量策略中规则与AI重合度达100%，反映出对红利低估值资产防御属性的高度一致认可。",
     "risk_warnings": [
-      "拓普集团出现短期超买信号（RSI超买），天孚通信呈现高PB估值敞口风险。",
-      "平安银行及低估值策略池内金融敞口过重，九安医疗面临盈利模式持续性存疑的属性提示。"
+      "拓普集团提示短期超买（RSI超买），中材科技提示股价剧烈波动风险",
+      "持仓在银行及金融板块权重高度集中，若宏观利率变化或板块资金撤离易引发系统性回调"
     ],
     "watch_points": [
-      "观察全市场成交额能否稳于1.6万亿元上方及封板率是否脱离42.31%低位区间。",
-      "关注许继电气与平高电气在“单阳不破”实验形态下的次日持续性与承接力度。"
+      "全市场封板率能否自42.31%回升，及最高连板（4板）的晋级溢价情况",
+      "两市成交额是否维持在1.66万亿元上方及上涨个股占比能否突破50%"
     ],
     "disclaimer": "仅供量化研究与复盘观察，不构成投资建议。",
     "fallback_reason": null
   },
-  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-24)**\n> 盘面 **分歧**｜上涨 35.0% · 中位 -0.67%｜涨跌停 55/2（封板 42.3%）｜最高 4板 · 昨涨停 +4.09% · 成交 16,678亿\n**✅ 公告排雷**：抽检 20 只暂未见减持/立案/监管等负面关键词\n**策略与 [AI]**：规则 10 组(45只) / [AI] 9 组(45只)，AI调仓 +12/-12（市场结构性分化明显，宜精选低估值修复且有回购或产业催化支撑的标的。）\n**多策略共识(4)**：002432 九安医疗(2策略)、688169 石头科技(2策略)、600901 江苏金租(2策略)、601689 拓普集团(2策略)\n**[AI] 简评**：市场处于分歧阶段，全市场中位数下跌0.67%，策略聚焦低估值防御与汽车、算力流动性龙头\n**形态雷达**：双底突破(3只·观察期·联合OOS+0.24%：灿芯股份、中创环保)；20日线低波缩量回踩(30只·观察期·逆风：迈瑞医疗、中国中车)；低波趋势稳健突破(1只·观察期·逆风：中国核电)\n**盘后要闻**：惠普第四财季净营收160亿美元，同比增长9.3%\n注：量化形态观测与回测基准，非投资建议。",
-  "im_card_chars": 537
+  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-24)**\n> 盘面 **分歧**｜上涨 35.0% · 中位 -0.67%｜涨跌停 55/2（封板 42.3%）｜最高 4板 · 昨涨停 +4.09% · 成交 16,678亿\n**✅ 公告排雷**：抽检 20 只暂未见减持/立案/监管等负面关键词\n**策略与 [AI]**：规则 10 组(45只) / [AI] 9 组(45只)，AI调仓 +12/-12（市场结构性分化明显，宜精选低估值修复且有回购或产业催化支撑的标的。）\n**多策略共识(4)**：002432 九安医疗(2策略)、688169 石头科技(2策略)、600901 江苏金租(2策略)、601689 拓普集团(2策略)\n**[AI] 简评**：A股处于分歧阶段，上涨占比仅35.01%，全市场成交1.67万亿，资金向银行及高流动性龙头避险收缩\n**形态雷达**：双底突破(3只·观察期·联合OOS+0.24%：灿芯股份、中创环保)；20日线低波缩量回踩(30只·观察期·逆风：迈瑞医疗、中国中车)；低波趋势稳健突破(1只·观察期·逆风：中国核电)\n**盘后要闻**：中粮可口可乐瓶身不再标生产日期\n注：量化形态观测与回测基准，非投资建议。",
+  "im_card_chars": 534
 }
