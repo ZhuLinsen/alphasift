@@ -7,6 +7,7 @@ import base64
 import hashlib
 import html
 import json
+import math
 from dataclasses import asdict
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,6 +15,8 @@ from pathlib import Path
 import re
 from typing import Any
 from urllib.parse import parse_qs, urlparse
+
+import pandas as pd
 
 from alphasift.config import Config
 from alphasift.daily_report import build_daily_report, load_daily_report_runs
@@ -24,6 +27,7 @@ from alphasift.market_regime import compute_market_regime, compute_market_regime
 from alphasift.markets import MARKETS, get_market
 from alphasift.overview import build_overview
 from alphasift.pack import PackError, load_pack, pack_dir
+from alphasift.pattern_replay import load_cn_benchmark, replay_patterns
 from alphasift.patterns import extract_mini_kline_bars, list_patterns, scan_patterns
 from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.report import build_run_report_payload
@@ -311,7 +315,7 @@ def build_api_response(
             )
         except ValueError as exc:
             return 400, {"error": "invalid_request", "message": str(exc)}
-    if path in {"/market-stats", "/patterns/scan", "/daily-report"}:
+    if path in {"/market-stats", "/patterns/scan", "/patterns/replay", "/daily-report"}:
         safe_run_paths: list[str] = []
         if path == "/daily-report":
             requested_ai_brief = (_single(params, "ai_brief") or "off").lower()
@@ -348,27 +352,10 @@ def build_api_response(
                 series = compute_market_regime_series(daily_pack, end_index=end_idx)[-days:]
                 return 200, {"schema_version": 1, "days": [item.to_dict() for item in series]}
             if path == "/patterns/scan":
-                raw_patterns = _multi(params, "pattern")
                 include_exp = _bool_param(params, "include_experimental", False)
-                selected_patterns: list[str] | None = None
-                if raw_patterns:
-                    known = {spec.name for spec in list_patterns(include_experimental=True)}
-                    deduped: list[str] = []
-                    for item in raw_patterns:
-                        if "/" in item or "\\" in item or ".." in item or item not in known:
-                            return 400, {
-                                "error": "invalid_pattern",
-                                "message": f"Unknown or unsafe pattern name: {item!r}",
-                                "pattern": item,
-                            }
-                        if item not in deduped:
-                            deduped.append(item)
-                    if len(deduped) > 32:
-                        return 400, {
-                            "error": "too_many_patterns",
-                            "message": "Too many patterns requested (max 32).",
-                        }
-                    selected_patterns = deduped
+                selected_patterns, pat_err = _validate_pattern_selection(_multi(params, "pattern"))
+                if pat_err is not None:
+                    return pat_err
                 payload = scan_patterns(
                     daily_pack,
                     patterns=selected_patterns,
@@ -393,6 +380,65 @@ def build_api_response(
                             for item in items:
                                 item["kline"] = klines.get(str(item.get("code") or ""), [])
                 return 200, payload
+            if path == "/patterns/replay":
+                selected_patterns, pat_err = _validate_pattern_selection(_multi(params, "pattern"))
+                if pat_err is not None:
+                    return pat_err
+                warmup_days = _int_param(params, "warmup_days", 60, min_val=10, max_val=200)
+                cost_bps = _float_param(params, "cost_bps", default=25.0, min_val=0.0, max_val=200.0)
+                assert cost_bps is not None
+                allowed_regimes = _multi(params, "allowed_regime") or None
+                excluded_regimes = _multi(params, "exclude_regime") or None
+                max_overhead_pct = _float_param(
+                    params,
+                    "max_overhead_pct",
+                    default=None,
+                    min_val=0.0,
+                    max_val=100.0,
+                    exclusive_min=True,
+                )
+                benchmark_df = (
+                    load_cn_benchmark(lookback_days=max(len(daily_pack.dates) + 40, 320))
+                    if _bool_param(params, "live_benchmark", False)
+                    else pd.DataFrame()
+                )
+                report = replay_patterns(
+                    daily_pack,
+                    patterns=selected_patterns,
+                    benchmark_df=benchmark_df,
+                    warmup_days=warmup_days,
+                    cost_bps=cost_bps,
+                    allowed_regimes=allowed_regimes,
+                    excluded_regimes=excluded_regimes,
+                    max_overhead_pct=max_overhead_pct,
+                )
+                return 200, {
+                    "schema_version": 1,
+                    "generated_at": report.get("generated_at"),
+                    "entry_mode": report.get("entry_mode"),
+                    "cost_bps": report.get("cost_bps"),
+                    "walk_forward_boundary_policy": report.get("walk_forward_boundary_policy"),
+                    "regime_filter": report.get("regime_filter"),
+                    "overhead_filter": report.get("overhead_filter"),
+                    "graduation_rule": report.get("graduation_rule"),
+                    "pack_summary": report.get("pack_summary"),
+                    "universe_baseline": report.get("universe_baseline"),
+                    "patterns": [
+                        {
+                            "pattern": item.get("pattern"),
+                            "display_name": item.get("display_name"),
+                            "family": item.get("family"),
+                            "mode": item.get("mode"),
+                            "total_signals": item.get("total_signals"),
+                            "untradable_share_pct": item.get("untradable_share_pct"),
+                            "horizons": item.get("horizons"),
+                            "graduation": item.get("graduation"),
+                            "stability": item.get("stability"),
+                            "walk_forward_regime_audit": item.get("walk_forward_regime_audit"),
+                        }
+                        for item in (report.get("patterns") or [])
+                    ],
+                }
             # /daily-report
             include_ann = _bool_param(params, "announcements", False)
             include_runs = _bool_param(params, "include_runs", True)
@@ -622,6 +668,7 @@ def _index_payload() -> dict[str, Any]:
             "/market-stats",
             "/patterns",
             "/patterns/scan",
+            "/patterns/replay",
             "/daily-report",
             "/daily-report.html",
             "/markets-digest",
@@ -735,3 +782,57 @@ def _optional_bool_param(params: dict[str, list[str]], key: str) -> bool | None:
 def _bool_param(params: dict[str, list[str]], key: str, default: bool) -> bool:
     value = _optional_bool_param(params, key)
     return default if value is None else value
+
+
+def _validate_pattern_selection(
+    raw_patterns: list[str],
+) -> tuple[list[str] | None, tuple[int, dict[str, Any]] | None]:
+    if not raw_patterns:
+        return None, None
+    known = {spec.name for spec in list_patterns(include_experimental=True)}
+    deduped: list[str] = []
+    for item in raw_patterns:
+        if "/" in item or "\\" in item or ".." in item or item not in known:
+            return None, (
+                400,
+                {
+                    "error": "invalid_pattern",
+                    "message": f"Unknown or unsafe pattern name: {item!r}",
+                    "pattern": item,
+                },
+            )
+        if item not in deduped:
+            deduped.append(item)
+    if len(deduped) > 32:
+        return None, (
+            400,
+            {
+                "error": "too_many_patterns",
+                "message": "Too many patterns requested (max 32).",
+            },
+        )
+    return deduped, None
+
+
+def _float_param(
+    params: dict[str, list[str]],
+    key: str,
+    *,
+    default: float | None,
+    min_val: float,
+    max_val: float,
+    exclusive_min: bool = False,
+) -> float | None:
+    raw = _single(params, key)
+    if not raw:
+        return default
+    try:
+        val = float(raw)
+    except ValueError as exc:
+        raise ValueError(f"Parameter `{key}` must be a finite number, got {raw!r}") from exc
+    if not math.isfinite(val):
+        raise ValueError(f"Parameter `{key}` must be finite")
+    if (val <= min_val if exclusive_min else val < min_val) or val > max_val:
+        op = ">" if exclusive_min else ">="
+        raise ValueError(f"Parameter `{key}` must satisfy {op} {min_val} and <= {max_val}")
+    return val

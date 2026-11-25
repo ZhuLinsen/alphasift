@@ -26,6 +26,7 @@ def test_api_health_and_index(tmp_path):
     assert status == 200
     assert "/overview" in index["endpoints"]
     assert "/markets" in index["endpoints"]
+    assert "/patterns/replay" in index["endpoints"]
     assert "/result-schema" in index["endpoints"]
     assert "/strategy" in index["endpoints"]
     assert "/strategy-compare" in index["endpoints"]
@@ -62,6 +63,87 @@ def test_api_markets_endpoint(tmp_path):
     status_bad, payload_bad = build_api_response(config, "/markets", query="id=unknown_mkt")
     assert status_bad == 404
     assert payload_bad["error"] == "market_not_found"
+
+
+def test_api_patterns_replay_endpoint(tmp_path, monkeypatch):
+    import json
+
+    config = _config(tmp_path)
+
+    # 1. Missing DailyPack returns 503 pack_unavailable
+    st_503, pl_503 = build_api_response(config, "/patterns/replay")
+    assert st_503 == 503
+    assert pl_503["error"] == "pack_unavailable"
+
+    class _DummyPack:
+        dates = ["2026-01-05", "2026-01-06"]
+
+    monkeypatch.setattr("alphasift.server.load_pack", lambda _p: _DummyPack())
+
+    # 2. Invalid/traversal pattern rejected before calling replay_patterns
+    st_bad_pat, pl_bad_pat = build_api_response(config, "/patterns/replay", query="pattern=../etc/passwd")
+    assert st_bad_pat == 400
+    assert pl_bad_pat["error"] == "invalid_pattern"
+
+    # 3. Out-of-range float params rejected with 400 invalid_request
+    st_bad_cost, pl_bad_cost = build_api_response(config, "/patterns/replay", query="cost_bps=999")
+    assert st_bad_cost == 400
+    assert pl_bad_cost["error"] == "invalid_request"
+
+    st_bad_ov, pl_bad_ov = build_api_response(config, "/patterns/replay", query="max_overhead_pct=0")
+    assert st_bad_ov == 400
+    assert pl_bad_ov["error"] == "invalid_request"
+
+    # 4. Happy path calls replay_patterns with empty DataFrame when live_benchmark=0
+    seen_calls = []
+
+    def _fake_replay(pack, **kw):
+        seen_calls.append(kw)
+        return {
+            "generated_at": "2026-11-25T09:00:00+00:00",
+            "entry_mode": "next_open",
+            "cost_bps": kw["cost_bps"],
+            "walk_forward_boundary_policy": "purged_by_exit_date",
+            "regime_filter": {"allowed_regimes": kw["allowed_regimes"], "excluded_regimes": kw["excluded_regimes"]},
+            "overhead_filter": {"max_overhead_pct": kw["max_overhead_pct"]},
+            "graduation_rule": {"horizons": [5, 10]},
+            "pack_summary": {"trade_days": 250},
+            "universe_baseline": {"h5_mean_pct": 0.1},
+            "patterns": [
+                {
+                    "pattern": "ma20_shrink_pullback",
+                    "display_name": "MA20缩量回踩",
+                    "family": "pullback",
+                    "mode": "experimental",
+                    "total_signals": 42,
+                    "untradable_share_pct": 1.2,
+                    "horizons": {"5": {"mean_pct": 0.4}},
+                    "graduation": {"graduated": False},
+                    "stability": {"positive_share": 0.5},
+                    "walk_forward_regime_audit": {"eval_mid_date": "2026-06-30"},
+                }
+            ],
+        }
+
+    monkeypatch.setattr("alphasift.server.replay_patterns", _fake_replay)
+    st_ok, pl_ok = build_api_response(
+        config,
+        "/patterns/replay",
+        query="pattern=ma20_shrink_pullback&warmup_days=40&cost_bps=15&exclude_regime=freezing&max_overhead_pct=20",
+    )
+    assert st_ok == 200
+    assert pl_ok["schema_version"] == 1
+    assert pl_ok["walk_forward_boundary_policy"] == "purged_by_exit_date"
+    assert len(pl_ok["patterns"]) == 1
+    assert pl_ok["patterns"][0]["pattern"] == "ma20_shrink_pullback"
+    assert len(seen_calls) == 1
+    assert seen_calls[0]["patterns"] == ["ma20_shrink_pullback"]
+    assert seen_calls[0]["warmup_days"] == 40
+    assert seen_calls[0]["cost_bps"] == 15.0
+    assert seen_calls[0]["excluded_regimes"] == ["freezing"]
+    assert seen_calls[0]["max_overhead_pct"] == 20.0
+    assert seen_calls[0]["benchmark_df"].empty
+    json.dumps(pl_ok, allow_nan=False)
 
 
 def test_api_overview_and_runs_are_ui_ready(tmp_path):

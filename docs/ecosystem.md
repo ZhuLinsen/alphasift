@@ -55,7 +55,7 @@ AlphaSift ships a zero-dependency JSON-RPC 2.0 STDIO MCP server (`2024-11-05`) s
 ```bash
 alphasift serve --host 127.0.0.1 --port 8765
 # Open http://127.0.0.1:8765/ui (or http://127.0.0.1:8765/ in a browser)
-# Read-only JSON routes include /markets, /strategies, /patterns, /daily-report, /markets-digest
+# Read-only JSON routes include /markets, /strategies, /patterns, /patterns/replay, /daily-report, /markets-digest
 # Pure JSON API index remains available via ?format=json or Accept: application/json
 ```
 

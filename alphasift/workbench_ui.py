@@ -1211,7 +1211,7 @@ def render_workbench_html() -> str:
 
     const epCard = el("div", { class: "card" }, [el("h3", { class: "section-title", text: t("api_title") })]);
     const eps = (state.index && state.index.endpoints) || [
-      "/health", "/overview", "/markets", "/strategies", "/patterns", "/runs",
+      "/health", "/overview", "/markets", "/strategies", "/patterns", "/patterns/replay", "/runs",
       "/doctor/radar", "/doctor/data-sources", "/result-schema", "/daily-report-schema",
       "/daily-report", "/daily-report.html", "/markets-digest",
     ];
