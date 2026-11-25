@@ -250,7 +250,15 @@ alphasift daily-report --expected-trade-date 2026-11-20 --allow-stale-pack --ai-
 ## Python 调用
 
 ```python
-from alphasift import evaluate_saved_run, evaluate_saved_runs, screen
+from alphasift import (
+    MCPServer,
+    build_daily_report,
+    build_markets_digest,
+    evaluate_saved_run,
+    evaluate_saved_runs,
+    replay_patterns,
+    screen,
+)
 
 result = screen("dual_low", use_llm=False)
 for p in result.picks:

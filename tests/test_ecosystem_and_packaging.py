@@ -100,3 +100,49 @@ def test_skill_mirror_publish_workflow_and_benchmark_smoke() -> None:
     assert payload["cache_checks"]["hit_source"] == "tencent"
     assert payload["cache_checks"]["hit_stale"] is False
     assert payload["cache_checks"]["stale_cache_flagged"] is True
+
+
+def test_top_level_public_api_exports_and_import_order() -> None:
+    import importlib
+
+    all_exports = alphasift.__all__
+    assert len(all_exports) == len(set(all_exports))
+    assert len(all_exports) == 39
+    for sym in all_exports:
+        assert getattr(alphasift, sym, None) is not None, f"Missing or None export: {sym}"
+
+    expected_origin = {
+        "build_cross_strategy_synthesis": "alphasift.daily_brief",
+        "resolve_strategy_display_names": "alphasift.daily_brief",
+        "load_daily_report_runs": "alphasift.daily_report",
+        "render_daily_im_card": "alphasift.daily_report",
+        "write_daily_report_html": "alphasift.daily_report_html",
+        "build_markets_digest": "alphasift.market_digest",
+        "load_multi_market_runs": "alphasift.market_digest",
+        "render_market_digest_im_card": "alphasift.market_digest",
+        "MCPServer": "alphasift.mcp",
+        "serve_mcp": "alphasift.mcp",
+        "load_cn_benchmark": "alphasift.pattern_replay",
+        "render_replay_markdown": "alphasift.pattern_replay",
+        "replay_patterns": "alphasift.pattern_replay",
+    }
+    for sym, mod_name in expected_origin.items():
+        assert sym in all_exports
+        mod = importlib.import_module(mod_name)
+        assert getattr(alphasift, sym) is getattr(mod, sym)
+
+    root = _repo_root()
+    for code in (
+        "import alphasift; assert alphasift.MCPServer is not None",
+        "import alphasift.mcp; import alphasift; assert alphasift.MCPServer is alphasift.mcp.MCPServer",
+    ):
+        proc = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=str(root),
+            text=True,
+            capture_output=True,
+            timeout=20,
+            check=False,
+        )
+        assert proc.returncode == 0, proc.stderr
+
