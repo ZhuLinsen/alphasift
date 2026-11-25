@@ -9,6 +9,7 @@ from typing import Any
 
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
+from alphasift.jsonutil import finite_float, safe_int
 from alphasift.models import StrategyInfo
 from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.run_history import build_strategy_run_summary
@@ -180,10 +181,10 @@ def _cards_summary(
         "attention_strategy_count": status_counts.get("degraded", 0) + status_counts.get("failed", 0),
         "unchecked_strategy_count": status_counts.get("skipped", 0),
         "history_seeded_strategy_count": sum(
-            1 for card in cards if _int_value((card.get("history") or {}).get("run_count")) > 0
+            1 for card in cards if safe_int((card.get("history") or {}).get("run_count")) > 0
         ),
         "evaluated_strategy_count": sum(
-            1 for card in cards if _int_value((card.get("performance") or {}).get("evaluation_count")) > 0
+            1 for card in cards if safe_int((card.get("performance") or {}).get("evaluation_count")) > 0
         ),
         "needs_history_count": _lane_count(lanes, "needs_history"),
         "needs_evaluation_count": _lane_count(lanes, "needs_evaluation"),
@@ -196,13 +197,13 @@ def _cards_summary(
 
 def _card_lanes(cards: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     needs_history = [
-        card for card in cards if _int_value((card.get("history") or {}).get("run_count")) <= 0
+        card for card in cards if safe_int((card.get("history") or {}).get("run_count")) <= 0
     ]
     needs_evaluation = [
         card
         for card in cards
-        if _int_value((card.get("history") or {}).get("run_count")) > 0
-        and _int_value((card.get("performance") or {}).get("evaluation_count")) <= 0
+        if safe_int((card.get("history") or {}).get("run_count")) > 0
+        and safe_int((card.get("performance") or {}).get("evaluation_count")) <= 0
     ]
     performance_leaders = [
         card
@@ -249,9 +250,9 @@ def _compact_card(card: dict[str, Any]) -> dict[str, Any]:
         "display_name": str(card.get("display_name") or ""),
         "category": str(card.get("category") or ""),
         "readiness_status": str(readiness.get("status") or "unknown"),
-        "run_count": _int_value(history.get("run_count")),
-        "evaluation_count": _int_value(performance.get("evaluation_count")),
-        "performance_score": performance.get("performance_score"),
+        "run_count": safe_int(history.get("run_count")),
+        "evaluation_count": safe_int(performance.get("evaluation_count")),
+        "performance_score": finite_float(performance.get("performance_score")),
         "outcome": str(performance.get("outcome") or "insufficient_data"),
         "latest_run_id": str(history.get("latest_run_id") or performance.get("latest_run_id") or ""),
         "actions": list(card.get("actions", []) or [])[:2],
@@ -264,14 +265,14 @@ def _needs_attention(card: dict[str, Any]) -> bool:
     performance = card.get("performance") or {}
     return (
         str(readiness.get("status") or "") in {"degraded", "failed"}
-        or _int_value(history.get("source_error_count")) > 0
-        or _int_value(history.get("degradation_count")) > 0
+        or safe_int(history.get("source_error_count")) > 0
+        or safe_int(history.get("degradation_count")) > 0
         or str(performance.get("outcome") or "") in {"negative", "mixed"}
     )
 
 
 def _lane_count(lanes: dict[str, dict[str, Any]], lane_name: str) -> int:
-    return _int_value((lanes.get(lane_name) or {}).get("count"))
+    return safe_int((lanes.get(lane_name) or {}).get("count"))
 
 
 def _card_name(card: dict[str, Any]) -> str:
@@ -280,7 +281,7 @@ def _card_name(card: dict[str, Any]) -> str:
 
 def _performance_card_sort_key(card: dict[str, Any]) -> tuple[float, str]:
     performance = card.get("performance") or {}
-    return (_float_value(performance.get("performance_score")), _card_name(card))
+    return (finite_float(performance.get("performance_score")) or 0.0, _card_name(card))
 
 
 def _attention_card_sort_key(card: dict[str, Any]) -> tuple[int, int, float, str]:
@@ -291,12 +292,12 @@ def _attention_card_sort_key(card: dict[str, Any]) -> tuple[int, int, float, str
         str(readiness.get("status") or ""),
         0,
     )
-    source_issues = _int_value(history.get("source_error_count")) + _int_value(history.get("degradation_count"))
+    source_issues = safe_int(history.get("source_error_count")) + safe_int(history.get("degradation_count"))
     performance_rank = {"negative": 3, "mixed": 2}.get(str(performance.get("outcome") or ""), 0)
     return (
         status_rank + performance_rank,
         source_issues,
-        _float_value(performance.get("performance_score")),
+        finite_float(performance.get("performance_score")) or 0.0,
         _card_name(card),
     )
 
@@ -324,38 +325,38 @@ def _use_case(strategy: StrategyInfo) -> dict[str, object]:
 
 def _history_payload(history: dict[str, Any]) -> dict[str, Any]:
     return {
-        "run_count": _int_value(history.get("run_count")),
+        "run_count": safe_int(history.get("run_count")),
         "latest_run_id": str(history.get("latest_run_id") or ""),
         "latest_created_at": str(history.get("latest_created_at") or ""),
         "latest_report_path": str(history.get("latest_report_path") or ""),
         "latest_snapshot_source": str(history.get("latest_snapshot_source") or ""),
-        "total_picks": _int_value(history.get("total_picks")),
-        "average_picks": history.get("average_picks"),
-        "source_error_count": _int_value(history.get("source_error_count")),
+        "total_picks": safe_int(history.get("total_picks")),
+        "average_picks": finite_float(history.get("average_picks")),
+        "source_error_count": safe_int(history.get("source_error_count")),
         "source_error_samples": _string_list(history.get("source_error_samples", []))[:5],
-        "degradation_count": _int_value(history.get("degradation_count")),
+        "degradation_count": safe_int(history.get("degradation_count")),
         "degradation_samples": _string_list(history.get("degradation_samples", []))[:5],
-        "llm_ranked_runs": _int_value(history.get("llm_ranked_runs")),
-        "daily_enriched_runs": _int_value(history.get("daily_enriched_runs")),
+        "llm_ranked_runs": safe_int(history.get("llm_ranked_runs")),
+        "daily_enriched_runs": safe_int(history.get("daily_enriched_runs")),
         "recent_runs": list(history.get("recent_runs", []) or [])[:3],
     }
 
 
 def _performance_payload(performance: dict[str, Any]) -> dict[str, Any]:
     return {
-        "evaluation_count": _int_value(performance.get("evaluation_count")),
+        "evaluation_count": safe_int(performance.get("evaluation_count")),
         "latest_run_id": str(performance.get("latest_run_id") or ""),
         "latest_evaluated_at": str(performance.get("latest_evaluated_at") or ""),
         "latest_elapsed_days": performance.get("latest_elapsed_days"),
-        "pick_count": _int_value(performance.get("pick_count")),
-        "evaluated_pick_count": _int_value(performance.get("evaluated_pick_count")),
-        "missing_count": _int_value(performance.get("missing_count")),
-        "average_return_pct": performance.get("average_return_pct"),
-        "median_return_pct": performance.get("median_return_pct"),
-        "win_rate": performance.get("win_rate"),
-        "average_run_return_pct": performance.get("average_run_return_pct"),
-        "run_win_rate": performance.get("run_win_rate"),
-        "performance_score": performance.get("performance_score"),
+        "pick_count": safe_int(performance.get("pick_count")),
+        "evaluated_pick_count": safe_int(performance.get("evaluated_pick_count")),
+        "missing_count": safe_int(performance.get("missing_count")),
+        "average_return_pct": finite_float(performance.get("average_return_pct")),
+        "median_return_pct": finite_float(performance.get("median_return_pct")),
+        "win_rate": finite_float(performance.get("win_rate")),
+        "average_run_return_pct": finite_float(performance.get("average_run_return_pct")),
+        "run_win_rate": finite_float(performance.get("run_win_rate")),
+        "performance_score": finite_float(performance.get("performance_score")),
         "outcome": str(performance.get("outcome") or "insufficient_data"),
         "next_actions": _string_list(performance.get("next_actions", []))[:3],
         "recent_evaluations": list(performance.get("recent_evaluations", []) or [])[:3],
@@ -364,9 +365,9 @@ def _performance_payload(performance: dict[str, Any]) -> dict[str, Any]:
 
 def _top_factors(weights: dict[str, float]) -> list[dict[str, object]]:
     rows = [
-        {"name": str(name), "weight": float(weight)}
+        {"name": str(name), "weight": val}
         for name, weight in weights.items()
-        if float(weight) > 0
+        if (val := finite_float(weight)) is not None and val > 0
     ]
     rows.sort(key=lambda item: (-float(item["weight"]), str(item["name"])))
     return rows[:3]
@@ -386,29 +387,15 @@ def _card_actions(
         actions.append(f"Review missing fields before screening `{strategy.name}`.")
     if strategy.requires_daily_features:
         actions.append(f"Check daily data quality before running `{strategy.name}`.")
-    if _int_value(history.get("run_count")) <= 0:
+    if safe_int(history.get("run_count")) <= 0:
         actions.append(f"Run `alphasift screen {strategy.name} --save-run` to seed history.")
-    elif _int_value(history.get("degradation_count")) > 0:
+    elif safe_int(history.get("degradation_count")) > 0:
         actions.append(f"Review latest report for `{strategy.name}` data degradation.")
-    if _int_value(performance.get("evaluation_count")) <= 0:
+    if safe_int(performance.get("evaluation_count")) <= 0:
         actions.append(f"Run `alphasift evaluate <run_id> --save` to seed `{strategy.name}` performance.")
     elif str(performance.get("outcome") or "") in {"negative", "mixed"}:
         actions.extend(_string_list(performance.get("next_actions", []))[:1])
     return list(dict.fromkeys(actions))
-
-
-def _int_value(value: object) -> int:
-    try:
-        return int(value or 0)
-    except (TypeError, ValueError):
-        return 0
-
-
-def _float_value(value: object) -> float:
-    try:
-        return float(value or 0.0)
-    except (TypeError, ValueError):
-        return 0.0
 
 
 def _string_list(value: object) -> list[str]:

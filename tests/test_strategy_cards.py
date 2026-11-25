@@ -130,3 +130,113 @@ def test_build_strategy_cards_supports_single_strategy_filter(tmp_path):
 def test_build_strategy_cards_rejects_unknown_strategy(tmp_path):
     with pytest.raises(ValueError, match="missing"):
         build_strategy_cards(_config(tmp_path), strategy_name="missing")
+
+
+def test_build_strategy_cards_from_parts_scrubs_nonfinite_and_bool_metrics():
+    from alphasift.models import StrategyInfo
+    from alphasift.strategy_cards import build_strategy_cards_from_parts
+
+    strategies = [
+        StrategyInfo(
+            name="s_bad",
+            display_name="Bad Metrics",
+            description="desc",
+            version="1.0",
+            category="value",
+            tags=["value"],
+            market_scope=["cn"],
+            style={},
+            data_requirements=["snapshot"],
+            requires_daily_features=False,
+            required_snapshot_fields=[],
+            required_daily_fields=[],
+            active_filters=[],
+            factor_weights={
+                "pe": float("nan"),
+                "pb": True,
+                "roe": float("inf"),
+                "yield": 0.4,
+            },
+            profile_keys={},
+        ),
+        StrategyInfo(
+            name="s_ok",
+            display_name="Good Metrics",
+            description="desc",
+            version="1.0",
+            category="value",
+            tags=["value"],
+            market_scope=["cn"],
+            style={},
+            data_requirements=["snapshot"],
+            requires_daily_features=False,
+            required_snapshot_fields=[],
+            required_daily_fields=[],
+            active_filters=[],
+            factor_weights={"value": 0.5},
+            profile_keys={},
+        ),
+    ]
+    run_history = {
+        "strategies": [
+            {
+                "strategy": "s_bad",
+                "run_count": True,
+                "total_picks": "not-an-int",
+                "average_picks": float("nan"),
+                "source_error_count": float("inf"),
+                "degradation_count": "2.0",
+            }
+        ]
+    }
+    performance = {
+        "strategies": [
+            {
+                "strategy": "s_bad",
+                "evaluation_count": "1",
+                "pick_count": 2,
+                "evaluated_pick_count": 1,
+                "missing_count": 0,
+                "average_return_pct": float("nan"),
+                "median_return_pct": float("-inf"),
+                "win_rate": True,
+                "performance_score": float("nan"),
+                "outcome": "mixed",
+            },
+            {
+                "strategy": "s_ok",
+                "evaluation_count": 1,
+                "pick_count": 1,
+                "evaluated_pick_count": 1,
+                "missing_count": 0,
+                "average_return_pct": 3.0,
+                "win_rate": 100.0,
+                "performance_score": 81.0,
+                "outcome": "strong",
+            },
+        ]
+    }
+
+    payload = build_strategy_cards_from_parts(
+        strategies,
+        run_history_summary=run_history,
+        performance_summary=performance,
+    )
+    by_name = {item["name"]: item for item in payload["cards"]}
+
+    bad = by_name["s_bad"]
+    assert bad["scoring"]["top_factors"] == [{"name": "yield", "weight": 0.4}]
+    assert bad["history"]["run_count"] == 0
+    assert bad["history"]["total_picks"] == 0
+    assert bad["history"]["average_picks"] is None
+    assert bad["history"]["source_error_count"] == 0
+    assert bad["history"]["degradation_count"] == 2
+    assert bad["performance"]["evaluation_count"] == 1
+    assert bad["performance"]["average_return_pct"] is None
+    assert bad["performance"]["median_return_pct"] is None
+    assert bad["performance"]["win_rate"] is None
+    assert bad["performance"]["performance_score"] is None
+    attn = payload["lanes"]["attention"]["cards"]
+    assert len(attn) == 1
+    assert attn[0]["performance_score"] is None
+    assert payload["lanes"]["performance_leaders"]["cards"][0]["name"] == "s_ok"

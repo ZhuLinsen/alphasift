@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
-import math
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -13,6 +12,7 @@ from zoneinfo import ZoneInfo
 from alphasift.config import Config
 from alphasift.daily_brief import resolve_strategy_display_names
 from alphasift.daily_report import IM_CARD_MAX_CHARS, _format_strategy_entry, ensure_im_card_length
+from alphasift.jsonutil import finite_float
 from alphasift.market_news import fetch_region_market_news
 from alphasift.markets import get_market, latest_settled_close
 from alphasift.models import ScreenResult
@@ -99,16 +99,6 @@ def load_multi_market_runs(
     return out
 
 
-def _finite_float(value: Any) -> float | None:
-    if value is None:
-        return None
-    try:
-        parsed = float(value)
-    except (TypeError, ValueError):
-        return None
-    return parsed if math.isfinite(parsed) else None
-
-
 def _top_picks_for_market(
     strategy_entries: list[dict[str, Any]],
     *,
@@ -129,21 +119,21 @@ def _top_picks_for_market(
                     "industry": str(pk.get("industry") or "").strip(),
                     "strategies": [],
                     "scores": [],
-                    "price": _finite_float(pk.get("price")),
-                    "pe_ratio": _finite_float(pk.get("pe_ratio")),
-                    "pb_ratio": _finite_float(pk.get("pb_ratio")),
-                    "change_pct": _finite_float(pk.get("change_pct")),
+                    "price": finite_float(pk.get("price")),
+                    "pe_ratio": finite_float(pk.get("pe_ratio")),
+                    "pb_ratio": finite_float(pk.get("pb_ratio")),
+                    "change_pct": finite_float(pk.get("change_pct")),
                     "ranking_reason": str(pk.get("ranking_reason") or "").strip(),
                 },
             )
             if sname and sname not in item["strategies"]:
                 item["strategies"].append(sname)
-            score_val = _finite_float(pk.get("final_score"))
+            score_val = finite_float(pk.get("final_score"))
             if score_val is not None:
                 item["scores"].append(score_val)
             for fld in ("price", "pe_ratio", "pb_ratio", "change_pct"):
                 if item[fld] is None:
-                    finite_val = _finite_float(pk.get(fld))
+                    finite_val = finite_float(pk.get(fld))
                     if finite_val is not None:
                         item[fld] = finite_val
             if not item["ranking_reason"] and pk.get("ranking_reason"):
@@ -185,7 +175,7 @@ def render_market_digest_im_card(
             top = sec.get("top_picks") or []
             if top:
                 top_txt = "、".join(
-                    f"{p.get('code')} {str(p.get('name') or '')[:8]}({(_finite_float(p.get('avg_final_score')) or 0.0):.1f}分)"
+                    f"{p.get('code')} {str(p.get('name') or '')[:8]}({(finite_float(p.get('avg_final_score')) or 0.0):.1f}分)"
                     for p in top[:3]
                 )
                 lines.append(f"- **{m_name}**（{st_cnt} 组策略 · {sec.get('trade_date', '-')}）：{top_txt}")
