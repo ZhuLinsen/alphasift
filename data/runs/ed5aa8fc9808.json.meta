@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "run_id": "ed5aa8fc9808",
+  "strategy": "global_value",
+  "market": "us",
+  "strategy_version": "1.1",
+  "strategy_category": "value",
+  "created_at": "2026-11-25T22:34:28.893621+00:00",
+  "picks": 5,
+  "snapshot_count": 2503,
+  "after_filter_count": 581,
+  "snapshot_source": "yahoo_screener",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 0,
+  "degradation": [],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {},
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/ed5aa8fc9808.json",
+  "report_path": "track/data/runs/ed5aa8fc9808.md"
+}
