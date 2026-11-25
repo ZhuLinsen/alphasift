@@ -25,6 +25,7 @@ from alphasift.doctor import doctor_data_sources, doctor_radar_readiness
 from alphasift.market_digest import build_markets_digest, load_multi_market_runs
 from alphasift.market_regime import compute_market_regime, compute_market_regime_series
 from alphasift.markets import MARKETS, get_market
+from alphasift.mcp import _json_safe
 from alphasift.overview import build_overview
 from alphasift.pack import PackError, load_pack, pack_dir
 from alphasift.pattern_replay import load_cn_benchmark, replay_patterns
@@ -625,7 +626,7 @@ def _handler_for_config(config: Config):
             self.wfile.write(body)
 
         def _send_json(self, status: int, payload: dict[str, Any], *, vary_accept: bool = False) -> None:
-            body = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+            body = json.dumps(_json_safe(payload), ensure_ascii=False, indent=2, allow_nan=False).encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-store")

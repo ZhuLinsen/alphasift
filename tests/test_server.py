@@ -897,3 +897,46 @@ def test_api_markets_digest_endpoint_and_validation(tmp_path):
     assert bad_date_status == 400
     assert bad_date_payload["error"] == "invalid_request"
 
+
+def test_http_send_json_sanitizes_nonfinite_and_dates(tmp_path, monkeypatch):
+    from datetime import date
+    from http.server import ThreadingHTTPServer
+    import json
+    import threading
+    import urllib.request
+    import alphasift.server as server_mod
+
+    cfg = _config(tmp_path)
+
+    def _fake_api(_cfg, _path, query="", *, live=False):
+        return 200, {
+            "nan_val": float("nan"),
+            "inf_val": float("inf"),
+            "day": date(2026, 11, 25),
+            "path": tmp_path / "sample.json",
+        }
+
+    monkeypatch.setattr(server_mod, "build_api_response", _fake_api)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), server_mod._handler_for_config(cfg))
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=5) as resp:
+            assert resp.status == 200
+            raw = resp.read().decode("utf-8")
+
+        def _reject_constant(token):
+            raise AssertionError(f"Non-RFC-8259 JSON constant emitted: {token}")
+
+        parsed = json.loads(raw, parse_constant=_reject_constant)
+        assert parsed == {
+            "nan_val": None,
+            "inf_val": None,
+            "day": "2026-11-25",
+            "path": str(tmp_path / "sample.json"),
+        }
+    finally:
+        server.shutdown()
+        server.server_close()
+

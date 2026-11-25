@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+- **Purged Walk-Forward 时间边界严格隔离与回放联动**：
+  - 按每条样本 `exit_date` 执行严格 Walk-Forward 截断，禁止未闭合前瞻窗口或同批退出前样本泄漏至 `H1` 实证标签与联合 OOS 评估。
+  - 公开看板、盘后 HTML/Markdown 日报与 `alphasift-workbench` 同步暴露样本外时间边界、待验证标签标记与 `250D Purged Replay` 回放审计表。
+- **MCP 能力扩展至 14 个只读工具与 4 个只读资源**：
+  - 新增 `alphasift_markets` 工具与 `alphasift://markets` 资源，覆盖 7 个多市场目录配置与时区/基准指数查询；保持零交易、零外部下单边界。
+- **HTTP `/serve`、CLI 与 Workbench UI 完善**：
+  - HTTP 只读服务新增 `/markets`、`/patterns/replay`、`/daily-report`、`/daily-report.html` 与 `/markets-digest` 端点，并统一复用 `_json_safe(..., allow_nan=False)` 输出严格合法 RFC 8259 JSON（自动将 `NaN`/`Inf` 转为 `null`）。
+  - CLI 新增 `alphasift markets` 子命令；Workbench UI 新增多市场注册表卡片与 `250D Purged Replay` 回放面板。
+
 ## v0.3.1 (2026-11-23)
 
 - **Walk-Forward 市场情绪阶段门控与零前视审计（v0.4 研究基础）**：
