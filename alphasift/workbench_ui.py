@@ -198,6 +198,9 @@ def render_workbench_html() -> str:
       mcp_title: "STDIO MCP Client Configuration (Claude Code / Cursor / OpenClaw)",
       mcp_caps: "13 read-only tools · 4 resources · Zero-dependency STDIO JSON-RPC 2.0 (never spends LLM credits by default)",
       mcp_tools_lbl: "Highlighted Tools",
+      mcp_resources_lbl: "Read-only Resources",
+      markets_reg_title: "Supported Markets Registry (/markets)",
+      cols_mkt: ["Market", "Currency", "Timezone", "Session", "Benchmark", "Daily Pack"],
       codex_title: "Codex CLI Quick Add",
       copy_cli: "Copy CLI",
       copy_json: "Copy JSON",
@@ -260,6 +263,9 @@ def render_workbench_html() -> str:
       mcp_title: "STDIO MCP 客户端配置 (Claude Code / Cursor / OpenClaw)",
       mcp_caps: "13 个只读工具 · 4 项资源 · 零依赖 STDIO JSON-RPC 2.0（默认零 LLM 消耗）",
       mcp_tools_lbl: "核心工具一览",
+      mcp_resources_lbl: "只读资源列表",
+      markets_reg_title: "支持市场规范注册表 (/markets)",
+      cols_mkt: ["市场", "币种", "时区", "交易时段", "基准指数", "离线日线包"],
       codex_title: "Codex CLI 一键接入",
       copy_cli: "复制命令",
       copy_json: "复制 JSON",
@@ -319,6 +325,7 @@ def render_workbench_html() -> str:
     tab: "overview",
     overview: null,
     strategies: [],
+    markets: [],
     patterns: [],
     patFilter: "all",
     patternScan: null,
@@ -1001,12 +1008,44 @@ def render_workbench_html() -> str:
     }
   }
 
+  function appendMarketsRegistryCard(root) {
+    const mkts = Array.isArray(state.markets) ? state.markets : [];
+    if (!mkts.length) return;
+    const mCols = t("cols_mkt");
+    const wrap = el("div", { class: "table-wrap" });
+    const tbl = el("table");
+    tbl.appendChild(el("thead", null, el("tr", null, mCols.map((c, idx) => el("th", { class: idx === 1 || idx === 3 ? "mono" : "", text: c })))));
+    const tbody = el("tbody");
+    for (const spec of mkts) {
+      const session = String(spec.session_open || "-") + "-" + String(spec.session_close || "-");
+      const bench = spec.benchmark_name || spec.benchmark || "-";
+      tbody.appendChild(el("tr", null, [
+        el("td", null, [el("strong", { text: String(spec.id || "").toUpperCase() }), el("span", { class: "kpi-sub", style: "margin-left:6px;", text: String(spec.name || "") })]),
+        el("td", { class: "mono", text: String(spec.currency || "-") }),
+        el("td", { class: "kpi-sub mono", text: String(spec.timezone || "-") }),
+        el("td", { class: "mono", text: session }),
+        el("td", { text: String(bench) }),
+        el("td", null, makeBadge(spec.supports_daily_pack ? t("yes_lbl") : t("no_lbl"), spec.supports_daily_pack ? "ok" : "")),
+      ]));
+    }
+    tbl.appendChild(tbody);
+    wrap.appendChild(tbl);
+    root.appendChild(el("div", { class: "card", id: "markets-registry-card", style: "margin-top:14px;" }, [
+      el("h3", { class: "section-title", text: t("markets_reg_title") }),
+      wrap,
+    ]));
+  }
+
   function renderDigest() {
     const root = clear(document.getElementById("panel-digest"));
+    const mktMap = Object.fromEntries((state.markets || []).map((x) => [x.id, x]));
     const bar = el("div", { class: "toolbar" });
     for (const m of ALL_DIGEST_MARKETS) {
       const active = state.digestMarkets.includes(m);
-      const mBtn = el("button", { type: "button", class: active ? "active" : "", text: m.toUpperCase() });
+      const mSpec = mktMap[m];
+      const mAttrs = { type: "button", class: active ? "active" : "", text: m.toUpperCase() };
+      if (mSpec) mAttrs.title = String(mSpec.name || "") + " · " + String(mSpec.currency || "") + " · " + String(mSpec.timezone || "") + " " + String(mSpec.session_open || "") + "-" + String(mSpec.session_close || "");
+      const mBtn = el("button", mAttrs);
       mBtn.addEventListener("click", function () {
         if (state.digestMarkets.includes(m)) {
           if (state.digestMarkets.length <= 1) return;
@@ -1044,11 +1083,13 @@ def render_workbench_html() -> str:
 
     if (state.digestErr) {
       root.appendChild(el("div", { class: "card bad", text: t("err_prefix") + state.digestErr }));
+      appendMarketsRegistryCard(root);
       return;
     }
     const d = state.digestData;
     if (!d) {
       root.appendChild(el("div", { class: "card empty", text: state.digestLoading ? t("digest_loading") : t("digest_empty") }));
+      appendMarketsRegistryCard(root);
       return;
     }
 
@@ -1121,6 +1162,7 @@ def render_workbench_html() -> str:
         el("pre", { text: JSON.stringify(d, null, 2) }),
       ]),
     ]));
+    appendMarketsRegistryCard(root);
   }
 
   function renderMcp() {
@@ -1139,6 +1181,10 @@ def render_workbench_html() -> str:
     for (const tn of ["alphasift_screen", "alphasift_replay_patterns", "alphasift_markets_digest", "alphasift_daily_report", "alphasift_overview", "alphasift_list_strategies"]) {
       toolRow.appendChild(makeBadge(tn, "accent"));
     }
+    const resRow = el("div", { style: "margin:6px 0 8px;" }, [el("span", { class: "kpi-sub", style: "margin-right:6px;", text: t("mcp_resources_lbl") + ":" })]);
+    for (const rn of ["alphasift://skill", "alphasift://strategies", "alphasift://patterns", "alphasift://markets"]) {
+      resRow.appendChild(makeBadge(rn, "ok"));
+    }
     const mcpCard = el("div", { class: "card", style: "margin-bottom:14px;" }, [
       el("div", { class: "card-head-row" }, [
         el("h3", { class: "section-title", text: t("mcp_title") }),
@@ -1146,6 +1192,7 @@ def render_workbench_html() -> str:
       ]),
       el("div", { class: "kpi-sub", text: t("mcp_caps") }),
       toolRow,
+      resRow,
       el("pre", { text: mcpJson }),
     ]);
     root.appendChild(mcpCard);
@@ -1189,7 +1236,7 @@ def render_workbench_html() -> str:
   }
 
   async function refreshAll() {
-    const [idx, ov, strats, pats, runs, radar, src] = await Promise.all([
+    const [idx, ov, strats, pats, runs, radar, src, mkts] = await Promise.all([
       fetchJson("/?format=json").catch(() => null),
       fetchJson("/overview").catch(() => null),
       fetchJson("/strategies").catch(() => ({ strategies: [] })),
@@ -1197,10 +1244,12 @@ def render_workbench_html() -> str:
       fetchJson("/runs").catch(() => ({ runs: [] })),
       fetchJson("/doctor/radar").catch(() => null),
       fetchJson("/doctor/data-sources?live=0").catch(() => null),
+      fetchJson("/markets").catch(() => ({ markets: [] })),
     ]);
     state.index = idx;
     state.overview = ov;
     state.strategies = (strats && (strats.strategies || strats.items)) || [];
+    state.markets = (mkts && mkts.markets) || [];
     state.patterns = (pats && (pats.patterns || pats.items)) || [];
     state.runs = (runs && (runs.runs || runs.items)) || [];
     state.radar = radar;
