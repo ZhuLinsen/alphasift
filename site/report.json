@@ -8,7 +8,7 @@
   "stale_reason": null,
   "detail_url": "",
   "market": "cn",
-  "generated_at": "2026-11-24T23:32:20.038955+00:00",
+  "generated_at": "2026-11-25T00:34:11.171171+00:00",
   "usage_policy": "cn_only_regime_slice_only",
   "strategy_display_names": {
     "balanced_alpha": "均衡多因子",
@@ -2423,6 +2423,8 @@
           "ebb",
           "neutral"
         ],
+        "wf_h1_positive_regimes": [],
+        "wf_low_overhead_threshold_pct": 15,
         "wf_non_adverse_low_overhead_pct": 2.85,
         "wf_non_adverse_low_overhead_days": 16,
         "wf_joint_delta_pct": 2.13,
@@ -3866,6 +3868,11 @@
           "freezing",
           "divergence"
         ],
+        "wf_h1_positive_regimes": [
+          "startup",
+          "ebb"
+        ],
+        "wf_low_overhead_threshold_pct": 15,
         "wf_non_adverse_low_overhead_pct": -1.27,
         "wf_non_adverse_low_overhead_days": 56,
         "wf_joint_delta_pct": -0.17,
@@ -4315,6 +4322,11 @@
           "freezing",
           "neutral"
         ],
+        "wf_h1_positive_regimes": [
+          "startup",
+          "divergence"
+        ],
+        "wf_low_overhead_threshold_pct": 15,
         "wf_non_adverse_low_overhead_pct": 0.24,
         "wf_non_adverse_low_overhead_days": 60,
         "wf_joint_delta_pct": 0.78,
@@ -5761,6 +5773,8 @@
           "ebb",
           "neutral"
         ],
+        "wf_h1_positive_regimes": [],
+        "wf_low_overhead_threshold_pct": 15,
         "wf_non_adverse_low_overhead_pct": -0.38,
         "wf_non_adverse_low_overhead_days": 14,
         "wf_joint_delta_pct": -1.31,
@@ -6071,6 +6085,8 @@
           "divergence",
           "ebb"
         ],
+        "wf_h1_positive_regimes": [],
+        "wf_low_overhead_threshold_pct": 15,
         "wf_non_adverse_low_overhead_pct": 1.21,
         "wf_non_adverse_low_overhead_days": 8,
         "wf_joint_delta_pct": 1.67,
@@ -7515,6 +7531,11 @@
           "divergence",
           "neutral"
         ],
+        "wf_h1_positive_regimes": [
+          "startup",
+          "ebb"
+        ],
+        "wf_low_overhead_threshold_pct": 15,
         "wf_non_adverse_low_overhead_pct": -1.83,
         "wf_non_adverse_low_overhead_days": 43,
         "wf_joint_delta_pct": -0.66,
@@ -7682,6 +7703,11 @@
           "divergence",
           "neutral"
         ],
+        "wf_h1_positive_regimes": [
+          "startup",
+          "ebb"
+        ],
+        "wf_low_overhead_threshold_pct": 15,
         "wf_non_adverse_low_overhead_pct": -0.46,
         "wf_non_adverse_low_overhead_days": 16,
         "wf_joint_delta_pct": -0.58,
@@ -7708,6 +7734,8 @@
           "ebb",
           "neutral"
         ],
+        "wf_h1_positive_regimes": [],
+        "wf_low_overhead_threshold_pct": 15,
         "wf_non_adverse_low_overhead_pct": null,
         "wf_non_adverse_low_overhead_days": 0,
         "wf_joint_delta_pct": null,
@@ -7732,6 +7760,10 @@
           "divergence",
           "neutral"
         ],
+        "wf_h1_positive_regimes": [
+          "ebb"
+        ],
+        "wf_low_overhead_threshold_pct": 15,
         "wf_non_adverse_low_overhead_pct": -1.8,
         "wf_non_adverse_low_overhead_days": 18,
         "wf_joint_delta_pct": -1.79,
@@ -8435,20 +8467,20 @@
   "ai_brief": {
     "mode": "llm",
     "model": "gemini-3.8-flash",
-    "headline": "全市场缩量震荡进入分歧期，上涨家数仅占35%，策略共识转向低波金融与汽配龙头",
-    "regime_interpretation": "11月24日市场状态处于分歧期，全市场上涨占比仅35.01%，涨跌幅中位数为-0.67%，超3200只个股跌幅在0%至-3%之间。全日成交金额16678.0亿元，非ST涨停55家、跌停2家，涨停封板率降至42.31%，昨日涨停个股平均收益达4.09%，最高连板保持4板，呈现局部短线情绪仍存但大盘整体承压的结构。外围消息面出现海外科技与产业动态扰动，盘面缺乏一致性推升动能。",
-    "consensus_and_ai_edge": "跨策略共识集中于九安医疗、石头科技、江苏金租及拓普集团。行业层面，银行以12.3%的入选占比居首，汽车（8.8%）紧随其后。AI轨道在均衡多因子与资金热度策略中展现调仓分歧：AI增配了低估值的中矿资源、新锐股份以及流动性充裕的天孚通信、拓普集团，剔除欧科亿、华友钴业等标的；蓝筹收益质量策略与规则池重合度达100%，整体强化了高股息与大金融的避险配置。",
+    "headline": "市场处于分歧阶段，全市场中位数下跌0.67%，策略聚焦低估值防御与汽车、算力流动性龙头",
+    "regime_interpretation": "当日市场呈现明显分歧特征，全市场上涨占比仅35.01%，涨跌幅中位数为-0.67%，成交额达16678.0亿元。涨停家数55只但封板率偏低至42.31%，跌超3%个股达281只，赚钱效应明显承压。连板高度压制在4板，不过昨日涨停个股次日平均溢价达4.09%，短线接力仍有局部韧性。海外传出Anthropic软件创新及锂矿收购等产业动向，但整体交投情绪仍受制于结构分化与低封板率约束。",
+    "consensus_and_ai_edge": "跨策略共识高度集中于银行（占比12.3%）和汽车（占比8.8%）等具备估值安全垫与流动性的板块。九安医疗、石头科技、江苏金租与拓普集团均获得双策略交叉验证。AI在均衡多因子策略中增配低估值的反转资源与机械股如中矿资源，并在资金热度策略中纳入高成交龙头天孚通信与拓普集团，但在蓝筹收益质量策略中维持与规则100%重合，整体偏向顺势聚焦龙头与防守。",
     "risk_warnings": [
-      "拓普集团出现短期超买（RSI超买）信号，天孚通信存在较高市净率（High PB）估值溢价风险。",
-      "策略持仓在银行与大金融板块集中度较高，九安医疗存在盈利模式持续性存疑的风险提示。"
+      "拓普集团出现短期超买信号（RSI超买），天孚通信呈现高PB估值敞口风险。",
+      "平安银行及低估值策略池内金融敞口过重，九安医疗面临盈利模式持续性存疑的属性提示。"
     ],
     "watch_points": [
-      "全市场成交额能否在1.66万亿基础上补量修复，以及上涨占比能否重回50%上方。",
-      "涨停封板率（42.31%）与最高连板（4板）的演变，验证短线投机接力情绪是否进一步退潮。"
+      "观察全市场成交额能否稳于1.6万亿元上方及封板率是否脱离42.31%低位区间。",
+      "关注许继电气与平高电气在“单阳不破”实验形态下的次日持续性与承接力度。"
     ],
     "disclaimer": "仅供量化研究与复盘观察，不构成投资建议。",
     "fallback_reason": null
   },
-  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-24)**\n> 盘面 **分歧**｜上涨 35.0% · 中位 -0.67%｜涨跌停 55/2（封板 42.3%）｜最高 4板 · 昨涨停 +4.09% · 成交 16,678亿\n**✅ 公告排雷**：抽检 20 只暂未见减持/立案/监管等负面关键词\n**策略与 [AI]**：规则 10 组(45只) / [AI] 9 组(45只)，AI调仓 +12/-12（市场结构性分化明显，宜精选低估值修复且有回购或产业催化支撑的标的。）\n**多策略共识(4)**：002432 九安医疗(2策略)、688169 石头科技(2策略)、600901 江苏金租(2策略)、601689 拓普集团(2策略)\n**[AI] 简评**：全市场缩量震荡进入分歧期，上涨家数仅占35%，策略共识转向低波金融与汽配龙头\n**形态雷达**：双底突破(3只·观察期·联合OOS+0.24%：灿芯股份、中创环保)；20日线低波缩量回踩(30只·观察期·逆风：迈瑞医疗、中国中车)；低波趋势稳健突破(1只·观察期·逆风：中国核电)\n**盘后要闻**：惠普第四财季净营收160亿美元，同比增长9.3%\n注：量化形态观测与回测基准，非投资建议。",
-  "im_card_chars": 532
+  "im_card_markdown": "**AlphaSift A股盘后观察 (2026-11-24)**\n> 盘面 **分歧**｜上涨 35.0% · 中位 -0.67%｜涨跌停 55/2（封板 42.3%）｜最高 4板 · 昨涨停 +4.09% · 成交 16,678亿\n**✅ 公告排雷**：抽检 20 只暂未见减持/立案/监管等负面关键词\n**策略与 [AI]**：规则 10 组(45只) / [AI] 9 组(45只)，AI调仓 +12/-12（市场结构性分化明显，宜精选低估值修复且有回购或产业催化支撑的标的。）\n**多策略共识(4)**：002432 九安医疗(2策略)、688169 石头科技(2策略)、600901 江苏金租(2策略)、601689 拓普集团(2策略)\n**[AI] 简评**：市场处于分歧阶段，全市场中位数下跌0.67%，策略聚焦低估值防御与汽车、算力流动性龙头\n**形态雷达**：双底突破(3只·观察期·联合OOS+0.24%：灿芯股份、中创环保)；20日线低波缩量回踩(30只·观察期·逆风：迈瑞医疗、中国中车)；低波趋势稳健突破(1只·观察期·逆风：中国核电)\n**盘后要闻**：惠普第四财季净营收160亿美元，同比增长9.3%\n注：量化形态观测与回测基准，非投资建议。",
+  "im_card_chars": 537
 }
