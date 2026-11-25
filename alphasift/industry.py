@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json
 from alphasift.normalize import (
     normalize_code,
     safe_float as _safe_float,
@@ -333,14 +333,11 @@ def fetch_eastmoney_industry_map(
     notes.append(f"eastmoney industry map fetched: rows={len(mapping)}")
     if cache_path is not None and mapping:
         try:
-            cache_path.parent.mkdir(parents=True, exist_ok=True)
-            tmp_path = cache_path.with_name(f".{cache_path.name}.{time.time_ns()}.tmp")
-            tmp_path.write_text(
-                dumps_strict_json(
-                    {"provider": "eastmoney", "created_at": datetime.now().isoformat(), "mapping": mapping}, indent=None),
-                encoding="utf-8",
+            atomic_write_strict_json(
+                cache_path,
+                {"provider": "eastmoney", "created_at": datetime.now().isoformat(), "mapping": mapping},
+                indent=None,
             )
-            tmp_path.replace(cache_path)
         except OSError as exc:
             notes.append(f"eastmoney industry cache write failed: {exc}")
     return mapping, notes
@@ -418,7 +415,7 @@ def save_industry_map(mapping: dict[str, dict[str, object]], path_like: str | Pa
         for code, item in sorted(mapping.items())
     ]
     if path.suffix.lower() == ".json":
-        path.write_text(dumps_strict_json(rows, indent=2), encoding="utf-8")
+        atomic_write_strict_json(path, rows, indent=2)
     else:
         pd.DataFrame(rows).to_csv(path, index=False, encoding="utf-8")
     return path
@@ -636,7 +633,6 @@ def _write_akshare_board_cache(
     max_boards: int,
 ) -> str:
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "schema": _AKSHARE_BOARD_CACHE_SCHEMA,
             "provider": "akshare",
@@ -644,9 +640,7 @@ def _write_akshare_board_cache(
             "created_at": datetime.now().isoformat(),
             "mapping": _json_safe_mapping(mapping),
         }
-        tmp_path = path.with_name(f".{path.name}.{time.time_ns()}.tmp")
-        tmp_path.write_text(dumps_strict_json(payload, indent=2), encoding="utf-8")
-        tmp_path.replace(path)
+        atomic_write_strict_json(path, payload, indent=2)
         return f"industry provider cache saved: {path} rows={len(mapping)}"
     except Exception as exc:
         return f"industry provider cache skipped: {path} error={exc}"

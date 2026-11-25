@@ -22,7 +22,7 @@ from urllib3.util.retry import Retry
 from alphasift.markets import MarketSpec, get_market
 from alphasift.snapshot_yahoo import fetch_yahoo_snapshot
 from alphasift.source_guard import call_with_timeout, parse_source_timeout_seconds
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json
 
 logger = logging.getLogger(__name__)
 
@@ -388,13 +388,11 @@ def _save_persisted_source_health(
         if name in health:
             merged[name] = health[name]
     try:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_name(f".{target.name}.{os.getpid()}.{time.time_ns()}.tmp")
-        tmp.write_text(
-            dumps_strict_json({"version": _PERSISTED_HEALTH_VERSION, "sources": merged}, indent=2),
-            encoding="utf-8",
+        atomic_write_strict_json(
+            target,
+            {"version": _PERSISTED_HEALTH_VERSION, "sources": merged},
+            indent=2,
         )
-        tmp.replace(target)
     except OSError as exc:
         logger.debug("Could not persist snapshot source health to %s: %s", target, exc)
 
@@ -505,9 +503,7 @@ def _write_last_good_snapshot(
                 df.to_json(orient="split", date_format="iso", force_ascii=False)
             ),
         }
-        tmp_path = path.with_name(f".{path.name}.{time.time_ns()}.tmp")
-        tmp_path.write_text(dumps_strict_json(payload, indent=None), encoding="utf-8")
-        tmp_path.replace(path)
+        atomic_write_strict_json(path, payload, indent=None)
     except Exception as exc:  # noqa: BLE001 - live snapshot should remain usable.
         logger.warning("Failed to write last-good snapshot cache %s: %s", path, exc)
 

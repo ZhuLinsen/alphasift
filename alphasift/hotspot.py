@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import math
-import os
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,7 +19,7 @@ from alphasift.industry import (
     load_board_heat_trends,
 )
 from alphasift.normalize import normalize_code as _normalize_code  # strict: free-text paths
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, dumps_strict_json
 
 
 HOTSPOT_STAGES = (
@@ -765,14 +764,7 @@ def save_hotspots_json(path_like: str | Path, hotspots: list[HotspotSummary]) ->
         },
         "hotspots": rows,
     }
-    tmp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    try:
-        tmp_path.write_text(dumps_strict_json(payload, indent=2), encoding="utf-8")
-        os.replace(tmp_path, path)
-    finally:
-        if tmp_path.exists():
-            tmp_path.unlink()
-    return path
+    return atomic_write_strict_json(path, payload, indent=2)
 
 
 def hotspot_detail_to_dict(detail: HotspotDetail) -> dict[str, Any]:

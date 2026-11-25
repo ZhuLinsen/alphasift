@@ -111,3 +111,42 @@ def test_atomic_write_helpers_preserve_prior_content_on_error(tmp_path):
     atomic_write_text(text_target, "v2")
     assert text_target.read_text(encoding="utf-8") == "v2"
     assert [p.name for p in text_target.parent.iterdir() if p.name.endswith(".tmp")] == []
+
+
+def test_cache_writers_persist_atomically_without_tmp_leftovers(tmp_path):
+    import json
+    import pandas as pd
+    from alphasift.daily import _write_daily_history_cache
+    from alphasift.hotspot import HotspotSummary, save_hotspots_json
+    from alphasift.industry import _write_akshare_board_cache, save_industry_map
+    from alphasift.snapshot import _save_persisted_source_health, _write_last_good_snapshot
+
+    health_path = tmp_path / "health.json"
+    _save_persisted_source_health(health_path, {"sina": {"ok": True, "calls": 1}}, touched={"sina"})
+    assert json.loads(health_path.read_text(encoding="utf-8"))["sources"]["sina"]["ok"] is True
+
+    snap_df = pd.DataFrame([{"code": "000001", "name": "平安银行", "price": 10.5}])
+    snap_path = tmp_path / "snap.json"
+    _write_last_good_snapshot(snap_path, snap_df)
+    assert snap_path.is_file()
+
+    daily_path = tmp_path / "daily.json"
+    _write_daily_history_cache(
+        daily_path,
+        pd.DataFrame([{"date": "2026-11-25", "close": 10.5}]),
+        code="000001",
+        source="test",
+        lookback_days=30,
+    )
+    assert daily_path.is_file()
+
+    ind_cache = tmp_path / "industry.json"
+    _write_akshare_board_cache(ind_cache, {"000001": {"industry": "银行"}}, max_boards=10)
+    ind_export = tmp_path / "industry_export.json"
+    save_industry_map({"000001": {"industry": "银行"}}, ind_export)
+    assert json.loads(ind_export.read_text(encoding="utf-8"))[0]["industry"] == "银行"
+
+    hs_path = tmp_path / "hotspots.json"
+    save_hotspots_json(hs_path, [HotspotSummary(topic="算力", name="算力", source="test", rank=1)])
+    assert hs_path.is_file()
+    assert [p.name for p in tmp_path.iterdir() if p.name.endswith(".tmp")] == []
