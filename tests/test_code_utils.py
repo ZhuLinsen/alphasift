@@ -84,3 +84,30 @@ def test_store_persistence_sanitizes_nonfinite_and_numpy(tmp_path):
     save_screen_result(res, data_dir=tmp_path, path=jsonl_path, jsonl=True)
     for line in jsonl_path.read_text(encoding="utf-8").splitlines():
         json.loads(line, parse_constant=_reject_constant)
+
+
+def test_atomic_write_helpers_preserve_prior_content_on_error(tmp_path):
+    import pytest
+    from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text
+
+    target = tmp_path / "nested" / "state.json"
+    atomic_write_strict_json(target, {"ok": True, "score": float("nan")}, indent=2, trailing_newline=True)
+    original = target.read_text(encoding="utf-8")
+    assert '"score": null' in original
+    assert original.endswith("\n")
+    assert [p.name for p in target.parent.iterdir()] == ["state.json"]
+
+    class _Explode:
+        def __str__(self):
+            raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="boom"):
+        atomic_write_strict_json(target, {"bad": _Explode()})
+    assert target.read_text(encoding="utf-8") == original
+    assert [p.name for p in target.parent.iterdir()] == ["state.json"]
+
+    text_target = tmp_path / "notes.txt"
+    atomic_write_text(text_target, "v1")
+    atomic_write_text(text_target, "v2")
+    assert text_target.read_text(encoding="utf-8") == "v2"
+    assert [p.name for p in text_target.parent.iterdir() if p.name.endswith(".tmp")] == []

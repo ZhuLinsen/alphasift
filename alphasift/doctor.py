@@ -20,7 +20,7 @@ from alphasift.snapshot import (
 )
 from alphasift.markets import get_market
 from alphasift.strategy import list_strategies
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json
 
 
 @dataclass
@@ -1013,12 +1013,7 @@ def _has_configured_tushare() -> bool:
 
 
 def write_doctor_report(path: str | Path, result: DataSourcesDoctorResult) -> Path:
-    output = Path(path)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(
-        dumps_strict_json(result.to_dict(), indent=2), encoding="utf-8"
-    )
-    return output
+    return atomic_write_strict_json(path, result.to_dict(), indent=2)
 
 
 def doctor_radar_readiness(

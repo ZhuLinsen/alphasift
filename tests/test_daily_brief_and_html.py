@@ -811,5 +811,56 @@ def test_daily_report_boundary_verification_and_unverified_badge() -> None:
             assert proc.returncode == 0, proc.stderr
 
 
+def test_daily_report_html_formats_nonfinite_metrics_as_dash(tmp_path):
+    from alphasift.daily_report_html import _fmt_num, _fmt_pct
+
+    for bad in (float("nan"), float("inf"), float("-inf")):
+        assert _fmt_pct(bad) == '<span class="dim">–</span>'
+        assert _fmt_num(bad) == '<span class="dim">–</span>'
+
+    out = write_daily_report_html(
+        tmp_path / "daily.html",
+        {
+            "trade_date": "2026-11-25",
+            "pack_trade_date": "2026-11-25",
+            "expected_trade_date": "2026-11-25",
+            "pack_is_stale": False,
+            "market_regime": {"regime_stage": "neutral", "regime_stage_label": "中性"},
+            "strategies": [
+                {
+                    "strategy": "dual_low",
+                    "display_name": "双低",
+                    "count": 1,
+                    "picks": [{"code": "000001", "name": "测试股", "change_pct": float("inf"), "score": float("-inf")}],
+                }
+            ],
+            "ai_highlights": [],
+            "patterns": {
+                "active": [],
+                "experimental": [
+                    {
+                        "pattern": "inf_pat",
+                        "display_name": "无限值测试",
+                        "status": "experimental",
+                        "expectancy_tier": "positive_watch",
+                        "hit_count": 1,
+                        "wf_non_adverse_low_overhead_pct": float("inf"),
+                        "signals": [],
+                    }
+                ],
+            },
+            "announcement_risks": {"checked_count": 0, "flagged_count": 0, "flagged_items": [], "errors": []},
+            "market_news": {"items": [], "sources": [], "candidate_news": {}, "errors": []},
+            "degradation": [],
+            "cross_strategy_synthesis": {},
+            "ai_brief": {},
+        },
+    )
+    rendered = out.read_text(encoding="utf-8")
+    assert "inf%" not in rendered.lower()
+    assert "+inf" not in rendered.lower()
+    assert [p.name for p in tmp_path.iterdir()] == ["daily.html"]
+
+
 
 

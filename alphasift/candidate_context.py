@@ -16,7 +16,7 @@ import pandas as pd
 import requests
 
 from alphasift.source_guard import call_with_timeout
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json
 
 _NEGATIVE_EVENT_KEYWORDS = {
     "减持": ("减持", "拟减持", "被动减持"),
@@ -807,9 +807,8 @@ def _write_cache(
     path = _cache_path(cache_dir, code, providers)
     if path is None:
         return
-    path.parent.mkdir(parents=True, exist_ok=True)
     payload = {"cached_at": datetime.now().isoformat(), "row": row}
-    path.write_text(dumps_strict_json(payload, indent=2), encoding="utf-8")
+    atomic_write_strict_json(path, payload, indent=2)
 
 
 def _dedupe(items: list[str]) -> list[str]:

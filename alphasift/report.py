@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, dumps_strict_json
 from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
 
 RUN_REPORT_SCHEMA_VERSION = 1
@@ -100,13 +100,9 @@ def write_run_report(
     json_output: bool = False,
 ) -> Path:
     """Write a run report payload as Markdown or JSON."""
-    output = Path(path)
-    output.parent.mkdir(parents=True, exist_ok=True)
     if json_output:
-        output.write_text(dumps_strict_json(payload, indent=2), encoding="utf-8")
-    else:
-        output.write_text(render_run_report_markdown(payload), encoding="utf-8")
-    return output
+        return atomic_write_strict_json(path, payload, indent=2)
+    return atomic_write_text(path, render_run_report_markdown(payload))
 
 
 def _run_summary(result: ScreenResult) -> dict[str, Any]:

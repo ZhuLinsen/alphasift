@@ -37,7 +37,7 @@ from alphasift.daily_report import (
     render_daily_im_card,
 )
 from alphasift.timeutil import parse_timestamp
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json
 
 SUPPORTED_CHANNELS: tuple[str, ...] = (
     "wecom",
@@ -712,10 +712,7 @@ def _load_state(path: Path) -> dict[str, dict[str, Any]]:
 
 
 def _save_state(path: Path, state: dict[str, dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(f"{path.suffix}.tmp.{os.getpid()}.{threading.get_ident()}")
-    tmp.write_text(dumps_strict_json(state, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, path)
+    atomic_write_strict_json(path, state, indent=2, trailing_newline=True)
 
 
 @contextmanager

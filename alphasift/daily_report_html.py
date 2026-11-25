@@ -4,13 +4,14 @@
 from __future__ import annotations
 
 import html
+import math
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 from alphasift.daily_brief import BRIEF_DISCLAIMER, resolve_strategy_display_names
 from alphasift.daily_report import _is_wf_joint_positive
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_text, dumps_strict_json
 
 _DIST_BUCKETS: tuple[tuple[str, str, str], ...] = (
     ("le_neg7", "≤-7%", "down"),
@@ -95,7 +96,7 @@ def _fmt_pct(val: object, digits: int = 2) -> str:
         num = float(val)
     except (TypeError, ValueError):
         return '<span class="dim">–</span>'
-    if num != num:
+    if not math.isfinite(num):
         return '<span class="dim">–</span>'
     cls = "up" if num > 0 else ("down" if num < 0 else "")
     sign = "+" if num > 0 else ""
@@ -109,7 +110,7 @@ def _fmt_num(val: object, digits: int = 1, suffix: str = "", suffix_i18n: str = 
         num = float(val)
     except (TypeError, ValueError):
         return '<span class="dim">–</span>'
-    if num != num:
+    if not math.isfinite(num):
         return '<span class="dim">–</span>'
     if suffix_i18n:
         return f'{num:.{digits}f}<span {_i18n(suffix_i18n)}>{_esc(suffix)}</span>'
@@ -1475,10 +1476,7 @@ def write_daily_report_html(
     track_summary: dict[str, Any] | None = None,
 ) -> Path:
     """Render and write a standalone HTML daily report to disk."""
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    return atomic_write_text(
+        output_path,
         render_daily_report_html(report, track_summary=track_summary),
-        encoding="utf-8",
     )
-    return path

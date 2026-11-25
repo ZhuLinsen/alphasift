@@ -24,7 +24,7 @@ from alphasift.daily_brief import (
     generate_ai_daily_brief,
     resolve_strategy_display_names,
 )
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text
 from alphasift.market_news import fetch_cn_market_news
 from alphasift.markets import get_market, latest_settled_close
 from alphasift.models import ScreenResult
@@ -1174,14 +1174,8 @@ def render_daily_im_card(
 
 
 def write_daily_report(path: str | Path, report: dict[str, Any]) -> Path:
-    output = Path(path)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(dumps_strict_json(report, indent=2) + "\n", encoding="utf-8")
-    return output
+    return atomic_write_strict_json(path, report, indent=2, trailing_newline=True)
 
 
 def write_daily_card(path: str | Path, card_text: str) -> Path:
-    output = Path(path)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(ensure_im_card_length(card_text) + "\n", encoding="utf-8")
-    return output
+    return atomic_write_text(path, ensure_im_card_length(card_text) + "\n")

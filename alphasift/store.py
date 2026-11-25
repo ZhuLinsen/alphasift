@@ -9,7 +9,7 @@ from math import isfinite
 from pathlib import Path
 
 from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, dumps_strict_json
 
 _RUN_METADATA_SUFFIX = ".meta"
 _RUN_SOURCE_ERROR_SAMPLE_LIMIT = 5
@@ -25,15 +25,11 @@ def save_screen_result(
 ) -> Path:
     """Persist a screen result and return the written path."""
     output_path = Path(path) if path is not None else data_dir / "runs" / f"{result.run_id}.json"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
     result.saved_path = str(output_path)
     if jsonl:
-        output_path.write_text("\n".join(screen_result_to_jsonl(result)) + "\n", encoding="utf-8")
+        atomic_write_text(output_path, "\n".join(screen_result_to_jsonl(result)) + "\n")
     else:
-        output_path.write_text(
-            dumps_strict_json(asdict(result), indent=2),
-            encoding="utf-8",
-        )
+        atomic_write_strict_json(output_path, asdict(result), indent=2)
     _write_screen_result_metadata(result, output_path)
     return output_path
 
@@ -71,15 +67,11 @@ def save_evaluation_result(
     jsonl: bool = False,
 ) -> Path:
     output_path = Path(path) if path is not None else data_dir / "evaluations" / f"{result.run_id}.json"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
     result.saved_path = str(output_path)
     if jsonl:
-        output_path.write_text("\n".join(evaluation_result_to_jsonl(result)) + "\n", encoding="utf-8")
+        atomic_write_text(output_path, "\n".join(evaluation_result_to_jsonl(result)) + "\n")
     else:
-        output_path.write_text(
-            dumps_strict_json(asdict(result), indent=2),
-            encoding="utf-8",
-        )
+        atomic_write_strict_json(output_path, asdict(result), indent=2)
     return output_path
 
 
@@ -139,10 +131,7 @@ def _write_screen_result_metadata(result: ScreenResult, output_path: Path) -> No
         "path": str(output_path),
         "report_path": str(output_path.with_suffix(".md")),
     }
-    metadata_path.write_text(
-        dumps_strict_json(metadata, indent=2),
-        encoding="utf-8",
-    )
+    atomic_write_strict_json(metadata_path, metadata, indent=2)
 
 
 def _run_metadata_path(run_path: Path) -> Path:
