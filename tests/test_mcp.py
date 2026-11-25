@@ -44,7 +44,7 @@ def test_mcp_initialize_tools_and_resources(tmp_path):
 
     res_list = server.handle_request({"jsonrpc": "2.0", "id": 4, "method": "resources/list"})
     uris = {item["uri"] for item in res_list["result"]["resources"]}
-    assert uris == {"alphasift://skill", "alphasift://strategies", "alphasift://patterns"}
+    assert uris == {"alphasift://skill", "alphasift://strategies", "alphasift://patterns", "alphasift://markets"}
 
     skill_res = server.handle_request(
         {"jsonrpc": "2.0", "id": 5, "method": "resources/read", "params": {"uri": "alphasift://skill"}}
@@ -62,6 +62,14 @@ def test_mcp_initialize_tools_and_resources(tmp_path):
     )
     pat_catalog = json.loads(pat_res["result"]["contents"][0]["text"])
     assert len(pat_catalog["patterns"]) >= 9
+
+    mkt_res = server.handle_request(
+        {"jsonrpc": "2.0", "id": 62, "method": "resources/read", "params": {"uri": "alphasift://markets"}}
+    )
+    mkt_catalog = json.loads(mkt_res["result"]["contents"][0]["text"])
+    assert len(mkt_catalog["markets"]) == 7
+    assert {item["id"] for item in mkt_catalog["markets"]} == {"cn", "us", "hk", "jp", "kr", "tw", "in"}
+    assert all(isinstance(item.get("session_open"), str) and item.get("currency") for item in mkt_catalog["markets"])
 
 
 def test_mcp_tool_calls_and_safety_guards(tmp_path, monkeypatch):

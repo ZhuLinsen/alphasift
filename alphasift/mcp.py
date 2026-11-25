@@ -20,7 +20,7 @@ from alphasift.config import Config
 from alphasift.daily_report import build_daily_report, load_daily_report_runs
 from alphasift.doctor import doctor_data_sources
 from alphasift.market_digest import build_markets_digest, load_multi_market_runs
-from alphasift.markets import get_market
+from alphasift.markets import MARKETS, get_market
 from alphasift.notify import notify_readiness
 from alphasift.overview import build_overview
 from alphasift.pack import PackError, load_pack, pack_dir
@@ -861,6 +861,12 @@ class MCPServer:
                         "description": "Complete catalog of stateless empirical K-line & trend pattern specs.",
                         "mimeType": "application/json",
                     },
+                    {
+                        "uri": "alphasift://markets",
+                        "name": "AlphaSift Market Registry",
+                        "description": "Supported markets metadata: currency, timezone, trading sessions, benchmarks, and screener constraints.",
+                        "mimeType": "application/json",
+                    },
                 ]
             }
         if method == "resources/read":
@@ -870,25 +876,25 @@ class MCPServer:
             if uri == "alphasift://skill":
                 text = self._read_skill_markdown()
                 return {"contents": [{"uri": uri, "mimeType": "text/markdown", "text": text}]}
-            if uri == "alphasift://strategies":
-                payload = {"strategies": [asdict(item) for item in list_strategies(self.config.strategies_dir)]}
+            json_resources = {
+                "alphasift://strategies": lambda: {
+                    "strategies": [asdict(item) for item in list_strategies(self.config.strategies_dir)]
+                },
+                "alphasift://patterns": lambda: {
+                    "patterns": [asdict(item) for item in list_patterns(include_experimental=True)]
+                },
+                "alphasift://markets": lambda: {
+                    "markets": [asdict(item) for item in MARKETS.values()]
+                },
+            }
+            builder = json_resources.get(uri)
+            if builder is not None:
                 return {
                     "contents": [
                         {
                             "uri": uri,
                             "mimeType": "application/json",
-                            "text": json.dumps(_json_safe(payload), ensure_ascii=False, indent=2, allow_nan=False),
-                        }
-                    ]
-                }
-            if uri == "alphasift://patterns":
-                payload = {"patterns": [asdict(item) for item in list_patterns(include_experimental=True)]}
-                return {
-                    "contents": [
-                        {
-                            "uri": uri,
-                            "mimeType": "application/json",
-                            "text": json.dumps(_json_safe(payload), ensure_ascii=False, indent=2, allow_nan=False),
+                            "text": json.dumps(_json_safe(builder()), ensure_ascii=False, indent=2, allow_nan=False),
                         }
                     ]
                 }

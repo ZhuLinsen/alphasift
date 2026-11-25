@@ -43,12 +43,12 @@ AlphaSift ships a zero-dependency JSON-RPC 2.0 STDIO MCP server (`2024-11-05`) s
 ```
 > For **OpenAI Codex CLI** (`mcp_servers` TOML / `codex mcp add alphasift -- alphasift mcp`) and **OpenClaw** (`mcp.servers`), use the respective client key mapping with the same `alphasift mcp` command.
 
-### Exposed Tools (13) & Resources (3)
+### Exposed Tools (13) & Resources (4)
 
 - **Strategies**: `alphasift_list_strategies`, `alphasift_get_strategy`, `alphasift_compare_strategies`
 - **Screening & Patterns**: `alphasift_screen`, `alphasift_list_patterns`, `alphasift_scan_patterns`, `alphasift_replay_patterns`
 - **Diagnostics, Digest & Ledger**: `alphasift_overview`, `alphasift_doctor_data_sources`, `alphasift_notify_status`, `alphasift_list_runs`, `alphasift_markets_digest`, `alphasift_daily_report`
-- **Resources**: `alphasift://skill`, `alphasift://strategies`, `alphasift://patterns`
+- **Resources**: `alphasift://skill`, `alphasift://strategies`, `alphasift://patterns`, `alphasift://markets`
 
 ## Local Web Workbench UI (`alphasift serve`)
 
