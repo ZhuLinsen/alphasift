@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import subprocess
@@ -680,5 +681,26 @@ def test_mcp_daily_report_tool_and_validation_guards(tmp_path):
     })
     assert proto_dr_err is not None
     assert proto_dr_err["error"]["code"] == -32602
+
+
+def test_serve_mcp_rejects_non_finite_json_and_exits_cleanly_on_broken_pipe(tmp_path):
+    from alphasift.mcp import serve_mcp
+
+    cfg = Config(data_dir=tmp_path)
+    bad_in = io.BytesIO(b'{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"x":NaN}}\n')
+    bad_out = io.BytesIO()
+    serve_mcp(cfg, in_stream=bad_in, out_stream=bad_out)
+    parsed_err = json.loads(bad_out.getvalue().decode("utf-8"))
+    assert parsed_err["error"]["code"] == -32700
+
+    class _BrokenOut:
+        def write(self, _data: bytes) -> int:
+            raise BrokenPipeError("client closed pipe")
+
+        def flush(self) -> None:
+            return None
+
+    ping_in = io.BytesIO(b'{"jsonrpc":"2.0","id":2,"method":"ping"}\n')
+    serve_mcp(cfg, in_stream=ping_in, out_stream=_BrokenOut())
 
 

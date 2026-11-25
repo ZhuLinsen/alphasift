@@ -975,6 +975,10 @@ def write_stdio_message(stream: BinaryIO, payload: dict[str, Any], *, framing: s
     stream.flush()
 
 
+def _reject_non_finite_json(token: str) -> Any:
+    raise ValueError(f"Non-standard JSON constant is not allowed: {token}")
+
+
 def serve_mcp(
     config: Config | None = None,
     *,
@@ -1003,27 +1007,39 @@ def serve_mcp(
                 frame = read_stdio_message(reader)
             except ValueError as exc:
                 err_framing = exc.framing if isinstance(exc, _FramingError) else "line"
-                write_stdio_message(
-                    writer,
-                    {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": str(exc)}},
-                    framing=err_framing,
-                )
+                try:
+                    write_stdio_message(
+                        writer,
+                        {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": str(exc)}},
+                        framing=err_framing,
+                    )
+                except BrokenPipeError:
+                    break
                 break
             if frame is None:
                 break
             framing, body = frame
             try:
-                request = json.loads(body.decode("utf-8"))
-            except (ValueError, RecursionError):
-                write_stdio_message(
-                    writer,
-                    {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}},
-                    framing=framing,
+                request = json.loads(
+                    body.decode("utf-8"),
+                    parse_constant=_reject_non_finite_json,
                 )
+            except (ValueError, RecursionError):
+                try:
+                    write_stdio_message(
+                        writer,
+                        {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}},
+                        framing=framing,
+                    )
+                except BrokenPipeError:
+                    break
                 continue
             response = server.handle_request(request)
             if response is not None:
-                write_stdio_message(writer, response, framing=framing)
+                try:
+                    write_stdio_message(writer, response, framing=framing)
+                except BrokenPipeError:
+                    break
     finally:
         if owned_writer is not None:
             owned_writer.close()

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import median
@@ -167,10 +168,20 @@ def _history_summary(evaluations: list[EvaluationResult]) -> dict[str, object]:
     }
 
 
+def _finite_float(value: object) -> float | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        num = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return num if math.isfinite(num) else None
+
+
 def _pick_stats(picks: list[PickEvaluation]) -> dict[str, object]:
-    returns = [float(item.return_pct) for item in picks if item.return_pct is not None]
-    drawdowns = [float(item.max_drawdown_pct) for item in picks if item.max_drawdown_pct is not None]
-    runups = [float(item.max_runup_pct) for item in picks if item.max_runup_pct is not None]
+    returns = [val for item in picks if (val := _finite_float(item.return_pct)) is not None]
+    drawdowns = [val for item in picks if (val := _finite_float(item.max_drawdown_pct)) is not None]
+    runups = [val for item in picks if (val := _finite_float(item.max_runup_pct)) is not None]
     return {
         "pick_count": len(picks),
         "evaluated_pick_count": len(returns),
@@ -192,10 +203,11 @@ def _all_picks(evaluations: list[EvaluationResult]) -> list[PickEvaluation]:
 def _run_returns(evaluations: list[EvaluationResult]) -> list[float]:
     values: list[float] = []
     for item in evaluations:
-        if item.average_return_pct is not None:
-            values.append(float(item.average_return_pct))
+        avg_ret = _finite_float(item.average_return_pct)
+        if avg_ret is not None:
+            values.append(avg_ret)
             continue
-        returns = [float(pick.return_pct) for pick in item.picks if pick.return_pct is not None]
+        returns = [val for pick in item.picks if (val := _finite_float(pick.return_pct)) is not None]
         if returns:
             values.append(sum(returns) / len(returns))
     return values
@@ -208,18 +220,20 @@ def _performance_score(
     pick_count: object,
     missing_count: int,
 ) -> float | None:
-    if average_return_pct is None or win_rate is None or int(pick_count or 0) <= 0:
+    avg_val = _finite_float(average_return_pct)
+    win_val = _finite_float(win_rate)
+    if avg_val is None or win_val is None or int(pick_count or 0) <= 0:
         return None
     missing_rate = float(missing_count) / float(pick_count or 1)
-    score = 50.0 + (float(average_return_pct) * 2.0) + ((float(win_rate) - 50.0) * 0.5) - (missing_rate * 20.0)
+    score = 50.0 + (avg_val * 2.0) + ((win_val - 50.0) * 0.5) - (missing_rate * 20.0)
     return round(max(0.0, min(100.0, score)), 1)
 
 
 def _performance_outcome(*, average_return_pct: object, win_rate: object) -> str:
-    if average_return_pct is None or win_rate is None:
+    avg = _finite_float(average_return_pct)
+    wins = _finite_float(win_rate)
+    if avg is None or wins is None:
         return "insufficient_data"
-    avg = float(average_return_pct)
-    wins = float(win_rate)
     if avg >= 2.0 and wins >= 60.0:
         return "strong"
     if avg > 0.0 and wins >= 50.0:
@@ -251,10 +265,10 @@ def _compact_evaluation(item: EvaluationResult) -> dict[str, object]:
         "elapsed_days": item.elapsed_days,
         "snapshot_source": item.snapshot_source,
         "pick_count": len(item.picks),
-        "evaluated_pick_count": sum(1 for pick in item.picks if pick.return_pct is not None),
+        "evaluated_pick_count": sum(1 for pick in item.picks if _finite_float(pick.return_pct) is not None),
         "missing_count": len(item.missing_codes),
-        "average_return_pct": item.average_return_pct,
-        "win_rate": item.win_rate,
+        "average_return_pct": _finite_float(item.average_return_pct),
+        "win_rate": _finite_float(item.win_rate),
         "saved_path": item.saved_path,
     }
 
@@ -281,12 +295,8 @@ def _rate(count: int, total: int, *, percent: bool = False) -> float | None:
 
 
 def _score_value(value: object) -> float:
-    if value is None:
-        return -1.0
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return -1.0
+    num = _finite_float(value)
+    return num if num is not None else -1.0
 
 
 def _evaluation_sort_key(item: EvaluationResult) -> tuple[datetime, str]:

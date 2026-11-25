@@ -31,7 +31,7 @@ from alphasift.config import Config
 from alphasift.daily import _BAOSTOCK_LOCK, _to_baostock_code, _to_tencent_code, fetch_daily_history
 from alphasift.markets import get_market, latest_settled_close
 from alphasift.snapshot import fetch_cn_snapshot, fetch_snapshot_with_fallback
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json
 
 DEFAULT_DAYS = 250
 DEFAULT_TAG = "data-cn"
@@ -422,7 +422,7 @@ def _save_pack(path: Path, pack: DailyPack) -> dict:
             "sources": list(pack.sources),
             "files": {name: _asset_info(stage / name) for name in _ASSETS},
         }
-        (stage / _MANIFEST).write_text(dumps_strict_json(manifest, indent=2) + "\n", encoding="utf-8")
+        atomic_write_strict_json(stage / _MANIFEST, manifest, indent=2, trailing_newline=True)
         _publish(stage, path)
     return manifest
 

@@ -162,3 +162,60 @@ def test_build_strategy_performance_summary_supports_strategy_filter(tmp_path):
     assert payload["strategy_filter"] == "dual_low"
     assert payload["evaluation_count"] == 1
     assert payload["strategies"][0]["strategy"] == "dual_low"
+
+
+def test_build_strategy_performance_summary_scrubs_non_finite_metrics(tmp_path):
+    save_evaluation_result(
+        EvaluationResult(
+            run_id="run_mixed_nonfinite",
+            strategy="momentum_5d",
+            market="cn",
+            created_at="2026-04-07T09:30:00",
+            evaluated_at="2026-04-08T09:30:00",
+            elapsed_days=1,
+            average_return_pct=float("nan"),
+            win_rate=float("inf"),
+            picks=[
+                PickEvaluation(
+                    code="000001",
+                    name="平安银行",
+                    rank=1,
+                    entry_price=10.0,
+                    current_price=10.5,
+                    return_pct=5.0,
+                    max_drawdown_pct=float("-inf"),
+                    max_runup_pct=float("nan"),
+                    status="ok",
+                    final_score=80,
+                ),
+                PickEvaluation(
+                    code="000002",
+                    name="万科A",
+                    rank=2,
+                    entry_price=10.0,
+                    current_price=10.0,
+                    return_pct=float("nan"),
+                    status="missing",
+                    final_score=70,
+                ),
+            ],
+        ),
+        data_dir=tmp_path,
+    )
+
+    payload = build_strategy_performance_summary(data_dir=tmp_path, limit=10)
+    assert payload["strategy_count"] == 1
+    row = payload["strategies"][0]
+    assert row["pick_count"] == 2
+    assert row["evaluated_pick_count"] == 1
+    assert row["average_return_pct"] == 5.0
+    assert row["median_return_pct"] == 5.0
+    assert row["win_rate"] == 100.0
+    assert row["average_max_drawdown_pct"] is None
+    assert row["average_max_runup_pct"] is None
+    assert row["average_run_return_pct"] == 5.0
+    assert row["performance_score"] == 85.0
+    assert row["outcome"] == "strong"
+    assert row["recent_evaluations"][0]["evaluated_pick_count"] == 1
+    assert row["recent_evaluations"][0]["average_return_pct"] is None
+    assert row["recent_evaluations"][0]["win_rate"] is None
