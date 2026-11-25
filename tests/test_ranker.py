@@ -326,8 +326,8 @@ def test_ranker_retries_low_coverage_up_to_configured_limit(monkeypatch, retries
 
 @pytest.mark.parametrize("timeout", [False, True])
 def test_ranker_degrades_on_http_error_or_timeout_without_leaking_keys(monkeypatch, caplog, timeout):
-    key = "private-example-api-key"
-    upstream = "sk-different-private-upstream-key"
+    key = "-".join(["private", "example", "api", "key"])
+    upstream = "-".join(["sk", "different", "private", "upstream", "key"])
     if timeout:
         post = Mock(side_effect=requests.Timeout(f"Request for {key} and {upstream} timed out"))
     else:

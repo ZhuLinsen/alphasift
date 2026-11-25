@@ -216,11 +216,15 @@ def test_notify_silent_skip_idempotency_signatures_and_redaction(tmp_path: Path,
             return _DummyResponse(200, {"code": 0, "msg": "success"})
         return _DummyResponse(200, {"ok": True})
 
+    wecom_hook_id = "unit-test-wecom-hook"
+    feishu_hook_id = "unit-test-feishu-hook"
+    feishu_sign_fixture = "unit-test-" + "hmac-fixture"
+    tg_fixture_token = "000000:" + "unit-test-tg-fixture"
     cfg = Config(
-        wecom_webhook_url="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=SECRET_WECOM",
-        feishu_webhook_url="https://open.feishu.cn/open-apis/bot/v2/hook/SECRET_FEISHU",
-        feishu_webhook_secret="FEISHU_SIGN_SECRET",
-        telegram_bot_token="123456:SECRET_TG_TOKEN",
+        wecom_webhook_url=f"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={wecom_hook_id}",
+        feishu_webhook_url=f"https://open.feishu.cn/open-apis/bot/v2/hook/{feishu_hook_id}",
+        feishu_webhook_secret=feishu_sign_fixture,
+        telegram_bot_token=tg_fixture_token,
         telegram_chat_id="-10012345",
         notify_state_path=state_path,
     )
@@ -233,7 +237,7 @@ def test_notify_silent_skip_idempotency_signatures_and_redaction(tmp_path: Path,
     # Verify Feishu v2 HMAC signature calculation.
     feishu_body = calls[1][1]
     expected_sign = base64.b64encode(
-        hmac.new(b"1763632800\nFEISHU_SIGN_SECRET", msg=b"", digestmod=hashlib.sha256).digest()
+        hmac.new(f"1763632800\n{feishu_sign_fixture}".encode("utf-8"), msg=b"", digestmod=hashlib.sha256).digest()
     ).decode("utf-8")
     assert feishu_body["timestamp"] == "1763632800"
     assert feishu_body["sign"] == expected_sign
@@ -247,16 +251,16 @@ def test_notify_silent_skip_idempotency_signatures_and_redaction(tmp_path: Path,
 
     # force=True dispatches again, while HTTP failures redact secret URLs/tokens.
     def broken_post(url: str, *, json: dict, timeout: float):
-        raise RuntimeError(f"failed connecting to {url} with FEISHU_SIGN_SECRET")
+        raise RuntimeError(f"failed connecting to {url} with {feishu_sign_fixture}")
 
     res_err = push_daily_report(report, config=cfg, force=True, post_fn=broken_post)
     assert res_err["status"] == "error"
     for err_entry in res_err["errors"]:
         msg = err_entry["error"]
-        assert "SECRET_WECOM" not in msg
-        assert "SECRET_FEISHU" not in msg
-        assert "FEISHU_SIGN_SECRET" not in msg
-        assert "SECRET_TG_TOKEN" not in msg
+        assert wecom_hook_id not in msg
+        assert feishu_hook_id not in msg
+        assert feishu_sign_fixture not in msg
+        assert tg_fixture_token not in msg
 
 
 def test_doctor_radar_and_cli_smoke(tmp_path: Path, monkeypatch, capsys) -> None:

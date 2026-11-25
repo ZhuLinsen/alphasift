@@ -118,10 +118,11 @@ def test_ai_track_isolation_timeout_resilience_and_pattern_board(tmp_path: Path,
         lambda m: ["dual_low", "balanced_alpha"] if m == "cn" else [],
     )
     orig_from_env = config_mod.Config.from_env
+    placeholder_cred = "unit-test-placeholder"
     monkeypatch.setattr(
         config_mod.Config,
         "from_env",
-        staticmethod(lambda: dataclasses.replace(orig_from_env(), llm_api_key="test-key")),
+        staticmethod(lambda: dataclasses.replace(orig_from_env(), llm_api_key=placeholder_cred)),
     )
 
     pack_dir = tmp_path / "cn_pack"

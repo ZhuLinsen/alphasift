@@ -155,13 +155,14 @@ def test_generate_ai_daily_brief_modes_and_fallbacks() -> None:
         "risk_warnings": ["注意样本外流动性变化"],
         "watch_points": ["次日开盘竞价换手"],
     }
+    placeholder_cred = "unit-test-placeholder"
     fenced_resp = "```json\n" + json.dumps(payload, ensure_ascii=False) + "\n```"
     llm_report = build_daily_report(
         _pack(),
         strategy_runs=_sample_runs(),
         include_announcements=False,
         ai_brief_mode="auto",
-        config=Config(llm_api_key="dummy-key", llm_model="gpt-test"),
+        config=Config(llm_api_key=placeholder_cred, llm_model="gpt-test"),
         llm_caller=lambda prompt: fenced_resp,
     )
     assert llm_report["ai_brief"]["mode"] == "llm"
@@ -173,7 +174,7 @@ def test_generate_ai_daily_brief_modes_and_fallbacks() -> None:
     # Malformed LLM response falls back safely without raising.
     bad_brief = generate_ai_daily_brief(
         report,
-        config=Config(llm_api_key="dummy-key"),
+        config=Config(llm_api_key=placeholder_cred),
         use_llm="on",
         llm_caller=lambda prompt: "not valid json",
     )

@@ -183,7 +183,8 @@ def test_screen_uses_dsa_as_final_stage_overlay(monkeypatch):
 
 def test_screen_applies_dsa_provider_context_before_llm_ranking(monkeypatch):
     config = _make_config()
-    config.llm_api_key = "test-key"
+    placeholder_cred = "unit-test-placeholder"
+    config.llm_api_key = placeholder_cred
 
     df = pd.DataFrame(
         [

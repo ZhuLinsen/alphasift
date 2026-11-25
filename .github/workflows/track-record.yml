@@ -84,10 +84,10 @@ jobs:
       LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES: "12"
       LLM_MAX_CANDIDATES: ${{ vars.LLM_MAX_CANDIDATES || '15' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         continue-on-error: true
         with:
           ref: track-record
@@ -95,13 +95,13 @@ jobs:
           persist-credentials: false
       - name: Ensure track workspace
         run: mkdir -p track/data/runs track/data/logs track/site
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: "3.12"
           cache: pip
       - name: Install
         run: python -m pip install -e .
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: state
           key: track-state-${{ github.run_id }}
@@ -141,7 +141,7 @@ jobs:
 
       - name: Restore CN data pack from private Actions cache
         if: steps.session.outputs.session != 'us'
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ env.ALPHASIFT_PACK_DIR }}
           key: cn-daily-pack-${{ github.run_id }}
@@ -572,7 +572,7 @@ jobs:
                       if "cloudflareinsights.com/beacon.min.js" not in html and "</body>" in html:
                           p.write_text(html.replace("</body>", f"{snippet}\n</body>", 1), encoding="utf-8")
           PY
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.repository == 'ZhuLinsen/alphasift' || vars.ALPHASIFT_ENABLE_PAGES == 'true') }}
         with:
           path: _site
@@ -589,4 +589,4 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - id: deploy
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

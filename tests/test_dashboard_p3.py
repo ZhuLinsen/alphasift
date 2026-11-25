@@ -357,6 +357,30 @@ def test_workflows_valid_yaml_and_no_secret_echo() -> None:
     assert "CF_WEB_ANALYTICS_TOKEN" in tr_text
 
 
+def test_workflows_actions_pinned_to_sha_and_dependabot_valid() -> None:
+    import re
+
+    gh_dir = Path(__file__).resolve().parents[1] / ".github"
+    workflows = sorted((gh_dir / "workflows").glob("*.yml"))
+    assert workflows
+
+    pin_re = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
+    for wf in workflows:
+        text = wf.read_text(encoding="utf-8")
+        for match in re.finditer(r"^\s*-?\s*uses:\s*(.+)$", text, flags=re.MULTILINE):
+            ref = match.group(1).split("#", 1)[0].strip().strip("'\"")
+            if ref.startswith("./"):
+                continue
+            assert pin_re.fullmatch(ref), f"Unpinned GitHub Action in {wf.name}: {ref}"
+
+    dependabot_path = gh_dir / "dependabot.yml"
+    assert dependabot_path.is_file()
+    dep = yaml.safe_load(dependabot_path.read_text(encoding="utf-8"))
+    assert dep["version"] == 2
+    ecosystems = {u["package-ecosystem"] for u in dep.get("updates", [])}
+    assert {"github-actions", "pip"}.issubset(ecosystems)
+
+
 def test_dashboard_page_i18n_race_guard_url_sync_and_js_syntax(tmp_path) -> None:
     import re
     import subprocess
