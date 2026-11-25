@@ -1,0 +1,780 @@
+{
+  "strategy": "momentum_quality",
+  "market": "cn",
+  "strategy_version": "1.3",
+  "strategy_category": "framework",
+  "snapshot_count": 5575,
+  "after_filter_count": 10,
+  "picks": [
+    {
+      "rank": 1,
+      "code": "603345",
+      "name": "安井食品",
+      "final_score": 82.8859,
+      "screen_score": 73.97646007040001,
+      "llm_score": 85.0,
+      "ranking_reason": "前三季度利润保持韧性，大市值流动性充裕且估值处于合理低位。",
+      "risk_summary": "原材料提价向终端传导不及预期，餐饮需求疲软。",
+      "price": 93.8,
+      "change_pct": 2.08,
+      "amount": 586191919.0,
+      "total_mv": 31262501822.0,
+      "turnover_rate": 2.15,
+      "volume_ratio": 1.32,
+      "pe_ratio": 20.1479376,
+      "pb_ratio": 2.00679721,
+      "industry": "食品",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 24.1257,
+      "signal_score": 88.444,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "overbought",
+      "breakout_20d_pct": 0.2137,
+      "range_20d_pct": 22.6824,
+      "volume_ratio_20d": 1.1715,
+      "body_pct": 2.3906,
+      "pullback_to_ma20_pct": 6.9769,
+      "consolidation_days_20d": 8,
+      "volatility_20d_pct": 34.0496,
+      "max_drawdown_20d_pct": -3.0119,
+      "atr_20_pct": 3.661,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 78.725,
+        "liquidity": 80.0,
+        "momentum": 80.5821,
+        "reversal": 11.32,
+        "activity": 75.172,
+        "stability": 76.3733,
+        "size": 100.0,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.85,
+      "llm_sector": "食品",
+      "llm_theme": "预制菜龙头与成本管控改善",
+      "llm_tags": [
+        "价值",
+        "趋势",
+        "流动性",
+        "sector:食品",
+        "theme:预制菜龙头与成本管控改善",
+        "style_fit:适合在大盘弱势期承接大资金避险配置需求。"
+      ],
+      "llm_catalysts": [
+        "旺季备货加速",
+        "成本端压力缓解"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "前三季度净利双位数增长，高容量白马逆市形成向上突破。",
+      "llm_style_fit": "适合在大盘弱势期承接大资金避险配置需求。",
+      "llm_watch_items": [
+        "提价传导落实情况",
+        "四季度动销数据"
+      ],
+      "llm_invalidators": [
+        "餐饮端需求大幅失速",
+        "毛利率出现异常下滑"
+      ],
+      "risk_score": 12.5,
+      "risk_level": "low",
+      "risk_penalty": 1.5,
+      "risk_flags": [
+        "rsi_overbought"
+      ],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality、capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 6.0
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality",
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality",
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 2,
+      "code": "600285",
+      "name": "羚锐制药",
+      "final_score": 81.9865,
+      "screen_score": 70.97745744000001,
+      "llm_score": 88.0,
+      "ranking_reason": "氟比洛芬贴膏获批提供新动能，PE仅16倍且稳定性因子达78.8分。",
+      "risk_summary": "医保控费及核心贴膏集采价格降幅超预期风险。",
+      "price": 24.26,
+      "change_pct": 1.51,
+      "amount": 370410471.0,
+      "total_mv": 13758221690.0,
+      "turnover_rate": 2.69,
+      "volume_ratio": 1.5,
+      "pe_ratio": 16.62886525,
+      "pb_ratio": 3.97892635,
+      "industry": "中药生产",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 23.335,
+      "signal_score": 94.1673,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -0.7771,
+      "range_20d_pct": 25.2032,
+      "volume_ratio_20d": 1.07,
+      "body_pct": 1.5488,
+      "pullback_to_ma20_pct": 4.362,
+      "consolidation_days_20d": 17,
+      "volatility_20d_pct": 44.8356,
+      "max_drawdown_20d_pct": -6.1584,
+      "atr_20_pct": 3.3615,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 63.375,
+        "liquidity": 40.0,
+        "momentum": 81.3218,
+        "reversal": 37.29,
+        "activity": 77.9328,
+        "stability": 78.7701,
+        "size": 70.0,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.88,
+      "llm_sector": "中药生产",
+      "llm_theme": "中药创新与OTC品牌防御",
+      "llm_tags": [
+        "价值",
+        "趋势",
+        "防守",
+        "sector:中药生产",
+        "theme:中药创新与OTC品牌防御",
+        "style_fit:完美契合弱市中寻找高确定性趋势防守的核心逻辑。"
+      ],
+      "llm_catalysts": [
+        "新产品获批放量",
+        "业绩稳健增长"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "新药获批叠加低估值高稳定性，量价齐升逆市创历史新高。",
+      "llm_style_fit": "完美契合弱市中寻找高确定性趋势防守的核心逻辑。",
+      "llm_watch_items": [
+        "集采落地政策",
+        "新产品铺货进度"
+      ],
+      "llm_invalidators": [
+        "核心单品集采降价超预期",
+        "单日放量跌破20日线"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 3,
+      "code": "603587",
+      "name": "地素时尚",
+      "final_score": 68.8265,
+      "screen_score": 62.5441264416,
+      "llm_score": 67.0,
+      "ranking_reason": "价值因子近80分，PB低于2倍，但前期已有一定涨幅进入震荡。",
+      "risk_summary": "中高端可选服装消费受宏观消费情绪压制。",
+      "price": 15.61,
+      "change_pct": -0.38,
+      "amount": 161564666.0,
+      "total_mv": 7378890505.0,
+      "turnover_rate": 2.19,
+      "volume_ratio": 0.97,
+      "pe_ratio": 24.02775479,
+      "pb_ratio": 1.97939103,
+      "industry": "服装家纺",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 32.4003,
+      "signal_score": 91.3401,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "overbought",
+      "breakout_20d_pct": -5.164,
+      "range_20d_pct": 41.6523,
+      "volume_ratio_20d": 0.9527,
+      "body_pct": -0.5732,
+      "pullback_to_ma20_pct": 6.0714,
+      "consolidation_days_20d": 7,
+      "volatility_20d_pct": 53.8021,
+      "max_drawdown_20d_pct": -2.3765,
+      "atr_20_pct": 5.0064,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 79.65,
+        "liquidity": 10.0,
+        "momentum": 80.1782,
+        "reversal": 51.94,
+        "activity": 73.7279,
+        "stability": 77.8599,
+        "size": 40.0,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.75,
+      "llm_sector": "服装家纺",
+      "llm_theme": "高端女装低估值高股息",
+      "llm_tags": [
+        "价值",
+        "防守",
+        "sector:服装家纺",
+        "theme:高端女装低估值高股息",
+        "style_fit:偏向纯防守收息属性，进攻弹性偏弱。"
+      ],
+      "llm_catalysts": [
+        "冬季换季清库顺畅",
+        "分红比例提升"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "价值与稳定性因子突出，安全垫厚但成长催化相对匮乏。",
+      "llm_style_fit": "偏向纯防守收息属性，进攻弹性偏弱。",
+      "llm_watch_items": [
+        "线下同店销售增长",
+        "库存周转天数"
+      ],
+      "llm_invalidators": [
+        "库存减值大幅计提",
+        "破位跌穿60日均线"
+      ],
+      "risk_score": 12.5,
+      "risk_level": "low",
+      "risk_penalty": 1.5,
+      "risk_flags": [
+        "rsi_overbought"
+      ],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality、capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 6.0
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality",
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality",
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 4,
+      "code": "300893",
+      "name": "松原安全",
+      "final_score": 68.8261,
+      "screen_score": 68.37683885119999,
+      "llm_score": 71.0,
+      "ranking_reason": "单日逆市大涨5.78%领跑动量，但回购期限过半尚未实施稍有瑕疵。",
+      "risk_summary": "回购计划不及预期，三季度机构持仓显著下降带来抛压隐患。",
+      "price": 17.4,
+      "change_pct": 5.78,
+      "amount": 380420629.93,
+      "total_mv": 8252136563.0,
+      "turnover_rate": 8.89,
+      "volume_ratio": 1.32,
+      "pe_ratio": 26.0347407,
+      "pb_ratio": 3.71500105,
+      "industry": "汽车",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 22.7946,
+      "signal_score": 93.9781,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -2.521,
+      "range_20d_pct": 26.506,
+      "volume_ratio_20d": 1.6715,
+      "body_pct": 8.2763,
+      "pullback_to_ma20_pct": 12.2436,
+      "consolidation_days_20d": 0,
+      "volatility_20d_pct": 61.1427,
+      "max_drawdown_20d_pct": -7.1159,
+      "atr_20_pct": 5.5086,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 53.575,
+        "liquidity": 50.0,
+        "momentum": 83.9762,
+        "reversal": 5.0,
+        "activity": 67.828,
+        "stability": 58.6732,
+        "size": 60.0,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.72,
+      "llm_sector": "汽车",
+      "llm_theme": "被动安全零部件出海与替代",
+      "llm_tags": [
+        "趋势",
+        "sector:汽车",
+        "theme:被动安全零部件出海与替代",
+        "style_fit:属于进攻型动量标的，但弱市环境下追高容错率偏低。"
+      ],
+      "llm_catalysts": [
+        "新车型定点放量",
+        "海外业务拓展"
+      ],
+      "llm_risks": [
+        "回购未执行",
+        "机构减持"
+      ],
+      "llm_thesis": "动量指标领先逆市大涨，但需注意机构减持与回购未落地扰动。",
+      "llm_style_fit": "属于进攻型动量标的，但弱市环境下追高容错率偏低。",
+      "llm_watch_items": [
+        "后续实际回购动向",
+        "机构资金流出变化"
+      ],
+      "llm_invalidators": [
+        "回购期满未能实施",
+        "长上影线确认冲高见顶"
+      ],
+      "risk_score": 20.0,
+      "risk_level": "low",
+      "risk_penalty": 2.4,
+      "risk_flags": [
+        "回购未执行",
+        "机构减持"
+      ],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed；风险: 回购未执行、机构减持"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 1.8
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [
+            "回购未执行",
+            "机构减持"
+          ],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 5,
+      "code": "301261",
+      "name": "恒工精密",
+      "final_score": 65.4864,
+      "screen_score": 70.1440765472,
+      "llm_score": 60.0,
+      "ranking_reason": "换手率超10%且发布异动公告，PE达55倍偏离基本面价值中枢。",
+      "risk_summary": "估值较高，股权激励解禁与高位博弈资金获利了结抛压。",
+      "price": 76.28,
+      "change_pct": 0.36,
+      "amount": 842393291.57,
+      "total_mv": 8051592222.0,
+      "turnover_rate": 10.34,
+      "volume_ratio": 2.12,
+      "pe_ratio": 55.70312632,
+      "pb_ratio": 4.77518239,
+      "industry": "通用设备",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 33.5876,
+      "signal_score": 97.7557,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -2.4428,
+      "range_20d_pct": 51.9389,
+      "volume_ratio_20d": 1.6165,
+      "body_pct": 0.6332,
+      "pullback_to_ma20_pct": 15.9993,
+      "consolidation_days_20d": 0,
+      "volatility_20d_pct": 106.2383,
+      "max_drawdown_20d_pct": -21.5396,
+      "atr_20_pct": 7.4017,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 25.775,
+        "liquidity": 100.0,
+        "momentum": 83.4122,
+        "reversal": 56.32,
+        "activity": 66.238,
+        "stability": 40.1625,
+        "size": 50.0,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.65,
+      "llm_sector": "通用设备",
+      "llm_theme": "精密零部件与机械加工",
+      "llm_tags": [
+        "流动性",
+        "sector:通用设备",
+        "theme:精密零部件与机械加工",
+        "style_fit:偏短线激进资金交易风格，不契合稳健趋势策略。"
+      ],
+      "llm_catalysts": [
+        "通用机械周期复苏",
+        "高端客户认证导入"
+      ],
+      "llm_risks": [
+        "交易异动",
+        "估值偏高"
+      ],
+      "llm_thesis": "流动性充裕但估值高企，存在短线异动与博弈过热风险。",
+      "llm_style_fit": "偏短线激进资金交易风格，不契合稳健趋势策略。",
+      "llm_watch_items": [
+        "龙虎榜游资动向",
+        "解禁股份减持意愿"
+      ],
+      "llm_invalidators": [
+        "高位放量阴线破位",
+        "行业需求复苏不及预期"
+      ],
+      "risk_score": 20.0,
+      "risk_level": "low",
+      "risk_penalty": 2.4,
+      "risk_flags": [
+        "交易异动",
+        "估值偏高"
+      ],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed；风险: 交易异动、估值偏高"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 1.8
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [
+            "交易异动",
+            "估值偏高"
+          ],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    }
+  ],
+  "run_id": "6c6464043ff4-ai",
+  "track": "ai",
+  "llm_ranked": true,
+  "llm_market_view": "市场呈现系统性回调弱势，资金显著偏好低估值、高确定性与逆市抗跌品种。",
+  "llm_selection_logic": "优选业绩确定且逆市放量创趋势新高标的，避开高估值及过热纯题材博弈品种。",
+  "llm_portfolio_risk": "防守型消费医药持仓相对集中，需警惕顺周期与大盘企稳反弹时的风格切换风险。",
+  "llm_coverage": 1.0,
+  "llm_parse_errors": [],
+  "degradation": [
+    "Candidate context collected rows=10",
+    "Candidate context row errors: fund_flow: provider cooldown active (skipped 8 candidates)",
+    "LLM context truncated: trimmed=candidate_collected_context"
+  ],
+  "snapshot_source": "em_datacenter",
+  "source_errors": [],
+  "deep_analysis_requested": false,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "daily_enriched": true,
+  "daily_enrich_count": 92,
+  "risk_enabled": true,
+  "portfolio_diversity_enabled": true,
+  "portfolio_concentration_notes": [
+    "Portfolio concentration bucket=医药: penalized=1, codes=603233:医药(-5.0)",
+    "Portfolio concentration bucket=消费: penalized=2, codes=001328:化学制品(-5.0),688696:消费电子设备(-10.0)",
+    "Portfolio concentration bucket=通用设备: penalized=1, codes=301252:通用设备(-5.0)",
+    "Portfolio hard cap bucket=医药: max=1, deferred=603233",
+    "Portfolio hard cap bucket=消费: max=1, deferred=001328,688696",
+    "Portfolio hard cap bucket=通用设备: max=1, deferred=301252"
+  ],
+  "saved_path": "track/data/runs/6c6464043ff4-ai.json",
+  "created_at": "2026-11-25T10:37:32.023311+00:00",
+  "portfolio_topic_exposure": {
+    "医药": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600285"
+      ],
+      "overconcentrated": false
+    },
+    "服装家纺": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "603587"
+      ],
+      "overconcentrated": false
+    },
+    "汽车": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "300893"
+      ],
+      "overconcentrated": false
+    },
+    "消费": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "603345"
+      ],
+      "overconcentrated": false
+    },
+    "通用设备": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "301261"
+      ],
+      "overconcentrated": false
+    }
+  },
+  "overconcentrated_topics": [],
+  "replacement_candidates": [
+    {
+      "code": "000400",
+      "name": "许继电气",
+      "bucket": "新能源",
+      "sector": "输变电设备",
+      "final_score": 59.6034
+    }
+  ],
+  "daily_source_counts": {
+    "pack": 92
+  },
+  "daily_quality_flag_counts": {}
+}

@@ -1,5 +1,5 @@
 {
- "evaluated_at": "2026-11-25T03:49:36+00:00",
+ "evaluated_at": "2026-11-25T10:40:22+00:00",
  "entry_mode_switch_date": "2026-11-21",
  "windows": [
   5,
@@ -8,7 +8,7 @@
  ],
  "runs": {
   "28be39e77643": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -113,7 +113,7 @@
    }
   },
   "c63a1b4153ec": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -218,7 +218,7 @@
    }
   },
   "3d741fc4cf90": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -323,7 +323,7 @@
    }
   },
   "04b49195e690": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -428,7 +428,7 @@
    }
   },
   "cd868266db57": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -533,7 +533,7 @@
    }
   },
   "b1e65d099af5": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -638,7 +638,7 @@
    }
   },
   "0573822768fe": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -743,7 +743,7 @@
    }
   },
   "bbb47cbbdda1": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -848,7 +848,7 @@
    }
   },
   "130036dc6adb": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -953,7 +953,7 @@
    }
   },
   "3f625e8988ac": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -998,7 +998,7 @@
    }
   },
   "09c66dcc0293": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1103,7 +1103,7 @@
    }
   },
   "ab6f795eb02c": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1208,7 +1208,7 @@
    }
   },
   "6f853e39a776": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1313,7 +1313,7 @@
    }
   },
   "31891fcb2a51": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1418,7 +1418,7 @@
    }
   },
   "b80426ffb848": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1733,7 +1733,7 @@
    }
   },
   "8ecf7868e140": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1838,7 +1838,7 @@
    }
   },
   "6588f474e775": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1943,7 +1943,7 @@
    }
   },
   "6a1ce78f9ccc": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2048,7 +2048,7 @@
    }
   },
   "dc3ba817041a": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2153,7 +2153,7 @@
    }
   },
   "94c67da05580": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2258,7 +2258,7 @@
    }
   },
   "ce1c1f9fcceb": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2363,7 +2363,7 @@
    }
   },
   "7b6eeb4c4615": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2468,7 +2468,7 @@
    }
   },
   "4c020626b42c": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2573,7 +2573,7 @@
    }
   },
   "e542dc2b3e64": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2663,7 +2663,7 @@
    }
   },
   "15e1991f7c13": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2753,7 +2753,7 @@
    }
   },
   "fb85cfe13d06": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2858,7 +2858,7 @@
    }
   },
   "aefef30419b1": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2963,7 +2963,7 @@
    }
   },
   "2b37fa27278c": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3068,7 +3068,7 @@
    }
   },
   "31530f1b14ba": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3173,7 +3173,7 @@
    }
   },
   "1c647076df21": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3488,7 +3488,7 @@
    }
   },
   "816bcd05aa4f": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3593,7 +3593,7 @@
    }
   },
   "747a7b7c8473": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3698,7 +3698,7 @@
    }
   },
   "f779d428dd13": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3803,7 +3803,7 @@
    }
   },
   "d64d1a49c711": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3908,7 +3908,7 @@
    }
   },
   "0f4b9945faf3": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4013,7 +4013,7 @@
    }
   },
   "1c46a4373312": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4118,7 +4118,7 @@
    }
   },
   "0e9d1bece9f9": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4223,7 +4223,7 @@
    }
   },
   "0d0e8a94ccb3": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4328,7 +4328,7 @@
    }
   },
   "989cbd17f9a6": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4433,7 +4433,7 @@
    }
   },
   "4ad4740fa2d1": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4508,7 +4508,7 @@
    }
   },
   "be40b2a91b44": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4613,7 +4613,7 @@
    }
   },
   "6578aebb99f0": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4718,7 +4718,7 @@
    }
   },
   "b33578996407": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4823,7 +4823,7 @@
    }
   },
   "53b1b0d946bf": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4928,7 +4928,7 @@
    }
   },
   "9921aba10081": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5243,7 +5243,7 @@
    }
   },
   "40cbcae026c9": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5348,7 +5348,7 @@
    }
   },
   "84570506a887": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5453,7 +5453,7 @@
    }
   },
   "0dc71660d5c5": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5558,7 +5558,7 @@
    }
   },
   "1c5232db4154": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5663,7 +5663,7 @@
    }
   },
   "febf5fb8fdb5": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5768,7 +5768,7 @@
    }
   },
   "416dc307ab65": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5873,7 +5873,7 @@
    }
   },
   "31c9bce9cade": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5978,7 +5978,7 @@
    }
   },
   "235d499a8dad": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6083,7 +6083,7 @@
    }
   },
   "c09ca1e09eef": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6188,7 +6188,7 @@
    }
   },
   "c3a8746d9f1a": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6293,7 +6293,7 @@
    }
   },
   "7b4229065144": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6398,7 +6398,7 @@
    }
   },
   "852c099b8b30": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6503,7 +6503,7 @@
    }
   },
   "729692c11a10": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6608,7 +6608,7 @@
    }
   },
   "ae6f35d280d7": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6713,7 +6713,7 @@
    }
   },
   "abfd266d249e": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7028,7 +7028,7 @@
    }
   },
   "03bcaf2b3a19": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7133,7 +7133,7 @@
    }
   },
   "84a23329a79b": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7238,7 +7238,7 @@
    }
   },
   "40d821fa11c7": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7343,7 +7343,7 @@
    }
   },
   "02e6907c754f": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7448,7 +7448,7 @@
    }
   },
   "28c868a2410f": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7553,7 +7553,7 @@
    }
   },
   "995b2ba72331": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7658,7 +7658,7 @@
    }
   },
   "e39dd43c6abb": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7763,7 +7763,7 @@
    }
   },
   "5720b6cc16be": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7868,7 +7868,7 @@
    }
   },
   "3ed225d4d190": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7973,7 +7973,7 @@
    }
   },
   "920d4ed584e7": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8078,7 +8078,7 @@
    }
   },
   "9da52e088202": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8183,39 +8183,39 @@
    }
   },
   "83832ae6d420": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "Nikkei 225",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -3.141,
+     "pending": 0,
      "picks": {
       "5711.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -11.944,
+       "excess_return_pct": -8.803
       },
       "5401.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -2.3673,
+       "excess_return_pct": 0.7737
       },
       "9104.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.6386,
+       "excess_return_pct": 1.5024
       },
       "7261.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -3.9042,
+       "excess_return_pct": -0.7632
       },
       "9022.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.5513,
+       "excess_return_pct": 2.5897
       }
      }
     },
@@ -8288,7 +8288,7 @@
    }
   },
   "84a4c72b0882": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8393,7 +8393,7 @@
    }
   },
   "543ded1a65b6": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8498,39 +8498,39 @@
    }
   },
   "6c1a6d92ffc9": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "Nifty 50",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": 1.701,
+     "pending": 0,
      "picks": {
       "ONGC.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.68,
+       "excess_return_pct": -2.381
       },
       "PFC.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.7683,
+       "excess_return_pct": 0.0673
       },
       "CANBK.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.403,
+       "excess_return_pct": -2.104
       },
       "IOC.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.532,
+       "excess_return_pct": -0.169
       },
       "HINDALCO.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -4.0798,
+       "excess_return_pct": -5.7808
       }
      }
     },
@@ -8813,39 +8813,39 @@
    }
   },
   "a181afdf0746": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "CSI 300",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -2.147,
+     "pending": 0,
      "picks": {
       "601166": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.5538,
+       "excess_return_pct": 4.7008
       },
       "601668": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.8475,
+       "excess_return_pct": 1.2995
       },
       "601919": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.4221,
+       "excess_return_pct": 0.7249
       },
       "002432": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -19.1564,
+       "excess_return_pct": -17.0094
       },
       "000651": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 0.0736,
+       "excess_return_pct": 2.2206
       }
      }
     },
@@ -8918,39 +8918,39 @@
    }
   },
   "aaf95f0b8f06": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "CSI 300",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -2.147,
+     "pending": 0,
      "picks": {
       "601166": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.5538,
+       "excess_return_pct": 4.7008
       },
       "000001": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.6393,
+       "excess_return_pct": 3.7863
       },
       "601668": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.8475,
+       "excess_return_pct": 1.2995
       },
       "600016": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 0.2857,
+       "excess_return_pct": 2.4327
       },
       "601919": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.4221,
+       "excess_return_pct": 0.7249
       }
      }
     },
@@ -9023,39 +9023,39 @@
    }
   },
   "10240da9fca5": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "CSI 300",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -2.147,
+     "pending": 0,
      "picks": {
       "000034": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -17.1739,
+       "excess_return_pct": -15.0269
       },
       "000988": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -12.6388,
+       "excess_return_pct": -10.4918
       },
       "002897": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -22.4708,
+       "excess_return_pct": -20.3238
       },
       "688158": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -20.4074,
+       "excess_return_pct": -18.2604
       },
       "600619": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.0219,
+       "excess_return_pct": 1.1251
       }
      }
     },
@@ -9128,39 +9128,39 @@
    }
   },
   "edd2ed824a01": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "CSI 300",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -2.147,
+     "pending": 0,
      "picks": {
       "000001": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.6393,
+       "excess_return_pct": 3.7863
       },
       "600016": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 0.2857,
+       "excess_return_pct": 2.4327
       },
       "601668": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.8475,
+       "excess_return_pct": 1.2995
       },
       "601390": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -2.7842,
+       "excess_return_pct": -0.6372
       },
       "601919": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.4221,
+       "excess_return_pct": 0.7249
       }
      }
     },
@@ -9233,39 +9233,39 @@
    }
   },
   "586345ab6ea8": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "CSI 300",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -2.147,
+     "pending": 0,
      "picks": {
       "601166": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.5538,
+       "excess_return_pct": 4.7008
       },
       "601398": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.5452,
+       "excess_return_pct": 3.6922
       },
       "000001": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.6393,
+       "excess_return_pct": 3.7863
       },
       "601668": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.8475,
+       "excess_return_pct": 1.2995
       },
       "600900": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 4.1721,
+       "excess_return_pct": 6.3191
       }
      }
     },
@@ -9338,39 +9338,39 @@
    }
   },
   "4fedf1ca647d": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "CSI 300",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -2.147,
+     "pending": 0,
      "picks": {
       "601398": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.5452,
+       "excess_return_pct": 3.6922
       },
       "000651": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 0.0736,
+       "excess_return_pct": 2.2206
       },
       "601919": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.4221,
+       "excess_return_pct": 0.7249
       },
       "002432": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -19.1564,
+       "excess_return_pct": -17.0094
       },
       "603986": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -9.6921,
+       "excess_return_pct": -7.5451
       }
      }
     },
@@ -9443,39 +9443,39 @@
    }
   },
   "b8f2c6e47070": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "CSI 300",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -2.147,
+     "pending": 0,
      "picks": {
       "002048": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -8.906,
+       "excess_return_pct": -6.759
       },
       "002756": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -3.5538,
+       "excess_return_pct": -1.4068
       },
       "601168": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -2.2258,
+       "excess_return_pct": -0.0788
       },
       "002241": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -4.0035,
+       "excess_return_pct": -1.8565
       },
       "002487": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -11.9549,
+       "excess_return_pct": -9.8079
       }
      }
     },
@@ -9548,39 +9548,39 @@
    }
   },
   "1753a3937a4c": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "CSI 300",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -2.147,
+     "pending": 0,
      "picks": {
       "601166": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.5538,
+       "excess_return_pct": 4.7008
       },
       "601668": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.8475,
+       "excess_return_pct": 1.2995
       },
       "000001": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.6393,
+       "excess_return_pct": 3.7863
       },
       "601390": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -2.7842,
+       "excess_return_pct": -0.6372
       },
       "601919": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.4221,
+       "excess_return_pct": 0.7249
       }
      }
     },
@@ -9653,39 +9653,39 @@
    }
   },
   "02ea01c70c5b": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "CSI 300",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -2.147,
+     "pending": 0,
      "picks": {
       "601939": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.2746,
+       "excess_return_pct": 4.4216
       },
       "600941": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 0.1397,
+       "excess_return_pct": 2.2867
       },
       "600930": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.995,
+       "excess_return_pct": 0.152
       },
       "600312": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.8141,
+       "excess_return_pct": 1.3329
       },
       "600863": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -4.6296,
+       "excess_return_pct": -2.4826
       }
      }
     },
@@ -9758,29 +9758,29 @@
    }
   },
   "111a31f77a93": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "CSI 300",
-     "benchmark_return_pct": null,
-     "pending": 3,
+     "benchmark_return_pct": -2.147,
+     "pending": 0,
      "picks": {
       "002557": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.3836,
+       "excess_return_pct": 0.7634
       },
       "300287": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -4.1667,
+       "excess_return_pct": -2.0197
       },
       "000536": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -12.0743,
+       "excess_return_pct": -9.9273
       }
      }
     },
@@ -9833,39 +9833,39 @@
    }
   },
   "bb77611e2849": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "Hang Seng",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -5.704,
+     "pending": 0,
      "picks": {
       "0267.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -7.346,
+       "excess_return_pct": -1.642
       },
       "1339.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -4.1217,
+       "excess_return_pct": 1.5823
       },
       "1398.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -3.4657,
+       "excess_return_pct": 2.2383
       },
       "0001.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -7.2886,
+       "excess_return_pct": -1.5846
       },
       "0688.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -9.9829,
+       "excess_return_pct": -4.2789
       }
      }
     },
@@ -9938,7 +9938,7 @@
    }
   },
   "b9072c1bc829": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10043,39 +10043,39 @@
    }
   },
   "a6ac35eca0b1": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "KOSPI",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -7.3001,
+     "pending": 0,
      "picks": {
       "000270.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 4.1215,
+       "excess_return_pct": 11.4216
       },
       "001450.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -6.1196,
+       "excess_return_pct": 1.1805
       },
       "071050.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.399,
+       "excess_return_pct": 6.9011
       },
       "375500.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -9.6447,
+       "excess_return_pct": -2.3446
       },
       "267250.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -4.1455,
+       "excess_return_pct": 3.1546
       }
      }
     },
@@ -10148,39 +10148,39 @@
    }
   },
   "8a994391eb07": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "TAIEX",
-     "benchmark_return_pct": null,
-     "pending": 5,
+     "benchmark_return_pct": -4.9745,
+     "pending": 0,
      "picks": {
       "2603.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.9417,
+       "excess_return_pct": 3.0328
       },
       "9904.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -2.9126,
+       "excess_return_pct": 2.0619
       },
       "2609.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -7.7686,
+       "excess_return_pct": -2.7941
       },
       "1605.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -8.9431,
+       "excess_return_pct": -3.9686
       },
       "5871.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.719,
+       "excess_return_pct": 7.6935
       }
      }
     },
@@ -10253,7 +10253,7 @@
    }
   },
   "81ea991c0ce4": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10568,7 +10568,7 @@
    }
   },
   "4e309602d1b6": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10673,7 +10673,7 @@
    }
   },
   "effe118f4bc5": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10778,7 +10778,7 @@
    }
   },
   "bfd390c989d8": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10883,7 +10883,7 @@
    }
   },
   "28123553a358": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10988,7 +10988,7 @@
    }
   },
   "9f444bae7426": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11093,7 +11093,7 @@
    }
   },
   "06877eea7018": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11198,7 +11198,7 @@
    }
   },
   "d819a3788d3d": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11303,7 +11303,7 @@
    }
   },
   "36035f3f862d": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11408,7 +11408,7 @@
    }
   },
   "6f94360067bd": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11513,7 +11513,7 @@
    }
   },
   "6cf0641cad4d": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11603,7 +11603,7 @@
    }
   },
   "398505fe1826": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11708,7 +11708,7 @@
    }
   },
   "beb6e1708b12": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11813,7 +11813,7 @@
    }
   },
   "6ad3a299bbe4": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11918,7 +11918,7 @@
    }
   },
   "5d1aeb4eaae8": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12023,7 +12023,7 @@
    }
   },
   "0bd0fd374327": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12338,7 +12338,7 @@
    }
   },
   "903f276257ea": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12443,7 +12443,7 @@
    }
   },
   "94878e573030": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12548,7 +12548,7 @@
    }
   },
   "abe4d5b9ce5a": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12653,7 +12653,7 @@
    }
   },
   "2c6037453680": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12758,7 +12758,7 @@
    }
   },
   "1dc905bbd73b": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12863,7 +12863,7 @@
    }
   },
   "a86b9166d90c": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12968,7 +12968,7 @@
    }
   },
   "6a11bbd1a8a4": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13073,7 +13073,7 @@
    }
   },
   "71432366dbdd": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13178,7 +13178,7 @@
    }
   },
   "25f961fa86dc": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13283,7 +13283,7 @@
    }
   },
   "34d37cfe27c6": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13328,7 +13328,7 @@
    }
   },
   "e347268087b6": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13433,7 +13433,7 @@
    }
   },
   "4cfbc2370262": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13538,7 +13538,7 @@
    }
   },
   "5d5a100be65f": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13643,7 +13643,7 @@
    }
   },
   "f98603d79f74": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13748,7 +13748,7 @@
    }
   },
   "ddc8088385f0": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14063,7 +14063,7 @@
    }
   },
   "156a913c1ae4": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14204,7 +14204,7 @@
    }
   },
   "6613616efd6a": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14345,7 +14345,7 @@
    }
   },
   "8569fb33f270": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14486,7 +14486,7 @@
    }
   },
   "b567a26340f8": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14627,7 +14627,7 @@
    }
   },
   "924ce637df79": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14768,7 +14768,7 @@
    }
   },
   "f4fb8c477098": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14909,7 +14909,7 @@
    }
   },
   "beb302e28be2": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15050,7 +15050,7 @@
    }
   },
   "cc6d2a4b4c0d": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15191,7 +15191,7 @@
    }
   },
   "ce96177ab2fd": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15365,7 +15365,7 @@
    }
   },
   "42a28f2fab6b": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15506,7 +15506,7 @@
    }
   },
   "e58392a02827": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15647,7 +15647,7 @@
    }
   },
   "2ec3b9064662": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15788,7 +15788,7 @@
    }
   },
   "620cc83c5388": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15800,27 +15800,37 @@
       "PFC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 324.25,
+       "entry_date": "2026-11-25"
       },
       "ONGC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 223.27,
+       "entry_date": "2026-11-25"
       },
       "CANBK.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 134.5,
+       "entry_date": "2026-11-25"
       },
       "HINDALCO.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 893.1,
+       "entry_date": "2026-11-25"
       },
       "OIL.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 423.15,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -15835,27 +15845,37 @@
       "PFC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 324.25,
+       "entry_date": "2026-11-25"
       },
       "ONGC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 223.27,
+       "entry_date": "2026-11-25"
       },
       "CANBK.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 134.5,
+       "entry_date": "2026-11-25"
       },
       "HINDALCO.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 893.1,
+       "entry_date": "2026-11-25"
       },
       "OIL.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 423.15,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -15870,27 +15890,37 @@
       "PFC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 324.25,
+       "entry_date": "2026-11-25"
       },
       "ONGC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 223.27,
+       "entry_date": "2026-11-25"
       },
       "CANBK.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 134.5,
+       "entry_date": "2026-11-25"
       },
       "HINDALCO.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 893.1,
+       "entry_date": "2026-11-25"
       },
       "OIL.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 423.15,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -15899,7 +15929,7 @@
    }
   },
   "91b40e722ac3-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16040,7 +16070,7 @@
    }
   },
   "6ba53358a405-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16181,7 +16211,7 @@
    }
   },
   "095041bc869c-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16322,7 +16352,7 @@
    }
   },
   "66eff3d86d52-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16715,7 +16745,7 @@
    }
   },
   "948994dc7901": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16727,27 +16757,37 @@
       "600699": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 19.01,
+       "entry_date": "2026-11-25"
       },
       "002245": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 9.84,
+       "entry_date": "2026-11-25"
       },
       "002080": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 30.07,
+       "entry_date": "2026-11-25"
       },
       "688308": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 40.99,
+       "entry_date": "2026-11-25"
       },
       "300770": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 38.75,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -16762,27 +16802,37 @@
       "600699": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 19.01,
+       "entry_date": "2026-11-25"
       },
       "002245": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 9.84,
+       "entry_date": "2026-11-25"
       },
       "002080": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 30.07,
+       "entry_date": "2026-11-25"
       },
       "688308": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 40.99,
+       "entry_date": "2026-11-25"
       },
       "300770": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 38.75,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -16797,27 +16847,37 @@
       "600699": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 19.01,
+       "entry_date": "2026-11-25"
       },
       "002245": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 9.84,
+       "entry_date": "2026-11-25"
       },
       "002080": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 30.07,
+       "entry_date": "2026-11-25"
       },
       "688308": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 40.99,
+       "entry_date": "2026-11-25"
       },
       "300770": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 38.75,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -16826,7 +16886,7 @@
    }
   },
   "2582051054e0": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16838,27 +16898,37 @@
       "601166": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 20.24,
+       "entry_date": "2026-11-25"
       },
       "000001": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.29,
+       "entry_date": "2026-11-25"
       },
       "601668": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.66,
+       "entry_date": "2026-11-25"
       },
       "600036": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 43.6,
+       "entry_date": "2026-11-25"
       },
       "601919": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.72,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -16873,27 +16943,37 @@
       "601166": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 20.24,
+       "entry_date": "2026-11-25"
       },
       "000001": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.29,
+       "entry_date": "2026-11-25"
       },
       "601668": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.66,
+       "entry_date": "2026-11-25"
       },
       "600036": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 43.6,
+       "entry_date": "2026-11-25"
       },
       "601919": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.72,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -16908,27 +16988,37 @@
       "601166": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 20.24,
+       "entry_date": "2026-11-25"
       },
       "000001": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.29,
+       "entry_date": "2026-11-25"
       },
       "601668": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.66,
+       "entry_date": "2026-11-25"
       },
       "600036": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 43.6,
+       "entry_date": "2026-11-25"
       },
       "601919": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.72,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -16937,7 +17027,7 @@
    }
   },
   "13064d6c5680": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16949,27 +17039,37 @@
       "300274": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 71.01,
+       "entry_date": "2026-11-25"
       },
       "300476": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 116.55,
+       "entry_date": "2026-11-25"
       },
       "603799": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 31.0,
+       "entry_date": "2026-11-25"
       },
       "600839": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.58,
+       "entry_date": "2026-11-25"
       },
       "002241": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 22.6,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -16984,27 +17084,37 @@
       "300274": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 71.01,
+       "entry_date": "2026-11-25"
       },
       "300476": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 116.55,
+       "entry_date": "2026-11-25"
       },
       "603799": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 31.0,
+       "entry_date": "2026-11-25"
       },
       "600839": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.58,
+       "entry_date": "2026-11-25"
       },
       "002241": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 22.6,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17019,27 +17129,37 @@
       "300274": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 71.01,
+       "entry_date": "2026-11-25"
       },
       "300476": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 116.55,
+       "entry_date": "2026-11-25"
       },
       "603799": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 31.0,
+       "entry_date": "2026-11-25"
       },
       "600839": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.58,
+       "entry_date": "2026-11-25"
       },
       "002241": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 22.6,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17048,7 +17168,7 @@
    }
   },
   "86cb29c21dd9": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17060,27 +17180,37 @@
       "601997": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.8,
+       "entry_date": "2026-11-25"
       },
       "601117": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.87,
+       "entry_date": "2026-11-25"
       },
       "600741": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.56,
+       "entry_date": "2026-11-25"
       },
       "002432": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 46.81,
+       "entry_date": "2026-11-25"
       },
       "601128": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.21,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17095,27 +17225,37 @@
       "601997": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.8,
+       "entry_date": "2026-11-25"
       },
       "601117": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.87,
+       "entry_date": "2026-11-25"
       },
       "600741": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.56,
+       "entry_date": "2026-11-25"
       },
       "002432": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 46.81,
+       "entry_date": "2026-11-25"
       },
       "601128": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.21,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17130,27 +17270,37 @@
       "601997": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.8,
+       "entry_date": "2026-11-25"
       },
       "601117": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.87,
+       "entry_date": "2026-11-25"
       },
       "600741": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.56,
+       "entry_date": "2026-11-25"
       },
       "002432": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 46.81,
+       "entry_date": "2026-11-25"
       },
       "601128": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.21,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17159,7 +17309,7 @@
    }
   },
   "ec7aedf6a2c4": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17171,27 +17321,37 @@
       "600795": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.45,
+       "entry_date": "2026-11-25"
       },
       "601298": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 10.03,
+       "entry_date": "2026-11-25"
       },
       "002563": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.0,
+       "entry_date": "2026-11-25"
       },
       "000100": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.83,
+       "entry_date": "2026-11-25"
       },
       "600901": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.76,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17206,27 +17366,37 @@
       "600795": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.45,
+       "entry_date": "2026-11-25"
       },
       "601298": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 10.03,
+       "entry_date": "2026-11-25"
       },
       "002563": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.0,
+       "entry_date": "2026-11-25"
       },
       "000100": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.83,
+       "entry_date": "2026-11-25"
       },
       "600901": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.76,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17241,27 +17411,37 @@
       "600795": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.45,
+       "entry_date": "2026-11-25"
       },
       "601298": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 10.03,
+       "entry_date": "2026-11-25"
       },
       "002563": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.0,
+       "entry_date": "2026-11-25"
       },
       "000100": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.83,
+       "entry_date": "2026-11-25"
       },
       "600901": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.76,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17270,7 +17450,7 @@
    }
   },
   "236c711f2b82": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17282,27 +17462,37 @@
       "000400": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.2,
+       "entry_date": "2026-11-25"
       },
       "603345": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 91.61,
+       "entry_date": "2026-11-25"
       },
       "601689": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 53.92,
+       "entry_date": "2026-11-25"
       },
       "688169": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 136.55,
+       "entry_date": "2026-11-25"
       },
       "603236": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 82.1,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17317,27 +17507,37 @@
       "000400": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.2,
+       "entry_date": "2026-11-25"
       },
       "603345": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 91.61,
+       "entry_date": "2026-11-25"
       },
       "601689": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 53.92,
+       "entry_date": "2026-11-25"
       },
       "688169": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 136.55,
+       "entry_date": "2026-11-25"
       },
       "603236": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 82.1,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17352,27 +17552,37 @@
       "000400": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.2,
+       "entry_date": "2026-11-25"
       },
       "603345": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 91.61,
+       "entry_date": "2026-11-25"
       },
       "601689": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 53.92,
+       "entry_date": "2026-11-25"
       },
       "688169": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 136.55,
+       "entry_date": "2026-11-25"
       },
       "603236": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 82.1,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17381,7 +17591,7 @@
    }
   },
   "a63ea3f085a3": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17393,27 +17603,37 @@
       "000786": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.06,
+       "entry_date": "2026-11-25"
       },
       "601995": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.07,
+       "entry_date": "2026-11-25"
       },
       "603993": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.36,
+       "entry_date": "2026-11-25"
       },
       "300059": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.89,
+       "entry_date": "2026-11-25"
       },
       "000963": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 24.35,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17428,27 +17648,37 @@
       "000786": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.06,
+       "entry_date": "2026-11-25"
       },
       "601995": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.07,
+       "entry_date": "2026-11-25"
       },
       "603993": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.36,
+       "entry_date": "2026-11-25"
       },
       "300059": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.89,
+       "entry_date": "2026-11-25"
       },
       "000963": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 24.35,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17463,27 +17693,37 @@
       "000786": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.06,
+       "entry_date": "2026-11-25"
       },
       "601995": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.07,
+       "entry_date": "2026-11-25"
       },
       "603993": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.36,
+       "entry_date": "2026-11-25"
       },
       "300059": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.89,
+       "entry_date": "2026-11-25"
       },
       "000963": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 24.35,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17492,7 +17732,7 @@
    }
   },
   "3e1727fd25ee": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17504,27 +17744,37 @@
       "600901": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.76,
+       "entry_date": "2026-11-25"
       },
       "600398": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.35,
+       "entry_date": "2026-11-25"
       },
       "601000": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.2,
+       "entry_date": "2026-11-25"
       },
       "688169": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 136.55,
+       "entry_date": "2026-11-25"
       },
       "600863": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.3,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17539,27 +17789,37 @@
       "600901": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.76,
+       "entry_date": "2026-11-25"
       },
       "600398": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.35,
+       "entry_date": "2026-11-25"
       },
       "601000": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.2,
+       "entry_date": "2026-11-25"
       },
       "688169": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 136.55,
+       "entry_date": "2026-11-25"
       },
       "600863": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.3,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17574,27 +17834,37 @@
       "600901": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.76,
+       "entry_date": "2026-11-25"
       },
       "600398": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.35,
+       "entry_date": "2026-11-25"
       },
       "601000": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.2,
+       "entry_date": "2026-11-25"
       },
       "688169": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 136.55,
+       "entry_date": "2026-11-25"
       },
       "600863": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.3,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17603,7 +17873,7 @@
    }
   },
   "5a9582023d2c": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17615,27 +17885,37 @@
       "601939": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.42,
+       "entry_date": "2026-11-25"
       },
       "600941": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 107.46,
+       "entry_date": "2026-11-25"
       },
       "600887": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 33.16,
+       "entry_date": "2026-11-25"
       },
       "600930": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 3.97,
+       "entry_date": "2026-11-25"
       },
       "000423": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 51.2,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17650,27 +17930,37 @@
       "601939": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.42,
+       "entry_date": "2026-11-25"
       },
       "600941": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 107.46,
+       "entry_date": "2026-11-25"
       },
       "600887": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 33.16,
+       "entry_date": "2026-11-25"
       },
       "600930": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 3.97,
+       "entry_date": "2026-11-25"
       },
       "000423": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 51.2,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17685,27 +17975,37 @@
       "601939": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.42,
+       "entry_date": "2026-11-25"
       },
       "600941": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 107.46,
+       "entry_date": "2026-11-25"
       },
       "600887": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 33.16,
+       "entry_date": "2026-11-25"
       },
       "600930": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 3.97,
+       "entry_date": "2026-11-25"
       },
       "000423": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 51.2,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17747,7 +18047,7 @@
    }
   },
   "4614730a0fd2-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17759,27 +18059,37 @@
       "600699": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 19.01,
+       "entry_date": "2026-11-25"
       },
       "002738": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 30.88,
+       "entry_date": "2026-11-25"
       },
       "002245": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 9.84,
+       "entry_date": "2026-11-25"
       },
       "688257": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.9,
+       "entry_date": "2026-11-25"
       },
       "002080": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 30.07,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17794,27 +18104,37 @@
       "600699": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 19.01,
+       "entry_date": "2026-11-25"
       },
       "002738": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 30.88,
+       "entry_date": "2026-11-25"
       },
       "002245": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 9.84,
+       "entry_date": "2026-11-25"
       },
       "688257": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.9,
+       "entry_date": "2026-11-25"
       },
       "002080": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 30.07,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17829,27 +18149,37 @@
       "600699": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 19.01,
+       "entry_date": "2026-11-25"
       },
       "002738": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 30.88,
+       "entry_date": "2026-11-25"
       },
       "002245": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 9.84,
+       "entry_date": "2026-11-25"
       },
       "688257": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.9,
+       "entry_date": "2026-11-25"
       },
       "002080": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 30.07,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17858,7 +18188,7 @@
    }
   },
   "83b4c487a532-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17870,27 +18200,37 @@
       "601166": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 20.24,
+       "entry_date": "2026-11-25"
       },
       "000001": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.29,
+       "entry_date": "2026-11-25"
       },
       "601668": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.66,
+       "entry_date": "2026-11-25"
       },
       "600036": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 43.6,
+       "entry_date": "2026-11-25"
       },
       "601919": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.72,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17905,27 +18245,37 @@
       "601166": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 20.24,
+       "entry_date": "2026-11-25"
       },
       "000001": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.29,
+       "entry_date": "2026-11-25"
       },
       "601668": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.66,
+       "entry_date": "2026-11-25"
       },
       "600036": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 43.6,
+       "entry_date": "2026-11-25"
       },
       "601919": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.72,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17940,27 +18290,37 @@
       "601166": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 20.24,
+       "entry_date": "2026-11-25"
       },
       "000001": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.29,
+       "entry_date": "2026-11-25"
       },
       "601668": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.66,
+       "entry_date": "2026-11-25"
       },
       "600036": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 43.6,
+       "entry_date": "2026-11-25"
       },
       "601919": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.72,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -17969,7 +18329,7 @@
    }
   },
   "b3bbfa484255-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17981,27 +18341,37 @@
       "300476": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 116.55,
+       "entry_date": "2026-11-25"
       },
       "300274": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 71.01,
+       "entry_date": "2026-11-25"
       },
       "002241": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 22.6,
+       "entry_date": "2026-11-25"
       },
       "300394": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 119.23,
+       "entry_date": "2026-11-25"
       },
       "601689": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 53.92,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18016,27 +18386,37 @@
       "300476": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 116.55,
+       "entry_date": "2026-11-25"
       },
       "300274": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 71.01,
+       "entry_date": "2026-11-25"
       },
       "002241": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 22.6,
+       "entry_date": "2026-11-25"
       },
       "300394": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 119.23,
+       "entry_date": "2026-11-25"
       },
       "601689": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 53.92,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18051,27 +18431,37 @@
       "300476": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 116.55,
+       "entry_date": "2026-11-25"
       },
       "300274": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 71.01,
+       "entry_date": "2026-11-25"
       },
       "002241": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 22.6,
+       "entry_date": "2026-11-25"
       },
       "300394": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 119.23,
+       "entry_date": "2026-11-25"
       },
       "601689": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 53.92,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18080,7 +18470,7 @@
    }
   },
   "f830727f326e-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18092,27 +18482,37 @@
       "601128": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.21,
+       "entry_date": "2026-11-25"
       },
       "601117": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.87,
+       "entry_date": "2026-11-25"
       },
       "601665": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.78,
+       "entry_date": "2026-11-25"
       },
       "600741": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.56,
+       "entry_date": "2026-11-25"
       },
       "002432": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 46.81,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18127,27 +18527,37 @@
       "601128": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.21,
+       "entry_date": "2026-11-25"
       },
       "601117": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.87,
+       "entry_date": "2026-11-25"
       },
       "601665": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.78,
+       "entry_date": "2026-11-25"
       },
       "600741": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.56,
+       "entry_date": "2026-11-25"
       },
       "002432": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 46.81,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18162,27 +18572,37 @@
       "601128": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.21,
+       "entry_date": "2026-11-25"
       },
       "601117": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.87,
+       "entry_date": "2026-11-25"
       },
       "601665": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.78,
+       "entry_date": "2026-11-25"
       },
       "600741": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.56,
+       "entry_date": "2026-11-25"
       },
       "002432": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 46.81,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18191,7 +18611,7 @@
    }
   },
   "144207f07026-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18203,27 +18623,37 @@
       "601298": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 10.03,
+       "entry_date": "2026-11-25"
       },
       "600795": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.45,
+       "entry_date": "2026-11-25"
       },
       "002563": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.0,
+       "entry_date": "2026-11-25"
       },
       "002223": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 28.88,
+       "entry_date": "2026-11-25"
       },
       "000729": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.4,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18238,27 +18668,37 @@
       "601298": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 10.03,
+       "entry_date": "2026-11-25"
       },
       "600795": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.45,
+       "entry_date": "2026-11-25"
       },
       "002563": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.0,
+       "entry_date": "2026-11-25"
       },
       "002223": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 28.88,
+       "entry_date": "2026-11-25"
       },
       "000729": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.4,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18273,27 +18713,37 @@
       "601298": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 10.03,
+       "entry_date": "2026-11-25"
       },
       "600795": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.45,
+       "entry_date": "2026-11-25"
       },
       "002563": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.0,
+       "entry_date": "2026-11-25"
       },
       "002223": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 28.88,
+       "entry_date": "2026-11-25"
       },
       "000729": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.4,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18302,7 +18752,7 @@
    }
   },
   "b9552882ae4e-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18314,27 +18764,37 @@
       "000400": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.2,
+       "entry_date": "2026-11-25"
       },
       "603345": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 91.61,
+       "entry_date": "2026-11-25"
       },
       "601689": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 53.92,
+       "entry_date": "2026-11-25"
       },
       "600285": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 23.89,
+       "entry_date": "2026-11-25"
       },
       "603236": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 82.1,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18349,27 +18809,37 @@
       "000400": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.2,
+       "entry_date": "2026-11-25"
       },
       "603345": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 91.61,
+       "entry_date": "2026-11-25"
       },
       "601689": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 53.92,
+       "entry_date": "2026-11-25"
       },
       "600285": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 23.89,
+       "entry_date": "2026-11-25"
       },
       "603236": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 82.1,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18384,27 +18854,37 @@
       "000400": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 26.2,
+       "entry_date": "2026-11-25"
       },
       "603345": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 91.61,
+       "entry_date": "2026-11-25"
       },
       "601689": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 53.92,
+       "entry_date": "2026-11-25"
       },
       "600285": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 23.89,
+       "entry_date": "2026-11-25"
       },
       "603236": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 82.1,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18413,7 +18893,7 @@
    }
   },
   "dc00ca356c47-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18425,27 +18905,37 @@
       "603993": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.36,
+       "entry_date": "2026-11-25"
       },
       "002432": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 46.81,
+       "entry_date": "2026-11-25"
       },
       "000703": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.05,
+       "entry_date": "2026-11-25"
       },
       "300059": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.89,
+       "entry_date": "2026-11-25"
       },
       "000786": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.06,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18460,27 +18950,37 @@
       "603993": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.36,
+       "entry_date": "2026-11-25"
       },
       "002432": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 46.81,
+       "entry_date": "2026-11-25"
       },
       "000703": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.05,
+       "entry_date": "2026-11-25"
       },
       "300059": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.89,
+       "entry_date": "2026-11-25"
       },
       "000786": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.06,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18495,27 +18995,37 @@
       "603993": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.36,
+       "entry_date": "2026-11-25"
       },
       "002432": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 46.81,
+       "entry_date": "2026-11-25"
       },
       "000703": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.05,
+       "entry_date": "2026-11-25"
       },
       "300059": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 17.89,
+       "entry_date": "2026-11-25"
       },
       "000786": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.06,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18524,7 +19034,7 @@
    }
   },
   "32d2d83a2aa9-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18536,27 +19046,37 @@
       "601000": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.2,
+       "entry_date": "2026-11-25"
       },
       "600901": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.76,
+       "entry_date": "2026-11-25"
       },
       "688169": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 136.55,
+       "entry_date": "2026-11-25"
       },
       "600398": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.35,
+       "entry_date": "2026-11-25"
       },
       "600066": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 32.0,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18571,27 +19091,37 @@
       "601000": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.2,
+       "entry_date": "2026-11-25"
       },
       "600901": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.76,
+       "entry_date": "2026-11-25"
       },
       "688169": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 136.55,
+       "entry_date": "2026-11-25"
       },
       "600398": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.35,
+       "entry_date": "2026-11-25"
       },
       "600066": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 32.0,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18606,27 +19136,37 @@
       "601000": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 5.2,
+       "entry_date": "2026-11-25"
       },
       "600901": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.76,
+       "entry_date": "2026-11-25"
       },
       "688169": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 136.55,
+       "entry_date": "2026-11-25"
       },
       "600398": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 6.35,
+       "entry_date": "2026-11-25"
       },
       "600066": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 32.0,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18635,7 +19175,7 @@
    }
   },
   "c6459845708d-ai": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18647,27 +19187,37 @@
       "601939": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.42,
+       "entry_date": "2026-11-25"
       },
       "600941": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 107.46,
+       "entry_date": "2026-11-25"
       },
       "600312": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 22.4,
+       "entry_date": "2026-11-25"
       },
       "000423": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 51.2,
+       "entry_date": "2026-11-25"
       },
       "600887": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 33.16,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18682,27 +19232,37 @@
       "601939": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.42,
+       "entry_date": "2026-11-25"
       },
       "600941": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 107.46,
+       "entry_date": "2026-11-25"
       },
       "600312": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 22.4,
+       "entry_date": "2026-11-25"
       },
       "000423": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 51.2,
+       "entry_date": "2026-11-25"
       },
       "600887": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 33.16,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18717,27 +19277,37 @@
       "601939": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.42,
+       "entry_date": "2026-11-25"
       },
       "600941": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 107.46,
+       "entry_date": "2026-11-25"
       },
       "600312": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 22.4,
+       "entry_date": "2026-11-25"
       },
       "000423": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 51.2,
+       "entry_date": "2026-11-25"
       },
       "600887": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 33.16,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18746,7 +19316,7 @@
    }
   },
   "f6b388583e82": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18758,22 +19328,30 @@
       "0267.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.15,
+       "entry_date": "2026-11-25"
       },
       "0001.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 64.25,
+       "entry_date": "2026-11-25"
       },
       "0998.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.94,
+       "entry_date": "2026-11-25"
       },
       "1398.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.71,
+       "entry_date": "2026-11-25"
       },
       "1109.HK": {
        "status": "pending",
@@ -18793,22 +19371,30 @@
       "0267.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.15,
+       "entry_date": "2026-11-25"
       },
       "0001.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 64.25,
+       "entry_date": "2026-11-25"
       },
       "0998.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.94,
+       "entry_date": "2026-11-25"
       },
       "1398.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.71,
+       "entry_date": "2026-11-25"
       },
       "1109.HK": {
        "status": "pending",
@@ -18828,22 +19414,30 @@
       "0267.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 12.15,
+       "entry_date": "2026-11-25"
       },
       "0001.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 64.25,
+       "entry_date": "2026-11-25"
       },
       "0998.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.94,
+       "entry_date": "2026-11-25"
       },
       "1398.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 7.71,
+       "entry_date": "2026-11-25"
       },
       "1109.HK": {
        "status": "pending",
@@ -18857,7 +19451,7 @@
    }
   },
   "5b275de35104": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18869,27 +19463,37 @@
       "1605.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 3274.0,
+       "entry_date": "2026-11-25"
       },
       "9501.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 413.5,
+       "entry_date": "2026-11-25"
       },
       "543A.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 261.0,
+       "entry_date": "2026-11-25"
       },
       "5401.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 669.0,
+       "entry_date": "2026-11-25"
       },
       "5020.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 1150.0,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18904,27 +19508,37 @@
       "1605.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 3274.0,
+       "entry_date": "2026-11-25"
       },
       "9501.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 413.5,
+       "entry_date": "2026-11-25"
       },
       "543A.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 261.0,
+       "entry_date": "2026-11-25"
       },
       "5401.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 669.0,
+       "entry_date": "2026-11-25"
       },
       "5020.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 1150.0,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18939,27 +19553,37 @@
       "1605.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 3274.0,
+       "entry_date": "2026-11-25"
       },
       "9501.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 413.5,
+       "entry_date": "2026-11-25"
       },
       "543A.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 261.0,
+       "entry_date": "2026-11-25"
       },
       "5401.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 669.0,
+       "entry_date": "2026-11-25"
       },
       "5020.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 1150.0,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -18968,7 +19592,7 @@
    }
   },
   "b3988bbe95ba": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18980,27 +19604,37 @@
       "015760.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 24850.0,
+       "entry_date": "2026-11-25"
       },
       "078930.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 67900.0,
+       "entry_date": "2026-11-25"
       },
       "036460.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 35600.0,
+       "entry_date": "2026-11-25"
       },
       "024110.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 18800.0,
+       "entry_date": "2026-11-25"
       },
       "010950.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 94100.0,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -19015,27 +19649,37 @@
       "015760.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 24850.0,
+       "entry_date": "2026-11-25"
       },
       "078930.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 67900.0,
+       "entry_date": "2026-11-25"
       },
       "036460.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 35600.0,
+       "entry_date": "2026-11-25"
       },
       "024110.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 18800.0,
+       "entry_date": "2026-11-25"
       },
       "010950.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 94100.0,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -19050,27 +19694,37 @@
       "015760.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 24850.0,
+       "entry_date": "2026-11-25"
       },
       "078930.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 67900.0,
+       "entry_date": "2026-11-25"
       },
       "036460.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 35600.0,
+       "entry_date": "2026-11-25"
       },
       "024110.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 18800.0,
+       "entry_date": "2026-11-25"
       },
       "010950.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 94100.0,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -19079,7 +19733,7 @@
    }
   },
   "1bfc5266997c": {
-   "evaluated_at": "2026-11-25T03:49:36+00:00",
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19091,27 +19745,37 @@
       "2615.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 95.8,
+       "entry_date": "2026-11-25"
       },
       "2609.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 54.6,
+       "entry_date": "2026-11-25"
       },
       "3702.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 75.5,
+       "entry_date": "2026-11-25"
       },
       "6505.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 79.3,
+       "entry_date": "2026-11-25"
       },
       "5522.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 63.1,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -19126,27 +19790,37 @@
       "2615.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 95.8,
+       "entry_date": "2026-11-25"
       },
       "2609.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 54.6,
+       "entry_date": "2026-11-25"
       },
       "3702.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 75.5,
+       "entry_date": "2026-11-25"
       },
       "6505.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 79.3,
+       "entry_date": "2026-11-25"
       },
       "5522.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 63.1,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -19161,27 +19835,37 @@
       "2615.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 95.8,
+       "entry_date": "2026-11-25"
       },
       "2609.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 54.6,
+       "entry_date": "2026-11-25"
       },
       "3702.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 75.5,
+       "entry_date": "2026-11-25"
       },
       "6505.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 79.3,
+       "entry_date": "2026-11-25"
       },
       "5522.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 63.1,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -19401,6 +20085,2592 @@
        "excess_return_pct": null
       },
       "A": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "bdca25c1ee0f": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603883": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000034": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300770": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603883": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000034": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300770": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603883": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000034": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300770": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "70603c533a27": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601166": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000001": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601668": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600036": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601919": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601166": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000001": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601668": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600036": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601919": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601166": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000001": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601668": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600036": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601919": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "26bde993ddf2": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300394": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600196": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600600": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600693": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "605018": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300394": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600196": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600600": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600693": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "605018": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300394": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600196": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600600": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600693": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "605018": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "fe679b85af02": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601577": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601117": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600741": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601677": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601577": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601117": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600741": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601677": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601577": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601117": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600741": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601677": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "48f49efa68a4": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000729": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600066": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002223": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600089": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000729": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600066": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002223": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600089": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000729": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600066": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002223": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600089": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "2c38e7461d30": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600285": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "301261": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300893": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "001328": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600285": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "301261": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300893": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "001328": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600285": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "301261": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300893": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "001328": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "76ed91670a2f": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600909": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000630": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002249": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000338": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600909": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000630": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002249": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000338": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600909": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000630": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002249": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000338": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "5395b0fcc727": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "000100": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000729": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600566": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "000100": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000729": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600566": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "000100": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000729": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600566": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "219f1ac01c11": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601169": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600941": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600887": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600285": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601169": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600941": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600887": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600285": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601169": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600941": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600887": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600285": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "c3d495bf19d6": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": true,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 0,
+     "picks": {},
+     "untradable": 0,
+     "untradable_share_pct": null
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 0,
+     "picks": {},
+     "untradable": 0,
+     "untradable_share_pct": null
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 0,
+     "picks": {},
+     "untradable": 0,
+     "untradable_share_pct": null
+    }
+   }
+  },
+  "a50b40606ed7-ai": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000729": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603883": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000729": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603883": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000729": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603883": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "a3b5ea269a7b-ai": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601166": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000001": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601668": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600036": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601939": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601166": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000001": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601668": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600036": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601939": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601166": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000001": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601668": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600036": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601939": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "4be4ff5c5e55-ai": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300394": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600600": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002603": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002154": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300997": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300394": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600600": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002603": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002154": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300997": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "300394": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600600": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002603": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002154": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300997": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "d15d64037021-ai": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601117": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600741": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601128": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601677": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601117": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600741": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601128": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601677": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "601117": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600741": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601128": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601677": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "9174dc6aa9da-ai": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600066": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600233": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600089": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000538": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600066": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600233": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600089": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000538": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600483": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600066": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600233": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600089": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000538": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "6c6464043ff4-ai": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600285": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603587": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300893": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "301261": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600285": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603587": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300893": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "301261": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "603345": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600285": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603587": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "300893": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "301261": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "640caf6f41de-ai": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002532": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600428": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603296": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000338": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002532": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600428": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603296": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000338": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "002432": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002532": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600428": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "603296": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000338": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "ca79aaf4bee0-ai": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000100": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600600": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600566": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002563": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000100": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600600": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600566": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002563": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600398": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000100": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600600": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600566": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002563": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "99ca5743279a-ai": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600941": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601916": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002223": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600312": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002557": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600941": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601916": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002223": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600312": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002557": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "CSI 300",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "600941": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "601916": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002223": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "600312": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "002557": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "8adad2fb9e9b": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "Hang Seng",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "0267.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "0001.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "1988.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "1398.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "0358.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "Hang Seng",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "0267.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "0001.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "1988.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "1398.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "0358.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "Hang Seng",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "0267.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "0001.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "1988.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "1398.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "0358.HK": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "6bb7ed39b298": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "Nikkei 225",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "5713.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "9501.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "9104.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "5020.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "1605.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "Nikkei 225",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "5713.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "9501.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "9104.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "5020.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "1605.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "Nikkei 225",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "5713.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "9501.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "9104.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "5020.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "1605.T": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "896e6d5c5915": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "KOSPI",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "015760.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "078930.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000270.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "001450.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "071050.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "KOSPI",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "015760.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "078930.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000270.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "001450.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "071050.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "KOSPI",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "015760.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "078930.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "000270.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "001450.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "071050.KS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "a801d790a875": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "TAIEX",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "2603.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "2609.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "9904.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "5871.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "2915.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "TAIEX",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "2603.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "2609.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "9904.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "5871.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "2915.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "TAIEX",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "2603.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "2609.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "9904.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "5871.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "2915.TW": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "e870226cce6e": {
+   "evaluated_at": "2026-11-25T10:40:22+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "Nifty 50",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "ONGC.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "BANKBARODA.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "IOC.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PNB.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "HINDALCO.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "Nifty 50",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "ONGC.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "BANKBARODA.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "IOC.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PNB.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "HINDALCO.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "Nifty 50",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "ONGC.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "BANKBARODA.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "IOC.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PNB.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "HINDALCO.NS": {
        "status": "pending",
        "return_pct": null,
        "excess_return_pct": null

@@ -1,0 +1,770 @@
+{
+  "strategy": "oversold_reversal",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "reversal",
+  "snapshot_count": 5575,
+  "after_filter_count": 771,
+  "picks": [
+    {
+      "rank": 1,
+      "code": "002432",
+      "name": "九安医疗",
+      "final_score": 90.9852,
+      "screen_score": 84.64197491245137,
+      "llm_score": 85.0,
+      "ranking_reason": "PE仅3.65倍，注销回购股份落地且行业板块获资金逆势流入",
+      "risk_summary": "主营业务后续增长放缓",
+      "price": 46.0,
+      "change_pct": -2.79,
+      "amount": 618259938.98,
+      "total_mv": 21447912620.0,
+      "turnover_rate": 2.84,
+      "volume_ratio": 0.53,
+      "pe_ratio": 3.64571769,
+      "pb_ratio": 0.84229868,
+      "industry": "医疗器械",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 88.7991,
+        "liquidity": 84.8249,
+        "momentum": 47.4325,
+        "reversal": 90.77,
+        "activity": 82.1939,
+        "stability": 69.63,
+        "size": 77.821,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.86,
+      "llm_sector": "医疗器械",
+      "llm_theme": "极低估值与回购注销",
+      "llm_tags": [
+        "价值",
+        "事件",
+        "sector:医疗器械",
+        "theme:极低估值与回购注销",
+        "style_fit:极度低估值兼事件驱动匹配"
+      ],
+      "llm_catalysts": [
+        "股份注销落地",
+        "资金回流医药"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "注销已回购股份增厚每股收益，估值安全垫极高",
+      "llm_style_fit": "极度低估值兼事件驱动匹配",
+      "llm_watch_items": [
+        "股东大会决议",
+        "季度经营现金流"
+      ],
+      "llm_invalidators": [
+        "重大投资损失"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality、controlled_reversal"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 6.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality",
+            "controlled_reversal"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality",
+        "controlled_reversal"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 2,
+      "code": "002532",
+      "name": "天山铝业",
+      "final_score": 90.9515,
+      "screen_score": 83.91923917315175,
+      "llm_score": 86.0,
+      "ranking_reason": "发布每10股派3元分红且变更回购用途为注销，跌幅明显小于大盘中位数",
+      "risk_summary": "铝价受宏观周期压制回落",
+      "price": 9.71,
+      "change_pct": -2.9,
+      "amount": 626282891.88,
+      "total_mv": 44945040300.0,
+      "turnover_rate": 1.55,
+      "volume_ratio": 0.99,
+      "pe_ratio": 5.6887587,
+      "pb_ratio": 1.37572126,
+      "industry": "基本金属",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 81.7865,
+        "liquidity": 85.0843,
+        "momentum": 47.075,
+        "reversal": 92.2,
+        "activity": 79.6371,
+        "stability": 69.3,
+        "size": 90.6615,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.88,
+      "llm_sector": "有色金属",
+      "llm_theme": "分红与注销回购",
+      "llm_tags": [
+        "价值",
+        "防守",
+        "sector:有色金属",
+        "theme:分红与注销回购",
+        "style_fit:契合防御反弹与高股息策略"
+      ],
+      "llm_catalysts": [
+        "分红实施",
+        "股份注销减资"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "高额分红叠加注销式回购增强股东回报",
+      "llm_style_fit": "契合防御反弹与高股息策略",
+      "llm_watch_items": [
+        "铝价走势",
+        "注销完成公告"
+      ],
+      "llm_invalidators": [
+        "下游需求断崖式下跌"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality、controlled_reversal"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 6.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality",
+            "controlled_reversal"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality",
+        "controlled_reversal"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 3,
+      "code": "600428",
+      "name": "中远海特",
+      "final_score": 84.5672,
+      "screen_score": 81.94530626459144,
+      "llm_score": 73.0,
+      "ranking_reason": "PE低于10倍，回调缩量明显，流动性无塌陷风险",
+      "risk_summary": "全球贸易摩擦与运价回落",
+      "price": 10.82,
+      "change_pct": -3.65,
+      "amount": 327439121.0,
+      "total_mv": 29689218674.0,
+      "turnover_rate": 1.09,
+      "volume_ratio": 0.84,
+      "pe_ratio": 9.67729129,
+      "pb_ratio": 1.63703848,
+      "industry": "港口航运",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 75.731,
+        "liquidity": 69.7795,
+        "momentum": 44.6375,
+        "reversal": 98.05,
+        "activity": 77.3005,
+        "stability": 67.05,
+        "size": 83.3982,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.76,
+      "llm_sector": "航运",
+      "llm_theme": "特种船运低估值修复",
+      "llm_tags": [
+        "价值",
+        "防守",
+        "sector:航运",
+        "theme:特种船运低估值修复",
+        "style_fit:偏防守的低估值航运配置"
+      ],
+      "llm_catalysts": [
+        "海外汽车出口运价维持高位",
+        "新造船交付"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "汽车船与多用途船高景气提供业绩支撑",
+      "llm_style_fit": "偏防守的低估值航运配置",
+      "llm_watch_items": [
+        "散货及特种航运运价",
+        "外贸汽车出口数据"
+      ],
+      "llm_invalidators": [
+        "海外出口关税骤升冲击航运"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality、controlled_reversal"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 6.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality",
+            "controlled_reversal"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality",
+        "controlled_reversal"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 4,
+      "code": "603296",
+      "name": "华勤技术",
+      "final_score": 82.6477,
+      "screen_score": 82.07957917315176,
+      "llm_score": 74.0,
+      "ranking_reason": "回调幅度相对可控，成交保持活跃，换手率健康",
+      "risk_summary": "消费电子下游需求复苏不及预期",
+      "price": 60.9,
+      "change_pct": -3.55,
+      "amount": 754154618.0,
+      "total_mv": 92312404649.0,
+      "turnover_rate": 1.53,
+      "volume_ratio": 0.75,
+      "pe_ratio": 17.48665576,
+      "pb_ratio": 2.80099361,
+      "industry": "消费电子设备",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 52.5141,
+        "liquidity": 87.5486,
+        "momentum": 44.9625,
+        "reversal": 99.35,
+        "activity": 78.4761,
+        "stability": 67.35,
+        "size": 96.8872,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.77,
+      "llm_sector": "消费电子",
+      "llm_theme": "ODM平台型龙头回调",
+      "llm_tags": [
+        "趋势",
+        "流动性",
+        "sector:消费电子",
+        "theme:ODM平台型龙头回调",
+        "style_fit:成长回调介入风格"
+      ],
+      "llm_catalysts": [
+        "新机型发布",
+        "AI服务器出货超预期"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "消费电子及服务器业务放量提供长期中枢支撑",
+      "llm_style_fit": "成长回调介入风格",
+      "llm_watch_items": [
+        "消费电子出货量",
+        "毛利率变化"
+      ],
+      "llm_invalidators": [
+        "大客户订单大幅流失"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: controlled_reversal"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 3.8
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "controlled_reversal"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "controlled_reversal"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 5,
+      "code": "000338",
+      "name": "潍柴动力",
+      "final_score": 80.3764,
+      "screen_score": 82.29404987354086,
+      "llm_score": 70.0,
+      "ranking_reason": "市值容量与流动性充裕，但单日跌幅-4.30%较深",
+      "risk_summary": "国内重卡更新需求节奏滞后",
+      "price": 18.03,
+      "change_pct": -4.3,
+      "amount": 1401401579.99,
+      "total_mv": 155783177797.0,
+      "turnover_rate": 1.55,
+      "volume_ratio": 0.79,
+      "pe_ratio": 12.25532684,
+      "pb_ratio": 1.6570584,
+      "industry": "汽车",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 72.9217,
+        "liquidity": 94.6822,
+        "momentum": 41.94,
+        "reversal": 89.6,
+        "activity": 78.7296,
+        "stability": 65.1,
+        "size": 99.3515,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.74,
+      "llm_sector": "汽车",
+      "llm_theme": "重卡产业链核心资产",
+      "llm_tags": [
+        "流动性",
+        "价值",
+        "sector:汽车",
+        "theme:重卡产业链核心资产",
+        "style_fit:核心资产大盘配置"
+      ],
+      "llm_catalysts": [
+        "重卡月度销量超预期",
+        "天然气重卡渗透率提升"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "大排量燃气机与海外出口构筑强壁垒",
+      "llm_style_fit": "核心资产大盘配置",
+      "llm_watch_items": [
+        "重卡月度销量",
+        "海外出口订单"
+      ],
+      "llm_invalidators": [
+        "LNG价格飙升压制燃气重卡"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: controlled_reversal"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 3.0
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "controlled_reversal"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "controlled_reversal"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    }
+  ],
+  "run_id": "640caf6f41de-ai",
+  "track": "ai",
+  "llm_ranked": true,
+  "llm_market_view": "市场整体深度回调且情绪偏弱，优先选择估值安全垫厚、有分红回购且抗跌明显的品种。",
+  "llm_selection_logic": "重点考量回调抗跌性、分红与回购注销事件催化，同时严格剔除减持风险与资金持续流出标的。",
+  "llm_portfolio_risk": "周期性资源股占比较高，需防范大宗商品价格波动与宏观需求不及预期的系统性风险。",
+  "llm_coverage": 1.0,
+  "llm_parse_errors": [],
+  "degradation": [
+    "Candidate context collected rows=12",
+    "Candidate context row errors: fund_flow: provider cooldown active (skipped 11 candidates)",
+    "LLM context truncated: trimmed=candidate_collected_context"
+  ],
+  "snapshot_source": "em_datacenter",
+  "source_errors": [],
+  "deep_analysis_requested": false,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "risk_enabled": true,
+  "portfolio_diversity_enabled": true,
+  "portfolio_concentration_notes": [
+    "Portfolio concentration bucket=周期资源: penalized=6, codes=601600:有色金属(-4.5),600362:有色金属(-9.0),000807:有色金属(-13.5),000630:有色金属(-13.5),002080:化工新材料(-13.5),+1 more",
+    "Portfolio hard cap bucket=周期资源: max=1, deferred=601600,600362,000807,000630,002080,603799"
+  ],
+  "saved_path": "track/data/runs/640caf6f41de-ai.json",
+  "created_at": "2026-11-25T10:38:19.894861+00:00",
+  "portfolio_topic_exposure": {
+    "医药": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "002432"
+      ],
+      "overconcentrated": false
+    },
+    "周期资源": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "002532"
+      ],
+      "overconcentrated": false
+    },
+    "基建航运": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600428"
+      ],
+      "overconcentrated": false
+    },
+    "汽车": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "000338"
+      ],
+      "overconcentrated": false
+    },
+    "消费": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "603296"
+      ],
+      "overconcentrated": false
+    }
+  },
+  "overconcentrated_topics": [],
+  "replacement_candidates": [
+    {
+      "code": "600884",
+      "name": "杉杉股份",
+      "bucket": "电子",
+      "sector": "电子",
+      "final_score": 75.1429
+    },
+    {
+      "code": "600909",
+      "name": "华安证券",
+      "bucket": "金融",
+      "sector": "券商",
+      "final_score": 63.4668
+    },
+    {
+      "code": "002249",
+      "name": "大洋电机",
+      "bucket": "电机",
+      "sector": "电机",
+      "final_score": 62.919
+    },
+    {
+      "code": "002756",
+      "name": "永兴材料",
+      "bucket": "新能源",
+      "sector": "稀有金属",
+      "final_score": 62.0741
+    }
+  ],
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {}
+}

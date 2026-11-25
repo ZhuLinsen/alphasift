@@ -1,0 +1,774 @@
+{
+  "strategy": "quality_value",
+  "market": "cn",
+  "strategy_version": "1.2",
+  "strategy_category": "value",
+  "snapshot_count": 5575,
+  "after_filter_count": 28,
+  "picks": [
+    {
+      "rank": 1,
+      "code": "600398",
+      "name": "海澜之家",
+      "final_score": 84.4822,
+      "screen_score": 75.30374205714286,
+      "llm_score": 86.0,
+      "ranking_reason": "机构持仓达67%且PE仅15倍，放量突破20日均线，兼具价值与股息防御。",
+      "risk_summary": "线下服装消费景气度若持续走弱或拖累主营增长。",
+      "price": 6.49,
+      "change_pct": 2.04,
+      "amount": 480935149.0,
+      "total_mv": 31169979221.0,
+      "turnover_rate": 1.55,
+      "volume_ratio": 1.96,
+      "pe_ratio": 15.34559434,
+      "pb_ratio": 1.85979092,
+      "industry": "服装家纺",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 12.3427,
+      "signal_score": 84.3199,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "overbought",
+      "breakout_20d_pct": 1.5649,
+      "range_20d_pct": 15.3982,
+      "volume_ratio_20d": 1.966,
+      "body_pct": 2.2047,
+      "pullback_to_ma20_pct": 5.6143,
+      "consolidation_days_20d": 17,
+      "volatility_20d_pct": 25.261,
+      "max_drawdown_20d_pct": -2.5682,
+      "atr_20_pct": 2.5501,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 83.9464,
+        "liquidity": 71.4286,
+        "momentum": 76.3209,
+        "reversal": 12.16,
+        "activity": 81.664,
+        "stability": 75.9984,
+        "size": 75.0,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.85,
+      "llm_sector": "服装家纺",
+      "llm_theme": "高股息防御与品牌零售复苏",
+      "llm_tags": [
+        "价值",
+        "防守",
+        "sector:服装家纺",
+        "theme:高股息防御与品牌零售复苏",
+        "style_fit:高度契合稳健低估值与防御配置风格"
+      ],
+      "llm_catalysts": [
+        "业绩说明会",
+        "分红派息预期"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "高分红叠加机构高比例控盘，低估值防御属性显著。",
+      "llm_style_fit": "高度契合稳健低估值与防御配置风格",
+      "llm_watch_items": [
+        "三季报后库存周转",
+        "直营店平效"
+      ],
+      "llm_invalidators": [
+        "单季扣非净利转负",
+        "大额存货减值"
+      ],
+      "risk_score": 12.5,
+      "risk_level": "low",
+      "risk_penalty": 1.5,
+      "risk_flags": [
+        "rsi_overbought"
+      ],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality、capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 6.4
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality",
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality",
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 2,
+      "code": "000100",
+      "name": "TCL科技",
+      "final_score": 82.6915,
+      "screen_score": 79.48590399142857,
+      "llm_score": 76.0,
+      "ranking_reason": "流动性与市值容量顶格，估值仅16倍PB近1.6倍，站稳半年线呈现中线走稳态势。",
+      "risk_summary": "电子板块整体主力资金呈净流出态势，行业β承压。",
+      "price": 4.92,
+      "change_pct": 1.03,
+      "amount": 2058431766.01,
+      "total_mv": 107976367463.0,
+      "turnover_rate": 2.07,
+      "volume_ratio": 1.05,
+      "pe_ratio": 16.38381973,
+      "pb_ratio": 1.58943239,
+      "industry": "电子元件",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 0.2037,
+      "signal_score": 72.0713,
+      "ma_bullish": false,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -0.6061,
+      "range_20d_pct": 14.4828,
+      "volume_ratio_20d": 1.1801,
+      "body_pct": 1.8634,
+      "pullback_to_ma20_pct": 5.761,
+      "consolidation_days_20d": 15,
+      "volatility_20d_pct": 28.5631,
+      "max_drawdown_20d_pct": -4.7009,
+      "atr_20_pct": 2.7236,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 80.7768,
+        "liquidity": 96.4286,
+        "momentum": 68.2087,
+        "reversal": 47.37,
+        "activity": 84.4889,
+        "stability": 77.5586,
+        "size": 100.0,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.82,
+      "llm_sector": "电子元件",
+      "llm_theme": "面板周期筑底与半导体显示出海",
+      "llm_tags": [
+        "流动性",
+        "趋势",
+        "sector:电子元件",
+        "theme:面板周期筑底与半导体显示出海",
+        "style_fit:适合容纳大资金的中线周期成长策略"
+      ],
+      "llm_catalysts": [
+        "大尺寸TV面板涨价",
+        "海外大客户拉货"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "大尺寸面板格局改善，百亿成交容量提供充沛流动性支撑。",
+      "llm_style_fit": "适合容纳大资金的中线周期成长策略",
+      "llm_watch_items": [
+        "TV面板报价变动",
+        "行业稼动率调节"
+      ],
+      "llm_invalidators": [
+        "面板价格断崖式下跌",
+        "定增/减持稀释预期"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.6
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 3,
+      "code": "600600",
+      "name": "青岛啤酒",
+      "final_score": 80.3934,
+      "screen_score": 71.98905191142858,
+      "llm_score": 84.0,
+      "ranking_reason": "单日逆势涨3.59%且量比达2.23，估值处于历史中枢偏下，资金承接有力。",
+      "risk_summary": "现饮渠道复苏迟缓及原料成本端潜在波动风险。",
+      "price": 55.42,
+      "change_pct": 3.59,
+      "amount": 798234903.0,
+      "total_mv": 75603693606.0,
+      "turnover_rate": 2.04,
+      "volume_ratio": 2.23,
+      "pe_ratio": 17.30579189,
+      "pb_ratio": 2.32746625,
+      "industry": "饮料",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 8.1577,
+      "signal_score": 88.8552,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": 0.9288,
+      "range_20d_pct": 14.9331,
+      "volume_ratio_20d": 2.0223,
+      "body_pct": 3.5888,
+      "pullback_to_ma20_pct": 4.7578,
+      "consolidation_days_20d": 18,
+      "volatility_20d_pct": 26.0387,
+      "max_drawdown_20d_pct": -3.6836,
+      "atr_20_pct": 2.4964,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 59.2679,
+        "liquidity": 92.8571,
+        "momentum": 76.1655,
+        "reversal": 5.0,
+        "activity": 82.2029,
+        "stability": 71.8926,
+        "size": 96.4286,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.83,
+      "llm_sector": "饮料",
+      "llm_theme": "啤酒龙头高端化与放量反弹",
+      "llm_tags": [
+        "趋势",
+        "流动性",
+        "sector:饮料",
+        "theme:啤酒龙头高端化与放量反弹",
+        "style_fit:符合大市值白马与动量共振选股标准"
+      ],
+      "llm_catalysts": [
+        "渠道备货旺季",
+        "产品结构升级"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "行业龙头现金流充沛，逆势放量突破确立阶段强势。",
+      "llm_style_fit": "符合大市值白马与动量共振选股标准",
+      "llm_watch_items": [
+        "高端产品销量占比",
+        "大宗原料价格"
+      ],
+      "llm_invalidators": [
+        "销量大幅失速",
+        "现饮渠道份额萎缩"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 3.6
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 4,
+      "code": "600566",
+      "name": "济川药业",
+      "final_score": 77.4698,
+      "screen_score": 71.44967675999999,
+      "llm_score": 75.0,
+      "ranking_reason": "PE仅15.4倍，稳定性因子表现突出，但短期缩量整理缺乏弹性催化。",
+      "risk_summary": "单一大单品依赖度偏高且集采降价隐忧未完全消退。",
+      "price": 30.28,
+      "change_pct": 0.0,
+      "amount": 223292647.0,
+      "total_mv": 27928601119.0,
+      "turnover_rate": 0.8,
+      "volume_ratio": 0.7,
+      "pe_ratio": 15.37567491,
+      "pb_ratio": 1.98120405,
+      "industry": "化学制药",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 21.4114,
+      "signal_score": 81.494,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "neutral",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -5.2566,
+      "range_20d_pct": 21.0148,
+      "volume_ratio_20d": 0.7531,
+      "body_pct": -0.2306,
+      "pullback_to_ma20_pct": 1.9511,
+      "consolidation_days_20d": 12,
+      "volatility_20d_pct": 23.212,
+      "max_drawdown_20d_pct": -4.2984,
+      "atr_20_pct": 3.1737,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 77.8482,
+        "liquidity": 46.4286,
+        "momentum": 68.9739,
+        "reversal": 61.0,
+        "activity": 78.3288,
+        "stability": 81.7793,
+        "size": 64.2857,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.79,
+      "llm_sector": "化学制药",
+      "llm_theme": "高股息儿科中成药白马",
+      "llm_tags": [
+        "价值",
+        "防守",
+        "sector:化学制药",
+        "theme:高股息儿科中成药白马",
+        "style_fit:匹配低估值高分红防御型组合"
+      ],
+      "llm_catalysts": [
+        "冬季呼吸道用药高峰",
+        "分红比例提升"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "主力儿科药品现金流丰沛，低估值提供厚实安全边际。",
+      "llm_style_fit": "匹配低估值高分红防御型组合",
+      "llm_watch_items": [
+        "蒲地蓝销售口径",
+        "新药BD引进落地"
+      ],
+      "llm_invalidators": [
+        "核心品种集采大幅丢标",
+        "净利润大幅下滑"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.6
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 5,
+      "code": "002563",
+      "name": "森马服饰",
+      "final_score": 72.8178,
+      "screen_score": 68.36300912285715,
+      "llm_score": 68.0,
+      "ranking_reason": "价值因子居首(86.2)且PB仅1.44倍，但成交额偏低，流动性溢价不足。",
+      "risk_summary": "日均成交较小且流动性因子偏低，缺乏机构资金主动抱团催化。",
+      "price": 6.02,
+      "change_pct": -0.17,
+      "amount": 153653383.36,
+      "total_mv": 16218422763.0,
+      "turnover_rate": 1.15,
+      "volume_ratio": 1.13,
+      "pe_ratio": 15.49124333,
+      "pb_ratio": 1.43837963,
+      "industry": "服装家纺",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 5.0242,
+      "signal_score": 75.7585,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "neutral",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -4.1401,
+      "range_20d_pct": 18.2674,
+      "volume_ratio_20d": 1.2838,
+      "body_pct": 0.3333,
+      "pullback_to_ma20_pct": 1.5605,
+      "consolidation_days_20d": 16,
+      "volatility_20d_pct": 20.8694,
+      "max_drawdown_20d_pct": -2.7464,
+      "atr_20_pct": 3.0399,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 86.2143,
+        "liquidity": 25.0,
+        "momentum": 62.8916,
+        "reversal": 63.21,
+        "activity": 81.5399,
+        "stability": 80.581,
+        "size": 39.2857,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.76,
+      "llm_sector": "服装家纺",
+      "llm_theme": "休闲童装双龙头与极低估值",
+      "llm_tags": [
+        "价值",
+        "防守",
+        "sector:服装家纺",
+        "theme:休闲童装双龙头与极低估值",
+        "style_fit:适合深度价值掘金与低换手率防守策略"
+      ],
+      "llm_catalysts": [
+        "童装出海拓店",
+        "冬装旺季终端动销"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "童装行业龙头地位稳固，极低估值与高现金储备提供安全垫。",
+      "llm_style_fit": "适合深度价值掘金与低换手率防守策略",
+      "llm_watch_items": [
+        "巴拉巴拉海外开店数",
+        "存货周转天数"
+      ],
+      "llm_invalidators": [
+        "计提大额存货跌价",
+        "主品牌终端流水转负"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.6
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    }
+  ],
+  "run_id": "ca79aaf4bee0-ai",
+  "track": "ai",
+  "llm_ranked": true,
+  "llm_market_view": "大盘普跌背景下候选池防御属性凸显，精选低估值高股息与绩优消费品种占优。",
+  "llm_selection_logic": "重点考量业绩确定性与股息防御力，兼顾量价突破形态与情报端合规安全性。",
+  "llm_portfolio_risk": "消费与医药板块持仓集中度较高，若内需复苏不及预期可能引发系统性估值回撤。",
+  "llm_coverage": 1.0,
+  "llm_parse_errors": [],
+  "degradation": [
+    "Candidate context collected rows=12",
+    "Candidate context row errors: 600312 fund_flow: 东方财富 push2 行情服务器断开了连接，通常是短时间内请求过多，当前 IP 被临时限流。首次限流一般约 5 分钟后恢复，反复触发后可能需要 40 分钟以上；等待期间不要重复调用东方财富的行情接口，否则会延长限流。 | fund_flow: provider cooldown active (skipped 4 candidates)",
+    "LLM context truncated: trimmed=candidate_collected_context"
+  ],
+  "snapshot_source": "em_datacenter",
+  "source_errors": [],
+  "deep_analysis_requested": false,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "daily_enriched": true,
+  "daily_enrich_count": 131,
+  "risk_enabled": true,
+  "portfolio_diversity_enabled": true,
+  "portfolio_concentration_notes": [
+    "Portfolio concentration bucket=消费: penalized=2, codes=603345:食品(-4.5),002557:食品(-9.0)",
+    "Portfolio concentration bucket=医药: penalized=4, codes=000423:中药生产(-4.5),600285:中药生产(-9.0),603939:医药(-13.5),002223:医药(-13.5)",
+    "Portfolio concentration bucket=新能源: penalized=1, codes=600312:输变电设备(-4.5)",
+    "Portfolio concentration bucket=饮料: penalized=1, codes=000729:饮料(-4.5)",
+    "Portfolio hard cap bucket=消费: max=1, deferred=603345,002557",
+    "Portfolio hard cap bucket=医药: max=1, deferred=000423,600285,603939,002223",
+    "Portfolio hard cap bucket=新能源: max=1, deferred=600312",
+    "Portfolio hard cap bucket=饮料: max=1, deferred=000729"
+  ],
+  "saved_path": "track/data/runs/ca79aaf4bee0-ai.json",
+  "created_at": "2026-11-25T10:39:13.557480+00:00",
+  "portfolio_topic_exposure": {
+    "医药": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600566"
+      ],
+      "overconcentrated": false
+    },
+    "半导体": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "000100"
+      ],
+      "overconcentrated": false
+    },
+    "服装家纺": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "002563"
+      ],
+      "overconcentrated": false
+    },
+    "消费": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600398"
+      ],
+      "overconcentrated": false
+    },
+    "饮料": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600600"
+      ],
+      "overconcentrated": false
+    }
+  },
+  "overconcentrated_topics": [],
+  "replacement_candidates": [
+    {
+      "code": "000400",
+      "name": "许继电气",
+      "bucket": "新能源",
+      "sector": "输变电设备",
+      "final_score": 68.041
+    },
+    {
+      "code": "600754",
+      "name": "锦江酒店",
+      "bucket": "休闲服务",
+      "sector": "休闲服务",
+      "final_score": 67.046
+    },
+    {
+      "code": "600312",
+      "name": "平高电气",
+      "bucket": "新能源",
+      "sector": "输变电设备",
+      "final_score": 62.765
+    }
+  ],
+  "daily_source_counts": {
+    "pack": 131
+  },
+  "daily_quality_flag_counts": {}
+}

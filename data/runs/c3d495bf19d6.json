@@ -1,0 +1,40 @@
+{
+  "strategy": "volume_breakout",
+  "market": "cn",
+  "strategy_version": "1.2",
+  "strategy_category": "trend",
+  "snapshot_count": 5575,
+  "after_filter_count": 0,
+  "picks": [],
+  "run_id": "c3d495bf19d6",
+  "track": "rules",
+  "llm_ranked": false,
+  "llm_market_view": "",
+  "llm_selection_logic": "",
+  "llm_portfolio_risk": "",
+  "llm_coverage": null,
+  "llm_parse_errors": [],
+  "degradation": [
+    "No candidates after daily hard filter"
+  ],
+  "snapshot_source": "em_datacenter",
+  "source_errors": [],
+  "deep_analysis_requested": false,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "daily_enriched": true,
+  "daily_enrich_count": 37,
+  "risk_enabled": true,
+  "portfolio_diversity_enabled": true,
+  "portfolio_concentration_notes": [],
+  "saved_path": "track/data/runs/c3d495bf19d6.json",
+  "created_at": "2026-11-25T10:32:57.103656+00:00",
+  "portfolio_topic_exposure": {},
+  "overconcentrated_topics": [],
+  "replacement_candidates": [],
+  "daily_source_counts": {
+    "pack": 37
+  },
+  "daily_quality_flag_counts": {}
+}
