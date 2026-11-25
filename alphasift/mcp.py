@@ -424,6 +424,23 @@ def _tool_definitions() -> list[dict[str, Any]]:
                 "additionalProperties": False,
             },
         },
+        {
+            "name": "alphasift_markets",
+            "description": (
+                "Return metadata for all 7 supported equity markets (cn/us/hk/jp/kr/tw/in) "
+                "or a single market when `market` is specified (currency, timezone, sessions, benchmark)."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "market": {
+                        "type": "string",
+                        "description": "Optional single market code (cn/us/hk/jp/kr/tw/in).",
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
     ]
 
 
@@ -451,7 +468,14 @@ class MCPServer:
             "alphasift_list_runs": self._handle_list_runs,
             "alphasift_markets_digest": self._handle_markets_digest,
             "alphasift_daily_report": self._handle_daily_report,
+            "alphasift_markets": self._handle_markets,
         }
+
+    def _handle_markets(self, args: dict[str, Any]) -> Any:
+        market = _optional_str(args, "market").lower()
+        if market:
+            return {"market": asdict(get_market(market))}
+        return {"markets": [asdict(item) for item in MARKETS.values()]}
 
     def _handle_list_strategies(self, args: dict[str, Any]) -> Any:
         market = _optional_str(args, "market").lower()

@@ -196,7 +196,7 @@ def render_workbench_html() -> str:
       digest_card_title: "IM Push Card Preview (<1200 chars)",
       copy_card: "Copy IM Card",
       mcp_title: "STDIO MCP Client Configuration (Claude Code / Cursor / OpenClaw)",
-      mcp_caps: "13 read-only tools · 4 resources · Zero-dependency STDIO JSON-RPC 2.0 (never spends LLM credits by default)",
+      mcp_caps: "14 read-only tools · 4 resources · Zero-dependency STDIO JSON-RPC 2.0 (never spends LLM credits by default)",
       mcp_tools_lbl: "Highlighted Tools",
       mcp_resources_lbl: "Read-only Resources",
       markets_reg_title: "Supported Markets Registry (/markets)",
@@ -261,7 +261,7 @@ def render_workbench_html() -> str:
       digest_card_title: "IM 推送卡片预览（<1200 字）",
       copy_card: "复制卡片",
       mcp_title: "STDIO MCP 客户端配置 (Claude Code / Cursor / OpenClaw)",
-      mcp_caps: "13 个只读工具 · 4 项资源 · 零依赖 STDIO JSON-RPC 2.0（默认零 LLM 消耗）",
+      mcp_caps: "14 个只读工具 · 4 项资源 · 零依赖 STDIO JSON-RPC 2.0（默认零 LLM 消耗）",
       mcp_tools_lbl: "核心工具一览",
       mcp_resources_lbl: "只读资源列表",
       markets_reg_title: "支持市场规范注册表 (/markets)",
@@ -1178,7 +1178,7 @@ def render_workbench_html() -> str:
     const btnCopyJson = el("button", { type: "button", class: "mini-btn", text: t("copy_json") });
     btnCopyJson.addEventListener("click", function () { copyText(mcpJson, btnCopyJson, t("copy_json")); });
     const toolRow = el("div", { style: "margin:8px 0;" }, [el("span", { class: "kpi-sub", style: "margin-right:6px;", text: t("mcp_tools_lbl") + ":" })]);
-    for (const tn of ["alphasift_screen", "alphasift_replay_patterns", "alphasift_markets_digest", "alphasift_daily_report", "alphasift_overview", "alphasift_list_strategies"]) {
+    for (const tn of ["alphasift_markets", "alphasift_screen", "alphasift_replay_patterns", "alphasift_markets_digest", "alphasift_daily_report", "alphasift_overview", "alphasift_list_strategies"]) {
       toolRow.appendChild(makeBadge(tn, "accent"));
     }
     const resRow = el("div", { style: "margin:6px 0 8px;" }, [el("span", { class: "kpi-sub", style: "margin-right:6px;", text: t("mcp_resources_lbl") + ":" })]);

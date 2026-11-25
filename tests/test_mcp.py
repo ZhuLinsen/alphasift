@@ -40,6 +40,7 @@ def test_mcp_initialize_tools_and_resources(tmp_path):
         "alphasift_replay_patterns",
         "alphasift_markets_digest",
         "alphasift_daily_report",
+        "alphasift_markets",
     }
 
     res_list = server.handle_request({"jsonrpc": "2.0", "id": 4, "method": "resources/list"})
@@ -70,6 +71,34 @@ def test_mcp_initialize_tools_and_resources(tmp_path):
     assert len(mkt_catalog["markets"]) == 7
     assert {item["id"] for item in mkt_catalog["markets"]} == {"cn", "us", "hk", "jp", "kr", "tw", "in"}
     assert all(isinstance(item.get("session_open"), str) and item.get("currency") for item in mkt_catalog["markets"])
+
+    mkt_tool = server.handle_request(
+        {"jsonrpc": "2.0", "id": 63, "method": "tools/call", "params": {"name": "alphasift_markets"}}
+    )
+    assert mkt_tool["result"]["isError"] is False
+    mkt_tool_data = json.loads(mkt_tool["result"]["content"][0]["text"])
+    assert len(mkt_tool_data["markets"]) == 7
+
+    us_tool = server.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 64,
+            "method": "tools/call",
+            "params": {"name": "alphasift_markets", "arguments": {"market": "US"}},
+        }
+    )
+    assert us_tool["result"]["isError"] is False
+    assert json.loads(us_tool["result"]["content"][0]["text"])["market"]["currency"] == "USD"
+
+    bad_mkt_tool = server.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 65,
+            "method": "tools/call",
+            "params": {"name": "alphasift_markets", "arguments": {"market": "unknown"}},
+        }
+    )
+    assert bad_mkt_tool["result"]["isError"] is True
 
 
 def test_mcp_tool_calls_and_safety_guards(tmp_path, monkeypatch):
@@ -213,7 +242,7 @@ def test_mcp_stdio_subprocess_supports_line_and_content_length_framing(tmp_path)
         decoded_msgs.append(json.loads(raw[body_start : body_start + length].decode("utf-8")))
         pos = body_start + length
     assert [m["id"] for m in decoded_msgs] == [10, 11]
-    assert len(decoded_msgs[1]["result"]["tools"]) == 13
+    assert len(decoded_msgs[1]["result"]["tools"]) == 14
 
 
 def test_mcp_round9_security_and_strict_schema_validation(tmp_path):
