@@ -222,6 +222,10 @@ def render_workbench_html() -> str:
       scan_need_pack: "CN DailyPack not found locally. Build it with: alphasift pack build --days 250",
       scan_title: "Latest Local Pattern Scan",
       scan_cols: ["Security", "Chg%", "Overhead", "20D K-Line"],
+      replay_btn: "250D Purged Replay",
+      replay_running: "Running Walk-Forward...",
+      replay_title: "Purged Walk-Forward Audit (/patterns/replay)",
+      replay_cols: ["Pattern", "Signals", "Split Mid", "H1 Positive Regimes", "Joint H2 Delta", "Purged H1", "Status"],
       pf_all: "All",
       pf_active: "active",
       pf_exp: "experimental",
@@ -287,6 +291,10 @@ def render_workbench_html() -> str:
       scan_need_pack: "本机尚未构建 A 股日线包，可先执行：alphasift pack build --days 250",
       scan_title: "本地日线包形态扫描结果",
       scan_cols: ["股票", "涨跌%", "上方筹码", "20日K线"],
+      replay_btn: "250日防泄露回放",
+      replay_running: "正在运行 Walk-Forward…",
+      replay_title: "Purged Walk-Forward 实证审计 (/patterns/replay)",
+      replay_cols: ["形态", "信号数", "切分中点", "H1 正超额阶段", "联合 H2 超额差", "H1 剔除跨界", "状态"],
       pf_all: "全部",
       pf_active: "active",
       pf_exp: "experimental",
@@ -331,6 +339,9 @@ def render_workbench_html() -> str:
     patternScan: null,
     patternScanErr: "",
     patternScanning: false,
+    patternReplay: null,
+    patternReplayErr: "",
+    patternReplaying: false,
     runs: [],
     radar: null,
     sources: null,
@@ -783,6 +794,21 @@ def render_workbench_html() -> str:
     }
   }
 
+  async function runPatternReplay() {
+    state.patternReplaying = true;
+    state.patternReplayErr = "";
+    renderPatterns();
+    try {
+      state.patternReplay = await fetchJson("/patterns/replay?cost_bps=25");
+    } catch (err) {
+      state.patternReplay = null;
+      state.patternReplayErr = String(err.message || err);
+    } finally {
+      state.patternReplaying = false;
+      renderPatterns();
+    }
+  }
+
   function renderPatterns() {
     const root = clear(document.getElementById("panel-patterns"));
     const bar = el("div", { class: "toolbar" });
@@ -805,6 +831,13 @@ def render_workbench_html() -> str:
     });
     scanBtn.addEventListener("click", runPatternScan);
     bar.appendChild(scanBtn);
+    const replayBtn = el("button", {
+      type: "button",
+      id: "btn-replay-patterns",
+      text: state.patternReplaying ? t("replay_running") : t("replay_btn"),
+    });
+    replayBtn.addEventListener("click", runPatternReplay);
+    bar.appendChild(replayBtn);
     root.appendChild(bar);
 
     const pCols = t("cols_pat");
@@ -881,6 +914,49 @@ def render_workbench_html() -> str:
       }
       scanCardWrap.appendChild(grid);
       root.appendChild(scanCardWrap);
+    }
+
+    if (state.patternReplayErr) {
+      const msg = state.patternReplayErr.includes("pack_unavailable")
+        ? t("scan_need_pack")
+        : t("err_prefix") + state.patternReplayErr;
+      root.appendChild(el("div", { class: "card", id: "pattern-replay-card", style: "margin-top:14px;" }, el("div", { class: "empty", text: msg })));
+    } else if (state.patternReplay) {
+      const rep = state.patternReplay;
+      const rRows = Array.isArray(rep.patterns) ? rep.patterns : [];
+      const rCols = t("replay_cols");
+      const rWrap = el("div", { class: "table-wrap" });
+      const rTbl = el("table");
+      rTbl.appendChild(el("thead", null, el("tr", null, rCols.map((c, idx) => el("th", { class: idx === 1 || idx === 2 || idx === 4 || idx === 5 ? "mono" : "", text: c })))));
+      const rBody = el("tbody");
+      for (const item of rRows) {
+        const wf = item.walk_forward_regime_audit || {};
+        const grad = item.graduation || {};
+        const deltaVal = wf.delta_non_adverse_low_overhead_vs_h2_baseline_pct;
+        const hasDelta = deltaVal !== null && deltaVal !== undefined && Number.isFinite(Number(deltaVal));
+        const dNum = hasDelta ? Number(deltaVal) : 0;
+        const deltaTxt = hasDelta ? ((dNum > 0 ? "+" : "") + dNum.toFixed(2) + "%") : "-";
+        const posRegs = Array.isArray(wf.h1_positive_regimes) && wf.h1_positive_regimes.length ? wf.h1_positive_regimes.join(", ") : "-";
+        const isGrad = Boolean(grad.graduated);
+        rBody.appendChild(el("tr", null, [
+          el("td", null, [el("strong", { text: item.display_name || item.pattern }), el("div", { class: "kpi-sub", text: item.pattern })]),
+          el("td", { class: "mono", text: String(item.total_signals ?? "-") }),
+          el("td", { class: "mono", text: String(wf.eval_mid_date || "-") }),
+          el("td", { class: "kpi-sub", text: posRegs }),
+          el("td", { class: "mono " + (hasDelta ? (dNum >= 0 ? "chg-up" : "chg-down") : ""), text: deltaTxt }),
+          el("td", { class: "mono", text: String(wf.h1_purged_signals ?? "-") }),
+          el("td", null, makeBadge(isGrad ? "active" : String(item.mode || "experimental"), isGrad ? "ok" : "warn")),
+        ]));
+      }
+      rTbl.appendChild(rBody);
+      rWrap.appendChild(rTbl);
+      root.appendChild(el("div", { class: "card", id: "pattern-replay-card", style: "margin-top:16px;" }, [
+        el("div", { class: "card-head-row" }, [
+          el("h3", { class: "section-title", text: t("replay_title") }),
+          makeBadge(String(rep.walk_forward_boundary_policy || "purged_by_exit_date"), "ok"),
+        ]),
+        rWrap,
+      ]));
     }
   }
 

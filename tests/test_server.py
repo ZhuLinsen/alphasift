@@ -679,6 +679,10 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
     assert "alphasift://markets" in html_text
     assert "markets-registry-card" in html_text
     assert 'fetchJson("/markets")' in html_text
+    assert "btn-replay-patterns" in html_text
+    assert "runPatternReplay" in html_text
+    assert '"/patterns/replay?cost_bps=25"' in html_text
+    assert "pattern-replay-card" in html_text
     assert "codex mcp add alphasift -- alphasift mcp" in html_text
     assert "Copy CLI" in html_text
 
