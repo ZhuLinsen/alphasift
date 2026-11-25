@@ -105,3 +105,38 @@ def test_build_strategy_run_summary_supports_strategy_filter(tmp_path):
     assert payload["strategy_filter"] == "dual_low"
     assert payload["run_count"] == 1
     assert payload["strategies"][0]["strategy"] == "dual_low"
+
+
+def test_build_strategy_run_summary_scrubs_nonfinite_and_malformed_metadata(tmp_path):
+    import json
+
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir(parents=True)
+    run_file = runs_dir / "corrupt_meta.json"
+    run_file.write_text('{"run_id": "corrupt_meta", "strategy": "dual_low", "picks": []}', encoding="utf-8")
+    meta_file = runs_dir / "corrupt_meta.json.meta"
+    meta_file.write_text(
+        json.dumps(
+            {
+                "run_id": "corrupt_meta",
+                "strategy": "dual_low",
+                "created_at": "2026-04-04T09:30:00",
+                "picks": "not-an-int",
+                "source_error_count": True,
+                "degradation_count": "2.0",
+                "llm_ranked": True,
+                "llm_coverage": float("nan"),
+                "daily_enrich_count": float("inf"),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    payload = build_strategy_run_summary(data_dir=tmp_path, limit=10)
+    assert payload["run_count"] == 1
+    row = payload["strategies"][0]
+    assert row["total_picks"] == 0
+    assert row["source_error_count"] == 0
+    assert row["degradation_count"] == 2
+    assert row["daily_enrich_count"] == 0
+    assert row["average_llm_coverage"] is None

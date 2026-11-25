@@ -136,3 +136,24 @@ def test_build_data_source_history_supports_strategy_filter(tmp_path):
     assert payload["snapshot_sources"][0]["snapshot_source"] == "sina"
     assert payload["snapshot_sources"][0]["stability_status"] == "ok"
     assert payload["snapshot_sources"][0]["next_actions"] == []
+
+
+def test_build_data_source_history_handles_corrupt_numeric_metadata(tmp_path):
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir(parents=True)
+    (runs_dir / "bad_counts.json").write_text(
+        '{"run_id": "bad_counts", "strategy": "dual_low", "snapshot_source": "sina", '
+        '"created_at": "2026-04-04T09:30:00", "picks": "3.0", '
+        '"source_error_count": null, "degradation_count": true, "daily_enrich_count": "NaN"}',
+        encoding="utf-8",
+    )
+
+    payload = build_data_source_history(data_dir=tmp_path, limit=10)
+    assert payload["run_count"] == 1
+    src = payload["snapshot_sources"][0]
+    assert src["total_picks"] == 3
+    assert src["average_picks"] == 3.0
+    assert src["source_error_count"] == 0
+    assert src["degradation_count"] == 0
+    assert src["daily_enrich_count"] == 0
+    assert src["stability_status"] == "ok"

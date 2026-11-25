@@ -12,6 +12,30 @@ import tempfile
 from typing import Any
 
 
+def finite_float(value: object) -> float | None:
+    """Coerce non-boolean numeric value to finite float, returning None otherwise."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        num = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return num if math.isfinite(num) else None
+
+
+def safe_int(value: object, *, default: int = 0) -> int:
+    """Coerce numeric value to int without crashing on NaN, Inf, bool, or invalid strings."""
+    if value is None or isinstance(value, bool):
+        return default
+    if isinstance(value, float) and not math.isfinite(value):
+        return default
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError, OverflowError):
+        num = finite_float(value)
+        return int(num) if num is not None else default
+
+
 def json_safe(obj: Any) -> Any:
     """Normalize NaN/Inf floats, NumPy scalars/arrays, and dates before strict JSON serialization."""
     if obj is None or isinstance(obj, (bool, int)):

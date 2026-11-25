@@ -6,6 +6,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+from alphasift.jsonutil import finite_float, safe_int
 from alphasift.store import list_saved_runs
 from alphasift.timeutil import MIN_TIMESTAMP, parse_timestamp
 
@@ -21,7 +22,8 @@ def build_data_source_history(
     source_rows = [_source_summary(items) for items in _group_runs_by_snapshot_source(runs).values()]
     source_rows.sort(
         key=lambda item: (
-            float(item.get("source_error_rate") or 0.0) + float(item.get("degradation_rate") or 0.0),
+            (finite_float(item.get("source_error_rate")) or 0.0)
+            + (finite_float(item.get("degradation_rate")) or 0.0),
             _parse_created_at(str(item.get("latest_created_at") or "")),
             str(item.get("snapshot_source") or ""),
         ),
@@ -53,10 +55,10 @@ def _source_summary(runs: list[dict[str, object]]) -> dict[str, object]:
     ordered = sorted(runs, key=_run_sort_key, reverse=True)
     latest = ordered[0] if ordered else {}
     source_error_runs = [
-        item for item in ordered if _int_value(item.get("source_error_count")) > 0
+        item for item in ordered if safe_int(item.get("source_error_count")) > 0
     ]
     degraded_runs = [
-        item for item in ordered if _int_value(item.get("degradation_count")) > 0
+        item for item in ordered if safe_int(item.get("degradation_count")) > 0
     ]
     fallback_run_count = sum(
         1 for item in ordered if str(item.get("snapshot_source") or "") == "last_good_cache"
@@ -78,14 +80,14 @@ def _source_summary(runs: list[dict[str, object]]) -> dict[str, object]:
         "strategies": _unique_values(item.get("strategy") for item in ordered),
         "latest_run_id": str(latest.get("run_id") or ""),
         "latest_created_at": str(latest.get("created_at") or ""),
-        "total_picks": sum(_int_value(item.get("picks")) for item in ordered),
-        "average_picks": _average(_int_value(item.get("picks")) for item in ordered),
+        "total_picks": sum(safe_int(item.get("picks")) for item in ordered),
+        "average_picks": _average(safe_int(item.get("picks")) for item in ordered),
         "runs_with_source_errors": len(source_error_runs),
-        "source_error_count": sum(_int_value(item.get("source_error_count")) for item in ordered),
+        "source_error_count": sum(safe_int(item.get("source_error_count")) for item in ordered),
         "source_error_rate": source_error_rate,
         "source_error_samples": _sample_values(ordered, "source_errors"),
         "runs_with_degradation": len(degraded_runs),
-        "degradation_count": sum(_int_value(item.get("degradation_count")) for item in ordered),
+        "degradation_count": sum(safe_int(item.get("degradation_count")) for item in ordered),
         "degradation_rate": degradation_rate,
         "degradation_samples": _sample_values(ordered, "degradation"),
         "fallback_run_count": fallback_run_count,
@@ -102,15 +104,15 @@ def _source_summary(runs: list[dict[str, object]]) -> dict[str, object]:
             snapshot_source=source_name,
         ),
         "daily_enriched_runs": sum(1 for item in ordered if bool(item.get("daily_enriched"))),
-        "daily_enrich_count": sum(_int_value(item.get("daily_enrich_count")) for item in ordered),
+        "daily_enrich_count": sum(safe_int(item.get("daily_enrich_count")) for item in ordered),
         "recent_runs": [_compact_run(item) for item in ordered[:5]],
     }
 
 
 def _history_summary(runs: list[dict[str, object]]) -> dict[str, object]:
     ordered = sorted(runs, key=_run_sort_key, reverse=True)
-    error_runs = [item for item in runs if _int_value(item.get("source_error_count")) > 0]
-    degraded_runs = [item for item in runs if _int_value(item.get("degradation_count")) > 0]
+    error_runs = [item for item in runs if safe_int(item.get("source_error_count")) > 0]
+    degraded_runs = [item for item in runs if safe_int(item.get("degradation_count")) > 0]
     fallback_runs = [
         item for item in runs if str(item.get("snapshot_source") or "") == "last_good_cache"
     ]
@@ -150,9 +152,9 @@ def _watchlist(source_rows: list[dict[str, object]]) -> list[dict[str, object]]:
     rows = []
     for item in source_rows:
         if (
-            float(item.get("source_error_rate") or 0.0) > 0
-            or float(item.get("degradation_rate") or 0.0) > 0
-            or _int_value(item.get("fallback_run_count")) > 0
+            (finite_float(item.get("source_error_rate")) or 0.0) > 0
+            or (finite_float(item.get("degradation_rate")) or 0.0) > 0
+            or safe_int(item.get("fallback_run_count")) > 0
         ):
             rows.append(
                 {
@@ -174,8 +176,9 @@ def _watchlist(source_rows: list[dict[str, object]]) -> list[dict[str, object]]:
     rows.sort(
         key=lambda item: (
             _status_rank(str(item.get("stability_status") or "")),
-            float(item.get("source_error_rate") or 0.0) + float(item.get("degradation_rate") or 0.0),
-            _int_value(item.get("fallback_run_count")),
+            (finite_float(item.get("source_error_rate")) or 0.0)
+            + (finite_float(item.get("degradation_rate")) or 0.0),
+            safe_int(item.get("fallback_run_count")),
             str(item.get("snapshot_source") or ""),
         ),
         reverse=True,
@@ -188,11 +191,11 @@ def _compact_run(item: dict[str, object]) -> dict[str, object]:
         "run_id": str(item.get("run_id") or ""),
         "strategy": str(item.get("strategy") or ""),
         "created_at": str(item.get("created_at") or ""),
-        "picks": _int_value(item.get("picks")),
+        "picks": safe_int(item.get("picks")),
         "snapshot_source": str(item.get("snapshot_source") or ""),
-        "source_error_count": _int_value(item.get("source_error_count")),
+        "source_error_count": safe_int(item.get("source_error_count")),
         "source_errors": _sample_list(item.get("source_errors"), limit=3),
-        "degradation_count": _int_value(item.get("degradation_count")),
+        "degradation_count": safe_int(item.get("degradation_count")),
         "degradation": _sample_list(item.get("degradation"), limit=3),
         "report_path": str(item.get("report_path") or ""),
     }
@@ -223,7 +226,7 @@ def _sample_list(value: object, *, limit: int) -> list[str]:
 
 
 def _average(values) -> float | None:
-    items = [float(value) for value in values]
+    items = [val for value in values if (val := finite_float(value)) is not None]
     if not items:
         return None
     return round(sum(items) / len(items), 4)
@@ -288,13 +291,6 @@ def _status_rank(status: str) -> int:
         "ok": 1,
         "unknown": 0,
     }.get(status, 0)
-
-
-def _int_value(value: object) -> int:
-    try:
-        return int(value or 0)
-    except (TypeError, ValueError):
-        return 0
 
 
 def _run_sort_key(item: dict[str, object]) -> tuple[datetime, str]:
