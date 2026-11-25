@@ -71,6 +71,33 @@ def test_cli_hotspots_provider_none_explain_does_not_call_network(monkeypatch, c
     assert "hotspots=0 provider=none" in out
 
 
+def test_cli_markets_command(monkeypatch, capsys):
+    import pytest
+
+    monkeypatch.setattr(sys, "argv", ["alphasift", "markets"])
+    main()
+    table_out = capsys.readouterr().out
+    assert "China A-shares" in table_out
+    assert "United States" in table_out
+
+    monkeypatch.setattr(sys, "argv", ["alphasift", "markets", "--json"])
+    main()
+    all_payload = json.loads(capsys.readouterr().out)
+    assert len(all_payload["markets"]) == 7
+    assert {item["id"] for item in all_payload["markets"]} == {"cn", "us", "hk", "jp", "kr", "tw", "in"}
+
+    monkeypatch.setattr(sys, "argv", ["alphasift", "markets", "--market", "US", "--json"])
+    main()
+    us_payload = json.loads(capsys.readouterr().out)
+    assert us_payload["market"]["id"] == "us"
+    assert us_payload["market"]["currency"] == "USD"
+
+    monkeypatch.setattr(sys, "argv", ["alphasift", "markets", "--market", "bad_mkt"])
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 2
+
+
 def test_cli_strategies_json_exposes_catalog_metadata(monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", ["alphasift", "strategies", "--json"])
 

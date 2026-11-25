@@ -168,6 +168,11 @@ def main():
     sp.add_argument("--jsonl", action="store_true", help="以 JSONL 输出")
     sp.add_argument("--explain", action="store_true", help="输出紧凑可读摘要")
 
+    # markets
+    mkp = sub.add_parser("markets", help="列出支持的多市场元数据与交易时段规范")
+    mkp.add_argument("--market", default=None, help="只查看单个市场规范（cn/us/hk/jp/kr/tw/in）")
+    mkp.add_argument("--json", action="store_true", help="以 JSON 输出市场规范元数据")
+
     # strategies
     stp = sub.add_parser("strategies", help="列出可用策略")
     stp.add_argument("--json", action="store_true", help="以 JSON 输出完整策略目录元数据")
@@ -545,6 +550,32 @@ def main():
             print("\n".join(screen_result_to_jsonl(result)))
         else:
             print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
+
+    elif args.command == "markets":
+        from alphasift.markets import MARKETS, get_market
+
+        market_arg = str(getattr(args, "market", "") or "").strip().lower()
+        if market_arg:
+            try:
+                spec = get_market(market_arg)
+            except ValueError as exc:
+                parser.error(str(exc))
+            if args.json:
+                print(json.dumps({"schema_version": 1, "market": asdict(spec)}, ensure_ascii=False, indent=2))
+            else:
+                print(_format_markets_explain([spec]))
+        else:
+            specs = list(MARKETS.values())
+            if args.json:
+                print(
+                    json.dumps(
+                        {"schema_version": 1, "markets": [asdict(item) for item in specs]},
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                )
+            else:
+                print(_format_markets_explain(specs))
 
     elif args.command == "strategies":
         if args.templates and args.template:
@@ -2709,6 +2740,19 @@ def _split_csv_args(values: list[str] | None) -> list[str] | None:
     for value in values:
         result.extend(item.strip() for item in value.split(",") if item.strip())
     return result
+
+
+def _format_markets_explain(specs: list) -> str:
+    lines = ["id  name              ccy  timezone            session      pack   benchmark"]
+    for spec in specs:
+        pack_flag = "yes" if spec.supports_daily_pack else "no"
+        bench = spec.benchmark_name or spec.benchmark or "-"
+        session = f"{spec.session_open}-{spec.session_close}"
+        lines.append(
+            f"{spec.id:<3} {spec.name:<17} {spec.currency:<4} {spec.timezone:<19} "
+            f"{session:<12} {pack_flag:<6} {bench}"
+        )
+    return "\n".join(lines)
 
 
 def _format_market_stats_explain(items: list) -> str:

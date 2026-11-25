@@ -18,6 +18,7 @@ cp .env.example .env
 ## 三步跑通
 
 ```bash
+alphasift markets
 alphasift strategies
 
 alphasift screen dual_low --no-llm --explain
