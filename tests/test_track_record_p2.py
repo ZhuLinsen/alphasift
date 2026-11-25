@@ -380,6 +380,8 @@ def test_track_record_page_html_js_syntax_and_drilldown_hooks(tmp_path: Path) ->
         "copyPlainText",
         "wf_cli_copied",
         "renderJointCliCell",
+        "purged_by_exit_date",
+        "wf_unverified_note",
     ):
         assert token in html, f"missing hook {token}"
 

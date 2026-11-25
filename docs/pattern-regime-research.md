@@ -53,7 +53,7 @@
 
 为了在 **v0.4 形态激活机制** 中杜绝把“后半程行情巧合”当作真实因子，我们在 `alphasift/pattern_replay.py` 中新增了零前视 **Walk-Forward Regime Audit（`walk_forward_regime_audit`）**：
 
-- **Strictly H1 Selection**：仅允许读取时间切片前半程（`H1`）各情绪阶段的日均超额表现（要求最少有效观察日门槛），挑选：
+- **Strictly H1 Selection（按实际退出日 Purged 截断）**：仅允许读取时间切片前半程（`H1`）中信号日 `< eval_mid_date` **且实际退出日 `exit_date < eval_mid_date`** 的已完全了结交易（跨过 `eval_mid_date` 才平仓的信号及一字跌停顺延跨界样本统一被 purge 出 `H1` 与 `H2`，记录 `boundary_policy: "purged_by_exit_date"`），以此计算各情绪阶段日均超额（要求最少有效观察日门槛），挑选：
   1. `positive_regimes`：H1 样本内日均超额 `> 0` 的情绪阶段集合（若存在）；
   2. `non_adverse_regimes`：从全集里剔除 H1 样本内最差拖累（如 H1 日均超额 `< -0.5%` 或明显劣于同样本均值的衰退/冰点阶段）后的稳健子集；
 - **Strictly OOS H2 Evaluation**：冻结 H1 选出的阶段过滤器，直接投影到从未参与选择的后半程 `H2` 上，计算：

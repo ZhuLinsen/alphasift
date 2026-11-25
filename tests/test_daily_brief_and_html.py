@@ -703,4 +703,85 @@ def test_daily_report_wf_cli_copy_and_low_sample_guardrail() -> None:
             assert proc.returncode == 0, proc.stderr
 
 
+def test_daily_report_boundary_verification_and_unverified_badge() -> None:
+    from alphasift.daily_report import _extract_pattern_replay_map
+
+    rmap = _extract_pattern_replay_map({
+        "replay": {
+            "patterns": [
+                {
+                    "pattern": "verified_pat",
+                    "horizons": {"t5": {"net_excess_mean_pct": 0.1, "excess_win_rate_pct": 50.0, "scored": 50}},
+                    "walk_forward_regime_audit": {
+                        "boundary_policy": "purged_by_exit_date",
+                        "h1_adverse_regimes": ["freezing"],
+                        "h1_purged_signals": 12,
+                        "h1_purged_days": 4,
+                        "h2_non_adverse_low_overhead": {"days": 20, "daily_mean_pct": 0.5},
+                    },
+                },
+                {
+                    "pattern": "legacy_pat",
+                    "horizons": {"t5": {"net_excess_mean_pct": -0.2, "excess_win_rate_pct": 48.0, "scored": 50}},
+                    "walk_forward_regime_audit": {
+                        "h1_adverse_regimes": ["divergence"],
+                        "h2_non_adverse_low_overhead": {"days": 20, "daily_mean_pct": 0.2},
+                    },
+                },
+            ]
+        }
+    })
+    assert rmap["verified_pat"]["wf_boundary_policy"] == "purged_by_exit_date"
+    assert rmap["verified_pat"]["wf_boundary_verified"] is True
+    assert rmap["verified_pat"]["wf_h1_purged_signals"] == 12
+    assert rmap["verified_pat"]["wf_h1_purged_days"] == 4
+    assert rmap["legacy_pat"]["wf_boundary_policy"] == ""
+    assert rmap["legacy_pat"]["wf_boundary_verified"] is False
+
+    html_text = render_daily_report_html({
+        "trade_date": "2026-11-24",
+        "pack_trade_date": "2026-11-24",
+        "expected_trade_date": "2026-11-24",
+        "pack_is_stale": False,
+        "market_regime": {"regime_stage": "divergence", "regime_stage_label": "分歧"},
+        "strategies": [],
+        "ai_highlights": [],
+        "patterns": {
+            "active": [],
+            "experimental": [
+                {
+                    "pattern": "verified_pat",
+                    "display_name": "已复核形态",
+                    "status": "experimental",
+                    "expectancy_tier": "positive_watch",
+                    "hit_count": 1,
+                    "wf_today_adverse": False,
+                    "wf_boundary_verified": True,
+                    "signals": [],
+                },
+                {
+                    "pattern": "legacy_pat",
+                    "display_name": "待复核形态",
+                    "status": "experimental",
+                    "expectancy_tier": "negative_watch",
+                    "hit_count": 1,
+                    "wf_today_adverse": True,
+                    "wf_boundary_verified": False,
+                    "signals": [],
+                },
+            ],
+        },
+        "announcement_risks": {"checked_count": 0, "flagged_count": 0, "flagged_items": [], "errors": []},
+        "market_news": {"items": [], "sources": [], "candidate_news": {}, "errors": []},
+        "degradation": [],
+        "cross_strategy_synthesis": {},
+        "ai_brief": {},
+    })
+    assert html_text.count('data-i18n="pat_wf_pending"') == 1
+    assert 'data-i18n="pat_wf_boundary_note"' in html_text
+    assert 'pat_wf_pending: "Boundary Unverified"' in html_text
+    assert 'pat_wf_pending: "境界未検証"' in html_text
+
+
+
 

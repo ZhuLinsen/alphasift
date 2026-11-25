@@ -598,6 +598,11 @@ def render_daily_report_html(
                 if pat.get("wf_today_adverse")
                 else ""
             )
+            wf_pending_badge = (
+                f'<span class="badge warn" {_i18n("pat_wf_pending")}>边界待复核</span>'
+                if pat.get("wf_boundary_verified") is False
+                else ""
+            )
             net_ex = pat.get("replay_t5_net_excess_pct")
             replay_note = (
                 f'<span {_i18n("pat_t5_net", v=f"{float(net_ex):+.2f}%")}> · T+5净超额 {float(net_ex):+.2f}%</span>'
@@ -644,13 +649,14 @@ def render_daily_report_html(
             )
             pat_id_attr = f' id="pat-{_esc(pkey)}"' if pkey else ""
             pat_cards.append(
-                f'<div class="card {"muted-card" if not is_active else ""}"{pat_id_attr}><div class="card-top"><h3><span data-pattern="{_esc(pkey)}">{_esc(dname)}</span><span style="display:inline-flex;flex-wrap:wrap;gap:4px;">{badge}{wf_adv_badge}</span></h3>'
+                f'<div class="card {"muted-card" if not is_active else ""}"{pat_id_attr}><div class="card-top"><h3><span data-pattern="{_esc(pkey)}">{_esc(dname)}</span><span style="display:inline-flex;flex-wrap:wrap;gap:4px;">{badge}{wf_adv_badge}{wf_pending_badge}</span></h3>'
                 f'<div class="sub"><span {_i18n("pat_hits_cnt", n=hits_n)}>命中 {hits_n} 只</span>{replay_note}{pat_link}{wf_cli_btn}</div></div>{body}</div>'
             )
     pat_block = f"""
     <section class="panel" id="patterns">
       <div class="sec-head"><h2 {_i18n("sec_patterns")}>无状态形态雷达命中</h2>{_dash_link("walk-forward-wrap", "link_wf_board", "250日 Walk-Forward 回放 →")}</div>
       <div class="grid">{"".join(pat_cards) if pat_cards else f'<div class="empty" {_i18n("no_pats")}>无形态扫描记录</div>'}</div>
+      <p class="dim small" style="margin:10px 0 0;" {_i18n("pat_wf_boundary_note")}>注：Walk-Forward H1 严格按实际退出日 &lt; 切分日截断并剔除跨界样本，避免 H2 价格区间泄漏进逆风判定。</p>
     </section>
     """
 
@@ -1019,6 +1025,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       link_pat_wf: "样本外回放 →",
       wf_cli_btn: "CLI",
       wf_cli_copied: "已复制",
+      pat_wf_pending: "边界待复核",
+      pat_wf_boundary_note: "注：Walk-Forward H1 严格按实际退出日 &lt; 切分日截断并剔除跨界样本，避免 H2 价格区间泄漏进逆风判定。",
     }},
     en: {{
       page_title: "AlphaSift · CN Post-Close Research Brief (" + TRADE_DATE + ")",
@@ -1132,6 +1140,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       link_pat_wf: "OOS Audit →",
       wf_cli_btn: "CLI",
       wf_cli_copied: "Copied",
+      pat_wf_pending: "Boundary Unverified",
+      pat_wf_boundary_note: "Note: Walk-Forward H1 is strictly cut by actual exit_date &lt; split_date with cross-boundary trades purged so H2 prices never leak into adverse-regime selection.",
     }},
     ja: {{
       page_title: "AlphaSift · 中国A株 引け後クオンツレポート (" + TRADE_DATE + ")",
@@ -1245,6 +1255,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       link_pat_wf: "OOS 検証 →",
       wf_cli_btn: "CLI",
       wf_cli_copied: "コピー済",
+      pat_wf_pending: "境界未検証",
+      pat_wf_boundary_note: "注：Walk-Forward の H1 は実際の決済日 &lt; 分割日で厳密に切断し境界跨ぎ標本を除外しており、H2 価格の逆風判定への混入を防止しています。",
     }},
   }};
   var REGIME_MAP = {{

@@ -1022,3 +1022,109 @@ def test_replay_patterns_max_overhead_pct_filter_and_cli(
     assert "freezing" not in cli_loaded["regime_filter"]["effective_regimes"]
 
 
+def test_walk_forward_and_stability_purge_cross_boundary_exit_dates(tmp_path: Path) -> None:
+    mid_date = "2026-06-01"
+    obs: list[dict[str, object]] = []
+
+    def _add(date: str, exit_date: str, stage: str, ret: float, ew: float) -> None:
+        obs.append({
+            "date": date,
+            "code": "000001",
+            "stage": stage,
+            "overhead": 8.0,
+            "horizons": {
+                "t5": {
+                    "status": "ok",
+                    "entry_date": date,
+                    "exit_date": exit_date,
+                    "net_excess_return_pct": ret,
+                    "excess_return_pct": ret,
+                    "net_over_ew_pct": ew,
+                }
+            },
+        })
+
+    # Clean H1 observations (signal_date < mid_date AND exit_date < mid_date)
+    for i in range(3):
+        _add(f"2026-05-0{i + 1}", f"2026-05-0{i + 6}", "startup", 2.0, 1.5)
+        _add(f"2026-05-0{i + 4}", f"2026-05-1{i + 1}", "freezing", -2.0, -1.5)
+        _add(f"2026-05-1{i + 1}", f"2026-05-1{i + 6}", "divergence", 1.0, 0.8)
+
+    # Cross-boundary trades: signal_date < mid_date, but exit_date >= mid_date with large H2 drop.
+    # Without purging by exit_date, these would flip divergence H1 mean negative (-3.4%).
+    _add("2026-05-27", "2026-06-03", "divergence", -10.0, -9.5)
+    _add("2026-05-28", "2026-06-04", "divergence", -10.0, -9.5)
+
+    # Clean H2 observations (signal_date >= mid_date)
+    for i in range(3):
+        _add(f"2026-06-0{i + 5}", f"2026-06-1{i + 2}", "startup", 1.5, 1.0)
+        _add(f"2026-06-1{i + 1}", f"2026-06-1{i + 8}", "freezing", -1.0, -0.8)
+        _add(f"2026-06-2{i + 1}", f"2026-06-2{i + 8}", "divergence", 2.0, 1.5)
+
+    audit = _summarize_walk_forward_regime_audit(obs, mid_date=mid_date, horizon=5, min_regime_days_h1=3)
+    assert audit["boundary_policy"] == "purged_by_exit_date"
+    assert audit["eval_mid_date"] == mid_date
+    assert audit["h1_purged_signals"] == 2
+    assert audit["h1_purged_days"] == 2
+    assert audit["h1_adverse_regimes"] == ["freezing"]
+    assert audit["h1_positive_regimes"] == ["startup", "divergence"]
+    assert audit["per_regime_oos"]["divergence"]["h1_days"] == 3
+    assert audit["per_regime_oos"]["divergence"]["h1_daily_mean_pct"] == pytest.approx(1.0)
+    assert audit["per_regime_oos"]["divergence"]["h2_days"] == 3
+    assert audit["per_regime_oos"]["divergence"]["h2_daily_mean_pct"] == pytest.approx(2.0)
+
+    stab = _summarize_stability(obs, mid_date=mid_date, horizon=5)
+    assert stab["boundary_policy"] == "purged_by_exit_date"
+    assert stab["h1_purged_signals"] == 2
+    assert stab["h1_purged_days"] == 2
+    assert stab["n"] == 20
+    assert stab["h1_n"] == 9
+    assert stab["h2_n"] == 9
+
+    # End-to-end replay_patterns with a T+5 limit-down delayed exit pushed across mid_date
+    n_days = 100
+    dates = _dates(n_days)
+    pat_dir = tmp_path / "patterns_purge"
+    pat_dir.mkdir()
+    (pat_dir / "purge_e2e.yaml").write_text(
+        "name: purge_e2e\ndisplay_name: 边界检验\nfamily: breakout\nstatus: experimental\n"
+        "mode: direct\nmarket_scope: [cn]\nmin_history_days: 60\n"
+        "universe:\n  exclude_st: true\n  proxy_amount_min: 50000000\n"
+        "conditions:\n  - feature: body_pct\n    min: 4.0\n",
+        encoding="utf-8",
+    )
+    series_by_code = {f"600{idx:03d}": _flat_bars(n_days, price=10.0, vol=10_000_000.0) for idx in range(5)}
+    # Clean H1 signal on day 62 -> exits day 67 < mid(75)
+    series_by_code["600000"][62] = (10.0, 10.7, 9.95, 10.6, 10.0, 25_000_000.0)
+    for d in range(63, 66):
+        pc = series_by_code["600000"][d - 1][3]
+        series_by_code["600000"][d] = (pc, pc * 1.01, pc * 0.99, pc, pc, 12_000_000.0)
+    # Pre-mid signal on day 66 whose normal 5th bar is day 71 (<75), delayed by 5 consecutive limit-downs (days 71..75) until day 76 >= mid(75)
+    pc66 = series_by_code["600000"][65][3]
+    series_by_code["600000"][66] = (pc66, round(pc66 * 1.07, 2), pc66 * 0.99, round(pc66 * 1.06, 2), pc66, 25_000_000.0)
+    for d in range(67, 71):
+        pc = series_by_code["600000"][d - 1][3]
+        series_by_code["600000"][d] = (pc, pc * 1.01, pc * 0.99, pc, pc, 12_000_000.0)
+    for d in range(71, 76):
+        pc = series_by_code["600000"][d - 1][3]
+        ld = round(pc * 0.90, 2)
+        series_by_code["600000"][d] = (ld, ld, ld, ld, pc, 5_000_000.0)
+    for d in range(76, n_days):
+        pc = series_by_code["600000"][d - 1][3]
+        if d == 78:
+            series_by_code["600000"][d] = (pc, round(pc * 1.06, 2), pc * 0.99, round(pc * 1.05, 2), pc, 25_000_000.0)
+        else:
+            series_by_code["600000"][d] = (pc, round(pc * 1.01, 2), round(pc * 0.99, 2), pc, pc, 12_000_000.0)
+
+    pack = _make_ohlcv_pack(series_by_code, dates=dates)
+    bench_df = pd.DataFrame({"date": dates, "open": [3000.0] * n_days, "close": [3005.0] * n_days})
+    rep = replay_patterns(pack, benchmark_df=bench_df, horizons=(5, 10), warmup_days=60, patterns_dir=pat_dir)
+    pat = rep["patterns"][0]
+    assert pat["walk_forward_regime_audit"]["boundary_policy"] == "purged_by_exit_date"
+    assert pat["walk_forward_regime_audit"]["h1_purged_signals"] >= 1
+    assert pat["stability"]["boundary_policy"] == "purged_by_exit_date"
+    assert pat["stability"]["h1_purged_signals"] >= 1
+    assert pat["stability"]["h1_n"] + pat["stability"]["h2_n"] + pat["stability"]["h1_purged_signals"] == pat["stability"]["n"]
+
+
+

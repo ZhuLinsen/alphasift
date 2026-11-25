@@ -1105,7 +1105,8 @@ const I18N = {
     wf_subhead: "Walk-Forward 情绪门控样本外检验（仅 H1 选阶段 → 冻结检验 H2）",
     wf_cols: ["形态", "H1 正超额阶段", "H1 剔除逆风", "H2 基线 (日数)", "H2 仅正阶段 (OOS)", "Δ 正阶段", "H2 剔逆风 (OOS)", "Δ 剔逆风", "联合≤15% / CLI"],
     wf_none: "无",
-    wf_note: "注：H2 日数 <{m}d 标有小样本标签并置灰；悬停 H2 / Δ 单元格可查看等权超额 (EW)、Newey-West t 值与信号数，点击行末 CLI 按钮可一键复制复现命令。",
+    wf_note: "注：H1 严格按实际退出日 < 切分日截断并剔除跨界样本；H2 日数 <{m}d 标有小样本标签并置灰；悬停 H2 / Δ 单元格可查看等权超额 (EW)、Newey-West t 值与信号数，点击行末 CLI 按钮可一键复制复现命令。",
+    wf_unverified_note: "注意：当前回放数据尚未标记 purged_by_exit_date 退出日边界，H1 阶段筛选与联合样本外结果暂属旧口径待复核。",
     wf_tip_h2: "H2 样本外：{d}日 / {sig} 条信号 · 等权 {ew} · NW t={t}",
     wf_tip_delta: "等权 Δ {ew} · H2 {d}日 / {sig} 条信号 · NW t={t}",
     wf_tip_low: "样本偏小（<{m}日），结果需谨慎解读",
@@ -1377,7 +1378,8 @@ const I18N = {
     wf_subhead: "Walk-Forward Regime Gate (Zero-Snooping: H1 Selection → H2 OOS)",
     wf_cols: ["Pattern", "H1 Positive Regimes", "H1 Adverse Excluded", "H2 Baseline", "H2 Positive Only (OOS)", "Delta Pos", "H2 Non-Adverse (OOS)", "Delta Non-Adv", "Joint ≤15% / CLI"],
     wf_none: "None",
-    wf_note: "Note: H2 cells tagged <{m}d are muted small-sample estimates. Hover any H2 or Delta cell for Equal-Weight excess, Newey-West t, and signal count; click CLI to copy the reproducible replay command.",
+    wf_note: "Note: H1 is cut strictly by actual exit_date < split_date with cross-boundary trades purged. H2 cells tagged <{m}d are muted small-sample estimates. Hover H2 or Delta for Equal-Weight excess, Newey-West t, and signals; click CLI to copy the replay command.",
+    wf_unverified_note: "Notice: Replay payload predates purged_by_exit_date enforcement; H1 stage selection and joint OOS values remain pending re-audit.",
     wf_tip_h2: "H2 OOS: {d}d / {sig} signals · EW {ew} · NW t={t}",
     wf_tip_delta: "EW Delta {ew} · H2 {d}d / {sig} signals · NW t={t}",
     wf_tip_low: "Small sample (<{m}d) — interpret cautiously",
@@ -1649,7 +1651,8 @@ const I18N = {
     wf_subhead: "Walk-Forward 相場局面ゲート（H1のみで選択 → H2でOOS検証）",
     wf_cols: ["パターン", "H1 正超過局面", "H1 逆風除外", "H2 基準", "H2 正局面のみ (OOS)", "Δ 正局面", "H2 非逆風 (OOS)", "Δ 除外後", "複合≤15% / CLI"],
     wf_none: "なし",
-    wf_note: "注：H2 日数 <{m}d は小標本タグ付きで薄字表示します。H2・Δ セルにカーソルを合わせると等重超過 (EW)・NW t値・シグナル数を確認でき、右端の CLI ボタンで再現コマンドをコピーできます。",
+    wf_note: "注：H1 は実際の決済日 < 分割日で厳密に切断し境界跨ぎ標本を除外しています。H2 日数 <{m}d は小標本タグ付きで薄字表示。H2・Δ セルで等重超過 (EW)・NW t値・件数を確認でき、CLI で再現コマンドをコピーできます。",
+    wf_unverified_note: "注意：この再生データには purged_by_exit_date 境界検証が未付与のため、H1 局面判定と複合 OOS は再検証待ちです。",
     wf_tip_h2: "H2 OOS：{d}日 / {sig} 件 · 等重 {ew} · NW t={t}",
     wf_tip_delta: "等重 Δ {ew} · H2 {d}日 / {sig} 件 · NW t={t}",
     wf_tip_low: "小標本（<{m}日）のため慎重に解釈してください",
@@ -3275,9 +3278,11 @@ function renderPatternRadar() {
         </tr>`;
       }).join("");
       const wfWrap = $("walk-forward-wrap");
+      const wfUnverified = replay.patterns.some((p) => p.walk_forward_regime_audit && p.walk_forward_regime_audit.boundary_policy !== "purged_by_exit_date");
+      const wfWarnHtml = wfUnverified ? `<p class="sec-hint" style="margin-top:4px;color:var(--warn, #f59e0b);">${esc(t("wf_unverified_note"))}</p>` : "";
       wfWrap.innerHTML = `<h3 class="subhead">${esc(t("wf_subhead"))}</h3>
         <div class="panel scroll"><table class="compact-tbl">${wfHead}<tbody>${wfRows}</tbody></table></div>
-        <p class="sec-hint" style="margin-top:6px;">${esc(t("wf_note", { m: WF_MIN_DAYS }))}</p>`;
+        <p class="sec-hint" style="margin-top:6px;">${esc(t("wf_note", { m: WF_MIN_DAYS }))}</p>${wfWarnHtml}`;
       if (!wfWrap.dataset.cliBound) {
         wfWrap.dataset.cliBound = "1";
         wfWrap.addEventListener("click", (ev) => {

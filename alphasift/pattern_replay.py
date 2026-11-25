@@ -41,6 +41,17 @@ STABILITY_MIN_HALF_SAMPLES = 30
 STABILITY_MIN_HALF_DAYS = 15
 STABILITY_T_STAT_THRESHOLD = 1.96
 WALK_FORWARD_LOW_OVERHEAD_PCT = 15.0
+WALK_FORWARD_BOUNDARY_POLICY = "purged_by_exit_date"
+
+
+def _classify_split_half(signal_date: str, exit_date: object, mid_date: str) -> str:
+    """Classify an observation into H1/H2, purging H1 entries whose exit crosses mid_date."""
+    if signal_date >= mid_date:
+        return "h2"
+    ex_str = "" if exit_date is None else str(exit_date).strip()
+    if ex_str and ex_str >= mid_date:
+        return "purged"
+    return "h1"
 
 
 def load_cn_benchmark(
@@ -246,6 +257,8 @@ def _summarize_walk_forward_regime_audit(
         stage: defaultdict(list) for stage in REGIME_STAGE_ORDER
     }
     h2_records: list[tuple[str, str, float, float | None, float | None]] = []
+    h1_purged_signals = 0
+    h1_purged_days_set: set[str] = set()
 
     for item in obs_list:
         res = (item.get("horizons") or {}).get(h_key)
@@ -264,10 +277,14 @@ def _summarize_walk_forward_regime_audit(
         ew_val = float(ew_raw) if ew_raw is not None and np.isfinite(ew_raw) else None
         ex_val = float(ex)
 
-        if day < mid_date:
+        split = _classify_split_half(day, res.get("exit_date"), mid_date)
+        if split == "h1":
             h1_by_stage_date[stage][day].append(ex_val)
             if ew_val is not None:
                 h1_ew_by_stage_date[stage][day].append(ew_val)
+        elif split == "purged":
+            h1_purged_signals += 1
+            h1_purged_days_set.add(day)
         else:
             ov_raw = item.get("overhead")
             ov_val: float | None = None
@@ -377,6 +394,10 @@ def _summarize_walk_forward_regime_audit(
     return {
         "horizon": h_key,
         "status": "ok" if has_data else "insufficient_data",
+        "boundary_policy": WALK_FORWARD_BOUNDARY_POLICY,
+        "eval_mid_date": mid_date,
+        "h1_purged_signals": h1_purged_signals,
+        "h1_purged_days": len(h1_purged_days_set),
         "min_regime_days_h1": int(min_regime_days_h1),
         "adverse_threshold_pct": float(adverse_threshold_pct),
         "low_overhead_threshold_pct": ov_cap,
@@ -417,39 +438,57 @@ def _summarize_stability(
     h1_vals: list[float] = []
     h2_vals: list[float] = []
     by_date: dict[str, list[float]] = defaultdict(list)
+    h1_by_date: dict[str, list[float]] = defaultdict(list)
+    h2_by_date: dict[str, list[float]] = defaultdict(list)
 
     ew_by_date: dict[str, list[float]] = defaultdict(list)
+    ew_h1_by_date: dict[str, list[float]] = defaultdict(list)
+    ew_h2_by_date: dict[str, list[float]] = defaultdict(list)
     ew_all_vals: list[float] = []
     ew_h1_count = 0
     ew_h2_count = 0
     matched_ew_by_date: dict[str, float] = {}
+    h1_purged_signals = 0
+    h1_purged_days_set: set[str] = set()
 
     for item in obs_list:
         res = item["horizons"].get(h_key)
         if not isinstance(res, dict) or res.get("status") != "ok":
             continue
         day = str(item["date"])
+        split = _classify_split_half(day, res.get("exit_date"), mid_date)
         ex = res.get("net_excess_return_pct")
         if ex is None:
             ex = res.get("excess_return_pct")
-        if ex is not None and np.isfinite(ex):
+        has_valid_ex = ex is not None and np.isfinite(ex)
+        if has_valid_ex:
             val = float(ex)
             all_vals.append(val)
             by_date[day].append(val)
-            if day < mid_date:
+            if split == "h1":
                 h1_vals.append(val)
-            else:
+                h1_by_date[day].append(val)
+            elif split == "h2":
                 h2_vals.append(val)
+                h2_by_date[day].append(val)
+            else:
+                h1_purged_signals += 1
+                h1_purged_days_set.add(day)
 
         ew_ex = res.get("net_over_ew_pct")
         if ew_ex is not None and np.isfinite(ew_ex):
             ew_val = float(ew_ex)
             ew_all_vals.append(ew_val)
             ew_by_date[day].append(ew_val)
-            if day < mid_date:
+            if split == "h1":
                 ew_h1_count += 1
-            else:
+                ew_h1_by_date[day].append(ew_val)
+            elif split == "h2":
                 ew_h2_count += 1
+                ew_h2_by_date[day].append(ew_val)
+            elif not has_valid_ex:
+                h1_purged_signals += 1
+                h1_purged_days_set.add(day)
 
         same_ew = res.get("same_day_ew_gross_excess_pct")
         if same_ew is not None and np.isfinite(same_ew) and day not in matched_ew_by_date:
@@ -471,8 +510,8 @@ def _summarize_stability(
     nw_lag = max(NEWEY_WEST_MIN_LAG, int(horizon) - 1)
     sorted_days = sorted(by_date)
     daily_all = [float(np.mean(by_date[d])) for d in sorted_days]
-    h1_daily = [float(np.mean(by_date[d])) for d in sorted_days if d < mid_date]
-    h2_daily = [float(np.mean(by_date[d])) for d in sorted_days if d >= mid_date]
+    h1_daily = [float(np.mean(h1_by_date[d])) for d in sorted(h1_by_date)]
+    h2_daily = [float(np.mean(h2_by_date[d])) for d in sorted(h2_by_date)]
 
     signal_days = len(daily_all)
     h1_days = len(h1_daily)
@@ -518,8 +557,8 @@ def _summarize_stability(
 
     ew_sorted_days = sorted(ew_by_date)
     ew_daily_all = [float(np.mean(ew_by_date[d])) for d in ew_sorted_days]
-    ew_h1_daily = [float(np.mean(ew_by_date[d])) for d in ew_sorted_days if d < mid_date]
-    ew_h2_daily = [float(np.mean(ew_by_date[d])) for d in ew_sorted_days if d >= mid_date]
+    ew_h1_daily = [float(np.mean(ew_h1_by_date[d])) for d in sorted(ew_h1_by_date)]
+    ew_h2_daily = [float(np.mean(ew_h2_by_date[d])) for d in sorted(ew_h2_by_date)]
     ew_signal_days = len(ew_daily_all)
     ew_h1_days = len(ew_h1_daily)
     ew_h2_days = len(ew_h2_daily)
@@ -551,6 +590,9 @@ def _summarize_stability(
     matched_ew_excess_mean_pct = _mean_or_none([matched_ew_by_date[d] for d in sorted(matched_ew_by_date)])
 
     return {
+        "boundary_policy": WALK_FORWARD_BOUNDARY_POLICY,
+        "h1_purged_signals": h1_purged_signals,
+        "h1_purged_days": len(h1_purged_days_set),
         "n": n,
         "mean_pct": mean_pct,
         "signal_days": signal_days,
@@ -1114,6 +1156,8 @@ def replay_patterns(
                     )
                     h_map[f"t{h}"] = {
                         "status": "ok",
+                        "entry_date": entry_date,
+                        "exit_date": exit_date,
                         "raw_return_pct": raw_ret,
                         "gross_raw_return_pct": gross_raw_ret,
                         "excess_return_pct": excess_ret,
@@ -1434,7 +1478,7 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
 
     lines.extend([
         "",
-        f"## 时间前后半段稳定性检验（按交易日分组，切分日 `{ps.get('eval_mid_date', '-')}`，防过拟合检查）",
+        f"## 时间前后半段稳定性检验（按实际退出日切断 H1 < 切分日 `{ps.get('eval_mid_date', '-')}`，剔除跨界样本）",
         "",
         "| 形态 | H1 日数/日均超额 | H2 日数/日均超额 | NW t-stat (naive / EW / q) | 前后半段方向 | 达标稳定切片 |",
         "|---|---:|---:|---:|---|---|",
@@ -1475,7 +1519,7 @@ def render_replay_markdown(report: dict[str, Any]) -> str:
 
     lines.extend([
         "",
-        "## Walk-Forward 情绪门控样本外检验（H1 选阶段 → H2 样本外对比）",
+        "## Walk-Forward 情绪门控样本外检验（H1 严格按退出日 < 切分日选阶段，剔除跨界样本 → H2 样本外对比）",
         "",
         "| 形态 | H1 正超额阶段 | H1 剔除逆风阶段 | H2 基线日均 (日数) | H2 仅正阶段 (OOS) | Δ 正阶段 vs 基线 | H2 剔除逆风 (OOS) | Δ 剔逆风 vs 基线 | H2 非逆风×低套牢<15% (OOS) | Δ 联合 vs 基线 |",
         "|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
