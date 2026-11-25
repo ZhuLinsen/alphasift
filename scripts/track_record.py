@@ -40,6 +40,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+from alphasift.jsonutil import dumps_strict_json  # noqa: E402
+
 SESSIONS = {"asia": ["cn", "hk", "jp", "kr", "tw", "in"], "us": ["us"]}
 WINDOWS = [5, 10, 20]
 SNAPSHOT_TIMEOUT_SEC = 5 * 60
@@ -324,13 +326,13 @@ def record_cn_patterns(
     out_dir = track / "data" / "patterns"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{scan.trade_date}.json"
-    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_path.write_text(dumps_strict_json(payload, indent=2) + "\n", encoding="utf-8")
 
     if replay_json_path is not None and Path(replay_json_path).is_file():
         replay_data = _read_json(Path(replay_json_path))
         if isinstance(replay_data, dict):
             (out_dir / "replay.json").write_text(
-                json.dumps(replay_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+                dumps_strict_json(replay_data, indent=2) + "\n", encoding="utf-8"
             )
     elif include_replay:
         from alphasift.pattern_replay import load_cn_benchmark, replay_patterns
@@ -338,7 +340,7 @@ def record_cn_patterns(
         bench = load_cn_benchmark(lookback_days=max(len(daily_pack.dates) + 40, 320))
         replay_data = replay_patterns(daily_pack, benchmark_df=bench, cost_bps=25.0)
         (out_dir / "replay.json").write_text(
-            json.dumps(replay_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            dumps_strict_json(replay_data, indent=2) + "\n", encoding="utf-8"
         )
     return payload
 
@@ -636,7 +638,7 @@ def run_session(
         log["ai_entries"] = ai_entries
     log_path = track / "data" / "logs" / f"{log_date}-{session}.json"
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    log_path.write_text(json.dumps(log, ensure_ascii=False, indent=2), encoding="utf-8")
+    log_path.write_text(dumps_strict_json(log, indent=2), encoding="utf-8")
     return log
 
 
@@ -903,7 +905,7 @@ def evaluate_markets(
         "runs": runs_out,
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    out_path.write_text(dumps_strict_json(payload, indent=1), encoding="utf-8")
     return payload
 
 
@@ -1061,14 +1063,14 @@ def build_site(track: Path) -> dict[str, Any]:
         by_day.setdefault(run["date"], []).append(run)
     for day, day_runs in by_day.items():
         payload = {"date": day, "runs": [{k: v for k, v in run.items() if k != "path"} for run in day_runs]}
-        (site / "days" / f"{day}.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        (site / "days" / f"{day}.json").write_text(dumps_strict_json(payload, indent=None), encoding="utf-8")
 
     markets = sorted({run["market"] for run in runs}, key=lambda m: list(SESSIONS["asia"] + SESSIONS["us"]).index(m))
     sc = scorecard(runs, evaluation)
     tc = track_comparison(runs, evaluation)
     pb = _build_pattern_board(track)
     if pb is not None:
-        (site / "patterns.json").write_text(json.dumps(pb, ensure_ascii=False), encoding="utf-8")
+        (site / "patterns.json").write_text(dumps_strict_json(pb, indent=None), encoding="utf-8")
         latest_pat = pb["latest"]
         pb_summary: dict[str, Any] | None = {
             "latest": {
@@ -1167,7 +1169,7 @@ def build_site(track: Path) -> dict[str, Any]:
         "days": [{"date": day, "runs": len(by_day[day])} for day in sorted(by_day, reverse=True)],
         "run_count": len(runs),
     }
-    (site / "summary.json").write_text(json.dumps(summary, ensure_ascii=False), encoding="utf-8")
+    (site / "summary.json").write_text(dumps_strict_json(summary, indent=None), encoding="utf-8")
     (site / "feed.xml").write_text(render_atom_feed(summary), encoding="utf-8")
     (track / "robots.txt").write_text(render_robots_txt(), encoding="utf-8")
     (track / "sitemap.xml").write_text(render_sitemap_xml(summary), encoding="utf-8")

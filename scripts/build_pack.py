@@ -2,7 +2,6 @@
 """Build the CN offline daily pack from a checkout for CI or local use."""
 
 import argparse
-import json
 import logging
 import sys
 from pathlib import Path
@@ -14,6 +13,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 def main() -> None:
     from alphasift import pack
+    from alphasift.jsonutil import dumps_strict_json
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     parser = argparse.ArgumentParser(description=__doc__)
@@ -39,7 +39,7 @@ def main() -> None:
             manifest = pack.update(args.dir, days=args.days, trade_date=args.trade_date, source=args.source)
     except (OSError, RuntimeError, ValueError) as exc:
         parser.error(str(exc))
-    print(json.dumps(manifest, ensure_ascii=False, indent=2))
+    print(dumps_strict_json(manifest, indent=2))
 
 
 if __name__ == "__main__":

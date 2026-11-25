@@ -35,13 +35,14 @@ def test_only_jsonutil_calls_raw_json_dumps():
     from pathlib import Path
     import re
 
-    pkg_dir = Path(__file__).resolve().parents[1] / "alphasift"
+    repo_root = Path(__file__).resolve().parents[1]
     raw_callers = []
-    for path in sorted(pkg_dir.glob("*.py")):
-        if path.name == "jsonutil.py":
-            continue
-        if re.search(r"\bjson\.dumps\s*\(", path.read_text(encoding="utf-8")):
-            raw_callers.append(path.name)
+    for folder in ("alphasift", "scripts"):
+        for path in sorted((repo_root / folder).glob("*.py")):
+            if folder == "alphasift" and path.name == "jsonutil.py":
+                continue
+            if re.search(r"\bjson\.dumps\s*\(", path.read_text(encoding="utf-8")):
+                raw_callers.append(f"{folder}/{path.name}")
     assert raw_callers == []
 
 

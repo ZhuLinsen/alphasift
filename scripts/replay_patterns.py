@@ -4,10 +4,10 @@
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 from alphasift.config import Config
+from alphasift.jsonutil import dumps_strict_json
 from alphasift.pack import load_pack, pack_dir
 from alphasift.pattern_replay import load_cn_benchmark, render_replay_markdown, replay_patterns
 
@@ -67,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.output_json:
         out_json = Path(args.output_json)
         out_json.parent.mkdir(parents=True, exist_ok=True)
-        out_json.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        out_json.write_text(dumps_strict_json(report, indent=2) + "\n", encoding="utf-8")
     if args.output_md:
         out_md = Path(args.output_md)
         out_md.parent.mkdir(parents=True, exist_ok=True)

@@ -580,3 +580,36 @@ def test_load_runs_and_build_preserve_degradation_notes_and_market_news(tmp_path
     readme_text = (tmp_path / "README.md").read_text(encoding="utf-8")
     assert "next_open" in readme_text
     assert "alphasift.zhulinsen.tech" in readme_text
+
+
+def test_build_site_sanitizes_nonfinite_metrics_in_public_json(tmp_path, monkeypatch):
+    _write_run(
+        tmp_path,
+        "r_strict",
+        market="cn",
+        strategy="dual_low",
+        created_at="2026-11-21T18:30:00+08:00",
+        codes=["000001"],
+    )
+    orig_load_runs = track_record.load_runs
+
+    def _load_with_nonfinite(track):
+        loaded = orig_load_runs(track)
+        loaded[0]["picks"][0]["price"] = float("nan")
+        loaded[0]["picks"][0]["final_score"] = float("inf")
+        return loaded
+
+    monkeypatch.setattr(track_record, "load_runs", _load_with_nonfinite)
+    track_record.build_site(tmp_path)
+
+    def _reject_constant(token: str) -> None:
+        raise AssertionError(f"Non-RFC-8259 constant emitted: {token}")
+
+    summary_raw = (tmp_path / "site" / "summary.json").read_text(encoding="utf-8")
+    json.loads(summary_raw, parse_constant=_reject_constant)
+
+    day_files = list((tmp_path / "site" / "days").glob("*.json"))
+    assert day_files
+    day_parsed = json.loads(day_files[0].read_text(encoding="utf-8"), parse_constant=_reject_constant)
+    assert day_parsed["runs"][0]["picks"][0]["price"] is None
+    assert day_parsed["runs"][0]["picks"][0]["final_score"] is None

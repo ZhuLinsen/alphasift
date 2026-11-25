@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
-import json
 from pathlib import Path
 import sys
 import tempfile
@@ -23,6 +22,7 @@ from alphasift import daily as daily_mod  # noqa: E402
 from alphasift.config import Config  # noqa: E402
 from alphasift.doctor import doctor_data_sources  # noqa: E402
 from alphasift.filter import apply_hard_filters, hard_filter_waterfall  # noqa: E402
+from alphasift.jsonutil import dumps_strict_json  # noqa: E402
 from alphasift.models import HardFilterConfig, Pick, ScreeningConfig  # noqa: E402
 from alphasift.risk import summarize_portfolio_exposure  # noqa: E402
 from alphasift.scorer import compute_screen_scores  # noqa: E402
@@ -220,7 +220,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     payload = run_benchmark(rows=args.rows)
     if args.json:
-        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        print(dumps_strict_json(payload, indent=2))
     else:
         t = payload["timings_ms"]
         print(
