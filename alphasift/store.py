@@ -9,6 +9,7 @@ from math import isfinite
 from pathlib import Path
 
 from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
+from alphasift.jsonutil import dumps_strict_json
 
 _RUN_METADATA_SUFFIX = ".meta"
 _RUN_SOURCE_ERROR_SAMPLE_LIMIT = 5
@@ -30,7 +31,7 @@ def save_screen_result(
         output_path.write_text("\n".join(screen_result_to_jsonl(result)) + "\n", encoding="utf-8")
     else:
         output_path.write_text(
-            json.dumps(asdict(result), ensure_ascii=False, indent=2),
+            dumps_strict_json(asdict(result), indent=2),
             encoding="utf-8",
         )
     _write_screen_result_metadata(result, output_path)
@@ -76,7 +77,7 @@ def save_evaluation_result(
         output_path.write_text("\n".join(evaluation_result_to_jsonl(result)) + "\n", encoding="utf-8")
     else:
         output_path.write_text(
-            json.dumps(asdict(result), ensure_ascii=False, indent=2),
+            dumps_strict_json(asdict(result), indent=2),
             encoding="utf-8",
         )
     return output_path
@@ -139,7 +140,7 @@ def _write_screen_result_metadata(result: ScreenResult, output_path: Path) -> No
         "report_path": str(output_path.with_suffix(".md")),
     }
     metadata_path.write_text(
-        json.dumps(metadata, ensure_ascii=False, indent=2),
+        dumps_strict_json(metadata, indent=2),
         encoding="utf-8",
     )
 
@@ -260,18 +261,18 @@ def resolve_run_path(run_ref: str | Path, *, data_dir: Path) -> Path:
 def screen_result_to_jsonl(result: ScreenResult) -> list[str]:
     data = asdict(result)
     picks = data.pop("picks", [])
-    lines = [json.dumps({"type": "run", **data}, ensure_ascii=False)]
+    lines = [dumps_strict_json({"type": "run", **data}, indent=None)]
     for pick in picks:
-        lines.append(json.dumps({"type": "pick", "run_id": result.run_id, **pick}, ensure_ascii=False))
+        lines.append(dumps_strict_json({"type": "pick", "run_id": result.run_id, **pick}, indent=None))
     return lines
 
 
 def evaluation_result_to_jsonl(result: EvaluationResult) -> list[str]:
     data = asdict(result)
     picks = data.pop("picks", [])
-    lines = [json.dumps({"type": "evaluation", **data}, ensure_ascii=False)]
+    lines = [dumps_strict_json({"type": "evaluation", **data}, indent=None)]
     for pick in picks:
-        lines.append(json.dumps({"type": "pick_evaluation", "run_id": result.run_id, **pick}, ensure_ascii=False))
+        lines.append(dumps_strict_json({"type": "pick_evaluation", "run_id": result.run_id, **pick}, indent=None))
     return lines
 
 

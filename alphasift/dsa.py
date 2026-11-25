@@ -3,13 +3,13 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from urllib.parse import urlparse
 
 import requests
 
 from alphasift.models import Pick
+from alphasift.jsonutil import dumps_strict_json
 
 logger = logging.getLogger(__name__)
 _DEFAULT_ANALYZE_PATH = "/api/v1/analysis/analyze"
@@ -203,10 +203,10 @@ def extract_deep_analysis_summary(result: dict) -> str:
                 value = summary.get(key)
                 if isinstance(value, str) and value.strip():
                     return value.strip()
-            rendered = json.dumps(summary, ensure_ascii=False)
+            rendered = dumps_strict_json(summary, indent=None)
             return rendered[:280]
 
-    rendered = json.dumps(result, ensure_ascii=False)
+    rendered = dumps_strict_json(result, indent=None)
     return rendered[:280]
 
 

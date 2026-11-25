@@ -20,6 +20,7 @@ from alphasift.snapshot import (
 )
 from alphasift.markets import get_market
 from alphasift.strategy import list_strategies
+from alphasift.jsonutil import dumps_strict_json
 
 
 @dataclass
@@ -1012,12 +1013,10 @@ def _has_configured_tushare() -> bool:
 
 
 def write_doctor_report(path: str | Path, result: DataSourcesDoctorResult) -> Path:
-    import json
-
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
-        json.dumps(result.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8"
+        dumps_strict_json(result.to_dict(), indent=2), encoding="utf-8"
     )
     return output
 

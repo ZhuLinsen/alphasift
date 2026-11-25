@@ -16,6 +16,7 @@ import pandas as pd
 import requests
 
 from alphasift.source_guard import call_with_timeout
+from alphasift.jsonutil import dumps_strict_json
 
 _NEGATIVE_EVENT_KEYWORDS = {
     "减持": ("减持", "拟减持", "被动减持"),
@@ -808,7 +809,7 @@ def _write_cache(
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {"cached_at": datetime.now().isoformat(), "row": row}
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    path.write_text(dumps_strict_json(payload, indent=2), encoding="utf-8")
 
 
 def _dedupe(items: list[str]) -> list[str]:

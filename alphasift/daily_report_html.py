@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import html
-import json
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 from alphasift.daily_brief import BRIEF_DISCLAIMER, resolve_strategy_display_names
 from alphasift.daily_report import _is_wf_joint_positive
+from alphasift.jsonutil import dumps_strict_json
 
 _DIST_BUCKETS: tuple[tuple[str, str, str], ...] = (
     ("le_neg7", "≤-7%", "down"),
@@ -72,7 +72,7 @@ def _safe_detail_url(raw: object, fallback: str = "../index.html") -> str:
 def _js_json(val: object) -> str:
     """Serialize JSON safely for inline <script> blocks by escaping HTML-closing sequences."""
     return (
-        json.dumps(val, ensure_ascii=False)
+        dumps_strict_json(val, indent=None)
         .replace("<", "\\u003c")
         .replace(">", "\\u003e")
         .replace("&", "\\u0026")
@@ -84,7 +84,7 @@ def _js_json(val: object) -> str:
 def _i18n(key: str, **vars_map: object) -> str:
     if not vars_map:
         return f'data-i18n="{_esc(key)}"'
-    payload = html.escape(json.dumps(vars_map, ensure_ascii=False), quote=True)
+    payload = html.escape(dumps_strict_json(vars_map, indent=None), quote=True)
     return f'data-i18n="{_esc(key)}" data-i18n-vars="{payload}"'
 
 

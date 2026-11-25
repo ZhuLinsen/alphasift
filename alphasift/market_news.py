@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 import json
+from alphasift.jsonutil import dumps_strict_json
 import os
 from pathlib import Path
 import re
@@ -328,7 +329,7 @@ def _write_news_cache(cache_file: Path | None, payload: dict[str, Any]) -> None:
     try:
         cache_file.parent.mkdir(parents=True, exist_ok=True)
         cache_file.write_text(
-            json.dumps({"cached_at": datetime.now().isoformat(), **payload}, ensure_ascii=False, indent=2),
+            dumps_strict_json({"cached_at": datetime.now().isoformat(), **payload}, indent=2),
             encoding="utf-8",
         )
     except OSError:

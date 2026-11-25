@@ -18,6 +18,7 @@ import requests
 
 from alphasift.markets import has_foreign_yahoo_suffix
 from alphasift.source_guard import call_with_timeout, parse_source_timeout_seconds
+from alphasift.jsonutil import dumps_strict_json
 
 _DAILY_FEATURE_DEFAULTS = {
     "daily_data_points": pd.NA,
@@ -543,7 +544,7 @@ def _write_daily_history_cache(
             "frame": json.loads(df.to_json(orient="split", date_format="iso", force_ascii=False)),
         }
         tmp_path = path.with_name(f".{path.name}.{time.time_ns()}.tmp")
-        tmp_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        tmp_path.write_text(dumps_strict_json(payload, indent=None), encoding="utf-8")
         tmp_path.replace(path)
     except Exception:
         return

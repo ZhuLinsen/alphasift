@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from alphasift.jsonutil import dumps_strict_json
 from alphasift.normalize import (
     normalize_code,
     safe_float as _safe_float,
@@ -335,10 +336,8 @@ def fetch_eastmoney_industry_map(
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             tmp_path = cache_path.with_name(f".{cache_path.name}.{time.time_ns()}.tmp")
             tmp_path.write_text(
-                json.dumps(
-                    {"provider": "eastmoney", "created_at": datetime.now().isoformat(), "mapping": mapping},
-                    ensure_ascii=False,
-                ),
+                dumps_strict_json(
+                    {"provider": "eastmoney", "created_at": datetime.now().isoformat(), "mapping": mapping}, indent=None),
                 encoding="utf-8",
             )
             tmp_path.replace(cache_path)
@@ -419,7 +418,7 @@ def save_industry_map(mapping: dict[str, dict[str, object]], path_like: str | Pa
         for code, item in sorted(mapping.items())
     ]
     if path.suffix.lower() == ".json":
-        path.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+        path.write_text(dumps_strict_json(rows, indent=2), encoding="utf-8")
     else:
         pd.DataFrame(rows).to_csv(path, index=False, encoding="utf-8")
     return path
@@ -646,7 +645,7 @@ def _write_akshare_board_cache(
             "mapping": _json_safe_mapping(mapping),
         }
         tmp_path = path.with_name(f".{path.name}.{time.time_ns()}.tmp")
-        tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp_path.write_text(dumps_strict_json(payload, indent=2), encoding="utf-8")
         tmp_path.replace(path)
         return f"industry provider cache saved: {path} rows={len(mapping)}"
     except Exception as exc:

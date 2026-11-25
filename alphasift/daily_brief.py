@@ -10,6 +10,7 @@ import re
 from typing import Any
 
 from alphasift.config import Config
+from alphasift.jsonutil import dumps_strict_json
 
 BRIEF_DISCLAIMER = "仅供量化研究与复盘观察，不构成投资建议。"
 
@@ -482,7 +483,7 @@ def _build_brief_prompt(
     }
     if compact_news:
         compact_context["market_news"] = compact_news
-    payload_json = json.dumps(compact_context, ensure_ascii=False)
+    payload_json = dumps_strict_json(compact_context, indent=None)
     return (
         "你是 AlphaSift A 股量化观测系统的盘后投研编辑。请仅基于下面提供的结构化观测数据，"
         "用克制、客观、信息密度高的专业中文撰写盘后简报。\n"

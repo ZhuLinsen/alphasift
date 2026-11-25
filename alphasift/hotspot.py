@@ -20,6 +20,7 @@ from alphasift.industry import (
     load_board_heat_trends,
 )
 from alphasift.normalize import normalize_code as _normalize_code  # strict: free-text paths
+from alphasift.jsonutil import dumps_strict_json
 
 
 HOTSPOT_STAGES = (
@@ -669,7 +670,7 @@ def append_hotspot_history(
                 "sample_stock_count": int(_safe_float(item.get("sample_stock_count")) or 0),
                 "leaders": item.get("leaders") if isinstance(item.get("leaders"), list) else [],
             }
-            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+            handle.write(dumps_strict_json(record, indent=None) + "\n")
     return path
 
 
@@ -766,7 +767,7 @@ def save_hotspots_json(path_like: str | Path, hotspots: list[HotspotSummary]) ->
     }
     tmp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
     try:
-        tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp_path.write_text(dumps_strict_json(payload, indent=2), encoding="utf-8")
         os.replace(tmp_path, path)
     finally:
         if tmp_path.exists():
