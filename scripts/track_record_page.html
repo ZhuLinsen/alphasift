@@ -3788,6 +3788,7 @@ async function init() {
   }
   try {
     const res = await fetch("site/summary.json", { cache: "no-cache" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     state.summary = await res.json();
   } catch (err) {
     document.querySelector("main").insertAdjacentHTML("beforeend", `<div class="panel empty">${esc(t("load_fatal", { msg: err.message }))}</div>`);

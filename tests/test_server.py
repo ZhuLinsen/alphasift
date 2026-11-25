@@ -940,3 +940,48 @@ def test_http_send_json_sanitizes_nonfinite_and_dates(tmp_path, monkeypatch):
         server.shutdown()
         server.server_close()
 
+
+def test_http_handler_supports_head_and_returns_json_500_on_unexpected_error(tmp_path, monkeypatch):
+    import http.client
+    import json
+    import threading
+    import alphasift.server as server_mod
+
+    cfg = _config(tmp_path)
+
+    def _boom_or_ok(_cfg, path, query="", *, live=False):
+        if path == "/boom":
+            raise RuntimeError("secret stack detail")
+        return 200, {"status": "ok"}
+
+    monkeypatch.setattr(server_mod, "build_api_response", _boom_or_ok)
+    server = server_mod.ThreadingHTTPServer(("127.0.0.1", 0), server_mod._handler_for_config(cfg))
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        conn.request("HEAD", "/health")
+        resp_head = conn.getresponse()
+        body_head = resp_head.read()
+        assert resp_head.status == 200
+        assert int(resp_head.getheader("Content-Length")) > 0
+        assert body_head == b""
+
+        conn.request("HEAD", "/ui")
+        resp_ui = conn.getresponse()
+        body_ui = resp_ui.read()
+        assert resp_ui.status == 200
+        assert int(resp_ui.getheader("Content-Length")) > 0
+        assert body_ui == b""
+
+        conn.request("GET", "/boom")
+        resp_err = conn.getresponse()
+        err_payload = json.loads(resp_err.read().decode("utf-8"))
+        assert resp_err.status == 500
+        assert err_payload == {"error": "internal_error", "message": "Internal server error"}
+        conn.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+

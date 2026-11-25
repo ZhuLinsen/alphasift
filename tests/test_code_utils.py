@@ -145,6 +145,9 @@ def test_cache_writers_persist_atomically_without_tmp_leftovers(tmp_path):
     ind_export = tmp_path / "industry_export.json"
     save_industry_map({"000001": {"industry": "银行"}}, ind_export)
     assert json.loads(ind_export.read_text(encoding="utf-8"))[0]["industry"] == "银行"
+    ind_csv = tmp_path / "industry_export.csv"
+    save_industry_map({"000001": {"industry": "银行"}}, ind_csv)
+    assert "银行" in ind_csv.read_text(encoding="utf-8")
 
     hs_path = tmp_path / "hotspots.json"
     save_hotspots_json(hs_path, [HotspotSummary(topic="算力", name="算力", source="test", rank=1)])

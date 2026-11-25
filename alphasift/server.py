@@ -577,22 +577,37 @@ def _handler_for_config(config: Config):
         server_version = "AlphaSiftAPI/1"
 
         def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler.
+            self._serve_request(send_body=True)
+
+        def do_HEAD(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler.
+            self._serve_request(send_body=False)
+
+        def _serve_request(self, *, send_body: bool) -> None:
             parsed = urlparse(self.path)
             vary_accept = parsed.path == "/"
-            if parsed.path in {"/ui", "/daily-report.html"} or (
-                parsed.path == "/" and _prefers_html(self.headers.get("Accept", ""), parsed.query)
-            ):
-                status, html_body = build_html_response(config, parsed.path, query=parsed.query)
-                is_workbench = parsed.path in {"/ui", "/"} and status == 200
-                self._send_html(
-                    status,
-                    html_body,
+            try:
+                if parsed.path in {"/ui", "/daily-report.html"} or (
+                    parsed.path == "/" and _prefers_html(self.headers.get("Accept", ""), parsed.query)
+                ):
+                    status, html_body = build_html_response(config, parsed.path, query=parsed.query)
+                    is_workbench = parsed.path in {"/ui", "/"} and status == 200
+                    self._send_html(
+                        status,
+                        html_body,
+                        vary_accept=vary_accept,
+                        script_csp=_WORKBENCH_SCRIPT_CSP if is_workbench else "'none'",
+                        send_body=send_body,
+                    )
+                    return
+                status, payload = build_api_response(config, parsed.path, query=parsed.query)
+                self._send_json(status, payload, vary_accept=vary_accept, send_body=send_body)
+            except Exception:  # noqa: BLE001 - avoid leaking tracebacks in HTTP responses.
+                self._send_json(
+                    500,
+                    {"error": "internal_error", "message": "Internal server error"},
                     vary_accept=vary_accept,
-                    script_csp=_WORKBENCH_SCRIPT_CSP if is_workbench else "'none'",
+                    send_body=send_body,
                 )
-                return
-            status, payload = build_api_response(config, parsed.path, query=parsed.query)
-            self._send_json(status, payload, vary_accept=vary_accept)
 
         def log_message(self, format: str, *args) -> None:  # noqa: A002 - stdlib signature.
             return
@@ -604,6 +619,7 @@ def _handler_for_config(config: Config):
             *,
             vary_accept: bool = False,
             script_csp: str = "'none'",
+            send_body: bool = True,
         ) -> None:
             body = content.encode("utf-8")
             self.send_response(status)
@@ -622,9 +638,17 @@ def _handler_for_config(config: Config):
             )
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            self.wfile.write(body)
+            if send_body:
+                self.wfile.write(body)
 
-        def _send_json(self, status: int, payload: dict[str, Any], *, vary_accept: bool = False) -> None:
+        def _send_json(
+            self,
+            status: int,
+            payload: dict[str, Any],
+            *,
+            vary_accept: bool = False,
+            send_body: bool = True,
+        ) -> None:
             body = dumps_strict_json(payload, indent=2).encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -634,7 +658,8 @@ def _handler_for_config(config: Config):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            self.wfile.write(body)
+            if send_body:
+                self.wfile.write(body)
 
     return AlphaSiftApiHandler
 

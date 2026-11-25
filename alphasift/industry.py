@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from alphasift.jsonutil import atomic_write_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text
 from alphasift.normalize import (
     normalize_code,
     safe_float as _safe_float,
@@ -417,7 +417,7 @@ def save_industry_map(mapping: dict[str, dict[str, object]], path_like: str | Pa
     if path.suffix.lower() == ".json":
         atomic_write_strict_json(path, rows, indent=2)
     else:
-        pd.DataFrame(rows).to_csv(path, index=False, encoding="utf-8")
+        atomic_write_text(path, pd.DataFrame(rows).to_csv(index=False))
     return path
 
 
