@@ -496,6 +496,7 @@ def _extract_pattern_replay_map(
         raw_ov_cap = wf.get("low_overhead_threshold_pct") if wf else None
         wf_ov_cap = int(round(float(raw_ov_cap))) if raw_ov_cap is not None else 15
         wf_boundary_policy = str(wf.get("boundary_policy") or "").strip() if wf else ""
+        wf_eval_mid_date = str(wf.get("eval_mid_date") or "").strip() if wf else ""
         wf_joint = wf.get("h2_non_adverse_low_overhead") if isinstance(wf.get("h2_non_adverse_low_overhead"), dict) else {}
         wf_joint_days = int(wf_joint.get("days") or 0)
         wf_joint_mean = wf_joint.get("daily_mean_pct")
@@ -509,6 +510,7 @@ def _extract_pattern_replay_map(
             "wf_low_overhead_threshold_pct": wf_ov_cap,
             "wf_boundary_policy": wf_boundary_policy,
             "wf_boundary_verified": bool(wf and wf_boundary_policy == "purged_by_exit_date"),
+            "wf_eval_mid_date": wf_eval_mid_date,
             "wf_h1_purged_signals": int(wf.get("h1_purged_signals") or 0) if wf else 0,
             "wf_h1_purged_days": int(wf.get("h1_purged_days") or 0) if wf else 0,
             "wf_non_adverse_low_overhead_pct": (

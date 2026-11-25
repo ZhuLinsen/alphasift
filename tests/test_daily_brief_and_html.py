@@ -704,6 +704,11 @@ def test_daily_report_wf_cli_copy_and_low_sample_guardrail() -> None:
 
 
 def test_daily_report_boundary_verification_and_unverified_badge() -> None:
+    import re
+    import shutil
+    import subprocess
+    import tempfile
+
     from alphasift.daily_report import _extract_pattern_replay_map
 
     rmap = _extract_pattern_replay_map({
@@ -714,6 +719,7 @@ def test_daily_report_boundary_verification_and_unverified_badge() -> None:
                     "horizons": {"t5": {"net_excess_mean_pct": 0.1, "excess_win_rate_pct": 50.0, "scored": 50}},
                     "walk_forward_regime_audit": {
                         "boundary_policy": "purged_by_exit_date",
+                        "eval_mid_date": "2026-06-30",
                         "h1_adverse_regimes": ["freezing"],
                         "h1_purged_signals": 12,
                         "h1_purged_days": 4,
@@ -733,10 +739,12 @@ def test_daily_report_boundary_verification_and_unverified_badge() -> None:
     })
     assert rmap["verified_pat"]["wf_boundary_policy"] == "purged_by_exit_date"
     assert rmap["verified_pat"]["wf_boundary_verified"] is True
+    assert rmap["verified_pat"]["wf_eval_mid_date"] == "2026-06-30"
     assert rmap["verified_pat"]["wf_h1_purged_signals"] == 12
     assert rmap["verified_pat"]["wf_h1_purged_days"] == 4
     assert rmap["legacy_pat"]["wf_boundary_policy"] == ""
     assert rmap["legacy_pat"]["wf_boundary_verified"] is False
+    assert rmap["legacy_pat"]["wf_eval_mid_date"] == ""
 
     html_text = render_daily_report_html({
         "trade_date": "2026-11-24",
@@ -755,8 +763,13 @@ def test_daily_report_boundary_verification_and_unverified_badge() -> None:
                     "status": "experimental",
                     "expectancy_tier": "positive_watch",
                     "hit_count": 1,
-                    "wf_today_adverse": False,
+                    "wf_today_adverse": True,
                     "wf_boundary_verified": True,
+                    "wf_eval_mid_date": "2026-06-30",
+                    "wf_h1_purged_signals": 12,
+                    "wf_h1_purged_days": 4,
+                    "wf_non_adverse_low_overhead_pct": 0.5,
+                    "wf_non_adverse_low_overhead_days": 20,
                     "signals": [],
                 },
                 {
@@ -778,9 +791,23 @@ def test_daily_report_boundary_verification_and_unverified_badge() -> None:
         "ai_brief": {},
     })
     assert html_text.count('data-i18n="pat_wf_pending"') == 1
-    assert 'data-i18n="pat_wf_boundary_note"' in html_text
+    assert 'data-i18n="pat_wf_boundary_note_stats"' in html_text
+    assert "2026-06-30" in html_text
+    assert "累计剔除 12 条跨界信号" in html_text
+    assert 'title="H1 exit_date &lt; 2026-06-30 · purged 12 (4d)"' in html_text
     assert 'pat_wf_pending: "Boundary Unverified"' in html_text
     assert 'pat_wf_pending: "境界未検証"' in html_text
+    assert "pat_wf_boundary_note_stats:" in html_text
+
+    node = shutil.which("node")
+    if node is not None:
+        match = re.search(r"<script>(.*)</script>", html_text, flags=re.DOTALL)
+        assert match is not None
+        with tempfile.TemporaryDirectory() as td:
+            js_file = Path(td) / "daily_report_boundary.js"
+            js_file.write_text(match.group(1), encoding="utf-8")
+            proc = subprocess.run([node, "--check", str(js_file)], capture_output=True, text=True, check=False)
+            assert proc.returncode == 0, proc.stderr
 
 
 
