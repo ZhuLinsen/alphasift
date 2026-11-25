@@ -579,3 +579,128 @@ def test_daily_report_html_section_and_pattern_anchors() -> None:
     assert ".card:target" in html_text
 
 
+def test_daily_report_wf_cli_copy_and_low_sample_guardrail() -> None:
+    import re
+    import shutil
+    import subprocess
+    import tempfile
+
+    from alphasift.daily_report import _extract_pattern_replay_map
+
+    mock_replay = {
+        "replay": {
+            "patterns": [
+                {
+                    "pattern": "double_bottom_breakout",
+                    "horizons": {"t5": {"net_excess_mean_pct": 0.24, "excess_win_rate_pct": 52.0, "scored": 90}},
+                    "walk_forward_regime_audit": {
+                        "h1_adverse_regimes": ["freezing", "ebb"],
+                        "h1_positive_regimes": ["startup"],
+                        "low_overhead_threshold_pct": 12.0,
+                        "h2_non_adverse_low_overhead": {"days": 22, "daily_mean_pct": 0.91},
+                    },
+                },
+                {
+                    "pattern": "box_breakout",
+                    "horizons": {"t5": {"net_excess_mean_pct": 0.11, "excess_win_rate_pct": 50.0, "scored": 40}},
+                    "walk_forward_regime_audit": {
+                        "h1_positive_regimes": ["startup", "main_up"],
+                    },
+                },
+            ]
+        }
+    }
+    rmap = _extract_pattern_replay_map(mock_replay)
+    assert rmap["double_bottom_breakout"]["wf_h1_positive_regimes"] == ["startup"]
+    assert rmap["double_bottom_breakout"]["wf_low_overhead_threshold_pct"] == 12
+    assert rmap["box_breakout"]["wf_h1_positive_regimes"] == ["startup", "main_up"]
+    assert rmap["box_breakout"]["wf_low_overhead_threshold_pct"] == 15
+
+    report: dict = {
+        "trade_date": "2026-11-24",
+        "pack_trade_date": "2026-11-24",
+        "expected_trade_date": "2026-11-24",
+        "pack_is_stale": False,
+        "market_regime": {"regime_stage": "divergence", "regime_stage_label": "分歧"},
+        "strategies": [],
+        "ai_highlights": [],
+        "patterns": {
+            "active": [],
+            "experimental": [
+                {
+                    "pattern": "double_bottom_breakout",
+                    "display_name": "双底突破",
+                    "status": "experimental",
+                    "expectancy_tier": "positive_watch",
+                    "hit_count": 2,
+                    "wf_h1_adverse_regimes": ["freezing", "ebb"],
+                    "wf_h1_positive_regimes": ["startup"],
+                    "wf_low_overhead_threshold_pct": 12,
+                    "wf_non_adverse_low_overhead_pct": 0.91,
+                    "wf_non_adverse_low_overhead_days": 22,
+                    "signals": [{"code": "000001", "name": "平安银行"}],
+                },
+                {
+                    "pattern": "ma20_shrink_pullback",
+                    "display_name": "20日线低波缩量回踩",
+                    "status": "experimental",
+                    "expectancy_tier": "neutral_watch",
+                    "hit_count": 1,
+                    "wf_h1_adverse_regimes": ["freezing"],
+                    "wf_non_adverse_low_overhead_pct": 1.15,
+                    "wf_non_adverse_low_overhead_days": 9,
+                    "signals": [{"code": "300760", "name": "迈瑞医疗"}],
+                },
+                {
+                    "pattern": "box_breakout",
+                    "display_name": "箱体突破",
+                    "status": "experimental",
+                    "expectancy_tier": "negative_watch",
+                    "hit_count": 1,
+                    "wf_h1_positive_regimes": ["startup", "main_up"],
+                    "signals": [{"code": "600519", "name": "贵州茅台"}],
+                },
+                {
+                    "pattern": "single_yang_hold",
+                    "display_name": "单阳不破",
+                    "status": "experimental",
+                    "expectancy_tier": "unrated",
+                    "hit_count": 0,
+                    "signals": [],
+                },
+            ],
+        },
+        "announcement_risks": {"checked_count": 0, "flagged_count": 0, "flagged_items": [], "errors": []},
+        "market_news": {"items": [], "sources": [], "candidate_news": {}, "errors": []},
+        "degradation": [],
+        "cross_strategy_synthesis": {},
+        "ai_brief": {},
+    }
+
+    html_text = render_daily_report_html(report)
+    assert 'data-cli="alphasift patterns replay --pattern double_bottom_breakout --exclude-regimes freezing,ebb --max-overhead-pct 12"' in html_text
+    assert 'data-cli="alphasift patterns replay --pattern ma20_shrink_pullback --exclude-regimes freezing --max-overhead-pct 15"' in html_text
+    assert 'data-cli="alphasift patterns replay --pattern box_breakout --allowed-regimes startup,main_up"' in html_text
+    assert 'data-cli="alphasift patterns replay --pattern single_yang_hold"' in html_text
+
+    # Small-sample (<15d) warning on ma20_shrink_pullback (9d), absent on double_bottom_breakout (22d)
+    assert '<span class="wf-low" data-i18n="pat_wf_joint"' in html_text
+    assert html_text.count('<span class="tag-low">&lt;15d</span>') == 1
+
+    assert 'wf_cli_copied: "已复制"' in html_text
+    assert 'wf_cli_copied: "Copied"' in html_text
+    assert 'wf_cli_copied: "コピー済"' in html_text
+    assert "copyPlainText" in html_text
+
+    node = shutil.which("node")
+    if node is not None:
+        match = re.search(r"<script>(.*)</script>", html_text, flags=re.DOTALL)
+        assert match is not None
+        with tempfile.TemporaryDirectory() as td:
+            js_file = Path(td) / "daily_report_wf.js"
+            js_file.write_text(match.group(1), encoding="utf-8")
+            proc = subprocess.run([node, "--check", str(js_file)], capture_output=True, text=True, check=False)
+            assert proc.returncode == 0, proc.stderr
+
+
+

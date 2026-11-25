@@ -492,6 +492,9 @@ def _extract_pattern_replay_map(
             samples = h5.get("scored")
         wf = p.get("walk_forward_regime_audit") if isinstance(p.get("walk_forward_regime_audit"), dict) else {}
         wf_adv = [str(s) for s in (wf.get("h1_adverse_regimes") or []) if str(s).strip()] if wf else []
+        wf_pos = [str(s) for s in (wf.get("h1_positive_regimes") or []) if str(s).strip()] if wf else []
+        raw_ov_cap = wf.get("low_overhead_threshold_pct") if wf else None
+        wf_ov_cap = int(round(float(raw_ov_cap))) if raw_ov_cap is not None else 15
         wf_joint = wf.get("h2_non_adverse_low_overhead") if isinstance(wf.get("h2_non_adverse_low_overhead"), dict) else {}
         wf_joint_days = int(wf_joint.get("days") or 0)
         wf_joint_mean = wf_joint.get("daily_mean_pct")
@@ -501,6 +504,8 @@ def _extract_pattern_replay_map(
             "replay_t5_win_rate_pct": round(float(win_val), 1) if win_val is not None else None,
             "replay_samples": int(samples) if samples is not None else None,
             "wf_h1_adverse_regimes": wf_adv,
+            "wf_h1_positive_regimes": wf_pos,
+            "wf_low_overhead_threshold_pct": wf_ov_cap,
             "wf_non_adverse_low_overhead_pct": (
                 round(float(wf_joint_mean), 2) if wf_joint_days > 0 and wf_joint_mean is not None else None
             ),

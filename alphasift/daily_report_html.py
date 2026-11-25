@@ -22,6 +22,26 @@ _DIST_BUCKETS: tuple[tuple[str, str, str], ...] = (
     ("ge_pos7", "≥7%", "up"),
 )
 _GITHUB_URL = "https://github.com/ZhuLinsen/alphasift"
+_WF_MIN_DAYS = 15
+
+
+def _build_wf_cli(pat: dict[str, Any]) -> str:
+    """Build reproducible CLI replay command matching the pattern's Walk-Forward filter."""
+    pat_id = str(pat.get("pattern") or "").strip()
+    if not pat_id:
+        return ""
+    adv = [str(s).strip() for s in (pat.get("wf_h1_adverse_regimes") or []) if str(s).strip()]
+    pos = [str(s).strip() for s in (pat.get("wf_h1_positive_regimes") or []) if str(s).strip()]
+    joint_days = int(pat.get("wf_non_adverse_low_overhead_days") or 0)
+    raw_cap = pat.get("wf_low_overhead_threshold_pct")
+    ov_cap = int(round(float(raw_cap))) if raw_cap not in (None, "") else 15
+    if adv or joint_days > 0:
+        adv_arg = f" --exclude-regimes {','.join(adv)}" if adv else ""
+        ov_arg = f" --max-overhead-pct {ov_cap}" if joint_days > 0 else ""
+        return f"alphasift patterns replay --pattern {pat_id}{adv_arg}{ov_arg}"
+    if pos:
+        return f"alphasift patterns replay --pattern {pat_id} --allowed-regimes {','.join(pos)}"
+    return f"alphasift patterns replay --pattern {pat_id}"
 
 
 def _esc(val: object) -> str:
@@ -587,9 +607,12 @@ def render_daily_report_html(
             wf_joint_pct = pat.get("wf_non_adverse_low_overhead_pct")
             wf_joint_days = int(pat.get("wf_non_adverse_low_overhead_days") or 0)
             if wf_joint_pct is not None and wf_joint_days > 0:
+                wf_joint_low = wf_joint_days < _WF_MIN_DAYS
+                cls_attr = ' class="wf-low"' if wf_joint_low else ""
+                low_tag = f'<span class="tag-low">&lt;{_WF_MIN_DAYS}d</span>' if wf_joint_low else ""
                 replay_note += (
-                    f'<span {_i18n("pat_wf_joint", v=f"{float(wf_joint_pct):+.2f}%", d=wf_joint_days)}>'
-                    f' · 联合OOS {float(wf_joint_pct):+.2f}%({wf_joint_days}d)</span>'
+                    f'<span{cls_attr} {_i18n("pat_wf_joint", v=f"{float(wf_joint_pct):+.2f}%", d=wf_joint_days)}>'
+                    f' · 联合OOS {float(wf_joint_pct):+.2f}%({wf_joint_days}d)</span>{low_tag}'
                 )
             sigs = pat.get("signals") or []
             if sigs:
@@ -611,10 +634,18 @@ def render_daily_report_html(
                 body = f'<div class="empty" {_i18n("no_pat_sig")}>今日无触发信号</div>'
             hits_n = int(pat.get("hit_count") or 0)
             pat_link = _dash_link("walk-forward-wrap", "link_pat_wf", "样本外回放 →", pat_id=pkey) if pkey else ""
+            cli_cmd = _build_wf_cli(pat) if pkey else ""
+            wf_cli_btn = (
+                f'<button type="button" class="wf-cli-btn no-print" data-cli="{_esc(cli_cmd)}" '
+                f'title="{_esc(cli_cmd)}" aria-label="{_esc(cli_cmd)}" '
+                f'{_i18n("wf_cli_btn")}>CLI</button>'
+                if cli_cmd
+                else ""
+            )
             pat_id_attr = f' id="pat-{_esc(pkey)}"' if pkey else ""
             pat_cards.append(
                 f'<div class="card {"muted-card" if not is_active else ""}"{pat_id_attr}><div class="card-top"><h3><span data-pattern="{_esc(pkey)}">{_esc(dname)}</span><span style="display:inline-flex;flex-wrap:wrap;gap:4px;">{badge}{wf_adv_badge}</span></h3>'
-                f'<div class="sub"><span {_i18n("pat_hits_cnt", n=hits_n)}>命中 {hits_n} 只</span>{replay_note}{pat_link}</div></div>{body}</div>'
+                f'<div class="sub"><span {_i18n("pat_hits_cnt", n=hits_n)}>命中 {hits_n} 只</span>{replay_note}{pat_link}{wf_cli_btn}</div></div>{body}</div>'
             )
     pat_block = f"""
     <section class="panel" id="patterns">
@@ -760,6 +791,21 @@ main {{ max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }}
 }}
 .dash-link:hover {{ background: rgba(59,130,246,0.22); text-decoration: none; }}
 .card .sub .dash-link {{ margin-left: 6px; padding: 0 6px; font-size: 10.5px; vertical-align: middle; }}
+.wf-low {{ opacity: 0.72; }}
+.tag-low {{
+  display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 4px;
+  font-size: 10px; font-weight: 600; font-family: var(--font-mono);
+  color: var(--warn); background: var(--warn-soft); border: 1px solid rgba(251,191,36,0.3);
+  vertical-align: middle;
+}}
+.wf-cli-btn {{
+  display: inline-flex; align-items: center; margin-left: 5px; padding: 0 6px;
+  border-radius: 5px; border: 1px solid var(--border); background: var(--surface);
+  color: var(--accent-hi); font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+  cursor: pointer; vertical-align: middle; line-height: 1.5;
+}}
+.wf-cli-btn:hover {{ border-color: var(--accent-hi); background: var(--accent-soft); }}
+.wf-cli-btn.copied {{ border-color: var(--down); color: var(--down); background: var(--down-soft); }}
 section[id], #ai-rebalance, .card[id] {{ scroll-margin-top: 64px; }}
 .card:target {{ border-color: var(--accent-hi); box-shadow: 0 0 0 1px var(--accent-hi); opacity: 1; }}
 
@@ -971,6 +1017,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       link_leaderboard: "T+N 排行 →",
       link_wf_board: "250日 Walk-Forward 回放 →",
       link_pat_wf: "样本外回放 →",
+      wf_cli_btn: "CLI",
+      wf_cli_copied: "已复制",
     }},
     en: {{
       page_title: "AlphaSift · CN Post-Close Research Brief (" + TRADE_DATE + ")",
@@ -1082,6 +1130,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       link_leaderboard: "T+N Leaderboard →",
       link_wf_board: "250D Walk-Forward Audit →",
       link_pat_wf: "OOS Audit →",
+      wf_cli_btn: "CLI",
+      wf_cli_copied: "Copied",
     }},
     ja: {{
       page_title: "AlphaSift · 中国A株 引け後クオンツレポート (" + TRADE_DATE + ")",
@@ -1193,6 +1243,8 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       link_leaderboard: "T+N ランキング →",
       link_wf_board: "250日 Walk-Forward 検証 →",
       link_pat_wf: "OOS 検証 →",
+      wf_cli_btn: "CLI",
+      wf_cli_copied: "コピー済",
     }},
   }};
   var REGIME_MAP = {{
@@ -1332,6 +1384,48 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       syncThemeBtn();
       syncBackLink();
       try {{ localStorage.setItem("alphasift-theme", theme); }} catch (e) {{}}
+    }});
+  }}
+  function fallbackCopyPlainText(text, onDone) {{
+    try {{
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      if (onDone) onDone();
+    }} catch (e) {{}}
+  }}
+  function copyPlainText(text, onDone) {{
+    if (navigator.clipboard && navigator.clipboard.writeText) {{
+      navigator.clipboard.writeText(text).then(function () {{ if (onDone) onDone(); }}).catch(function () {{
+        fallbackCopyPlainText(text, onDone);
+      }});
+    }} else {{
+      fallbackCopyPlainText(text, onDone);
+    }}
+  }}
+  var patSec = document.getElementById("patterns");
+  if (patSec) {{
+    patSec.addEventListener("click", function (e) {{
+      var b = e.target && e.target.closest ? e.target.closest(".wf-cli-btn[data-cli]") : null;
+      if (!b) return;
+      var cli = b.getAttribute("data-cli");
+      if (!cli) return;
+      copyPlainText(cli, function () {{
+        var dict = I18N[lang] || I18N.zh;
+        if (b._cliTimer) clearTimeout(b._cliTimer);
+        b.classList.add("copied");
+        b.textContent = dict.wf_cli_copied || "Copied";
+        b._cliTimer = setTimeout(function () {{
+          b.classList.remove("copied");
+          b.textContent = (I18N[lang] || I18N.zh).wf_cli_btn || "CLI";
+        }}, 1500);
+      }});
     }});
   }}
 }})();
