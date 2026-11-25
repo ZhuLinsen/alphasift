@@ -182,3 +182,58 @@ def test_report_payload_to_json_and_write_sanitize_nonfinite_and_dates(tmp_path)
     write_run_report(out_path, payload, json_output=True)
     parsed_file = json.loads(out_path.read_text(encoding="utf-8"), parse_constant=_reject_constant)
     assert parsed_file == parsed_inline
+
+
+def test_build_run_report_payload_and_markdown_scrubs_nonfinite_and_bool():
+    run = _sample_run()
+    run.llm_coverage = float("nan")
+    run.picks[0].final_score = float("inf")
+    run.picks[0].price = float("nan")
+
+    evaluation = EvaluationResult(
+        run_id="run_report",
+        strategy="low_volatility_quality",
+        market="cn",
+        created_at="2026-07-01T09:30:00",
+        evaluated_at="2026-07-02T09:30:00",
+        elapsed_days=1,
+        snapshot_source="sina",
+        average_return_pct=float("nan"),
+        median_return_pct=float("-inf"),
+        win_rate=True,  # type: ignore[arg-type]
+        untradable_share_pct=float("inf"),
+        picks=[
+            PickEvaluation(
+                rank=1,
+                code="000001",
+                name="平安银行",
+                entry_price=10.0,
+                current_price=10.25,
+                return_pct=float("nan"),
+                status="ok",
+                max_drawdown_pct=float("-inf"),
+                max_runup_pct=3.0,
+            )
+        ],
+    )
+
+    payload = build_run_report_payload(run, evaluation=evaluation, max_picks=5)
+    assert payload["run"]["llm_coverage"] is None
+    assert payload["top_picks"][0]["final_score"] is None
+    assert payload["top_picks"][0]["price"] is None
+    cards = {c["label"]: c for c in payload["summary_cards"]}
+    assert cards["Average Return %"] == {"label": "Average Return %", "value": None, "status": "unknown"}
+    assert cards["Win Rate %"] == {"label": "Win Rate %", "value": None, "status": "unknown"}
+    eval_out = payload["evaluation"]
+    assert eval_out["average_return_pct"] is None
+    assert eval_out["median_return_pct"] is None
+    assert eval_out["win_rate"] is None
+    assert eval_out["untradable_share_pct"] is None
+    assert eval_out["picks"][0]["return_pct"] is None
+    assert eval_out["picks"][0]["max_drawdown_pct"] is None
+    assert eval_out["picks"][0]["max_runup_pct"] == 3.0
+
+    markdown = render_run_report_markdown(payload)
+    assert "- average_return_pct: -" in markdown
+    assert "nan" not in markdown.lower()
+    assert "inf" not in markdown.lower()

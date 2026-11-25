@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, dumps_strict_json, finite_float
 from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
 
 RUN_REPORT_SCHEMA_VERSION = 1
@@ -117,7 +117,7 @@ def _run_summary(result: ScreenResult) -> dict[str, Any]:
         "after_filter_count": result.after_filter_count,
         "pick_count": len(result.picks),
         "llm_ranked": result.llm_ranked,
-        "llm_coverage": result.llm_coverage,
+        "llm_coverage": finite_float(result.llm_coverage),
         "post_analyzers": list(result.post_analyzers),
         "saved_path": result.saved_path,
     }
@@ -140,9 +140,11 @@ def _summary_cards(
         ),
     ]
     if evaluation is not None:
+        avg_ret = _round_value(evaluation.average_return_pct)
+        win_rate = _round_value(evaluation.win_rate)
         cards.extend([
-            _card("Average Return %", evaluation.average_return_pct, _return_status(evaluation.average_return_pct)),
-            _card("Win Rate %", evaluation.win_rate, _win_rate_status(evaluation.win_rate)),
+            _card("Average Return %", avg_ret, _return_status(avg_ret)),
+            _card("Win Rate %", win_rate, _win_rate_status(win_rate)),
             _card("Missing Quotes", len(evaluation.missing_codes), "degraded" if evaluation.missing_codes else "ok"),
         ])
     return cards
@@ -164,7 +166,7 @@ def _source_health_summary(result: ScreenResult) -> dict[str, Any]:
 
 
 def _sorted_picks(picks: list[Pick]) -> list[Pick]:
-    return sorted(picks, key=lambda pick: (pick.rank or 999999, -float(pick.final_score or 0)))
+    return sorted(picks, key=lambda pick: (pick.rank or 999999, -(finite_float(pick.final_score) or 0.0)))
 
 
 def _pick_card(pick: Pick) -> dict[str, Any]:
@@ -208,6 +210,15 @@ def _pick_card(pick: Pick) -> dict[str, Any]:
     }
 
 
+def _eval_pick_sort_key(item: PickEvaluation) -> tuple[bool, float, int]:
+    ret = finite_float(item.return_pct)
+    return (
+        ret is None,
+        -(ret if ret is not None else -999999.0),
+        item.rank,
+    )
+
+
 def _evaluation_summary(
     evaluation: EvaluationResult,
     *,
@@ -219,27 +230,20 @@ def _evaluation_summary(
         "evaluated_at": evaluation.evaluated_at,
         "elapsed_days": evaluation.elapsed_days,
         "snapshot_source": evaluation.snapshot_source,
-        "average_return_pct": evaluation.average_return_pct,
-        "median_return_pct": evaluation.median_return_pct,
-        "win_rate": evaluation.win_rate,
+        "average_return_pct": _round_value(evaluation.average_return_pct),
+        "median_return_pct": _round_value(evaluation.median_return_pct),
+        "win_rate": _round_value(evaluation.win_rate),
         "entry_mode": evaluation.entry_mode,
         "horizon_days": evaluation.horizon_days,
         "pending_count": evaluation.pending_count,
         "untradable_count": evaluation.untradable_count,
-        "untradable_share_pct": evaluation.untradable_share_pct,
+        "untradable_share_pct": _round_value(evaluation.untradable_share_pct),
         "missing_count": len(evaluation.missing_codes),
         "missing_codes": list(evaluation.missing_codes),
         "degradation": list(evaluation.degradation),
         "picks": [
             _evaluation_pick_card(pick)
-            for pick in sorted(
-                evaluation.picks,
-                key=lambda item: (
-                    item.return_pct is None,
-                    -(float(item.return_pct) if item.return_pct is not None else -999999.0),
-                    item.rank,
-                ),
-            )[:max_picks]
+            for pick in sorted(evaluation.picks, key=_eval_pick_sort_key)[:max_picks]
         ],
     }
 
@@ -335,27 +339,29 @@ def _card(label: str, value: Any, status: str) -> dict[str, Any]:
 
 
 def _count_status(value: int | float | None) -> str:
-    if value is None:
+    num = finite_float(value)
+    if num is None:
         return "unknown"
-    return "ok" if float(value) > 0 else "degraded"
+    return "ok" if num > 0 else "degraded"
 
 
 def _return_status(value: float | None) -> str:
-    if value is None:
+    num = finite_float(value)
+    if num is None:
         return "unknown"
-    return "ok" if float(value) > 0 else "degraded"
+    return "ok" if num > 0 else "degraded"
 
 
 def _win_rate_status(value: float | None) -> str:
-    if value is None:
+    num = finite_float(value)
+    if num is None:
         return "unknown"
-    return "ok" if float(value) >= 50 else "degraded"
+    return "ok" if num >= 50 else "degraded"
 
 
-def _round_value(value: Any) -> Any:
-    if isinstance(value, float):
-        return round(value, 4)
-    return value
+def _round_value(value: Any) -> float | None:
+    num = finite_float(value)
+    return round(num, 4) if num is not None else None
 
 
 def _fmt(value: Any) -> str:
