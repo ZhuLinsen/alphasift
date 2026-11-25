@@ -21,7 +21,7 @@ from alphasift.daily_report_html import _safe_detail_url, render_daily_report_ht
 from alphasift.doctor import doctor_data_sources, doctor_radar_readiness
 from alphasift.market_digest import build_markets_digest, load_multi_market_runs
 from alphasift.market_regime import compute_market_regime, compute_market_regime_series
-from alphasift.markets import get_market
+from alphasift.markets import MARKETS, get_market
 from alphasift.overview import build_overview
 from alphasift.pack import PackError, load_pack, pack_dir
 from alphasift.patterns import extract_mini_kline_bars, list_patterns, scan_patterns
@@ -53,6 +53,22 @@ def build_api_response(
         return 200, screen_result_schema()
     if path == "/daily-report-schema":
         return 200, daily_report_schema()
+    if path == "/markets":
+        market_arg = (_single(params, "id") or _single(params, "market")).lower()
+        if market_arg:
+            try:
+                spec = get_market(market_arg)
+            except ValueError as exc:
+                return 404, {
+                    "error": "market_not_found",
+                    "message": str(exc),
+                    "market": market_arg,
+                }
+            return 200, {"schema_version": 1, "market": asdict(spec)}
+        return 200, {
+            "schema_version": 1,
+            "markets": [asdict(item) for item in MARKETS.values()],
+        }
     if path == "/overview":
         strategy_arg = _single(params, "strategy") or None
         if strategy_arg and _find_strategy(config, strategy_arg) is None:
@@ -587,6 +603,7 @@ def _index_payload() -> dict[str, Any]:
             "/result-schema",
             "/daily-report-schema",
             "/overview",
+            "/markets",
             "/strategies",
             "/strategy",
             "/strategy-compare",

@@ -25,6 +25,7 @@ def test_api_health_and_index(tmp_path):
 
     assert status == 200
     assert "/overview" in index["endpoints"]
+    assert "/markets" in index["endpoints"]
     assert "/result-schema" in index["endpoints"]
     assert "/strategy" in index["endpoints"]
     assert "/strategy-compare" in index["endpoints"]
@@ -38,6 +39,29 @@ def test_api_health_and_index(tmp_path):
     assert "/markets-digest" in index["endpoints"]
     assert health_status == 200
     assert health == {"status": "ok", "service": "alphasift", "schema_version": 1}
+
+
+def test_api_markets_endpoint(tmp_path):
+    config = _config(tmp_path)
+
+    status_all, payload_all = build_api_response(config, "/markets")
+    assert status_all == 200
+    assert len(payload_all["markets"]) == 7
+    assert {item["id"] for item in payload_all["markets"]} == {"cn", "us", "hk", "jp", "kr", "tw", "in"}
+
+    status_us, payload_us = build_api_response(config, "/markets", query="id=us")
+    assert status_us == 200
+    assert payload_us["market"]["id"] == "us"
+    assert payload_us["market"]["currency"] == "USD"
+
+    status_cn, payload_cn = build_api_response(config, "/markets", query="market=CN")
+    assert status_cn == 200
+    assert payload_cn["market"]["id"] == "cn"
+    assert payload_cn["market"]["supports_daily_pack"] is True
+
+    status_bad, payload_bad = build_api_response(config, "/markets", query="id=unknown_mkt")
+    assert status_bad == 404
+    assert payload_bad["error"] == "market_not_found"
 
 
 def test_api_overview_and_runs_are_ui_ready(tmp_path):
