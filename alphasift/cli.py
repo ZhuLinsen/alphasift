@@ -24,6 +24,7 @@ from alphasift.hotspot import (
     save_hotspots_json,
 )
 from alphasift.industry import fetch_akshare_board_map, save_industry_map
+from alphasift.jsonutil import dumps_strict_json
 from alphasift.overview import build_overview
 from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.pipeline import screen
@@ -549,7 +550,7 @@ def main():
         elif args.jsonl:
             print("\n".join(screen_result_to_jsonl(result)))
         else:
-            print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
+            print(dumps_strict_json(asdict(result), indent=2))
 
     elif args.command == "markets":
         from alphasift.markets import MARKETS, get_market
@@ -561,18 +562,15 @@ def main():
             except ValueError as exc:
                 parser.error(str(exc))
             if args.json:
-                print(json.dumps({"schema_version": 1, "market": asdict(spec)}, ensure_ascii=False, indent=2))
+                print(dumps_strict_json({"schema_version": 1, "market": asdict(spec)}, indent=2))
             else:
                 print(_format_markets_explain([spec]))
         else:
             specs = list(MARKETS.values())
             if args.json:
                 print(
-                    json.dumps(
-                        {"schema_version": 1, "markets": [asdict(item) for item in specs]},
-                        ensure_ascii=False,
-                        indent=2,
-                    )
+                    dumps_strict_json(
+                        {"schema_version": 1, "markets": [asdict(item) for item in specs]}, indent=2)
                 )
             else:
                 print(_format_markets_explain(specs))
@@ -583,7 +581,7 @@ def main():
         if args.templates:
             templates = list_strategy_templates()
             if args.json:
-                print(json.dumps(templates, ensure_ascii=False, indent=2))
+                print(dumps_strict_json(templates, indent=2))
             elif args.explain:
                 print(_format_strategy_templates_explain(templates))
             else:
@@ -600,7 +598,7 @@ def main():
             except ValueError as exc:
                 parser.error(str(exc))
             if args.json:
-                print(json.dumps(template, ensure_ascii=False, indent=2))
+                print(dumps_strict_json(template, indent=2))
             elif args.explain:
                 print(_format_strategy_template_explain(template))
             else:
@@ -611,7 +609,7 @@ def main():
             except ValueError as exc:
                 parser.error(str(exc))
             if args.json:
-                print(json.dumps(payload, ensure_ascii=False, indent=2))
+                print(dumps_strict_json(payload, indent=2))
             else:
                 print(_format_strategy_compare_explain(payload))
         elif _has_strategy_match_args(args):
@@ -630,7 +628,7 @@ def main():
                 limit=args.limit,
             )
             if args.json:
-                print(json.dumps(matches, ensure_ascii=False, indent=2))
+                print(dumps_strict_json(matches, indent=2))
             elif args.explain:
                 print(_format_strategy_matches_explain(matches, criteria=criteria))
             else:
@@ -639,7 +637,7 @@ def main():
         else:
             strategies = list_strategies()
             if args.json:
-                print(json.dumps([asdict(item) for item in strategies], ensure_ascii=False, indent=2))
+                print(dumps_strict_json([asdict(item) for item in strategies], indent=2))
             elif args.explain:
                 print(_format_strategies_explain(strategies))
             else:
@@ -677,7 +675,7 @@ def main():
         elif args.jsonl:
             print("\n".join(evaluation_result_to_jsonl(result)))
         else:
-            print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
+            print(dumps_strict_json(asdict(result), indent=2))
 
     elif args.command == "evaluate-batch":
         config = Config.from_env()
@@ -695,13 +693,13 @@ def main():
         if args.output:
             Path(args.output).parent.mkdir(parents=True, exist_ok=True)
             Path(args.output).write_text(
-                json.dumps(result, ensure_ascii=False, indent=2),
+                dumps_strict_json(result, indent=2),
                 encoding="utf-8",
             )
         if args.explain:
             print(_format_evaluation_batch_explain(result))
         else:
-            print(json.dumps(result, ensure_ascii=False, indent=2))
+            print(dumps_strict_json(result, indent=2))
 
     elif args.command == "performance":
         config = Config.from_env()
@@ -713,7 +711,7 @@ def main():
         if args.explain and not args.json:
             print(_format_performance_summary_explain(payload))
         else:
-            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            print(dumps_strict_json(payload, indent=2))
 
     elif args.command == "evaluate-strategies":
         config = Config.from_env()
@@ -773,19 +771,19 @@ def main():
         if args.output:
             Path(args.output).parent.mkdir(parents=True, exist_ok=True)
             Path(args.output).write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2),
+                dumps_strict_json(payload, indent=2),
                 encoding="utf-8",
             )
         if args.explain or not args.json:
             print(_format_evaluate_strategies_explain(payload))
         else:
-            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            print(dumps_strict_json(payload, indent=2))
 
     elif args.command == "runs":
         config = Config.from_env()
         runs = list_saved_runs(data_dir=config.data_dir, limit=args.limit, strategy=args.strategy)
         if args.json:
-            print(json.dumps(runs, ensure_ascii=False, indent=2))
+            print(dumps_strict_json(runs, indent=2))
             return
         for item in runs:
             print(
@@ -811,13 +809,13 @@ def main():
         if args.output:
             Path(args.output).parent.mkdir(parents=True, exist_ok=True)
             Path(args.output).write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2),
+                dumps_strict_json(payload, indent=2),
                 encoding="utf-8",
             )
         if args.explain:
             print(_format_overview_explain(payload))
         else:
-            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            print(dumps_strict_json(payload, indent=2))
 
     elif args.command == "serve":
         config = Config.from_env()
@@ -882,13 +880,13 @@ def main():
                 f"notes={' | '.join(notes)}"
             )
         else:
-            print(json.dumps({
+            print(dumps_strict_json({
                 "path": str(output_path),
                 "metadata_path": str(metadata_path),
                 "history_path": str(history_path),
                 "rows": len(mapping),
                 "notes": notes,
-            }, ensure_ascii=False, indent=2))
+            }, indent=2))
 
     elif args.command == "hotspots":
         hotspots = discover_hotspots(
@@ -903,7 +901,7 @@ def main():
         if args.explain:
             print(_format_hotspots_explain(hotspots, provider=args.provider))
         else:
-            print(json.dumps([asdict(item) for item in hotspots], ensure_ascii=False, indent=2))
+            print(dumps_strict_json([asdict(item) for item in hotspots], indent=2))
 
     elif args.command == "hotspot":
         timeline_path = args.timeline_path if args.timeline else None
@@ -919,13 +917,13 @@ def main():
             output_path = Path(args.output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(
-                json.dumps(hotspot_detail_to_dict(detail), ensure_ascii=False, indent=2),
+                dumps_strict_json(hotspot_detail_to_dict(detail), indent=2),
                 encoding="utf-8",
             )
         if args.explain:
             print(_format_hotspot_detail_explain(detail))
         else:
-            print(json.dumps(hotspot_detail_to_dict(detail), ensure_ascii=False, indent=2))
+            print(dumps_strict_json(hotspot_detail_to_dict(detail), indent=2))
 
     elif args.command == "hotspot-cache":
         hotspots = discover_hotspots(
@@ -965,7 +963,7 @@ def main():
                 f"fallback={fallback_used}"
             )
         else:
-            print(json.dumps({
+            print(dumps_strict_json({
                 "path": str(output_path),
                 "metadata_path": str(metadata_path),
                 "history_path": str(history_path) if history_path is not None else "",
@@ -973,13 +971,13 @@ def main():
                 "rows": len(hotspots),
                 "fallback_used": fallback_used,
                 "source_errors": getattr(hotspots, "source_errors", []),
-            }, ensure_ascii=False, indent=2))
+            }, indent=2))
 
     elif args.command == "audit":
         config = Config.from_env()
         result = audit_project(config.strategies_dir)
         if args.json:
-            print(json.dumps(result, ensure_ascii=False, indent=2))
+            print(dumps_strict_json(result, indent=2))
         else:
             print(_format_audit_explain(result))
 
@@ -1004,7 +1002,7 @@ def main():
             if args.output:
                 write_doctor_report(args.output, result)
             if args.json or not args.explain:
-                print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+                print(dumps_strict_json(result.to_dict(), indent=2))
             else:
                 print(_format_data_sources_doctor_explain(result.to_dict()))
         elif args.doctor_command == "dsa-readiness":
@@ -1014,9 +1012,9 @@ def main():
             )
             if args.output:
                 Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-                Path(args.output).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+                Path(args.output).write_text(dumps_strict_json(result, indent=2), encoding="utf-8")
             if args.json or not args.explain:
-                print(json.dumps(result, ensure_ascii=False, indent=2))
+                print(dumps_strict_json(result, indent=2))
             else:
                 print(_format_dsa_readiness_explain(result))
         elif args.doctor_command == "radar":
@@ -1028,7 +1026,7 @@ def main():
             if args.explain and not args.json:
                 print(_format_radar_doctor_explain(result))
             else:
-                print(json.dumps(result, ensure_ascii=False, indent=2))
+                print(dumps_strict_json(result, indent=2))
             pack_info = result.get("pack") or {}
             if args.strict_pack and (
                 not pack_info.get("valid")
@@ -1073,7 +1071,7 @@ def main():
                 )
         except (OSError, RuntimeError, ValueError) as exc:
             parser.error(str(exc))
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(dumps_strict_json(result, indent=2))
 
     elif args.command == "market-stats":
         from alphasift import pack
@@ -1102,7 +1100,7 @@ def main():
             print(_format_market_stats_explain(items))
         else:
             payload: object = items[0].to_dict() if args.days <= 1 else [item.to_dict() for item in items]
-            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            print(dumps_strict_json(payload, indent=2))
 
     elif args.command == "patterns":
         from alphasift import pack
@@ -1113,7 +1111,7 @@ def main():
         if args.patterns_command == "list":
             specs = list_patterns(include_experimental=args.include_experimental)
             if args.json:
-                print(json.dumps([asdict(s) for s in specs], ensure_ascii=False, indent=2))
+                print(dumps_strict_json([asdict(s) for s in specs], indent=2))
             else:
                 print(f"patterns={len(specs)}")
                 for spec in specs:
@@ -1137,7 +1135,7 @@ def main():
             if args.explain and not args.json:
                 print(_format_pattern_scan_explain(result, limit=args.limit))
             else:
-                print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+                print(dumps_strict_json(result.to_dict(), indent=2))
         else:
             directory = Path(args.pack_dir).expanduser() if args.pack_dir else pack.pack_dir(config)
             try:
@@ -1167,13 +1165,13 @@ def main():
             if args.output_json:
                 out_json = Path(args.output_json)
                 out_json.parent.mkdir(parents=True, exist_ok=True)
-                out_json.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                out_json.write_text(dumps_strict_json(report, indent=2) + "\n", encoding="utf-8")
             if args.output_md:
                 out_md = Path(args.output_md)
                 out_md.parent.mkdir(parents=True, exist_ok=True)
                 out_md.write_text(render_replay_markdown(report), encoding="utf-8")
             if args.json:
-                print(json.dumps(report, ensure_ascii=False, indent=2))
+                print(dumps_strict_json(report, indent=2))
             else:
                 print(render_replay_markdown(report))
 
@@ -1312,7 +1310,7 @@ def main():
         if args.explain and not args.json:
             print(_format_daily_report_explain(report))
         else:
-            print(json.dumps(report, ensure_ascii=False, indent=2))
+            print(dumps_strict_json(report, indent=2))
 
     elif args.command == "notify":
         from alphasift.notify import notify_readiness, send_test_notification
@@ -1321,7 +1319,7 @@ def main():
         if args.notify_action == "status":
             info = notify_readiness(config)
             if args.json:
-                print(json.dumps(info, ensure_ascii=False, indent=2))
+                print(dumps_strict_json(info, indent=2))
             else:
                 chans = ", ".join(info["configured_channels"]) or "none"
                 print(f"Configured channels: {chans}")
@@ -1337,7 +1335,7 @@ def main():
             except ValueError as exc:
                 parser.error(str(exc))
             if args.json:
-                print(json.dumps(res, ensure_ascii=False, indent=2))
+                print(dumps_strict_json(res, indent=2))
             else:
                 print(
                     f"notify_test status={res['status']} "
@@ -2600,7 +2598,7 @@ def _write_industry_cache_metadata(
         "history_path": str(history_path) if history_path is not None else "",
         "notes": notes,
     }
-    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    metadata_path.write_text(dumps_strict_json(metadata, indent=2), encoding="utf-8")
     return metadata_path
 
 
@@ -2628,7 +2626,7 @@ def _write_hotspot_cache_metadata(
         "source_errors": source_errors or [],
         "history_appended": history_appended,
     }
-    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    metadata_path.write_text(dumps_strict_json(metadata, indent=2), encoding="utf-8")
     return metadata_path
 
 
@@ -2644,7 +2642,7 @@ def _append_industry_cache_history(
     if records:
         with history_path.open("a", encoding="utf-8") as handle:
             for record in records:
-                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+                handle.write(dumps_strict_json(record, indent=None) + "\n")
     else:
         history_path.touch()
     return history_path

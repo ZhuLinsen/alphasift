@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from alphasift.jsonutil import dumps_strict_json
 from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
 
 RUN_REPORT_SCHEMA_VERSION = 1
@@ -103,7 +103,7 @@ def write_run_report(
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
     if json_output:
-        output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        output.write_text(dumps_strict_json(payload, indent=2), encoding="utf-8")
     else:
         output.write_text(render_run_report_markdown(payload), encoding="utf-8")
     return output
@@ -366,7 +366,7 @@ def _fmt(value: Any) -> str:
     if value is None or value == "":
         return "-"
     if isinstance(value, (dict, list)):
-        return json.dumps(value, ensure_ascii=False)
+        return dumps_strict_json(value, indent=None)
     return str(value)
 
 
@@ -376,4 +376,4 @@ def _md(value: Any) -> str:
 
 def report_payload_to_json(payload: dict[str, Any]) -> str:
     """Serialize report payload with stable JSON formatting."""
-    return json.dumps(payload, ensure_ascii=False, indent=2)
+    return dumps_strict_json(payload, indent=2)

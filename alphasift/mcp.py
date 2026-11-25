@@ -6,7 +6,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import redirect_stdout
 from dataclasses import asdict
-from datetime import date, datetime
+from datetime import date
 import json
 import math
 import os
@@ -19,6 +19,7 @@ from alphasift import __version__
 from alphasift.config import Config
 from alphasift.daily_report import build_daily_report, load_daily_report_runs
 from alphasift.doctor import doctor_data_sources
+from alphasift.jsonutil import dumps_strict_json, json_safe
 from alphasift.market_digest import build_markets_digest, load_multi_market_runs
 from alphasift.markets import MARKETS, get_market
 from alphasift.notify import notify_readiness
@@ -129,41 +130,7 @@ def _optional_http_url(args: dict[str, Any], key: str, *, default: str = "") -> 
     return url
 
 
-def _json_safe(obj: Any) -> Any:
-    """Normalize NaN/Inf floats, NumPy scalars/arrays, and dates before strict JSON serialization."""
-    if obj is None or isinstance(obj, (bool, int)):
-        return obj
-    if isinstance(obj, float):
-        return obj if math.isfinite(obj) else None
-    if isinstance(obj, str):
-        return obj
-    if type(obj).__name__ == "NaTType":
-        return None
-    if isinstance(obj, (date, datetime)):
-        return obj.isoformat()
-    if isinstance(obj, Path):
-        return str(obj)
-    ndim = getattr(obj, "ndim", None)
-    if isinstance(ndim, int) and ndim > 0 and hasattr(obj, "tolist") and callable(getattr(obj, "tolist")):
-        try:
-            return _json_safe(obj.tolist())
-        except Exception:
-            pass
-    if hasattr(obj, "item") and callable(getattr(obj, "item")):
-        try:
-            return _json_safe(obj.item())
-        except Exception:
-            pass
-    if hasattr(obj, "tolist") and callable(getattr(obj, "tolist")):
-        try:
-            return _json_safe(obj.tolist())
-        except Exception:
-            pass
-    if isinstance(obj, dict):
-        return {str(k): _json_safe(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple, set)):
-        return [_json_safe(v) for v in obj]
-    return str(obj)
+_json_safe = json_safe
 
 
 class _RPCParamError(Exception):
@@ -849,12 +816,7 @@ class MCPServer:
                 )
             try:
                 payload = handler(arguments)
-                safe_text = json.dumps(
-                    _json_safe(payload),
-                    ensure_ascii=False,
-                    indent=2,
-                    allow_nan=False,
-                )
+                safe_text = dumps_strict_json(payload, indent=2)
                 return {
                     "content": [{"type": "text", "text": safe_text}],
                     "isError": False,
@@ -918,7 +880,7 @@ class MCPServer:
                         {
                             "uri": uri,
                             "mimeType": "application/json",
-                            "text": json.dumps(_json_safe(builder()), ensure_ascii=False, indent=2, allow_nan=False),
+                            "text": dumps_strict_json(builder(), indent=2),
                         }
                     ]
                 }
@@ -1002,7 +964,7 @@ def read_stdio_message(stream: BinaryIO) -> tuple[str, bytes] | None:
 
 def write_stdio_message(stream: BinaryIO, payload: dict[str, Any], *, framing: str = "line") -> None:
     """Serialize one JSON-RPC response in either header-framed or line-delimited mode."""
-    encoded = json.dumps(_json_safe(payload), ensure_ascii=False, allow_nan=False).encode(
+    encoded = dumps_strict_json(payload, indent=None).encode(
         "utf-8", errors="replace"
     )
     if framing == "headers":

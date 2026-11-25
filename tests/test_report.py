@@ -151,3 +151,34 @@ def test_cli_report_unknown_run_errors(monkeypatch, tmp_path, capsys):
         raise AssertionError("report should exit for missing run")
 
     assert "Saved run not found: missing_run" in capsys.readouterr().err
+
+
+def test_report_payload_to_json_and_write_sanitize_nonfinite_and_dates(tmp_path):
+    from datetime import date
+    from alphasift.report import report_payload_to_json
+
+    payload = {
+        "object": "RunReport",
+        "nan_score": float("nan"),
+        "inf_ret": float("inf"),
+        "trade_date": date(2026, 11, 25),
+        "path": tmp_path / "run.json",
+    }
+
+    def _reject_constant(token):
+        raise AssertionError(f"Non-RFC-8259 JSON constant emitted: {token}")
+
+    raw_inline = report_payload_to_json(payload)
+    parsed_inline = json.loads(raw_inline, parse_constant=_reject_constant)
+    assert parsed_inline == {
+        "object": "RunReport",
+        "nan_score": None,
+        "inf_ret": None,
+        "trade_date": "2026-11-25",
+        "path": str(tmp_path / "run.json"),
+    }
+
+    out_path = tmp_path / "strict_report.json"
+    write_run_report(out_path, payload, json_output=True)
+    parsed_file = json.loads(out_path.read_text(encoding="utf-8"), parse_constant=_reject_constant)
+    assert parsed_file == parsed_inline

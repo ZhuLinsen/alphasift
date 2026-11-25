@@ -217,3 +217,50 @@ def test_render_market_digest_im_card_empty_sections_and_none_score() -> None:
     )
     assert "NVDA NVIDIA(0.0分)" in none_score_card
     assert len(none_score_card) <= 400
+
+
+def test_market_digest_ignores_nonfinite_scores_and_preserves_valid_sort(tmp_path: Path) -> None:
+    import json
+    from alphasift.jsonutil import dumps_strict_json
+
+    cfg = Config(data_dir=tmp_path)
+    runs_by_mkt = {
+        "us": [
+            _make_run(
+                run_id="us_nan",
+                strategy="us_momentum_quality",
+                market="us",
+                created_at="2026-11-20T22:00:00Z",
+                picks=[
+                    Pick(
+                        rank=1,
+                        code="NANC",
+                        name="NanCorp",
+                        final_score=float("nan"),
+                        screen_score=50.0,
+                        price=float("inf"),
+                    ),
+                    Pick(
+                        rank=2,
+                        code="AAPL",
+                        name="Apple",
+                        final_score=88.5,
+                        screen_score=88.5,
+                        price=190.0,
+                    ),
+                ],
+            )
+        ]
+    }
+    digest = build_markets_digest(runs_by_mkt, markets=["us"], config=cfg)
+    top = digest["market_sections"][0]["top_picks"]
+    assert [p["code"] for p in top] == ["AAPL", "NANC"]
+    assert top[1]["avg_final_score"] == 0.0
+    assert top[1]["price"] is None
+    assert "nan分" not in digest["im_card_markdown"].lower()
+    assert "NANC NanCorp(0.0分)" in digest["im_card_markdown"]
+
+    def _reject_constant(token: str) -> None:
+        raise AssertionError(f"Invalid JSON constant: {token}")
+
+    json.loads(dumps_strict_json(digest), parse_constant=_reject_constant)

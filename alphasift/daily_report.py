@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from datetime import date, datetime, timezone
-import json
 from pathlib import Path
 import re
 from typing import Any
@@ -25,6 +24,7 @@ from alphasift.daily_brief import (
     generate_ai_daily_brief,
     resolve_strategy_display_names,
 )
+from alphasift.jsonutil import dumps_strict_json
 from alphasift.market_news import fetch_cn_market_news
 from alphasift.markets import get_market, latest_settled_close
 from alphasift.models import ScreenResult
@@ -1176,7 +1176,7 @@ def render_daily_im_card(
 def write_daily_report(path: str | Path, report: dict[str, Any]) -> Path:
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    output.write_text(dumps_strict_json(report, indent=2) + "\n", encoding="utf-8")
     return output
 
 
