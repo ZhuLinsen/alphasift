@@ -938,3 +938,59 @@ def test_baostock_and_tushare_code_preserve_prefixed_index_symbols():
     assert _to_baostock_code("600519") == "sh.600519"
     assert _to_tushare_code("sh000300") == "000300.SH"
     assert _to_tushare_code("sz399001") == "399001.SZ"
+
+
+def test_daily_health_workers_ttl_and_cache_args_scrub_nonfinite_and_bool(tmp_path):
+    import json
+    from alphasift.daily import (
+        _DAILY_ENRICH_MAX_WORKERS,
+        _DAILY_HISTORY_CACHE_VERSION,
+        _normalize_max_workers,
+        _read_daily_history_cache,
+    )
+
+    assert _normalize_max_workers(None) == _DAILY_ENRICH_MAX_WORKERS
+    assert _normalize_max_workers(True) == _DAILY_ENRICH_MAX_WORKERS  # type: ignore[arg-type]
+    assert _normalize_max_workers(float("nan")) == _DAILY_ENRICH_MAX_WORKERS  # type: ignore[arg-type]
+    assert _normalize_max_workers("bad") == _DAILY_ENRICH_MAX_WORKERS  # type: ignore[arg-type]
+    assert _normalize_max_workers(0) == 1
+    assert _normalize_max_workers(3) == 3
+
+    _SOURCE_HEALTH["tencent"] = {
+        "successes": float("nan"),
+        "failures": float("inf"),
+        "total_failures": "bad",
+        "disabled_until": True,  # type: ignore[dict-item]
+        "last_rows": float("nan"),
+        "avg_rows": -5.0,
+        "last_success_at": float("inf"),
+        "last_failure_at": True,  # type: ignore[dict-item]
+    }
+    _SOURCE_HEALTH["sina"] = {"failures": 0.0, "disabled_until": 0.0}
+
+    assert _source_disabled_reason("tencent") is None
+    ranked, notes = _rank_daily_sources_by_health(("tencent", "sina"))
+    assert ranked == ("tencent", "sina")
+    assert notes == []
+
+    _record_source_success("tencent", rows=float("nan"))  # type: ignore[arg-type]
+    _record_source_success("tencent", rows=True)  # type: ignore[arg-type]
+    _record_source_success("tencent", rows=10)
+    snap = daily_source_health_snapshot()
+    assert snap["tencent"]["successes"] == 3.0
+    assert snap["tencent"]["last_rows"] == 10.0
+    assert snap["tencent"]["avg_rows"] == 10.0
+    json.dumps(snap, allow_nan=False)
+
+    cache_file = tmp_path / "hist.json"
+    cache_file.write_text(
+        json.dumps({
+            "version": _DAILY_HISTORY_CACHE_VERSION,
+            "frame": {"columns": ["日期", "收盘"], "data": [["2026-04-01", 10.0]]},
+        }),
+        encoding="utf-8",
+    )
+    stale_time = time.time() - 999999
+    os.utime(cache_file, (stale_time, stale_time))
+    assert _read_daily_history_cache(cache_file, ttl_seconds=float("nan")) is None
+    assert _read_daily_history_cache(cache_file, ttl_seconds=True) is None  # type: ignore[arg-type]

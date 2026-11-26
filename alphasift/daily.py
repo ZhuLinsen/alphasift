@@ -18,7 +18,7 @@ import requests
 
 from alphasift.markets import has_foreign_yahoo_suffix
 from alphasift.source_guard import call_with_timeout, parse_source_timeout_seconds
-from alphasift.jsonutil import atomic_write_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, finite_float, safe_int
 
 _DAILY_FEATURE_DEFAULTS = {
     "daily_data_points": pd.NA,
@@ -196,7 +196,7 @@ def fetch_daily_history(
     an A-share code.
     """
     normalized_code = _normalize_daily_code(code)
-    normalized_lookback_days = int(lookback_days)
+    normalized_lookback_days = max(safe_int(lookback_days, default=120), 1)
     src = _normalize_daily_source(source)
     if src == "auto":
         sources: tuple[str, ...] = (
@@ -223,7 +223,7 @@ def fetch_daily_history(
         if cached is not None and _history_reaches(cached, cache_min_last_date):
             return cached
 
-    attempts = max(int(retries), 0) + 1
+    attempts = max(safe_int(retries, default=2), 0) + 1
     errors: list[str] = []
     for current in sources:
         disabled_reason = _source_disabled_reason(current)
@@ -336,10 +336,15 @@ def _normalize_daily_source(source: str | None) -> str:
     return (source or "akshare").strip().lower()
 
 
+def _non_negative_float(value: object, default: float = 0.0) -> float:
+    parsed = finite_float(value)
+    return max(parsed, 0.0) if parsed is not None else default
+
+
 def _normalize_max_workers(value: int | None) -> int:
-    if value is None:
+    if value is None or isinstance(value, bool) or finite_float(value) is None:
         return _DAILY_ENRICH_MAX_WORKERS
-    return max(1, int(value))
+    return max(1, safe_int(value, default=_DAILY_ENRICH_MAX_WORKERS))
 
 
 def _call_daily_wrapper(fetcher, source: str, *args, **kwargs) -> pd.DataFrame:
@@ -368,9 +373,9 @@ def _rank_daily_sources_by_health(sources: tuple[str, ...]) -> tuple[tuple[str, 
 
     def rank_key(source: str) -> tuple[int, float, int]:
         state = health.get(source, {})
-        disabled_until = float(state.get("disabled_until", 0.0))
+        disabled_until = _non_negative_float(state.get("disabled_until", 0.0))
         disabled = disabled_until > now
-        failures = float(state.get("failures", 0.0))
+        failures = _non_negative_float(state.get("failures", 0.0))
         return (1 if disabled else 0, failures, default_rank[source])
 
     ranked = tuple(sorted(sources, key=rank_key))
@@ -385,9 +390,9 @@ def _source_disabled_reason(source: str) -> str | None:
         state = _SOURCE_HEALTH.get(source)
         if not state:
             return None
-        disabled_until = float(state.get("disabled_until", 0.0))
+        disabled_until = _non_negative_float(state.get("disabled_until", 0.0))
         if disabled_until <= now:
-            if disabled_until:
+            if state.get("disabled_until"):
                 state["disabled_until"] = 0.0
             return None
         return f"temporarily disabled for {disabled_until - now:.1f}s after repeated failures"
@@ -396,24 +401,28 @@ def _source_disabled_reason(source: str) -> str | None:
 def _record_source_success(source: str, *, rows: int | None = None) -> None:
     with _SOURCE_HEALTH_LOCK:
         state = _SOURCE_HEALTH.setdefault(source, {"failures": 0.0, "disabled_until": 0.0})
-        successes = float(state.get("successes", 0.0)) + 1.0
+        successes = _non_negative_float(state.get("successes", 0.0)) + 1.0
         state["successes"] = successes
         state["failures"] = 0.0
         state["disabled_until"] = 0.0
         state["last_success_at"] = time.time()
-        if rows is not None:
-            state["last_rows"] = float(rows)
-            previous_avg = float(state.get("avg_rows", rows))
-            state["avg_rows"] = previous_avg + (float(rows) - previous_avg) / successes
+        parsed_rows = finite_float(rows)
+        if parsed_rows is not None and parsed_rows >= 0:
+            state["last_rows"] = parsed_rows
+            prev_avg = finite_float(state.get("avg_rows"))
+            if prev_avg is None or prev_avg < 0:
+                state["avg_rows"] = parsed_rows
+            else:
+                state["avg_rows"] = prev_avg + (parsed_rows - prev_avg) / successes
 
 
 def _record_source_failure(source: str, error: object | None = None) -> None:
     now = time.monotonic()
     with _SOURCE_HEALTH_LOCK:
         state = _SOURCE_HEALTH.setdefault(source, {"failures": 0.0, "disabled_until": 0.0})
-        failures = float(state.get("failures", 0.0)) + 1.0
+        failures = _non_negative_float(state.get("failures", 0.0)) + 1.0
         state["failures"] = failures
-        state["total_failures"] = float(state.get("total_failures", 0.0)) + 1.0
+        state["total_failures"] = _non_negative_float(state.get("total_failures", 0.0)) + 1.0
         state["last_failure_at"] = time.time()
         if error is not None:
             state["last_error"] = " ".join(str(error).split())
@@ -432,18 +441,18 @@ def _daily_source_health_snapshot(sources: tuple[str, ...]) -> dict[str, dict[st
     with _SOURCE_HEALTH_LOCK:
         for source in sources:
             state = dict(_SOURCE_HEALTH.get(source, {}))
-            disabled_until = float(state.get("disabled_until", 0.0))
+            disabled_until = _non_negative_float(state.get("disabled_until", 0.0))
             cooldown_remaining = max(disabled_until - now, 0.0)
             snapshot[source] = {
-                "successes": float(state.get("successes", 0.0)),
-                "failures": float(state.get("failures", 0.0)),
-                "total_failures": float(state.get("total_failures", 0.0)),
-                "last_rows": float(state.get("last_rows", 0.0)),
-                "avg_rows": float(state.get("avg_rows", 0.0)),
+                "successes": _non_negative_float(state.get("successes", 0.0)),
+                "failures": _non_negative_float(state.get("failures", 0.0)),
+                "total_failures": _non_negative_float(state.get("total_failures", 0.0)),
+                "last_rows": _non_negative_float(state.get("last_rows", 0.0)),
+                "avg_rows": _non_negative_float(state.get("avg_rows", 0.0)),
                 "disabled": disabled_until > now,
                 "cooldown_remaining_seconds": round(cooldown_remaining, 4),
-                "last_success_at": float(state.get("last_success_at", 0.0)),
-                "last_failure_at": float(state.get("last_failure_at", 0.0)),
+                "last_success_at": _non_negative_float(state.get("last_success_at", 0.0)),
+                "last_failure_at": _non_negative_float(state.get("last_failure_at", 0.0)),
                 "last_error": str(state.get("last_error", "")),
             }
     return snapshot
@@ -456,11 +465,12 @@ def _daily_history_cache_path(
     source: str,
     lookback_days: int,
 ) -> Path:
-    key = f"{code}|{source}|{int(lookback_days)}"
+    lookback_val = max(safe_int(lookback_days, default=120), 1)
+    key = f"{code}|{source}|{lookback_val}"
     digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
     safe_source = "".join(ch if ch.isalnum() else "-" for ch in source).strip("-") or "source"
     safe_code = "".join(ch if ch.isalnum() else "-" for ch in code).strip("-") or "code"
-    return Path(cache_dir) / f"{safe_code}_{safe_source}_{int(lookback_days)}_{digest}.json"
+    return Path(cache_dir) / f"{safe_code}_{safe_source}_{lookback_val}_{digest}.json"
 
 
 def _history_reaches(df: pd.DataFrame, min_last_date: date | None) -> bool:
@@ -485,7 +495,8 @@ def _read_daily_history_cache(
     except FileNotFoundError:
         return None
 
-    ttl = _DAILY_HISTORY_CACHE_TTL_SECONDS if ttl_seconds is None else float(ttl_seconds)
+    parsed_ttl = finite_float(ttl_seconds)
+    ttl = _DAILY_HISTORY_CACHE_TTL_SECONDS if parsed_ttl is None else parsed_ttl
     is_stale = ttl <= 0 or time.time() - stat.st_mtime > ttl
     if is_stale and not allow_stale:
         return None
