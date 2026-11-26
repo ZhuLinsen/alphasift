@@ -141,3 +141,36 @@ def test_build_overview_strategy_cards_follow_strategy_filter(tmp_path):
     assert payload["strategy_cards"]["strategy_filter"] == "blue_chip_income"
     assert payload["strategy_cards"]["summary"]["strategy_count"] == 1
     assert [item["name"] for item in payload["strategy_cards"]["cards"]] == ["blue_chip_income"]
+
+
+def test_build_overview_and_performance_actions_scrub_nonfinite_and_bool_limits(tmp_path):
+    from alphasift.overview import _performance_actions
+
+    config = Config(
+        strategies_dir=Path("strategies"),
+        data_dir=tmp_path,
+        snapshot_source_priority=["sina"],
+        daily_source="auto",
+        fallback_snapshot_path=tmp_path / "snapshot.last_good.json",
+        daily_history_cache_dir=tmp_path / "daily_history",
+    )
+
+    for bad_limit, expected_matches in (
+        (True, 5),
+        (float("nan"), 5),
+        (float("inf"), 5),
+        (-3, 1),
+    ):
+        payload = build_overview(
+            config,
+            runs_limit=bad_limit,  # type: ignore[arg-type]
+            strategy_match={"risk_profile": "aggressive"},
+            match_limit=bad_limit,  # type: ignore[arg-type]
+        )
+        assert payload["summary"]["recent_run_count"] == 0
+        assert payload["summary"]["strategy_match_count"] == expected_matches
+
+    assert _performance_actions({"evaluation_count": True, "summary": {"next_actions": ["keep"]}}, has_recent_runs=False) == []
+    assert _performance_actions({"evaluation_count": float("nan"), "summary": {"next_actions": ["keep"]}}, has_recent_runs=False) == []
+    assert _performance_actions({"evaluation_count": "bad", "summary": {"next_actions": ["keep"]}}, has_recent_runs=False) == []
+    assert _performance_actions({"evaluation_count": 2, "summary": {"next_actions": ["keep"]}}, has_recent_runs=False) == ["keep"]

@@ -1230,4 +1230,37 @@ def test_pattern_replay_scrubs_nan_inf_bool_inputs_and_observations():
         replay_patterns(pack, benchmark_df=bench, warmup_days=True)  # type: ignore[arg-type]
 
 
+def test_pattern_spec_and_mini_kline_reject_nonfinite_and_bool_params(tmp_path):
+    from alphasift.patterns import extract_mini_kline_bars, load_pattern
+
+    pack = _make_ohlcv_pack({"600000": _flat_bars(25)}, dates=_dates(25))
+    assert extract_mini_kline_bars(pack, ["600000"], bars=True) == {}  # type: ignore[arg-type]
+    assert extract_mini_kline_bars(pack, ["600000"], bars=float("nan")) == {}  # type: ignore[arg-type]
+    assert extract_mini_kline_bars(pack, ["600000"], bars=-2) == {}
+
+    base_spec = (
+        "name: bad_spec\n"
+        "display_name: Bad\n"
+        "family: breakout\n"
+        "status: experimental\n"
+        "mode: direct\n"
+        "market_scope: [cn]\n"
+        "conditions:\n"
+        "  - feature: body_atr\n"
+        "    min: 1.0\n"
+    )
+    for extra, match in [
+        ("cooldown_days: true\n", "cooldown_days"),
+        ("min_history_days: true\n", "min_history_days"),
+        ("lookback_days: true\n", "lookback_days"),
+        ("min_wait_days: true\n", "min_wait_days"),
+        ("invalidation:\n  rule: none\n  tolerance_atr: .nan\n", "tolerance_atr"),
+        ("invalidation:\n  rule: none\n  tolerance_atr: -0.5\n", "tolerance_atr"),
+    ]:
+        p = tmp_path / "bad.yml"
+        p.write_text(base_spec + extra, encoding="utf-8")
+        with pytest.raises(ValueError, match=match):
+            load_pattern(p)
+
+
 

@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from alphasift.jsonutil import finite_float, safe_int
 from alphasift.market_regime import (
     MarketRegimeSnapshot,
     compute_limit_masks,
@@ -300,6 +301,12 @@ def _validate_condition_list(
     return validated
 
 
+def _require_strict_int(raw: object, *, field_name: str, filepath: Path) -> int:
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        raise ValueError(f"{field_name} must be an integer in {filepath.name}")
+    return raw
+
+
 def load_pattern(name_or_path: str | Path, *, patterns_dir: Path | None = None) -> PatternSpec:
     """Load and strictly validate a pattern YAML file."""
     candidate = Path(name_or_path)
@@ -342,10 +349,10 @@ def load_pattern(name_or_path: str | Path, *, patterns_dir: Path | None = None) 
     if not isinstance(scope_raw, list) or [str(x).lower() for x in scope_raw] != ["cn"]:
         raise ValueError(f"Pattern {filepath.name} market_scope must be ['cn']")
 
-    min_hist = int(data.get("min_history_days", 60))
+    min_hist = _require_strict_int(data.get("min_history_days", 60), field_name="min_history_days", filepath=filepath)
     if min_hist < 2:
         raise ValueError(f"min_history_days must be >= 2 in {filepath.name}")
-    cooldown_days = int(data.get("cooldown_days", 0))
+    cooldown_days = _require_strict_int(data.get("cooldown_days", 0), field_name="cooldown_days", filepath=filepath)
     if cooldown_days < 0 or cooldown_days > 20:
         raise ValueError(f"cooldown_days must be in 0..20 in {filepath.name}")
 
@@ -365,6 +372,9 @@ def load_pattern(name_or_path: str | Path, *, patterns_dir: Path | None = None) 
     inv_rule = str(inv.get("rule", "none"))
     if inv_rule not in _INVALIDATION_RULES:
         raise ValueError(f"Invalid invalidation rule {inv_rule!r} in {filepath.name}")
+    tol_atr = finite_float(inv.get("tolerance_atr", 0.0))
+    if tol_atr is None or tol_atr < 0:
+        raise ValueError(f"invalidation.tolerance_atr must be finite and >= 0 in {filepath.name}")
 
     conditions = _validate_condition_list(
         data.get("conditions"), section="conditions", filepath=filepath, allow_observe_relative=False
@@ -376,8 +386,8 @@ def load_pattern(name_or_path: str | Path, *, patterns_dir: Path | None = None) 
         data.get("confirm"), section="confirm", filepath=filepath, allow_observe_relative=True
     )
 
-    lookback_days = int(data.get("lookback_days", 5))
-    min_wait_days = int(data.get("min_wait_days", 1))
+    lookback_days = _require_strict_int(data.get("lookback_days", 5), field_name="lookback_days", filepath=filepath)
+    min_wait_days = _require_strict_int(data.get("min_wait_days", 1), field_name="min_wait_days", filepath=filepath)
     if mode == "direct":
         if not conditions:
             raise ValueError(f"Direct pattern {filepath.name} must define conditions")
@@ -412,7 +422,7 @@ def load_pattern(name_or_path: str | Path, *, patterns_dir: Path | None = None) 
         confirm=confirm,
         lookback_days=lookback_days,
         min_wait_days=min_wait_days,
-        invalidation={"rule": inv_rule, "tolerance_atr": float(inv.get("tolerance_atr", 0.0))},
+        invalidation={"rule": inv_rule, "tolerance_atr": tol_atr},
         cooldown_days=cooldown_days,
     )
 
@@ -1177,7 +1187,8 @@ def extract_mini_kline_bars(
 ) -> dict[str, list[list[float]]]:
     """Extract up to ``bars`` forward-adjusted [o, h, l, c] bars per code without look-ahead."""
     dates = [str(d) for d in daily_pack.dates]
-    if not dates or len(daily_pack.codes) == 0 or int(bars) <= 0:
+    n_bars = safe_int(bars, default=0)
+    if not dates or len(daily_pack.codes) == 0 or n_bars <= 0:
         return {}
     if trade_date is not None:
         if trade_date not in dates:
@@ -1205,7 +1216,6 @@ def extract_mini_kline_bars(
     v_mat = np.asarray(sub_pack.matrices["volume"], dtype=np.float64)
 
     out: dict[str, list[list[float]]] = {}
-    n_bars = int(bars)
     for raw_code in codes:
         code = normalize_code(raw_code, allow_ticker=False) or str(raw_code).strip()
         if not code or code in out:

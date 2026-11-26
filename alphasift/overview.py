@@ -9,6 +9,7 @@ from typing import Any
 
 from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
+from alphasift.jsonutil import safe_int
 from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.run_history import build_strategy_run_summary
 from alphasift.source_history import build_data_source_history
@@ -27,6 +28,9 @@ def build_overview(
     match_limit: int = 5,
 ) -> dict[str, Any]:
     """Build one compact payload for dashboards, agents, and notification surfaces."""
+    runs_limit_val = max(safe_int(runs_limit, default=5), 0)
+    history_limit = max(runs_limit_val, 20)
+    match_limit_val = max(safe_int(match_limit, default=5), 1)
     strategies = list_strategies(config.strategies_dir)
     doctor = doctor_data_sources(
         config,
@@ -36,22 +40,22 @@ def build_overview(
     ).to_dict()
     recent_runs = list_saved_runs(
         data_dir=config.data_dir,
-        limit=runs_limit,
+        limit=runs_limit_val,
         strategy=strategy_name,
     )
     run_history = build_strategy_run_summary(
         data_dir=config.data_dir,
-        limit=max(int(runs_limit), 20),
+        limit=history_limit,
         strategy=strategy_name,
     )
     source_history = build_data_source_history(
         data_dir=config.data_dir,
-        limit=max(int(runs_limit), 20),
+        limit=history_limit,
         strategy=strategy_name,
     )
     performance = build_strategy_performance_summary(
         data_dir=config.data_dir,
-        limit=max(int(runs_limit), 20),
+        limit=history_limit,
         strategy=strategy_name,
     )
     card_strategies = [
@@ -65,7 +69,7 @@ def build_overview(
         strategy_matches = match_strategies(
             config.strategies_dir,
             **match_kwargs,
-            limit=match_limit,
+            limit=match_limit_val,
         )
 
     payload = {
@@ -212,7 +216,7 @@ def _source_history_actions(source_history: dict[str, object]) -> list[str]:
 
 
 def _performance_actions(performance_summary: dict[str, object], *, has_recent_runs: bool) -> list[str]:
-    if not has_recent_runs and not int(performance_summary.get("evaluation_count") or 0):
+    if not has_recent_runs and safe_int(performance_summary.get("evaluation_count"), default=0) <= 0:
         return []
     summary = performance_summary.get("summary") or {}
     if not isinstance(summary, dict):
