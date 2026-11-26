@@ -568,3 +568,68 @@ def test_doctor_all_strategies_only_counts_strategies_for_the_checked_market(tmp
     assert hk_names == {"global_value"}
     assert "avg_amount_usd" in hk["snapshot"]["required_fields"]
     assert hk["strategy_requirements"]["market"] == "hk"
+
+
+def test_doctor_health_summary_and_ratio_scrub_nonfinite_and_bool():
+    import json
+    from alphasift.doctor import SourceCheckResult, _ratio, _source_family_health_summary
+
+    assert _ratio(True, 10) == 0.0  # type: ignore[arg-type]
+    assert _ratio(1, True) == 0.0  # type: ignore[arg-type]
+    assert _ratio(float("nan"), 10) == 0.0  # type: ignore[arg-type]
+    assert _ratio(2, float("inf")) == 0.0  # type: ignore[arg-type]
+    assert _ratio(1, 4) == 0.25
+
+    result = SourceCheckResult(
+        status="degraded",
+        sources=["src_nan", "src_bool", "src_neg", "src_ok"],
+        health={
+            "src_nan": {
+                "successes": float("nan"),
+                "failures": float("inf"),
+                "total_failures": "bad",
+                "cooldown_remaining_seconds": float("nan"),
+                "last_error": "timeout",
+            },
+            "src_bool": {
+                "successes": True,
+                "failures": False,
+                "total_failures": None,
+                "cooldown_remaining_seconds": True,
+                "last_error": "err_bool",
+            },
+            "src_neg": {
+                "successes": 3,
+                "failures": -2.0,
+                "total_failures": -5.0,
+                "cooldown_remaining_seconds": -1.0,
+            },
+            "src_ok": {
+                "successes": 5,
+                "failures": 0,
+                "total_failures": 0,
+            },
+        },
+    )
+    summary = _source_family_health_summary(result)
+    assert summary["healthy_sources"] == ["src_neg", "src_ok"]
+    assert summary["never_seen_sources"] == ["src_nan", "src_bool"]
+    assert summary["last_errors"] == [
+        {
+            "source": "src_nan",
+            "error": "timeout",
+            "failures": 0.0,
+            "total_failures": 0.0,
+            "disabled": False,
+            "cooldown_remaining_seconds": 0.0,
+        },
+        {
+            "source": "src_bool",
+            "error": "err_bool",
+            "failures": 0.0,
+            "total_failures": 0.0,
+            "disabled": False,
+            "cooldown_remaining_seconds": 0.0,
+        },
+    ]
+    json.dumps(summary, allow_nan=False)

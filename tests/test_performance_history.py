@@ -219,3 +219,27 @@ def test_build_strategy_performance_summary_scrubs_non_finite_metrics(tmp_path):
     assert row["recent_evaluations"][0]["evaluated_pick_count"] == 1
     assert row["recent_evaluations"][0]["average_return_pct"] is None
     assert row["recent_evaluations"][0]["win_rate"] is None
+
+
+def test_performance_history_helpers_scrub_nonfinite_and_bool(tmp_path):
+    import json
+    from alphasift.performance_history import _average, _median, _performance_score, _rate
+
+    for bad_limit in (True, float("nan"), float("inf"), -5):
+        payload = build_strategy_performance_summary(data_dir=tmp_path, limit=bad_limit)  # type: ignore[arg-type]
+        assert payload["limit"] == 0
+        assert payload["evaluation_count"] == 0
+        json.dumps(payload, allow_nan=False)
+
+    assert _performance_score(average_return_pct=5.0, win_rate=60.0, pick_count=True, missing_count=0) is None
+    assert _performance_score(average_return_pct=float("nan"), win_rate=60.0, pick_count=4, missing_count=0) is None
+    assert _performance_score(average_return_pct=5.0, win_rate=60.0, pick_count=4, missing_count=10) == 45.0
+
+    assert _average([float("nan"), float("inf"), True, False, 2.0, 6.0]) == 4.0  # type: ignore[list-item]
+    assert _average([float("nan"), True]) is None  # type: ignore[list-item]
+    assert _median([float("nan"), float("-inf"), True, 1.0, 5.0]) == 3.0  # type: ignore[list-item]
+    assert _median([float("inf"), False]) is None  # type: ignore[list-item]
+
+    assert _rate(True, 4) is None  # type: ignore[arg-type]
+    assert _rate(1, float("nan")) is None  # type: ignore[arg-type]
+    assert _rate(1, 4, percent=True) == 25.0

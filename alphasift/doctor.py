@@ -20,7 +20,7 @@ from alphasift.snapshot import (
 )
 from alphasift.markets import get_market
 from alphasift.strategy import list_strategies
-from alphasift.jsonutil import atomic_write_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, finite_float
 
 
 @dataclass
@@ -623,9 +623,11 @@ def _snapshot_reconciliation_summary(
 
 
 def _ratio(count: int, total: int) -> float:
-    if total <= 0:
+    count_val = finite_float(count)
+    total_val = finite_float(total)
+    if count_val is None or total_val is None or total_val <= 0:
         return 0.0
-    return round(float(count) / float(total), 4)
+    return round(count_val / total_val, 4)
 
 
 def _build_strategy_coverage(
@@ -890,6 +892,11 @@ def _skipped_freshness_summary(family: str) -> dict[str, Any]:
     }
 
 
+def _non_negative_float(value: object) -> float:
+    parsed = finite_float(value)
+    return max(parsed, 0.0) if parsed is not None else 0.0
+
+
 def _source_family_health_summary(result: SourceCheckResult) -> dict[str, Any]:
     health = result.health or {}
     requested_sources = list(dict.fromkeys([*result.sources, *health.keys()]))
@@ -901,9 +908,9 @@ def _source_family_health_summary(result: SourceCheckResult) -> dict[str, Any]:
 
     for source in requested_sources:
         state = health.get(source, {}) or {}
-        successes = float(state.get("successes", 0.0))
-        failures = float(state.get("failures", 0.0))
-        total_failures = float(state.get("total_failures", 0.0))
+        successes = _non_negative_float(state.get("successes", 0.0))
+        failures = _non_negative_float(state.get("failures", 0.0))
+        total_failures = _non_negative_float(state.get("total_failures", 0.0))
         disabled = bool(state.get("disabled", False))
         last_error = str(state.get("last_error", ""))
         if disabled:
@@ -921,7 +928,9 @@ def _source_family_health_summary(result: SourceCheckResult) -> dict[str, Any]:
                 "failures": failures,
                 "total_failures": total_failures,
                 "disabled": disabled,
-                "cooldown_remaining_seconds": float(state.get("cooldown_remaining_seconds", 0.0)),
+                "cooldown_remaining_seconds": _non_negative_float(
+                    state.get("cooldown_remaining_seconds", 0.0)
+                ),
             })
 
     return {
