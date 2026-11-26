@@ -10,7 +10,7 @@ import re
 from typing import Any
 
 from alphasift.config import Config
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import dumps_strict_json, finite_float, safe_int
 
 BRIEF_DISCLAIMER = "仅供量化研究与复盘观察，不构成投资建议。"
 
@@ -97,8 +97,8 @@ def build_cross_strategy_synthesis(
                 continue
             name = str(pk.get("name") or "").strip()
             industry = str(pk.get("industry") or "").strip()
-            score = pk.get("final_score")
-            chg = pk.get("change_pct")
+            score = finite_float(pk.get("final_score"))
+            chg = finite_float(pk.get("change_pct"))
             reason = str(pk.get("ranking_reason") or "").strip()
             ann_flags = [str(f) for f in (pk.get("announcement_risk_flags") or []) if f]
             risk_flags = [str(f) for f in (pk.get("risk_flags") or []) if f]
@@ -114,10 +114,10 @@ def build_cross_strategy_synthesis(
                     "tracks": set(),
                     "scores": [],
                     "change_pct": chg,
-                    "price": pk.get("price"),
-                    "pe_ratio": pk.get("pe_ratio"),
-                    "pb_ratio": pk.get("pb_ratio"),
-                    "market_cap_yi": pk.get("market_cap_yi"),
+                    "price": finite_float(pk.get("price")),
+                    "pe_ratio": finite_float(pk.get("pe_ratio")),
+                    "pb_ratio": finite_float(pk.get("pb_ratio")),
+                    "market_cap_yi": finite_float(pk.get("market_cap_yi")),
                     "reasons": [],
                     "announcement_risk_flags": set(),
                     "risk_flags": set(),
@@ -132,12 +132,14 @@ def build_cross_strategy_synthesis(
                 entry["strategies"].add(strat_name)
             entry["tracks"].add(track_name)
             if score is not None:
-                entry["scores"].append(float(score))
+                entry["scores"].append(score)
             if entry["change_pct"] is None and chg is not None:
                 entry["change_pct"] = chg
             for fld in ("price", "pe_ratio", "pb_ratio", "market_cap_yi"):
-                if entry[fld] is None and pk.get(fld) is not None:
-                    entry[fld] = pk.get(fld)
+                if entry[fld] is None:
+                    fval = finite_float(pk.get(fld))
+                    if fval is not None:
+                        entry[fld] = fval
             if reason and reason not in entry["reasons"] and len(entry["reasons"]) < 2:
                 entry["reasons"].append(reason)
             entry["announcement_risk_flags"].update(ann_flags)
@@ -332,18 +334,19 @@ def _build_rule_daily_brief(
 ) -> dict[str, Any]:
     reg = report.get("market_regime") or {}
     stage_label = str(reg.get("regime_stage_label") or "-")
-    adv = float(reg.get("advance_ratio_pct") or 0.0)
-    med = reg.get("median_return_pct")
-    med_txt = f"中位数 {float(med):+.2f}%" if med is not None else "中位数待统计"
-    lu = int(reg.get("non_st_limit_up_count") or 0)
-    ld = int(reg.get("non_st_limit_down_count") or 0)
-    seal = reg.get("seal_rate_pct")
-    seal_txt = f"{float(seal):.1f}%" if seal is not None else "-"
-    prev_lu = reg.get("prev_limit_up_avg_return_pct")
-    prev_txt = f"{float(prev_lu):+.2f}%" if prev_lu is not None else "-"
-    max_streak = int(reg.get("max_consecutive_limit_up") or 0)
-    amt = reg.get("total_amount_yi")
-    amt_txt = f"{float(amt):.0f}亿" if amt is not None else "-"
+    adv_val = finite_float(reg.get("advance_ratio_pct"))
+    adv = adv_val if adv_val is not None else 0.0
+    med = finite_float(reg.get("median_return_pct"))
+    med_txt = f"中位数 {med:+.2f}%" if med is not None else "中位数待统计"
+    lu = safe_int(reg.get("non_st_limit_up_count"))
+    ld = safe_int(reg.get("non_st_limit_down_count"))
+    seal = finite_float(reg.get("seal_rate_pct"))
+    seal_txt = f"{seal:.1f}%" if seal is not None else "-"
+    prev_lu = finite_float(reg.get("prev_limit_up_avg_return_pct"))
+    prev_txt = f"{prev_lu:+.2f}%" if prev_lu is not None else "-"
+    max_streak = safe_int(reg.get("max_consecutive_limit_up"))
+    amt = finite_float(reg.get("total_amount_yi"))
+    amt_txt = f"{amt:.0f}亿" if amt is not None else "-"
 
     syn = report.get("cross_strategy_synthesis") or build_cross_strategy_synthesis(report)
     consensus = syn.get("consensus_picks") or []
@@ -397,9 +400,10 @@ def _build_rule_daily_brief(
     for item in flagged[:3]:
         fl = "/".join(str(x) for x in (item.get("negative_event_flags") or [])[:2])
         risk_warnings.append(f"公告预警：{item.get('code')} {item.get('name', '')} 命中 [{fl}]")
-    if not flagged and int(ann.get("checked_count") or 0) > 0:
-        risk_warnings.append(f"已抽检 {int(ann.get('checked_count') or 0)} 只核心候选，未触发减持/立案等负面关键词。")
-    if ld >= 20 or (seal is not None and float(seal) < 55.0):
+    checked_count = safe_int(ann.get("checked_count"))
+    if not flagged and checked_count > 0:
+        risk_warnings.append(f"已抽检 {checked_count} 只核心候选，未触发减持/立案等负面关键词。")
+    if ld >= 20 or (seal is not None and seal < 55.0):
         risk_warnings.append(f"短线承接偏弱（非 ST 跌停 {ld} 只，封板率 {seal_txt}），警惕高位接力退潮风险。")
     if not risk_warnings:
         risk_warnings.append("关注次日开盘一字涨停导致的不可成交剔除以及市场成交额持续性。")
@@ -555,7 +559,16 @@ def generate_ai_daily_brief(
             assert config is not None
             brief_max_tokens = max(
                 1,
-                int(getattr(config, "llm_max_tokens", DEFAULT_LLM_MAX_TOKENS) or DEFAULT_LLM_MAX_TOKENS),
+                safe_int(
+                    getattr(config, "llm_max_tokens", DEFAULT_LLM_MAX_TOKENS),
+                    default=DEFAULT_LLM_MAX_TOKENS,
+                ),
+            )
+            t_req = finite_float(timeout_sec)
+            t_cfg = finite_float(getattr(config, "llm_timeout_sec", 60.0))
+            eff_timeout = min(
+                t_req if t_req is not None and t_req > 0 else 60.0,
+                t_cfg if t_cfg is not None and t_cfg > 0 else 60.0,
             )
             raw_text, used_model = _call_llm_with_metadata(
                 prompt,
@@ -568,7 +581,7 @@ def generate_ai_daily_brief(
                 silent=True,
                 channels=config.llm_channels,
                 config_path=str(config.llm_config_path or ""),
-                timeout_sec=min(float(timeout_sec), float(config.llm_timeout_sec)),
+                timeout_sec=eff_timeout,
                 max_tokens=brief_max_tokens,
                 reasoning_effort="low",
                 validator=_parse_brief_json,

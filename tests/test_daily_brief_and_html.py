@@ -862,5 +862,80 @@ def test_daily_report_html_formats_nonfinite_metrics_as_dash(tmp_path):
     assert [p.name for p in tmp_path.iterdir()] == ["daily.html"]
 
 
+def test_daily_brief_synthesis_and_rule_brief_scrub_nonfinite_and_bool():
+    from alphasift.daily_brief import build_cross_strategy_synthesis, generate_ai_daily_brief
+    from alphasift.jsonutil import dumps_strict_json
+
+    bad_report = {
+        "trade_date": "2026-11-26",
+        "market_regime": {
+            "regime_stage_label": "震荡",
+            "advance_ratio_pct": float("nan"),
+            "median_return_pct": float("inf"),
+            "non_st_limit_up_count": True,
+            "non_st_limit_down_count": float("nan"),
+            "seal_rate_pct": float("-inf"),
+            "prev_limit_up_avg_return_pct": True,
+            "max_consecutive_limit_up": float("inf"),
+            "total_amount_yi": float("nan"),
+        },
+        "announcement_risks": {"checked_count": True, "flagged_items": []},
+        "strategies": [
+            {
+                "strategy": "dual_low",
+                "track": "rules",
+                "picks": [
+                    {
+                        "code": "600519",
+                        "name": "贵州茅台",
+                        "industry": "白酒",
+                        "final_score": float("inf"),
+                        "change_pct": float("nan"),
+                        "price": True,
+                        "pe_ratio": float("-inf"),
+                        "pb_ratio": float("nan"),
+                        "market_cap_yi": float("inf"),
+                    }
+                ],
+            },
+            {
+                "strategy": "quality_value",
+                "track": "rules",
+                "picks": [
+                    {
+                        "code": "600519",
+                        "name": "贵州茅台",
+                        "industry": "白酒",
+                        "final_score": 82.5,
+                        "change_pct": 1.2,
+                        "price": 1500.0,
+                    }
+                ],
+            },
+        ],
+        "patterns": {"active": [], "experimental": []},
+        "ai_highlights": [],
+    }
+
+    syn = build_cross_strategy_synthesis(bad_report)
+    assert len(syn["consensus_picks"]) == 1
+    c0 = syn["consensus_picks"][0]
+    assert c0["avg_final_score"] == 82.5
+    assert c0["change_pct"] == 1.2
+    assert c0["price"] == 1500.0
+    assert "pe_ratio" not in c0
+    assert "pb_ratio" not in c0
+    assert "market_cap_yi" not in c0
+    assert dumps_strict_json(syn)
+
+    bad_report["cross_strategy_synthesis"] = syn
+    brief = generate_ai_daily_brief(bad_report, config=None)
+    assert brief["mode"] == "rule_fallback"
+    text_blob = dumps_strict_json(brief).lower()
+    assert "nan" not in text_blob
+    assert "inf" not in text_blob
+    assert "真" not in text_blob and "true" not in text_blob.replace("rule_fallback", "")
+
+
 
 
