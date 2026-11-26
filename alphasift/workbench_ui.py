@@ -172,6 +172,7 @@ def render_workbench_html() -> str:
       sub: "Zero-dependency local UI for strategies, live pattern scans, saved runs & AI readiness",
       btn_report: "Daily Report",
       refresh: "Refresh",
+      refreshing: "Refreshing...",
       tabs: { overview: "Overview", strategies: "Strategies", patterns: "Patterns", runs: "Runs & Picks", digest: "Markets Digest", mcp: "MCP & API" },
       kpi_strats: "Built-in Strategies",
       kpi_pats: "Pattern Catalog",
@@ -241,6 +242,7 @@ def render_workbench_html() -> str:
       sub: "零外部依赖本地 Web UI — 策略对比、本地形态扫描、历史归因与就绪自检",
       btn_report: "盘后日报",
       refresh: "刷新数据",
+      refreshing: "正在刷新…",
       tabs: { overview: "总览与自检", strategies: "内置策略", patterns: "形态扫描", runs: "历史运行与持仓暴露", digest: "多市场摘要", mcp: "MCP 与 API" },
       kpi_strats: "内置 YAML 策略",
       kpi_pats: "形态模板",
@@ -350,6 +352,9 @@ def render_workbench_html() -> str:
     activeRun: null,
     compareResult: null,
     runReqId: 0,
+    refreshReqId: 0,
+    refreshing: false,
+    digestReqId: 0,
     digestMarkets: ["us", "hk", "jp", "kr", "tw", "in"],
     digestDate: "",
     digestData: null,
@@ -493,7 +498,12 @@ def render_workbench_html() -> str:
     document.getElementById("wb-sub").textContent = t("sub");
     const repLink = document.getElementById("btn-daily-report");
     if (repLink) repLink.textContent = t("btn_report");
-    document.getElementById("btn-refresh").textContent = t("refresh");
+    const refBtn = document.getElementById("btn-refresh");
+    if (refBtn) {
+      refBtn.textContent = state.refreshing ? t("refreshing") : t("refresh");
+      refBtn.disabled = state.refreshing;
+      refBtn.setAttribute("aria-busy", state.refreshing ? "true" : "false");
+    }
     const tabLabels = t("tabs");
     const tabIds = ["overview", "strategies", "patterns", "runs", "digest", "mcp"];
     const bar = clear(document.getElementById("tab-bar"));
@@ -1066,6 +1076,7 @@ def render_workbench_html() -> str:
   const ALL_DIGEST_MARKETS = ["us", "hk", "jp", "kr", "tw", "in", "cn"];
 
   async function loadMarketsDigest() {
+    const reqId = ++state.digestReqId;
     const mkts = state.digestMarkets.length ? state.digestMarkets : ["us", "hk", "jp", "kr", "tw", "in"];
     let url = "/markets-digest?markets=" + encodeURIComponent(mkts.join(","));
     const td = String(state.digestDate || "").trim();
@@ -1074,13 +1085,18 @@ def render_workbench_html() -> str:
     state.digestErr = "";
     renderDigest();
     try {
-      state.digestData = await fetchJson(url);
+      const payload = await fetchJson(url);
+      if (reqId !== state.digestReqId) return;
+      state.digestData = payload;
     } catch (err) {
+      if (reqId !== state.digestReqId) return;
       state.digestData = null;
       state.digestErr = String(err.message || err);
     } finally {
-      state.digestLoading = false;
-      renderDigest();
+      if (reqId === state.digestReqId) {
+        state.digestLoading = false;
+        renderDigest();
+      }
     }
   }
 
@@ -1312,30 +1328,44 @@ def render_workbench_html() -> str:
   }
 
   async function refreshAll() {
-    const [idx, ov, strats, pats, runs, radar, src, mkts] = await Promise.all([
-      fetchJson("/?format=json").catch(() => null),
-      fetchJson("/overview").catch(() => null),
-      fetchJson("/strategies").catch(() => ({ strategies: [] })),
-      fetchJson("/patterns").catch(() => ({ patterns: [] })),
-      fetchJson("/runs").catch(() => ({ runs: [] })),
-      fetchJson("/doctor/radar").catch(() => null),
-      fetchJson("/doctor/data-sources?live=0").catch(() => null),
-      fetchJson("/markets").catch(() => ({ markets: [] })),
-    ]);
-    state.index = idx;
-    state.overview = ov;
-    state.strategies = (strats && (strats.strategies || strats.items)) || [];
-    state.markets = (mkts && mkts.markets) || [];
-    state.patterns = (pats && (pats.patterns || pats.items)) || [];
-    state.runs = (runs && (runs.runs || runs.items)) || [];
-    state.radar = radar;
-    state.sources = src;
-    state.activeRun = null;
-    state.digestData = null;
-    state.digestErr = "";
-    renderAll();
-    if (state.tab === "digest") {
-      loadMarketsDigest();
+    const reqId = ++state.refreshReqId;
+    state.refreshing = true;
+    renderHeaderAndTabs();
+    let ok = false;
+    try {
+      const [idx, ov, strats, pats, runs, radar, src, mkts] = await Promise.all([
+        fetchJson("/?format=json").catch(() => null),
+        fetchJson("/overview").catch(() => null),
+        fetchJson("/strategies").catch(() => ({ strategies: [] })),
+        fetchJson("/patterns").catch(() => ({ patterns: [] })),
+        fetchJson("/runs").catch(() => ({ runs: [] })),
+        fetchJson("/doctor/radar").catch(() => null),
+        fetchJson("/doctor/data-sources?live=0").catch(() => null),
+        fetchJson("/markets").catch(() => ({ markets: [] })),
+      ]);
+      if (reqId !== state.refreshReqId) return;
+      state.index = idx;
+      state.overview = ov;
+      state.strategies = (strats && (strats.strategies || strats.items)) || [];
+      state.markets = (mkts && mkts.markets) || [];
+      state.patterns = (pats && (pats.patterns || pats.items)) || [];
+      state.runs = (runs && (runs.runs || runs.items)) || [];
+      state.radar = radar;
+      state.sources = src;
+      state.activeRun = null;
+      state.digestReqId += 1;
+      state.digestLoading = false;
+      state.digestData = null;
+      state.digestErr = "";
+      ok = true;
+    } finally {
+      if (reqId === state.refreshReqId) {
+        state.refreshing = false;
+        renderAll();
+        if (ok && state.tab === "digest") {
+          loadMarketsDigest();
+        }
+      }
     }
   }
 

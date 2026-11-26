@@ -772,3 +772,27 @@ def test_cli_version_flag_prints_package_version(monkeypatch, capsys):
     assert exc_info.value.code == 0
     assert f"alphasift {__version__}" in capsys.readouterr().out
 
+
+def test_cli_safe_float_rejects_bool_and_non_finite_values():
+    from alphasift.cli import _industry_cache_history_records, _safe_float
+    from alphasift.jsonutil import dumps_strict_json
+
+    for bad in (None, "", "-", "--", "nan", "<NA>", True, False, float("inf"), float("-inf"), float("nan"), "inf", "-Infinity"):
+        assert _safe_float(bad) is None
+
+    assert _safe_float("12.5%") == 12.5
+    assert _safe_float("1,024.5") == 1024.5
+    assert _safe_float(-3.5) == -3.5
+
+    records = _industry_cache_history_records(
+        {
+            "600519": {"board_heat_summary": "白酒:热度高", "board_heat_score": float("inf")},
+            "000858": {"board_heat_summary": "白酒:热度高", "board_heat_score": "88.5"},
+        },
+        generated_at="2026-11-26T00:00:00Z",
+    )
+    assert len(records) == 1
+    assert records[0]["code_count"] == 2
+    assert records[0]["max_board_heat_score"] == 88.5
+    assert "88.5" in dumps_strict_json(records[0], indent=None)
+

@@ -685,6 +685,9 @@ def test_http_workbench_ui_content_negotiation_security_headers_and_js_syntax(tm
     assert "pattern-replay-card" in html_text
     assert "codex mcp add alphasift -- alphasift mcp" in html_text
     assert "Copy CLI" in html_text
+    assert "refreshReqId" in html_text
+    assert "digestReqId" in html_text
+    assert "aria-busy" in html_text
 
     # Regression checks for Audit #4 security fixes
     from alphasift.daily_report_html import render_daily_report_html

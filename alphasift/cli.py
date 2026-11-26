@@ -25,6 +25,7 @@ from alphasift.hotspot import (
 )
 from alphasift.industry import fetch_akshare_board_map, save_industry_map
 from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, dumps_strict_json
+from alphasift.normalize import safe_float as normalize_safe_float
 from alphasift.overview import build_overview
 from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.pipeline import screen
@@ -2665,15 +2666,9 @@ def _split_board_heat_summary(value: object) -> list[str]:
 
 
 def _safe_float(value: object) -> float | None:
-    if value is None:
+    if isinstance(value, bool):
         return None
-    text = str(value).strip().replace("%", "").replace(",", "")
-    if not text or text.lower() in {"nan", "none", "<na>"}:
-        return None
-    try:
-        return float(text)
-    except (TypeError, ValueError):
-        return None
+    return normalize_safe_float(value)
 
 
 def _apply_env_file_args(env_files: list[str] | None) -> None:
