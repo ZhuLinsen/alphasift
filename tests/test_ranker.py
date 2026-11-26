@@ -10,6 +10,7 @@ from alphasift.models import Pick
 from alphasift.ranker import (
     _build_ranking_prompt,
     _call_llm,
+    _format_candidate_for_prompt,
     _parse_ranking_response,
     _parse_ranking_response_detail,
     rank_candidates,
@@ -667,3 +668,114 @@ def test_build_ranking_prompt_includes_concise_full_coverage_instructions():
     assert "控制输出精简以防截断" in prompt
     for field in ('"code"', '"llm_score"', '"confidence"', '"ranked"', '"catalysts"', '"invalidators"'):
         assert field in prompt
+
+
+def test_ranker_scrubs_nan_inf_bool_and_none_in_prompts_and_scoring(monkeypatch):
+    p1 = Pick(
+        rank=True,  # type: ignore[arg-type]
+        code="600001",
+        name="AlphaOne",
+        final_score=float("inf"),
+        screen_score=float("nan"),
+        price=float("nan"),
+        change_pct=float("inf"),
+        amount=None,  # type: ignore[arg-type]
+        pe_ratio=True,  # type: ignore[arg-type]
+        board_heat_score=float("-inf"),
+        factor_scores={"trend": float("nan"), "heat": True, "value": 82.5},  # type: ignore[dict-item]
+        dsa_context={
+            "quote": {"price": float("nan"), "change_pct": float("inf"), "amount": False},
+        },
+    )
+    p2 = Pick(
+        rank=2,
+        code="600002",
+        name="BetaTwo",
+        final_score=78.0,
+        screen_score=78.0,
+        amount=5_000_000.0,
+        risk_flags=["立案调查"],
+    )
+    p3 = Pick(
+        rank=3,
+        code="600003",
+        name="GammaThree",
+        final_score=72.0,
+        screen_score=72.0,
+        amount=3_000_000.0,
+    )
+
+    for detail in ("full", "compact", "identity"):
+        line = _format_candidate_for_prompt(p1, detail=detail)
+        lower_line = line.lower()
+        assert "nan" not in lower_line
+        assert "inf" not in lower_line
+        assert "alphaone" in lower_line
+        assert "screen_score=0.0" in line
+        if detail != "identity":
+            assert "amount=0" in line
+        if detail == "full":
+            assert "{'value': 82.5}" in line
+            assert "quote=price:None,change_pct:None,amount:None" in line
+
+    for budget in (None, 2400):
+        prompt = _build_ranking_prompt([p1, p2, p3], "优先稳健", "上下文", max_chars=budget)
+        lowered = prompt.lower()
+        assert "nan" not in lowered
+        assert "inf" not in lowered
+        assert "alphaone" in lowered
+
+    captured = {}
+
+    def fake_llm(_prompt, _key, _model, _base_url, **kwargs):
+        captured["timeout_sec"] = kwargs.get("timeout_sec")
+        captured["temperature"] = kwargs.get("temperature")
+        return json.dumps(
+            {
+                "ranked": [
+                    {"code": "600001", "llm_score": "inf", "confidence": "nan"},
+                    {"code": "600003", "llm_score": True, "confidence": True},
+                ]
+            }
+        )
+
+    monkeypatch.setattr("alphasift.ranker._call_llm", fake_llm)
+    res = rank_candidates_with_metadata(
+        [p1, p2, p3],
+        "hints",
+        "k",
+        "fake/model",
+        rank_weight=float("nan"),
+        min_coverage=float("nan"),
+        temperature=float("nan"),
+        timeout_sec=float("inf"),
+        max_retries=0,
+    )
+    assert res.ranked is True
+    assert captured["timeout_sec"] == 60.0
+    assert captured["temperature"] == 0.2
+    assert all(isinstance(p.final_score, float) and p.final_score == p.final_score for p in res.picks)
+    by_code = {p.code: p for p in res.picks}
+    assert by_code["600001"].screen_score == 0.0
+    assert by_code["600001"].llm_score == 100.0
+    assert by_code["600001"].llm_confidence is None
+    assert by_code["600003"].llm_score == pytest.approx(100.0 - 100.0 / 3.0)
+    assert by_code["600003"].llm_confidence is None
+    assert "llm_omitted" in by_code["600002"].risk_flags
+    assert "red_flag_capped" in by_code["600002"].risk_flags
+    assert by_code["600002"].final_score == pytest.approx(78.0 * 0.6 + 35.0 * 0.4)
+
+    # NaN min_coverage still rejects below-threshold (1/3 < 0.60) instead of bypassing
+    monkeypatch.setattr(
+        "alphasift.ranker._call_llm",
+        lambda *_a, **_kw: json.dumps({"ranked": [{"code": "600001", "llm_score": 90}]}),
+    )
+    low_cov = rank_candidates_with_metadata(
+        [p1, p2, p3],
+        "hints",
+        "k",
+        "fake/model",
+        min_coverage=float("nan"),
+        max_retries=0,
+    )
+    assert low_cov.ranked is False
