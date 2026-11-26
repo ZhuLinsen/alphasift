@@ -1,0 +1,23 @@
+{
+  "session": "us",
+  "date": "2026-11-26",
+  "finished_at": "2026-11-26T22:34:54+00:00",
+  "entries": [
+    {
+      "market": "us",
+      "strategy": "global_value",
+      "track": "rules",
+      "status": "skipped_holiday",
+      "error": "market closed (quotes 2026-11-25, benchmark 2026-11-25 < 2026-11-26)",
+      "seconds": 0.0
+    },
+    {
+      "market": "us",
+      "strategy": "us_momentum_quality",
+      "track": "rules",
+      "status": "skipped_holiday",
+      "error": "market closed (quotes 2026-11-25, benchmark 2026-11-25 < 2026-11-26)",
+      "seconds": 0.0
+    }
+  ]
+}

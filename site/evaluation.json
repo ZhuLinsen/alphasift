@@ -1,5 +1,5 @@
 {
- "evaluated_at": "2026-11-26T10:40:29+00:00",
+ "evaluated_at": "2026-11-26T22:34:54+00:00",
  "entry_mode_switch_date": "2026-11-21",
  "windows": [
   5,
@@ -1523,7 +1523,7 @@
    }
   },
   "7284e8e0148c": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1563,32 +1563,32 @@
      "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": -5.6738,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "BBD": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -5.4475,
+       "excess_return_pct": 0.2263
       },
       "PBR-A": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -9.6178,
+       "excess_return_pct": -3.944
       },
       "TAP": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 3.2502,
+       "excess_return_pct": 8.924
       },
       "PBR": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -9.9327,
+       "excess_return_pct": -4.2589
       },
       "CMCSA": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.8377,
+       "excess_return_pct": 8.5115
       }
      }
     },
@@ -1628,7 +1628,7 @@
    }
   },
   "3a753b288834": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1668,32 +1668,32 @@
      "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": -5.6738,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "BRK-B": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.5164,
+       "excess_return_pct": 4.1574
       },
       "CVS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -9.4504,
+       "excess_return_pct": -3.7766
       },
       "T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 3.1896,
+       "excess_return_pct": 8.8634
       },
       "FIS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -8.5071,
+       "excess_return_pct": -2.8333
       },
       "OXY": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -5.7477,
+       "excess_return_pct": -0.0739
       }
      }
     },
@@ -3278,7 +3278,7 @@
    }
   },
   "7da1a5d66a44": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3383,7 +3383,7 @@
    }
   },
   "5dccc124ea86": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5033,7 +5033,7 @@
    }
   },
   "cae43eb6e6a1": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5138,7 +5138,7 @@
    }
   },
   "a6da12b31a6a": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6818,7 +6818,7 @@
    }
   },
   "77d92e7d72d2": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6923,7 +6923,7 @@
    }
   },
   "100906b58dd7": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8603,7 +8603,7 @@
    }
   },
   "c3a8bec3b6c1": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8708,7 +8708,7 @@
    }
   },
   "d9a3978492b8": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10358,39 +10358,39 @@
    }
   },
   "96281996813e": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": -1.8488,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "BBD": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.6736,
+       "excess_return_pct": 3.5224
       },
       "FIS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 3.4044,
+       "excess_return_pct": 5.2532
       },
       "PBR": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -4.0646,
+       "excess_return_pct": -2.2158
       },
       "PURR": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -6.7925,
+       "excess_return_pct": -4.9437
       },
       "CMCSA": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.9414,
+       "excess_return_pct": 3.7902
       }
      }
     },
@@ -10463,39 +10463,39 @@
    }
   },
   "8cd58ac4aead": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
      "benchmark_return_pct": -1.8488,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "BAC": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.7565,
+       "excess_return_pct": 1.0923
       },
       "DIS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.6479,
+       "excess_return_pct": 4.4967
       },
       "HON": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.0777,
+       "excess_return_pct": 2.9265
       },
       "DUK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.4225,
+       "excess_return_pct": 3.2713
       },
       "SKHY": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -9.2512,
+       "excess_return_pct": -7.4024
       }
      }
     },
@@ -12128,7 +12128,7 @@
    }
   },
   "40621daaf4ec": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12233,7 +12233,7 @@
    }
   },
   "0d1365962ccc": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13853,7 +13853,7 @@
    }
   },
   "fd0f0b1106ce": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13958,7 +13958,7 @@
    }
   },
   "d9edc25a4bc7": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16493,7 +16493,7 @@
    }
   },
   "c11df143d52b": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16634,7 +16634,7 @@
    }
   },
   "d47c9ef26663": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19910,7 +19910,7 @@
    }
   },
   "56d3dfc9e86b": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19922,27 +19922,37 @@
       "PBR-A": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 13.87,
+       "entry_date": "2026-11-25"
       },
       "PBR": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.77,
+       "entry_date": "2026-11-25"
       },
       "BBD": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 2.29,
+       "entry_date": "2026-11-25"
       },
       "CTVA": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 8.1,
+       "entry_date": "2026-11-25"
       },
       "FIS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 27.05,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -19957,27 +19967,37 @@
       "PBR-A": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 13.87,
+       "entry_date": "2026-11-25"
       },
       "PBR": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.77,
+       "entry_date": "2026-11-25"
       },
       "BBD": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 2.29,
+       "entry_date": "2026-11-25"
       },
       "CTVA": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 8.1,
+       "entry_date": "2026-11-25"
       },
       "FIS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 27.05,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -19992,27 +20012,37 @@
       "PBR-A": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 13.87,
+       "entry_date": "2026-11-25"
       },
       "PBR": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 15.77,
+       "entry_date": "2026-11-25"
       },
       "BBD": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 2.29,
+       "entry_date": "2026-11-25"
       },
       "CTVA": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 8.1,
+       "entry_date": "2026-11-25"
       },
       "FIS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 27.05,
+       "entry_date": "2026-11-25"
       }
      },
      "untradable": 0,
@@ -20021,7 +20051,7 @@
    }
   },
   "e8960dfe5dfe": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23438,7 +23468,7 @@
    }
   },
   "ed5aa8fc9808": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23549,7 +23579,7 @@
    }
   },
   "1aefc4b99d39": {
-   "evaluated_at": "2026-11-26T05:49:43+00:00",
+   "evaluated_at": "2026-11-26T22:34:54+00:00",
    "final": false,
    "windows": {
     "5": {
