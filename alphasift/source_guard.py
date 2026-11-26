@@ -3,12 +3,15 @@
 
 from __future__ import annotations
 
+import math
 import os
 from queue import Queue
 import threading
 from typing import Any, Callable, TypeVar
 
 T = TypeVar("T")
+
+_DISABLE_TIMEOUT_TOKENS = {"0", "false", "off", "none", "disabled"}
 
 
 class SourceCallTimeout(TimeoutError):
@@ -23,14 +26,21 @@ def parse_source_timeout_seconds(
 ) -> float | None:
     """Return a positive timeout, or ``None`` when timeout guarding is disabled."""
     raw = os.getenv(specific_env)
-    if raw is None:
+    if raw is None or not raw.strip():
         raw = os.getenv(fallback_env)
     if raw is None:
         return float(default)
     cleaned = raw.strip().lower()
-    if cleaned in {"", "0", "false", "off", "none", "disabled"}:
+    if not cleaned:
+        return float(default)
+    if cleaned in _DISABLE_TIMEOUT_TOKENS:
         return None
-    timeout = float(cleaned)
+    try:
+        timeout = float(cleaned)
+    except ValueError:
+        return float(default)
+    if not math.isfinite(timeout):
+        return float(default)
     return timeout if timeout > 0 else None
 
 
@@ -49,6 +59,11 @@ def call_with_timeout(
     """
     if timeout_sec is None:
         return func(*args, **kwargs)
+    if isinstance(timeout_sec, bool):
+        raise ValueError("timeout_sec must be a positive number or None, got bool")
+    timeout = float(timeout_sec)
+    if not math.isfinite(timeout) or timeout <= 0:
+        return func(*args, **kwargs)
 
     result_queue: Queue[tuple[bool, object]] = Queue(maxsize=1)
 
@@ -60,9 +75,9 @@ def call_with_timeout(
 
     worker = threading.Thread(target=run, name=f"alphasift-source:{label}", daemon=True)
     worker.start()
-    worker.join(float(timeout_sec))
+    worker.join(timeout)
     if worker.is_alive():
-        raise SourceCallTimeout(f"{label} timed out after {float(timeout_sec):g}s")
+        raise SourceCallTimeout(f"{label} timed out after {timeout:g}s")
 
     ok, payload = result_queue.get_nowait()
     if ok:

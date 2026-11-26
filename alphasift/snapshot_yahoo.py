@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import logging
+import math
 import os
 import re
 import time
@@ -312,16 +313,23 @@ def _drop_secondary_listings(df: pd.DataFrame, spec: MarketSpec) -> pd.DataFrame
 
 
 def _num(value: object) -> float | None:
+    if isinstance(value, bool):
+        return None
     try:
         number = float(value)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return None
-    return number if number == number else None  # drop NaN
+    return number if math.isfinite(number) else None
 
 
 def _int_env(name: str, default: int) -> int:
     raw = os.getenv(name, "").strip()
-    return max(1, int(raw)) if raw else default
+    if not raw:
+        return default
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return default
 
 
 def fetch_yahoo_quotes(symbols: list[str], *, download=None) -> pd.DataFrame:
