@@ -475,3 +475,33 @@ def test_fund_flow_non_rate_limit_error_does_not_trip_cooldown(monkeypatch):
         assert "100万" in str(rows[0]["fund_flow"])
     finally:
         reset_provider_cooldowns()
+
+
+def test_candidate_context_scrubs_nonfinite_and_bool_cooldown_and_weights():
+    import math
+
+    reset_provider_cooldowns()
+    try:
+        candidate_context._trip_provider_cooldown("fund_flow", cooldown_sec=float("nan"), now=100.0)
+        until_nan_cd = candidate_context._PROVIDER_COOLDOWN_UNTIL["fund_flow"]
+        assert math.isfinite(until_nan_cd)
+        assert until_nan_cd == 100.0 + candidate_context._PROVIDER_COOLDOWN_SEC
+
+        reset_provider_cooldowns()
+        candidate_context._trip_provider_cooldown("fund_flow", cooldown_sec=True, now=float("inf"))  # type: ignore[arg-type]
+        until_bool_inf = candidate_context._PROVIDER_COOLDOWN_UNTIL["fund_flow"]
+        assert math.isfinite(until_bool_inf)
+        assert until_bool_inf > 0.0
+
+        weights = candidate_context._normalized_source_weights({
+            "news": float("nan"),
+            "announcement": float("inf"),
+            "fund_flow": True,  # type: ignore[dict-item]
+            "quote": -2.0,
+        })
+        assert weights["news"] == candidate_context._SOURCE_WEIGHTS["news"]
+        assert weights["announcement"] == candidate_context._SOURCE_WEIGHTS["announcement"]
+        assert weights["fund_flow"] == candidate_context._SOURCE_WEIGHTS["fund_flow"]
+        assert weights["quote"] == 0.0
+    finally:
+        reset_provider_cooldowns()

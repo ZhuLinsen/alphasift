@@ -807,3 +807,120 @@ def test_evaluate_saved_runs_aggregates_data_quality_and_hints(tmp_path):
     assert roundtrip.run_degradation == []
     assert roundtrip.daily_source_counts == {"tencent": 2}
     assert roundtrip.daily_quality_flag_counts == {}
+
+
+def test_evaluation_aggregations_scrub_nan_inf_and_bool_pick_metrics():
+    import json
+    from alphasift.evaluate import (
+        _aggregate_by_holding_period,
+        _aggregate_by_pick_label,
+        _aggregate_by_pick_multi_label,
+        _aggregate_evaluations,
+        _aggregate_portfolios,
+        _evaluation_brief,
+        _return_stats,
+    )
+    from alphasift.models import EvaluationResult, PickEvaluation
+
+    evaluation = EvaluationResult(
+        run_id="e_nonfinite",
+        strategy="dual_low",
+        market="cn",
+        created_at="2026-04-01",
+        elapsed_days=3,
+        picks=[
+            PickEvaluation(
+                code="000001",
+                name="a",
+                rank=1,
+                entry_price=10.0,
+                llm_sector="Tech",
+                llm_tags=["tag_bad"],
+                return_pct=float("nan"),
+                max_drawdown_pct=float("-inf"),
+                max_runup_pct=True,  # type: ignore[arg-type]
+                excess_return_pct=float("inf"),
+                benchmark_return_pct=True,  # type: ignore[arg-type]
+            ),
+            PickEvaluation(
+                code="000002",
+                name="b",
+                rank=2,
+                entry_price=10.0,
+                llm_sector="Tech",
+                llm_tags=["tag_good"],
+                return_pct=True,  # type: ignore[arg-type]
+                max_drawdown_pct=float("nan"),
+                max_runup_pct=float("inf"),
+                excess_return_pct=float("-inf"),
+                benchmark_return_pct=float("nan"),
+            ),
+            PickEvaluation(
+                code="000003",
+                name="c",
+                rank=3,
+                entry_price=10.0,
+                llm_sector="Tech",
+                llm_tags=["tag_good"],
+                return_pct=10.0,
+                max_drawdown_pct=-3.0,
+                max_runup_pct=12.0,
+                excess_return_pct=6.0,
+                benchmark_return_pct=4.0,
+            ),
+        ],
+    )
+
+    overall = _aggregate_evaluations([evaluation])
+    assert overall["evaluated_pick_count"] == 1
+    assert overall["average_return_pct"] == 10.0
+    assert overall["path_pick_count"] == 1
+    assert overall["average_max_drawdown_pct"] == -3.0
+    assert overall["average_max_runup_pct"] == 12.0
+    assert overall["benchmark_pick_count"] == 1
+    assert overall["average_matched_return_pct"] == 10.0
+    assert overall["average_benchmark_return_pct"] == 4.0
+    assert overall["average_excess_return_pct"] == 6.0
+
+    portfolio = _aggregate_portfolios([evaluation])
+    assert portfolio["evaluated_run_count"] == 1
+    assert portfolio["average_portfolio_return_pct"] == 10.0
+    assert portfolio["path_run_count"] == 1
+    assert portfolio["average_portfolio_max_drawdown_pct"] == -3.0
+    assert portfolio["average_portfolio_max_runup_pct"] == 12.0
+
+    by_industry = _aggregate_by_pick_label([evaluation], "llm_sector")
+    assert by_industry["Tech"] == {
+        "pick_count": 1,
+        "average_return_pct": 10.0,
+        "median_return_pct": 10.0,
+        "win_rate": 100.0,
+    }
+
+    by_tags = _aggregate_by_pick_multi_label([evaluation], "llm_tags")
+    assert by_tags["tag_bad"] == {
+        "pick_count": 0,
+        "average_return_pct": None,
+        "median_return_pct": None,
+        "win_rate": None,
+    }
+    assert by_tags["tag_good"]["pick_count"] == 1
+    assert by_tags["tag_good"]["average_return_pct"] == 10.0
+
+    by_holding = _aggregate_by_holding_period([evaluation])
+    assert by_holding["T+2_5"]["pick_count"] == 1
+    assert by_holding["T+2_5"]["average_return_pct"] == 10.0
+
+    direct_stats = _return_stats([float("nan"), float("inf"), True, False, 4.0, 8.0])  # type: ignore[list-item]
+    assert direct_stats == {
+        "pick_count": 2,
+        "average_return_pct": 6.0,
+        "median_return_pct": 6.0,
+        "win_rate": 100.0,
+    }
+
+    brief = _evaluation_brief(evaluation)
+    assert brief["average_max_drawdown_pct"] == -3.0
+
+    for payload in (overall, portfolio, by_industry, by_tags, by_holding, direct_stats, brief):
+        json.dumps(payload, allow_nan=False)

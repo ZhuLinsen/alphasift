@@ -1338,40 +1338,40 @@ def _classify_shape_status(
 
 def _aggregate_evaluations(evaluations: list[EvaluationResult]) -> dict[str, object]:
     returns = [
-        float(pick.return_pct)
+        value
         for evaluation in evaluations
         for pick in evaluation.picks
-        if pick.return_pct is not None
+        if (value := _safe_finite_float(pick.return_pct)) is not None
     ]
     drawdowns = [
-        float(pick.max_drawdown_pct)
+        value
         for evaluation in evaluations
         for pick in evaluation.picks
-        if pick.max_drawdown_pct is not None
+        if (value := _safe_finite_float(pick.max_drawdown_pct)) is not None
     ]
     runups = [
-        float(pick.max_runup_pct)
+        value
         for evaluation in evaluations
         for pick in evaluation.picks
-        if pick.max_runup_pct is not None
+        if (value := _safe_finite_float(pick.max_runup_pct)) is not None
     ]
     excess = [
-        float(pick.excess_return_pct)
+        value
         for evaluation in evaluations
         for pick in evaluation.picks
-        if pick.excess_return_pct is not None
+        if (value := _safe_finite_float(pick.excess_return_pct)) is not None
     ]
     # Benchmark and excess cover only picks with benchmark data for their own
     # window. The matched return average is over the same picks, so
     # matched_return - bench == excess even when coverage is partial; the
     # all-pick average_return_pct can differ from it.
     matched = [
-        (float(pick.return_pct), float(pick.benchmark_return_pct))
+        (ret, bench)
         for evaluation in evaluations
         for pick in evaluation.picks
-        if pick.excess_return_pct is not None
-        and pick.benchmark_return_pct is not None
-        and pick.return_pct is not None
+        if _safe_finite_float(pick.excess_return_pct) is not None
+        and (bench := _safe_finite_float(pick.benchmark_return_pct)) is not None
+        and (ret := _safe_finite_float(pick.return_pct)) is not None
     ]
     benchmark_returns = [bench for _, bench in matched]
     benchmarks = sorted({evaluation.benchmark for evaluation in evaluations if evaluation.benchmark})
@@ -1429,24 +1429,24 @@ def _aggregate_portfolios(evaluations: list[EvaluationResult]) -> dict[str, obje
     evaluated_runs = 0
     for evaluation in evaluations:
         pick_returns = [
-            float(pick.return_pct)
+            value
             for pick in evaluation.picks
-            if pick.return_pct is not None
+            if (value := _safe_finite_float(pick.return_pct)) is not None
         ]
         if pick_returns:
             evaluated_runs += 1
             returns.append(sum(pick_returns) / len(pick_returns))
         pick_drawdowns = [
-            float(pick.max_drawdown_pct)
+            value
             for pick in evaluation.picks
-            if pick.max_drawdown_pct is not None
+            if (value := _safe_finite_float(pick.max_drawdown_pct)) is not None
         ]
         if pick_drawdowns:
             drawdowns.append(sum(pick_drawdowns) / len(pick_drawdowns))
         pick_runups = [
-            float(pick.max_runup_pct)
+            value
             for pick in evaluation.picks
-            if pick.max_runup_pct is not None
+            if (value := _safe_finite_float(pick.max_runup_pct)) is not None
         ]
         if pick_runups:
             runups.append(sum(pick_runups) / len(pick_runups))
@@ -2296,8 +2296,8 @@ def _aggregate_by_pick_label(
     for evaluation in evaluations:
         for pick in evaluation.picks:
             value = str(getattr(pick, field, "") or "unknown").strip() or "unknown"
-            if pick.return_pct is not None:
-                groups.setdefault(value, []).append(float(pick.return_pct))
+            if (ret := _safe_finite_float(pick.return_pct)) is not None:
+                groups.setdefault(value, []).append(ret)
             else:
                 groups.setdefault(value, [])
     return {
@@ -2316,8 +2316,8 @@ def _aggregate_by_pick_multi_label(
             labels = _normalize_labels(getattr(pick, field, []) or ["none"])
             for label in labels:
                 key = str(label or "none").strip() or "none"
-                if pick.return_pct is not None:
-                    groups.setdefault(key, []).append(float(pick.return_pct))
+                if (ret := _safe_finite_float(pick.return_pct)) is not None:
+                    groups.setdefault(key, []).append(ret)
                 else:
                     groups.setdefault(key, [])
     return {
@@ -2339,8 +2339,8 @@ def _aggregate_by_holding_period(evaluations: list[EvaluationResult]) -> dict[st
     for evaluation in evaluations:
         bucket = _holding_period_bucket(evaluation.elapsed_days)
         for pick in evaluation.picks:
-            if pick.return_pct is not None:
-                groups.setdefault(bucket, []).append(float(pick.return_pct))
+            if (ret := _safe_finite_float(pick.return_pct)) is not None:
+                groups.setdefault(bucket, []).append(ret)
             else:
                 groups.setdefault(bucket, [])
     return {
@@ -2350,12 +2350,17 @@ def _aggregate_by_holding_period(evaluations: list[EvaluationResult]) -> dict[st
 
 
 def _return_stats(values: list[float]) -> dict[str, object]:
+    clean = [
+        value
+        for item in values
+        if (value := _safe_finite_float(item)) is not None
+    ]
     return {
-        "pick_count": len(values),
-        "average_return_pct": _safe_round(sum(values) / len(values)) if values else None,
-        "median_return_pct": _safe_round(float(pd.Series(values).median())) if values else None,
-        "win_rate": _safe_round(sum(1 for value in values if value > 0) / len(values) * 100)
-        if values else None,
+        "pick_count": len(clean),
+        "average_return_pct": _safe_round(sum(clean) / len(clean)) if clean else None,
+        "median_return_pct": _safe_round(float(pd.Series(clean).median())) if clean else None,
+        "win_rate": _safe_round(sum(1 for value in clean if value > 0) / len(clean) * 100)
+        if clean else None,
     }
 
 
@@ -2372,6 +2377,11 @@ def _holding_period_bucket(days: int | None) -> str:
 
 
 def _evaluation_brief(evaluation: EvaluationResult) -> dict[str, object]:
+    drawdowns = [
+        value
+        for pick in evaluation.picks
+        if (value := _safe_finite_float(pick.max_drawdown_pct)) is not None
+    ]
     return {
         "run_id": evaluation.run_id,
         "strategy": evaluation.strategy,
@@ -2383,10 +2393,7 @@ def _evaluation_brief(evaluation: EvaluationResult) -> dict[str, object]:
         "win_rate": evaluation.win_rate,
         "portfolio_return_pct": evaluation.average_return_pct,
         "path_pick_count": sum(1 for pick in evaluation.picks if pick.path_status == "ok"),
-        "average_max_drawdown_pct": _safe_round(
-            sum(float(pick.max_drawdown_pct) for pick in evaluation.picks if pick.max_drawdown_pct is not None)
-            / sum(1 for pick in evaluation.picks if pick.max_drawdown_pct is not None)
-        ) if any(pick.max_drawdown_pct is not None for pick in evaluation.picks) else None,
+        "average_max_drawdown_pct": _safe_round(sum(drawdowns) / len(drawdowns)) if drawdowns else None,
         "missing_count": len(evaluation.missing_codes),
         "horizon_days": evaluation.horizon_days,
         "entry_mode": evaluation.entry_mode,

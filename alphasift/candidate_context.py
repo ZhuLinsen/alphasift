@@ -16,7 +16,7 @@ import pandas as pd
 import requests
 
 from alphasift.source_guard import call_with_timeout
-from alphasift.jsonutil import atomic_write_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, finite_float
 
 _NEGATIVE_EVENT_KEYWORDS = {
     "减持": ("减持", "拟减持", "被动减持"),
@@ -136,10 +136,18 @@ def _trip_provider_cooldown(
     cooldown_sec: float = _PROVIDER_COOLDOWN_SEC,
     now: float | None = None,
 ) -> None:
-    current = time.monotonic() if now is None else now
-    until = current + max(float(cooldown_sec), 0.0)
+    parsed_now = finite_float(now)
+    current = time.monotonic() if parsed_now is None else parsed_now
+    parsed_cooldown = finite_float(cooldown_sec)
+    cooldown = (
+        max(parsed_cooldown, 0.0)
+        if parsed_cooldown is not None
+        else max(float(_PROVIDER_COOLDOWN_SEC), 0.0)
+    )
+    until = current + cooldown
     with _PROVIDER_COOLDOWN_LOCK:
-        _PROVIDER_COOLDOWN_UNTIL[provider] = max(_PROVIDER_COOLDOWN_UNTIL.get(provider, 0.0), until)
+        existing = finite_float(_PROVIDER_COOLDOWN_UNTIL.get(provider, 0.0))
+        _PROVIDER_COOLDOWN_UNTIL[provider] = max(existing if existing is not None else 0.0, until)
 
 
 def _format_provider_error(exc: Exception, *, max_len: int = 120) -> str:
@@ -703,10 +711,10 @@ def _normalized_source_weights(source_weights: dict[str, float] | None) -> dict[
         normalized = _normalize_providers([str(key)])
         if not normalized:
             continue
-        try:
-            result[normalized[0]] = max(float(value), 0.0)
-        except (TypeError, ValueError):
+        parsed = finite_float(value)
+        if parsed is None:
             continue
+        result[normalized[0]] = max(parsed, 0.0)
     return result
 
 
