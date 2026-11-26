@@ -1127,4 +1127,107 @@ def test_walk_forward_and_stability_purge_cross_boundary_exit_dates(tmp_path: Pa
     assert pat["stability"]["h1_n"] + pat["stability"]["h2_n"] + pat["stability"]["h1_purged_signals"] == pat["stability"]["n"]
 
 
+def test_pattern_replay_scrubs_nan_inf_bool_inputs_and_observations():
+    from alphasift.pattern_replay import (
+        _mean_or_none,
+        _median_or_none,
+        _naive_daily_t_stat,
+        _newey_west_t_stat,
+        _summarize_horizon_obs,
+        _summarize_stability,
+        _summarize_walk_forward_regime_audit,
+        _win_rate_or_none,
+        replay_patterns,
+    )
+
+    mixed = [1.0, float("nan"), True, float("inf"), 3.0, "bad"]
+    assert _mean_or_none(mixed) == 2.0
+    assert _median_or_none(mixed) == 2.0
+    assert _win_rate_or_none(mixed) == 100.0
+    assert _newey_west_t_stat([1.0, float("nan"), 3.0, True], [0, 1, 2, 3]) == _newey_west_t_stat(
+        [1.0, 3.0], [0, 2]
+    )
+    assert _newey_west_t_stat([1.0, 3.0], [0, 2]) == 3.16
+    assert _naive_daily_t_stat([1.0, float("inf"), 3.0, True]) == 2.0
+
+    obs = [
+        {
+            "date": "2026-01-05",
+            "stage": "startup",
+            "overhead": float("nan"),
+            "horizons": {
+                "t5": {
+                    "status": "ok",
+                    "exit_date": "2026-01-12",
+                    "raw_return_pct": float("nan"),
+                    "excess_return_pct": float("inf"),
+                    "net_excess_return_pct": True,
+                }
+            },
+        },
+        {
+            "date": "2026-02-02",
+            "stage": "startup",
+            "overhead": 8.0,
+            "horizons": {
+                "t5": {
+                    "status": "ok",
+                    "exit_date": "2026-02-09",
+                    "raw_return_pct": 2.5,
+                    "excess_return_pct": 1.5,
+                    "net_excess_return_pct": 1.25,
+                    "net_over_ew_pct": 1.0,
+                    "same_day_ew_gross_excess_pct": 0.25,
+                    "exit_delayed": False,
+                }
+            },
+        },
+        {
+            "date": "2026-02-03",
+            "stage": "startup",
+            "overhead": True,
+            "horizons": {
+                "t5": {
+                    "status": "ok",
+                    "exit_date": "2026-02-10",
+                    "raw_return_pct": "bad",
+                    "excess_return_pct": 2.0,
+                    "net_excess_return_pct": "nan",
+                    "net_over_ew_pct": float("inf"),
+                }
+            },
+        },
+    ]
+
+    summary = _summarize_horizon_obs(obs, 5, net_cost_bps=float("nan"), applied_cost_bps=True)  # type: ignore[arg-type]
+    assert summary["scored"] == 1
+    assert summary["raw_mean_pct"] == 2.5
+
+    audit = _summarize_walk_forward_regime_audit(
+        obs,
+        mid_date="2026-01-20",
+        horizon=5,
+        min_regime_days_h1=True,  # type: ignore[arg-type]
+        adverse_threshold_pct=float("nan"),
+        max_overhead_pct=float("inf"),
+    )
+    assert audit["min_regime_days_h1"] == 3
+    assert audit["adverse_threshold_pct"] == -0.5
+    assert audit["h2_low_overhead"]["signals"] == 1
+
+    stab = _summarize_stability(obs, mid_date="2026-01-20", horizon=5)
+    assert stab["n"] == 1
+    assert stab["h2_n"] == 1
+
+    pack = _make_ohlcv_pack({"600000": _flat_bars(75)}, dates=_dates(75))
+    bench = pd.DataFrame({"date": _dates(75), "open": [3000.0] * 75, "close": [3005.0] * 75})
+    for bad_cost in (float("nan"), float("inf"), -1.0, True):
+        with pytest.raises(ValueError, match="cost_bps"):
+            replay_patterns(pack, benchmark_df=bench, cost_bps=bad_cost)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="horizons"):
+        replay_patterns(pack, benchmark_df=bench, horizons=(True,))  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="warmup_days"):
+        replay_patterns(pack, benchmark_df=bench, warmup_days=True)  # type: ignore[arg-type]
+
+
 

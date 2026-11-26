@@ -988,3 +988,12 @@ def test_http_handler_supports_head_and_returns_json_500_on_unexpected_error(tmp
         server.shutdown()
         server.server_close()
 
+
+def test_parse_accept_q_rejects_nan_and_inf():
+    from alphasift.server import _parse_accept_q, _prefers_html
+
+    assert _parse_accept_q(["q=nan"]) == 0.0
+    assert _parse_accept_q(["q=inf"]) == 0.0
+    assert _parse_accept_q(["q=-inf"]) == 0.0
+    assert _prefers_html("text/html;q=nan, application/json;q=0.5", "") is False
+

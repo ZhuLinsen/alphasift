@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from alphasift.daily import _fetch_daily_sina, _fetch_daily_tencent
+from alphasift.jsonutil import finite_float, safe_int
 from alphasift.market_regime import (
     REGIME_STAGE_LABELS,
     REGIME_STAGE_ORDER,
@@ -91,33 +92,47 @@ def load_cn_benchmark(
     return out.sort_values("date").reset_index(drop=True)
 
 
-def _mean_or_none(vals: list[float]) -> float | None:
-    return round(float(np.mean(vals)), 3) if vals else None
+def _mean_or_none(vals: Sequence[object]) -> float | None:
+    clean = [v for x in vals if (v := finite_float(x)) is not None]
+    return round(float(np.mean(clean)), 3) if clean else None
 
 
-def _median_or_none(vals: list[float]) -> float | None:
-    return round(float(np.median(vals)), 3) if vals else None
+def _median_or_none(vals: Sequence[object]) -> float | None:
+    clean = [v for x in vals if (v := finite_float(x)) is not None]
+    return round(float(np.median(clean)), 3) if clean else None
 
 
-def _win_rate_or_none(vals: list[float]) -> float | None:
-    if not vals:
+def _win_rate_or_none(vals: Sequence[object]) -> float | None:
+    clean = [v for x in vals if (v := finite_float(x)) is not None]
+    if not clean:
         return None
-    return round(float(sum(1 for v in vals if v > 0) / len(vals) * 100.0), 2)
+    return round(float(sum(1 for v in clean if v > 0) / len(clean) * 100.0), 2)
 
 
 def _newey_west_t_stat(
-    daily_vals: list[float],
-    cal_indices: list[int] | None = None,
+    daily_vals: Sequence[object],
+    cal_indices: Sequence[int] | None = None,
     *,
     max_lag: int = NEWEY_WEST_MIN_LAG,
 ) -> float | None:
     """Bartlett-kernel Newey-West HAC t-statistic aligned to trading-day grid."""
-    m = len(daily_vals)
+    has_cal = cal_indices is not None and len(cal_indices) == len(daily_vals)
+    filtered_vals: list[float] = []
+    filtered_idx: list[int] = []
+    for pos, raw in enumerate(daily_vals):
+        val = finite_float(raw)
+        if val is None:
+            continue
+        filtered_vals.append(val)
+        if has_cal and cal_indices is not None:
+            filtered_idx.append(int(cal_indices[pos]))
+
+    m = len(filtered_vals)
     if m < 2:
         return None
-    mu = float(np.mean(daily_vals))
-    residuals = [float(v) - mu for v in daily_vals]
-    indices = list(cal_indices) if cal_indices is not None and len(cal_indices) == m else list(range(m))
+    mu = float(np.mean(filtered_vals))
+    residuals = [v - mu for v in filtered_vals]
+    indices = filtered_idx if has_cal else list(range(m))
     min_idx = min(indices)
     max_idx = max(indices)
     span = max_idx - min_idx + 1
@@ -125,7 +140,7 @@ def _newey_west_t_stat(
     for idx, resid in zip(indices, residuals):
         u[idx - min_idx] += resid
 
-    lag_cap = max(0, int(max_lag))
+    lag_cap = max(0, safe_int(max_lag, default=NEWEY_WEST_MIN_LAG))
     s_nw = float(np.dot(u, u))
     for lag in range(1, min(lag_cap + 1, span)):
         weight = 1.0 - lag / (lag_cap + 1.0)
@@ -134,7 +149,8 @@ def _newey_west_t_stat(
     se = math.sqrt(s_nw * (m / (m - 1.0))) / m
     if not math.isfinite(se) or se <= 1e-12:
         return None
-    return round(mu / se, 2)
+    t_stat = mu / se
+    return round(t_stat, 2) if math.isfinite(t_stat) else None
 
 
 def _two_sided_p_from_t(t_val: float | None) -> float | None:
@@ -168,13 +184,15 @@ def _benjamini_hochberg_q_values(p_values: Sequence[float | None]) -> list[float
     return out
 
 
-def _naive_daily_t_stat(daily_vals: list[float]) -> float | None:
-    if len(daily_vals) < 2:
+def _naive_daily_t_stat(daily_vals: Sequence[object]) -> float | None:
+    clean = [v for x in daily_vals if (v := finite_float(x)) is not None]
+    if len(clean) < 2:
         return None
-    d_std = float(np.std(daily_vals, ddof=1))
-    if d_std <= 1e-12:
+    d_std = float(np.std(clean, ddof=1))
+    if not math.isfinite(d_std) or d_std <= 1e-12:
         return None
-    return round(float(np.mean(daily_vals) / (d_std / np.sqrt(len(daily_vals)))), 2)
+    t_stat = float(np.mean(clean) / (d_std / np.sqrt(len(clean))))
+    return round(t_stat, 2) if math.isfinite(t_stat) else None
 
 
 def _normalize_regime_filter(
@@ -248,7 +266,11 @@ def _summarize_walk_forward_regime_audit(
     """Zero-snooping walk-forward audit: select favorable/non-adverse regimes on H1 only, evaluate strictly OOS on H2."""
     h_key = f"t{horizon}"
     nw_lag = max(NEWEY_WEST_MIN_LAG, int(horizon) - 1)
-    ov_cap = float(max_overhead_pct)
+    raw_ov = finite_float(max_overhead_pct)
+    ov_cap = raw_ov if raw_ov is not None else WALK_FORWARD_LOW_OVERHEAD_PCT
+    eff_min_days = max(1, safe_int(min_regime_days_h1, default=3))
+    raw_adv = finite_float(adverse_threshold_pct)
+    eff_adverse = raw_adv if raw_adv is not None else -0.5
 
     h1_by_stage_date: dict[str, dict[str, list[float]]] = {
         stage: defaultdict(list) for stage in REGIME_STAGE_ORDER
@@ -267,15 +289,14 @@ def _summarize_walk_forward_regime_audit(
         ex = res.get("net_excess_return_pct")
         if ex is None:
             ex = res.get("excess_return_pct")
-        if ex is None or not np.isfinite(ex):
+        ex_val = finite_float(ex)
+        if ex_val is None:
             continue
         day = str(item["date"])
         stage = str(item.get("stage") or item.get("regime_stage") or "neutral")
         if stage not in h1_by_stage_date:
             stage = "neutral"
-        ew_raw = res.get("net_over_ew_pct")
-        ew_val = float(ew_raw) if ew_raw is not None and np.isfinite(ew_raw) else None
-        ex_val = float(ex)
+        ew_val = finite_float(res.get("net_over_ew_pct"))
 
         split = _classify_split_half(day, res.get("exit_date"), mid_date)
         if split == "h1":
@@ -286,12 +307,7 @@ def _summarize_walk_forward_regime_audit(
             h1_purged_signals += 1
             h1_purged_days_set.add(day)
         else:
-            ov_raw = item.get("overhead")
-            ov_val: float | None = None
-            if ov_raw is not None and not isinstance(ov_raw, bool):
-                ov_f = float(ov_raw)
-                if np.isfinite(ov_f):
-                    ov_val = ov_f
+            ov_val = finite_float(item.get("overhead"))
             h2_records.append((day, stage, ex_val, ew_val, ov_val))
 
     def _cluster_metrics(records: list[tuple[str, float, float | None]]) -> dict[str, Any]:
@@ -352,10 +368,10 @@ def _summarize_walk_forward_regime_audit(
             "h2_ew_daily_mean_pct": stage_h2_stats["ew_daily_mean_pct"],
         }
 
-        if h1_days >= min_regime_days_h1 and h1_mean is not None:
+        if h1_days >= eff_min_days and h1_mean is not None:
             if h1_mean > 0:
                 h1_positive_regimes.append(stage)
-            if h1_mean <= adverse_threshold_pct:
+            if h1_mean <= eff_adverse:
                 h1_adverse_regimes.append(stage)
             else:
                 h1_non_adverse_regimes.append(stage)
@@ -398,8 +414,8 @@ def _summarize_walk_forward_regime_audit(
         "eval_mid_date": mid_date,
         "h1_purged_signals": h1_purged_signals,
         "h1_purged_days": len(h1_purged_days_set),
-        "min_regime_days_h1": int(min_regime_days_h1),
-        "adverse_threshold_pct": float(adverse_threshold_pct),
+        "min_regime_days_h1": eff_min_days,
+        "adverse_threshold_pct": eff_adverse,
         "low_overhead_threshold_pct": ov_cap,
         "h1_positive_regimes": h1_positive_regimes,
         "h1_adverse_regimes": h1_adverse_regimes,
@@ -460,9 +476,9 @@ def _summarize_stability(
         ex = res.get("net_excess_return_pct")
         if ex is None:
             ex = res.get("excess_return_pct")
-        has_valid_ex = ex is not None and np.isfinite(ex)
-        if has_valid_ex:
-            val = float(ex)
+        val = finite_float(ex)
+        has_valid_ex = val is not None
+        if val is not None:
             all_vals.append(val)
             by_date[day].append(val)
             if split == "h1":
@@ -475,9 +491,8 @@ def _summarize_stability(
                 h1_purged_signals += 1
                 h1_purged_days_set.add(day)
 
-        ew_ex = res.get("net_over_ew_pct")
-        if ew_ex is not None and np.isfinite(ew_ex):
-            ew_val = float(ew_ex)
+        ew_val = finite_float(res.get("net_over_ew_pct"))
+        if ew_val is not None:
             ew_all_vals.append(ew_val)
             ew_by_date[day].append(ew_val)
             if split == "h1":
@@ -490,9 +505,9 @@ def _summarize_stability(
                 h1_purged_signals += 1
                 h1_purged_days_set.add(day)
 
-        same_ew = res.get("same_day_ew_gross_excess_pct")
-        if same_ew is not None and np.isfinite(same_ew) and day not in matched_ew_by_date:
-            matched_ew_by_date[day] = float(same_ew)
+        same_ew_val = finite_float(res.get("same_day_ew_gross_excess_pct"))
+        if same_ew_val is not None and day not in matched_ew_by_date:
+            matched_ew_by_date[day] = same_ew_val
 
     n = len(all_vals)
     h1_n = len(h1_vals)
@@ -648,26 +663,36 @@ def _summarize_horizon_obs(
             continue
         status = res["status"]
         if status == "ok":
-            raws.append(res["raw_return_pct"])
-            ex_val = res.get("excess_return_pct")
-            g_ex_val = res.get("gross_excess_return_pct", ex_val)
+            raw_val = finite_float(res.get("raw_return_pct"))
+            if raw_val is None:
+                continue
+            raws.append(raw_val)
+            ex_val = finite_float(res.get("excess_return_pct"))
+            g_ex_val = finite_float(res.get("gross_excess_return_pct", ex_val))
             if ex_val is not None:
                 excesses.append(ex_val)
             if g_ex_val is not None:
                 gross_excesses.append(g_ex_val)
-            if res["exit_delayed"]:
+            if res.get("exit_delayed"):
                 delayed += 1
         elif status == "pending":
             pending += 1
+
+    eff_net_cost_bps = finite_float(net_cost_bps)
+    if eff_net_cost_bps is None:
+        eff_net_cost_bps = GRADUATION_COST_BPS
+    eff_applied_cost_bps = finite_float(applied_cost_bps)
+    if eff_applied_cost_bps is None:
+        eff_applied_cost_bps = 0.0
 
     scored = len(raws)
     excess_scored = len(excesses)
     excess_mean = _mean_or_none(excesses)
     gross_excess_mean = _mean_or_none(gross_excesses)
-    if float(applied_cost_bps) > 0.0:
+    if eff_applied_cost_bps > 0.0:
         net_excess_mean = excess_mean
     elif gross_excess_mean is not None:
-        net_excess_mean = round(float(gross_excess_mean) - float(net_cost_bps) / 100.0, 3)
+        net_excess_mean = round(float(gross_excess_mean) - eff_net_cost_bps / 100.0, 3)
     else:
         net_excess_mean = None
     return {
@@ -991,10 +1016,20 @@ def replay_patterns(
     max_overhead_pct: float | None = None,
 ) -> dict[str, Any]:
     """Replay CN patterns point-in-time on ``daily_pack`` using ``next_open`` + tradability rules."""
-    sorted_horizons = tuple(sorted({int(h) for h in horizons if int(h) > 0}))
+    sorted_horizons = tuple(
+        sorted({int(h) for h in horizons if not isinstance(h, bool) and (finite_float(h) or 0) > 0})
+    )
     if not sorted_horizons:
         raise ValueError("horizons must include at least one positive integer")
     max_h = max(sorted_horizons)
+
+    eff_cost_bps = finite_float(cost_bps)
+    if eff_cost_bps is None or eff_cost_bps < 0.0:
+        raise ValueError(f"cost_bps must be a finite non-negative number, got {cost_bps!r}")
+
+    if isinstance(warmup_days, bool) or finite_float(warmup_days) is None or int(warmup_days) < 0:
+        raise ValueError(f"warmup_days must be a non-negative integer, got {warmup_days!r}")
+    warmup_days = int(warmup_days)
 
     if patterns:
         specs = [load_pattern(name, patterns_dir=patterns_dir) for name in patterns]
@@ -1029,7 +1064,7 @@ def replay_patterns(
     eval_regimes = regime_series[warmup_days:end_t]
     regime_distribution = summarize_regime_distribution(eval_regimes)
     mid_date = dates[warmup_days + (end_t - warmup_days) // 2]
-    gate_cost_bps = float(cost_bps) if float(cost_bps) > 0.0 else GRADUATION_COST_BPS
+    gate_cost_bps = eff_cost_bps if eff_cost_bps > 0.0 else GRADUATION_COST_BPS
     date_to_idx = {d: i for i, d in enumerate(dates)}
     universe_baseline, daily_ew_by_horizon = _compute_universe_baseline_with_daily(
         adj_open=adj_open,
@@ -1045,7 +1080,7 @@ def replay_patterns(
         warmup_days=warmup_days,
         end_t=end_t,
         horizons=sorted_horizons,
-        cost_bps=cost_bps,
+        cost_bps=eff_cost_bps,
     )
 
     ov_ceiling: float | None = None
@@ -1134,13 +1169,19 @@ def replay_patterns(
                         h_map[f"t{h}"] = {"status": "pending"}
                         continue
                     gross_raw_ret = (exit_close_px / entry_open_px - 1.0) * 100.0
-                    raw_ret = gross_raw_ret - float(cost_bps) / 100.0
+                    raw_ret = gross_raw_ret - eff_cost_bps / 100.0
                     exit_date = dates[t_exit]
                     b_close = bench_close.get(exit_date)
                     gross_excess_ret = None
                     excess_ret = None
                     net_excess_ret = None
-                    if b_open is not None and b_close is not None and b_open > 0:
+                    if (
+                        b_open is not None
+                        and b_close is not None
+                        and math.isfinite(b_open)
+                        and math.isfinite(b_close)
+                        and b_open > 0
+                    ):
                         bench_ret = (b_close / b_open - 1.0) * 100.0
                         gross_excess_ret = gross_raw_ret - bench_ret
                         excess_ret = raw_ret - bench_ret
@@ -1180,7 +1221,7 @@ def replay_patterns(
         untradable_share = round((untradable_count / total_signals) * 100.0, 2) if total_signals > 0 else 0.0
         horizons_summary = {
             f"t{h}": _summarize_horizon_obs(
-                observations, h, net_cost_bps=gate_cost_bps, applied_cost_bps=float(cost_bps)
+                observations, h, net_cost_bps=gate_cost_bps, applied_cost_bps=eff_cost_bps
             )
             for h in sorted_horizons
         }

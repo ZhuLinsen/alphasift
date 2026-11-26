@@ -23,7 +23,7 @@ from alphasift.daily_report_html import _safe_detail_url, render_daily_report_ht
 from alphasift.doctor import doctor_data_sources, doctor_radar_readiness
 from alphasift.market_digest import build_markets_digest, load_multi_market_runs
 from alphasift.market_regime import compute_market_regime, compute_market_regime_series
-from alphasift.jsonutil import dumps_strict_json
+from alphasift.jsonutil import dumps_strict_json, finite_float
 from alphasift.markets import MARKETS, get_market
 from alphasift.overview import build_overview
 from alphasift.pack import PackError, load_pack, pack_dir
@@ -512,10 +512,8 @@ def _parse_accept_q(params: list[str]) -> float:
         if "=" in p:
             k, v = p.split("=", 1)
             if k.strip().lower() == "q":
-                try:
-                    return max(0.0, min(1.0, float(v.strip())))
-                except ValueError:
-                    return 0.0
+                q = finite_float(v.strip())
+                return 0.0 if q is None else max(0.0, min(1.0, q))
     return 1.0
 
 
