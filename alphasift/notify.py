@@ -1449,9 +1449,10 @@ def _render_email_html(
             if top_picks:
                 rows_html = []
                 for idx, p in enumerate(top_picks[:6], start=1):
-                    px_s = f"¥{float(p['price']):.2f}" if (sec.get("market") == "cn" and p.get("price") is not None) else (f"{float(p['price']):.2f}" if p.get("price") is not None else "–")
-                    cv = p.get("change_pct")
-                    ccol = "#DC2626" if (cv is not None and float(cv) > 0) else ("#059669" if (cv is not None and float(cv) < 0) else "#475569")
+                    px_val = finite_float(p.get("price"))
+                    px_s = f"¥{px_val:.2f}" if (sec.get("market") == "cn" and px_val is not None) else (f"{px_val:.2f}" if px_val is not None else "–")
+                    cv = finite_float(p.get("change_pct"))
+                    ccol = "#DC2626" if (cv is not None and cv > 0) else ("#059669" if (cv is not None and cv < 0) else "#475569")
                     strats = " · ".join(str(x) for x in (p.get("strategy_display_names") or p.get("strategies") or [])[:3])
                     rows_html.append(
                         f'<tr style="border-bottom:1px solid #F1F5F9;">'
@@ -1460,7 +1461,7 @@ def _render_email_html(
                         f'<code style="font-size:11px;color:#64748B;font-family:{mono_stack};">{esc(str(p.get("code", "")))}</code>'
                         f'<div style="font-size:11px;color:#64748B;">{esc(str(p.get("industry") or "-"))} · {esc(strats)}</div></td>'
                         f'<td style="padding:7px 8px;text-align:right;font-size:12px;font-family:{mono_stack};color:#0F172A;">{esc(px_s)}</td>'
-                        f'<td style="padding:7px 8px;text-align:right;font-size:12px;font-family:{mono_stack};color:#0F172A;">{float(p.get("avg_final_score") or 0):.1f}</td>'
+                        f'<td style="padding:7px 8px;text-align:right;font-size:12px;font-family:{mono_stack};color:#0F172A;">{_float_or(p.get("avg_final_score")):.1f}</td>'
                         f'<td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:700;font-family:{mono_stack};color:{ccol};">{esc(_fmt_report_pct(cv))}</td></tr>'
                     )
                 tbl = (
@@ -1477,7 +1478,7 @@ def _render_email_html(
             sections_m.append(
                 f'<div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;margin-bottom:14px;">'
                 f'<div style="padding:10px 14px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;font-size:13px;font-weight:700;color:#0F172A;">'
-                f'🌍 {esc(m_name)} <span style="font-weight:500;font-size:12px;color:#64748B;">· {esc(bench)} · {esc(m_date)} · {int(sec.get("strategy_count") or 0)} 组策略</span></div>'
+                f'🌍 {esc(m_name)} <span style="font-weight:500;font-size:12px;color:#64748B;">· {esc(bench)} · {esc(m_date)} · {_non_neg_int(sec.get("strategy_count"))} 组策略</span></div>'
                 f'{tbl}</div>'
             )
         mnews = ((report.get("market_news") or {}).get("items") or []) if isinstance(report.get("market_news"), dict) else []
@@ -1536,23 +1537,23 @@ def _render_email_html(
     stage = str(reg.get("regime_stage") or "")
     stage_lbl = str(reg.get("regime_stage_label") or "-")
     st_bg, st_fg, _ = _stage_palette(stage)
-    adv = float(reg.get("advance_ratio_pct") or 0.0)
+    adv = _float_or(reg.get("advance_ratio_pct"))
     adv_color = "#DC2626" if adv >= 50.0 else "#059669"
     med = reg.get("median_return_pct")
     med_str = _fmt_report_pct(med)
-    seal = reg.get("seal_rate_pct")
-    seal_str = "–" if seal is None else f"{float(seal):.1f}%"
+    seal = finite_float(reg.get("seal_rate_pct"))
+    seal_str = "–" if seal is None else f"{seal:.1f}%"
     prev_ret = reg.get("prev_limit_up_avg_return_pct")
     prev_str = _fmt_report_pct(prev_ret)
-    amt = reg.get("total_amount_yi")
-    amt_str = "–" if amt is None else f"{float(amt):,.0f} 亿"
+    amt = finite_float(reg.get("total_amount_yi"))
+    amt_str = "–" if amt is None else f"{amt:,.0f} 亿"
     dist = reg.get("return_distribution") or {}
-    up_cnt = int(reg.get("up_count") or sum(int(dist.get(k) or 0) for k in ("pos0_3", "pos3_7", "ge_pos7")))
-    flat_cnt = int(reg.get("flat_count") or int(dist.get("flat") or 0))
-    down_cnt = int(reg.get("down_count") or sum(int(dist.get(k) or 0) for k in ("le_neg7", "neg7_neg3", "neg3_0")))
-    lu_cnt = int(reg.get("non_st_limit_up_count") or 0)
-    ld_cnt = int(reg.get("non_st_limit_down_count") or 0)
-    max_streak = int(reg.get("max_consecutive_limit_up") or 0)
+    up_cnt = _non_neg_int(reg.get("up_count") or sum(_non_neg_int(dist.get(k)) for k in ("pos0_3", "pos3_7", "ge_pos7")))
+    flat_cnt = _non_neg_int(reg.get("flat_count") or _non_neg_int(dist.get("flat")))
+    down_cnt = _non_neg_int(reg.get("down_count") or sum(_non_neg_int(dist.get(k)) for k in ("le_neg7", "neg7_neg3", "neg3_0")))
+    lu_cnt = _non_neg_int(reg.get("non_st_limit_up_count"))
+    ld_cnt = _non_neg_int(reg.get("non_st_limit_down_count"))
+    max_streak = _non_neg_int(reg.get("max_consecutive_limit_up"))
 
     sections: list[str] = []
     if report.get("pack_is_stale"):
@@ -1595,7 +1596,7 @@ def _render_email_html(
         ("pos3_7", "3~7%", "#F87171"),
         ("ge_pos7", "≥7%", "#DC2626"),
     )
-    counts = [int(dist.get(k) or 0) for k, _, _ in buckets]
+    counts = [_non_neg_int(dist.get(k)) for k, _, _ in buckets]
     max_b = max(1, *counts)
     b_cells = []
     for idx, (_, blbl, bcol) in enumerate(buckets):
@@ -1610,7 +1611,14 @@ def _render_email_html(
         )
     ladder_map = reg.get("consecutive_board_ladder") or {}
     ladder_items = (
-        sorted(((int(k), int(v)) for k, v in ladder_map.items() if int(v or 0) > 0), reverse=True)
+        sorted(
+            (
+                (board, count)
+                for k, v in ladder_map.items()
+                if (board := safe_int(k, default=0)) >= 2 and (count := _non_neg_int(v)) > 0
+            ),
+            reverse=True,
+        )
         if isinstance(ladder_map, dict)
         else []
     )
@@ -1633,7 +1641,7 @@ def _render_email_html(
     # Alert-first Announcement Risk section with date & recency
     ann = report.get("announcement_risks") or {}
     flagged = ann.get("flagged_items") or []
-    checked = int(ann.get("checked_count") or 0)
+    checked = _non_neg_int(ann.get("checked_count"))
     if flagged:
         ann_rows = []
         for item in flagged[:6]:
@@ -1727,18 +1735,20 @@ def _render_email_html(
         th_r = 'style="padding:8px 6px;text-align:right;font-size:11px;color:#64748B;border-bottom:1px solid #E2E8F0;background:#F8FAFC;white-space:nowrap;"'
         c_rows = []
         for idx, c in enumerate(consensus[:6], start=1):
-            chg_v = c.get("change_pct")
-            chg_col = "#DC2626" if (chg_v is not None and float(chg_v) > 0) else ("#059669" if (chg_v is not None and float(chg_v) < 0) else "#475569")
-            sc_v = "–" if c.get("avg_final_score") is None else f"{float(c['avg_final_score']):.1f}"
-            px_v = "–" if c.get("price") is None else f"¥{float(c['price']):.2f}"
+            chg_v = finite_float(c.get("change_pct"))
+            chg_col = "#DC2626" if (chg_v is not None and chg_v > 0) else ("#059669" if (chg_v is not None and chg_v < 0) else "#475569")
+            sc_val = finite_float(c.get("avg_final_score"))
+            px_val = finite_float(c.get("price"))
+            sc_v = "–" if sc_val is None else f"{sc_val:.1f}"
+            px_v = "–" if px_val is None else f"¥{px_val:.2f}"
             strats_cn = " · ".join(_strategy_display_name(report, x) for x in (c.get("strategies") or [])[:3])
             val_bits = []
-            if c.get("pe_ratio") is not None:
-                val_bits.append(f"PE {float(c['pe_ratio']):.1f}")
-            if c.get("pb_ratio") is not None:
-                val_bits.append(f"PB {float(c['pb_ratio']):.2f}")
-            if c.get("market_cap_yi") is not None:
-                val_bits.append(f"{float(c['market_cap_yi']):.0f}亿")
+            if (pe_val := finite_float(c.get("pe_ratio"))) is not None:
+                val_bits.append(f"PE {pe_val:.1f}")
+            if (pb_val := finite_float(c.get("pb_ratio"))) is not None:
+                val_bits.append(f"PB {pb_val:.2f}")
+            if (mcap_val := finite_float(c.get("market_cap_yi"))) is not None:
+                val_bits.append(f"{mcap_val:.0f}亿")
             val_txt = f" · {' · '.join(val_bits)}" if val_bits else ""
             extra_sub = ""
             if c.get("reasons"):
@@ -1753,7 +1763,7 @@ def _render_email_html(
                 f'<code style="font-size:11px;color:#64748B;font-family:{mono_stack};">{esc(str(c.get("code", "")))}</code>{risk_badge}'
                 f'<div style="font-size:11px;color:#64748B;margin-top:2px;">{esc(str(c.get("industry") or "-"))}{esc(val_txt)} · {esc(strats_cn)}</div>{extra_sub}</td>'
                 f'<td style="padding:8px 6px;text-align:right;font-size:12px;font-family:{mono_stack};color:#0F172A;vertical-align:top;white-space:nowrap;">{px_v}</td>'
-                f'<td style="padding:8px 6px;text-align:right;font-size:12px;vertical-align:top;white-space:nowrap;"><span style="display:inline-block;background:#EFF6FF;color:#1D4ED8;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap;">{int(c.get("strategy_count", 0))} 策略</span></td>'
+                f'<td style="padding:8px 6px;text-align:right;font-size:12px;vertical-align:top;white-space:nowrap;"><span style="display:inline-block;background:#EFF6FF;color:#1D4ED8;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap;">{_non_neg_int(c.get("strategy_count"))} 策略</span></td>'
                 f'<td style="padding:8px 6px;text-align:right;font-size:12px;font-family:{mono_stack};color:#0F172A;vertical-align:top;white-space:nowrap;">{sc_v}</td>'
                 f'<td style="padding:8px 6px;text-align:right;font-size:12px;font-weight:700;font-family:{mono_stack};color:{chg_col};vertical-align:top;white-space:nowrap;">{esc(_fmt_report_pct(chg_v))}</td>'
                 f'</tr>'
@@ -1776,9 +1786,10 @@ def _render_email_html(
             sname = _strategy_display_name(report, skey)
             tr_badge = '<span style="background:#EFF6FF;color:#1D4ED8;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:5px;">AI</span>' if (st.get("track") == "ai" or st.get("llm_ranked")) else ""
             ts = track_stats.get(skey) or {}
+            ts_excess = finite_float(ts.get("t5_avg_excess_pct"))
             ts_badge = (
-                f'<span style="font-size:11px;color:#475569;float:right;font-family:{mono_stack};">T+5 {float(ts["t5_avg_excess_pct"]):+.2f}%</span>'
-                if ts.get("t5_avg_excess_pct") is not None
+                f'<span style="font-size:11px;color:#475569;float:right;font-family:{mono_stack};">T+5 {ts_excess:+.2f}%</span>'
+                if ts_excess is not None
                 else ""
             )
             top2 = " · ".join(
@@ -1807,13 +1818,14 @@ def _render_email_html(
         for p in shown_pats[:5]:
             is_act = p.get("status") == "active"
             badge_bg, badge_fg, badge_txt = ("#ECFDF5", "#059669", "active") if is_act else ("#FFFBEB", "#B45309", "观察期")
-            net_ex = p.get("replay_t5_net_excess_pct")
-            net_txt = f" · T+5净超额 {float(net_ex):+.2f}%" if net_ex is not None else ""
+            net_ex = finite_float(p.get("replay_t5_net_excess_pct"))
+            net_txt = f" · T+5净超额 {net_ex:+.2f}%" if net_ex is not None else ""
             sig_rows = []
             for s in (p.get("signals") or [])[:4]:
-                cv = s.get("change_pct")
-                ccol = "#DC2626" if (cv is not None and float(cv) > 0) else ("#059669" if (cv is not None and float(cv) < 0) else "#475569")
-                ov = "–" if s.get("overhead_supply_10pct") is None else f"{float(s['overhead_supply_10pct']):.0f}%"
+                cv = finite_float(s.get("change_pct"))
+                ccol = "#DC2626" if (cv is not None and cv > 0) else ("#059669" if (cv is not None and cv < 0) else "#475569")
+                ov_val = finite_float(s.get("overhead_supply_10pct"))
+                ov = "–" if ov_val is None else f"{ov_val:.0f}%"
                 sig_rows.append(
                     f'<tr><td style="width:46%;padding:6px 12px;font-size:12px;color:#0F172A;"><strong>{esc(str(s.get("name") or s.get("code")))}</strong> '
                     f'<code style="color:#64748B;font-size:11px;font-family:{mono_stack};">{esc(str(s.get("code", "")))}</code></td>'
@@ -1824,18 +1836,22 @@ def _render_email_html(
                 f'<div style="border:1px solid #E2E8F0;border-radius:8px;margin-bottom:10px;overflow:hidden;">'
                 f'<div style="padding:8px 12px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;font-size:13px;">'
                 f'<strong style="color:#0F172A;">{esc(str(p.get("display_name") or p.get("pattern")))}</strong> '
-                f'<span style="display:inline-block;background:{badge_bg};color:{badge_fg};font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:6px;">{badge_txt} · {int(p.get("hit_count") or 0)}只{esc(net_txt)}</span>'
+                f'<span style="display:inline-block;background:{badge_bg};color:{badge_fg};font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:6px;">{badge_txt} · {_non_neg_int(p.get("hit_count"))}只{esc(net_txt)}</span>'
                 f'</div>'
                 f'<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">{"".join(sig_rows)}</table></div>'
             )
         neg_note = ""
         if primary_pats and neg_pats:
-            neg_desc = "、".join(
-                f"{p.get('display_name') or p.get('pattern')}({int(p.get('hit_count') or 0)}只, {float(p['replay_t5_net_excess_pct']):+.2f}%)"
-                if p.get("replay_t5_net_excess_pct") is not None
-                else f"{p.get('display_name') or p.get('pattern')}({int(p.get('hit_count') or 0)}只)"
-                for p in neg_pats
-            )
+            neg_parts = []
+            for p in neg_pats:
+                p_lbl = p.get("display_name") or p.get("pattern")
+                p_cnt = _non_neg_int(p.get("hit_count"))
+                p_net = finite_float(p.get("replay_t5_net_excess_pct"))
+                if p_net is not None:
+                    neg_parts.append(f"{p_lbl}({p_cnt}只, {p_net:+.2f}%)")
+                else:
+                    neg_parts.append(f"{p_lbl}({p_cnt}只)")
+            neg_desc = "、".join(neg_parts)
             neg_note = f'<div style="font-size:11px;color:#64748B;margin-top:4px;">历史回放负期望观察期触发（仅作对照）：{esc(neg_desc)}</div>'
         sections.append(
             '<div style="margin-bottom:16px;">'
@@ -2061,8 +2077,8 @@ def _build_discord_embed(
         fields.append({
             "name": f"盘面 · {reg.get('regime_stage_label', '-')}",
             "value": (
-                f"上涨 {float(reg.get('advance_ratio_pct') or 0):.1f}% · 中位 {_fmt_report_pct(reg.get('median_return_pct'))}\n"
-                f"涨跌停 {int(reg.get('non_st_limit_up_count') or 0)}/{int(reg.get('non_st_limit_down_count') or 0)} · 最高 {int(reg.get('max_consecutive_limit_up') or 0)}板"
+                f"上涨 {_float_or(reg.get('advance_ratio_pct')):.1f}% · 中位 {_fmt_report_pct(reg.get('median_return_pct'))}\n"
+                f"涨跌停 {_non_neg_int(reg.get('non_st_limit_up_count'))}/{_non_neg_int(reg.get('non_st_limit_down_count'))} · 最高 {_non_neg_int(reg.get('max_consecutive_limit_up'))}板"
             ),
             "inline": False,
         })
@@ -2244,7 +2260,7 @@ def _send_custom_webhook(
         "pack_is_stale": bool(report.get("pack_is_stale")),
         "summary": {
             "consensus_count": len(syn.get("consensus_picks") or []),
-            "flagged_announcements": int(ann.get("flagged_count") or 0),
+            "flagged_announcements": _non_neg_int(ann.get("flagged_count")),
         },
     }
     kwargs: dict[str, Any] = {"json": payload, "timeout": timeout_sec}

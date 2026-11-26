@@ -1543,3 +1543,111 @@ def test_notify_feishu_card_and_telegram_html_scrub_nonfinite_and_bool():
     g_tg = _render_telegram_html(dirty_global, "fallback", title="Global")
     assert "0组策略" in g_tg and "0.0分" in g_tg
     assert "nan" not in g_tg.lower() and "inf" not in g_tg.lower()
+
+
+def test_notify_email_html_discord_and_webhook_scrub_nonfinite_and_bool():
+    import types
+    from alphasift.notify import _build_discord_embed, _render_email_html, _send_custom_webhook
+
+    dirty_cn = {
+        "schema_version": 1,
+        "trade_date": "2026-11-26",
+        "market_regime": {
+            "regime_stage": "divergence",
+            "regime_stage_label": "震荡",
+            "advance_ratio_pct": float("nan"),
+            "median_return_pct": float("inf"),
+            "seal_rate_pct": True,
+            "total_amount_yi": float("-inf"),
+            "prev_limit_up_avg_return_pct": True,
+            "non_st_limit_up_count": True,
+            "non_st_limit_down_count": float("nan"),
+            "max_consecutive_limit_up": "bad",
+            "return_distribution": {"pos0_3": True, "flat": float("nan"), "le_neg7": "bad"},
+            "consecutive_board_ladder": {"2": True, "bad": 3, "3": 1},
+        },
+        "announcement_risks": {"checked_count": True, "flagged_count": True, "flagged_items": []},
+        "strategy_track_stats": {"dual_low": {"t5_avg_excess_pct": float("nan")}},
+        "strategies": [{"strategy": "dual_low", "picks": [{"code": "000001", "name": "平安", "change_pct": float("inf")}]}],
+        "cross_strategy_synthesis": {
+            "consensus_picks": [{
+                "code": "000001",
+                "name": "平安银行",
+                "industry": "银行",
+                "price": float("nan"),
+                "pe_ratio": True,
+                "pb_ratio": float("inf"),
+                "market_cap_yi": float("-inf"),
+                "change_pct": True,
+                "avg_final_score": float("nan"),
+                "strategy_count": True,
+                "strategies": ["dual_low"],
+            }],
+        },
+        "patterns": {
+            "active": [{
+                "pattern": "valid_pat",
+                "display_name": "放量突破",
+                "status": "active",
+                "hit_count": 2,
+                "replay_t5_net_excess_pct": float("nan"),
+                "signals": [{
+                    "name": "测试股",
+                    "code": "600000",
+                    "change_pct": float("inf"),
+                    "overhead_supply_10pct": True,
+                }],
+            }],
+            "experimental": [{
+                "pattern": "neg_pat",
+                "display_name": "负观察",
+                "status": "experimental",
+                "expectancy_tier": "negative_watch",
+                "hit_count": 1,
+                "replay_t5_net_excess_pct": float("-inf"),
+            }],
+        },
+    }
+
+    email_cn = _render_email_html(dirty_cn, "fallback", title="Email")
+    assert "0.0%" in email_cn and "封板率 –" in email_cn and "0 策略" in email_cn
+    assert "3板</strong> 1只" in email_cn and "2板" not in email_cn
+    assert "nan" not in email_cn.lower() and "inf" not in email_cn.lower()
+
+    discord_embed = _build_discord_embed(dirty_cn, "fallback", title="Discord")
+    assert "上涨 0.0%" in discord_embed["fields"][0]["value"]
+    assert "涨跌停 0/0 · 最高 0板" in discord_embed["fields"][0]["value"]
+
+    sent = []
+    _send_custom_webhook(
+        "https://example.com/hook",
+        report=dirty_cn,
+        content="body",
+        title="Hook",
+        timeout_sec=5.0,
+        post_fn=lambda url, **kw: (sent.append(kw["json"]), types.SimpleNamespace(status_code=200, headers={}, raise_for_status=lambda: None))[1],
+    )
+    assert sent[0]["summary"]["flagged_announcements"] == 0
+
+    dirty_global = {
+        "object": "MarketDigest",
+        "trade_date": "2026-11-26",
+        "markets": ["us"],
+        "market_sections": [{
+            "market": "us",
+            "market_name": "美股",
+            "trade_date": "2026-11-26",
+            "strategy_count": True,
+            "top_picks": [{
+                "code": "AAPL",
+                "name": "Apple",
+                "price": float("nan"),
+                "change_pct": True,
+                "avg_final_score": float("inf"),
+                "strategies": ["global_value"],
+            }],
+        }],
+    }
+    email_global = _render_email_html(dirty_global, "fallback", title="Global")
+    assert "0 组策略" in email_global
+    assert "nan" not in email_global.lower() and "inf" not in email_global.lower()
