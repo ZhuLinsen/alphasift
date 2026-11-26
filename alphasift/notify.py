@@ -1035,16 +1035,17 @@ def _build_feishu_card(
         elements: list[dict[str, Any]] = []
         for sec in (report.get("market_sections") or [])[:6]:
             m_name = sec.get("market_name") or str(sec.get("market") or "").upper()
-            lines = [f"**🌍 {m_name}**（{int(sec.get('strategy_count') or 0)} 组策略 · {sec.get('trade_date', '-')}）"]
+            lines = [f"**🌍 {m_name}**（{_non_neg_int(sec.get('strategy_count'))} 组策略 · {sec.get('trade_date', '-')}）"]
             top_picks = sec.get("top_picks") or []
             if top_picks:
                 for p in top_picks[:4]:
-                    px = f" · ¥{float(p['price']):.2f}" if p.get("price") is not None else ""
-                    chg = f" · {_fmt_report_pct(p.get('change_pct'))}" if p.get("change_pct") is not None else ""
+                    px_val = finite_float(p.get("price"))
+                    px = f" · ¥{px_val:.2f}" if px_val is not None else ""
+                    chg = f" · {_fmt_report_pct(p.get('change_pct'))}" if finite_float(p.get("change_pct")) is not None else ""
                     strats = "·".join((p.get("strategy_display_names") or p.get("strategies") or [])[:2])
                     lines.append(
                         f"- **{p.get('name') or p.get('code')}** `{p.get('code')}`{px}{chg} · "
-                        f"{float(p.get('avg_final_score') or 0):.1f}分（{strats}）"
+                        f"{_float_or(p.get('avg_final_score')):.1f}分（{strats}）"
                     )
             else:
                 lines.append("- 今日暂无入选标的")
@@ -1084,21 +1085,24 @@ def _build_feishu_card(
     _, _, tmpl = _stage_palette(stage)
     ann = report.get("announcement_risks") or {}
     flagged = ann.get("flagged_items") or []
-    checked = int(ann.get("checked_count") or 0)
+    checked = _non_neg_int(ann.get("checked_count"))
     if report.get("pack_is_stale"):
         tmpl = "orange"
     elif flagged:
         tmpl = "red"
 
-    seal = reg.get("seal_rate_pct")
-    seal_str = "-" if seal is None else f"{float(seal):.1f}%"
-    prev_ret = reg.get("prev_limit_up_avg_return_pct")
-    prev_str = "-" if prev_ret is None else f"{float(prev_ret):+.2f}%"
-    amt = reg.get("total_amount_yi")
-    amt_str = "-" if amt is None else f"{float(amt):,.0f} 亿"
-    med = reg.get("median_return_pct")
-    med_str = "-" if med is None else f"{float(med):+.2f}%"
-    adv_str = f"{float(reg.get('advance_ratio_pct', 0.0)):.1f}%"
+    seal = finite_float(reg.get("seal_rate_pct"))
+    seal_str = "-" if seal is None else f"{seal:.1f}%"
+    prev_ret = finite_float(reg.get("prev_limit_up_avg_return_pct"))
+    prev_str = "-" if prev_ret is None else f"{prev_ret:+.2f}%"
+    amt = finite_float(reg.get("total_amount_yi"))
+    amt_str = "-" if amt is None else f"{amt:,.0f} 亿"
+    med = finite_float(reg.get("median_return_pct"))
+    med_str = "-" if med is None else f"{med:+.2f}%"
+    adv_str = f"{_float_or(reg.get('advance_ratio_pct')):.1f}%"
+    lu = _non_neg_int(reg.get("non_st_limit_up_count"))
+    ld = _non_neg_int(reg.get("non_st_limit_down_count"))
+    max_streak = _non_neg_int(reg.get("max_consecutive_limit_up"))
 
     elements: list[dict[str, Any]] = []
     if report.get("pack_is_stale"):
@@ -1123,13 +1127,13 @@ def _build_feishu_card(
                     "tag": "lark_md",
                     "content": (
                         f"**非ST涨跌停 / 封板**\n"
-                        f"{reg.get('non_st_limit_up_count', 0)} 涨停 / {reg.get('non_st_limit_down_count', 0)} 跌停 · {seal_str}"
+                        f"{lu} 涨停 / {ld} 跌停 · {seal_str}"
                     ),
                 },
             },
             {
                 "is_short": True,
-                "text": {"tag": "lark_md", "content": f"**连板与昨涨停**\n最高 {reg.get('max_consecutive_limit_up', 0)} 板 · 昨涨停 {prev_str}"},
+                "text": {"tag": "lark_md", "content": f"**连板与昨涨停**\n最高 {max_streak} 板 · 昨涨停 {prev_str}"},
             },
             {
                 "is_short": True,
@@ -1185,16 +1189,19 @@ def _build_feishu_card(
         c_lines = [f"**🎯 跨策略高共识精选（共 {len(consensus)} 只，展示 Top 5）**"]
         for idx, c in enumerate(consensus[:5], start=1):
             risk_tag = " ⚠️" if c.get("announcement_risk_flags") else ""
-            chg = f" · {_fmt_report_pct(c.get('change_pct'))}" if c.get("change_pct") is not None else ""
-            px = f" · ¥{float(c['price']):.2f}" if c.get("price") is not None else ""
-            pe = f" · PE {float(c['pe_ratio']):.1f}" if c.get("pe_ratio") is not None else ""
-            sc_txt = f" · 均分 {float(c['avg_final_score']):.1f}" if c.get("avg_final_score") is not None else ""
+            px_val = finite_float(c.get("price"))
+            pe_val = finite_float(c.get("pe_ratio"))
+            sc_val = finite_float(c.get("avg_final_score"))
+            chg = f" · {_fmt_report_pct(c.get('change_pct'))}" if finite_float(c.get("change_pct")) is not None else ""
+            px = f" · ¥{px_val:.2f}" if px_val is not None else ""
+            pe = f" · PE {pe_val:.1f}" if pe_val is not None else ""
+            sc_txt = f" · 均分 {sc_val:.1f}" if sc_val is not None else ""
             ind = str(c.get("industry") or "-")
             strats_cn = "·".join(_strategy_display_name(report, s) for s in (c.get("strategies") or [])[:3])
             strat_part = f"（{strats_cn}）" if strats_cn else ""
             c_lines.append(
                 f"{idx}. **{c.get('name', '')}** `{c.get('code', '')}`{risk_tag} · {ind}{px}{pe}{chg} · "
-                f"**{c.get('strategy_count', 0)} 策略**{strat_part}{sc_txt}"
+                f"**{_non_neg_int(c.get('strategy_count'))} 策略**{strat_part}{sc_txt}"
             )
             if c.get("reasons"):
                 c_lines.append(f"   理由：{str(c['reasons'][0])[:48]}")
@@ -1208,17 +1215,18 @@ def _build_feishu_card(
         p_lines = ["**📡 形态雷达触发**"]
         for p in (primary_pats or neg_pats)[:4]:
             tag = "active" if p.get("status") == "active" else "观察期"
-            net_s = f" · T+5净{float(p['replay_t5_net_excess_pct']):+.2f}%" if p.get("replay_t5_net_excess_pct") is not None else ""
+            net_val = finite_float(p.get("replay_t5_net_excess_pct"))
+            net_s = f" · T+5净{net_val:+.2f}%" if net_val is not None else ""
             sigs = "、".join(
                 f"{s.get('name') or s.get('code')}({s.get('code')}, {_fmt_report_pct(s.get('change_pct'))})"
                 for s in (p.get("signals") or [])[:3]
             )
             p_lines.append(
-                f"- **{p.get('display_name') or p.get('pattern')}**（{int(p.get('hit_count') or 0)} 只 · {tag}{net_s}）"
+                f"- **{p.get('display_name') or p.get('pattern')}**（{_non_neg_int(p.get('hit_count'))} 只 · {tag}{net_s}）"
                 + (f"：{sigs}" if sigs else "")
             )
         if primary_pats and neg_pats:
-            neg_txt = "、".join(f"{p.get('display_name')}({int(p.get('hit_count') or 0)}只)" for p in neg_pats)
+            neg_txt = "、".join(f"{p.get('display_name')}({_non_neg_int(p.get('hit_count'))}只)" for p in neg_pats)
             p_lines.append(f"- 负期望形态仅供参考：{neg_txt}")
         elements.append({"tag": "markdown", "content": "\n".join(p_lines)})
 
@@ -1262,14 +1270,15 @@ def _render_telegram_html(
         ]
         for sec in (report.get("market_sections") or [])[:6]:
             m_name = sec.get("market_name") or str(sec.get("market") or "").upper()
-            lines = [f"\n<b>{esc(m_name)}</b>（{int(sec.get('strategy_count') or 0)}组策略 · <code>{esc(str(sec.get('trade_date', '-')))}</code>）"]
+            lines = [f"\n<b>{esc(m_name)}</b>（{_non_neg_int(sec.get('strategy_count'))}组策略 · <code>{esc(str(sec.get('trade_date', '-')))}</code>）"]
             for p in (sec.get("top_picks") or [])[:4]:
-                px = f" ¥{float(p['price']):.2f}" if p.get("price") is not None else ""
-                chg = f" {_fmt_report_pct(p.get('change_pct'))}" if p.get("change_pct") is not None else ""
+                px_val = finite_float(p.get("price"))
+                px = f" ¥{px_val:.2f}" if px_val is not None else ""
+                chg = f" {_fmt_report_pct(p.get('change_pct'))}" if finite_float(p.get("change_pct")) is not None else ""
                 strats = "·".join((p.get("strategy_display_names") or p.get("strategies") or [])[:2])
                 lines.append(
                     f"• <b>{esc(str(p.get('name') or p.get('code')))}</b> <code>{esc(str(p.get('code')))}</code>"
-                    f"{esc(px)}{esc(chg)} · {float(p.get('avg_final_score') or 0):.1f}分（{esc(strats)}）"
+                    f"{esc(px)}{esc(chg)} · {_float_or(p.get('avg_final_score')):.1f}分（{esc(strats)}）"
                 )
             parts.append("\n".join(lines))
         detail_url = _resolved_report_url(report)
@@ -1298,14 +1307,18 @@ def _render_telegram_html(
 
     assert report is not None
     reg = report.get("market_regime") or {}
-    seal = reg.get("seal_rate_pct")
-    seal_str = "-" if seal is None else f"{float(seal):.1f}%"
-    prev_ret = reg.get("prev_limit_up_avg_return_pct")
-    prev_str = "-" if prev_ret is None else f"{float(prev_ret):+.2f}%"
-    amt = reg.get("total_amount_yi")
-    amt_str = "-" if amt is None else f"{float(amt):,.0f} 亿"
-    med = reg.get("median_return_pct")
-    med_str = "-" if med is None else f"{float(med):+.2f}%"
+    seal = finite_float(reg.get("seal_rate_pct"))
+    seal_str = "-" if seal is None else f"{seal:.1f}%"
+    prev_ret = finite_float(reg.get("prev_limit_up_avg_return_pct"))
+    prev_str = "-" if prev_ret is None else f"{prev_ret:+.2f}%"
+    amt = finite_float(reg.get("total_amount_yi"))
+    amt_str = "-" if amt is None else f"{amt:,.0f} 亿"
+    med = finite_float(reg.get("median_return_pct"))
+    med_str = "-" if med is None else f"{med:+.2f}%"
+    adv = _float_or(reg.get("advance_ratio_pct"))
+    lu = _non_neg_int(reg.get("non_st_limit_up_count"))
+    ld = _non_neg_int(reg.get("non_st_limit_down_count"))
+    max_streak = _non_neg_int(reg.get("max_consecutive_limit_up"))
 
     parts = [
         f"📊 <b>AlphaSift · A 股盘后观察</b> <code>{esc(str(report.get('trade_date', '-')))}</code>",
@@ -1317,15 +1330,15 @@ def _render_telegram_html(
         )
     parts.append(
         "<blockquote>"
-        f"<b>盘面 · {esc(str(reg.get('regime_stage_label', '-')))}</b>｜上涨 <b>{float(reg.get('advance_ratio_pct', 0.0)):.1f}%</b>（中位 {esc(med_str)}）\n"
-        f"涨跌停 <b>{int(reg.get('non_st_limit_up_count', 0))}/{int(reg.get('non_st_limit_down_count', 0))}</b>（封板 {esc(seal_str)}）｜"
-        f"最高 {int(reg.get('max_consecutive_limit_up', 0))}板 · 昨涨停 {esc(prev_str)} · 成交 {esc(amt_str)}"
+        f"<b>盘面 · {esc(str(reg.get('regime_stage_label', '-')))}</b>｜上涨 <b>{adv:.1f}%</b>（中位 {esc(med_str)}）\n"
+        f"涨跌停 <b>{lu}/{ld}</b>（封板 {esc(seal_str)}）｜"
+        f"最高 {max_streak}板 · 昨涨停 {esc(prev_str)} · 成交 {esc(amt_str)}"
         "</blockquote>"
     )
 
     ann = report.get("announcement_risks") or {}
     flagged = ann.get("flagged_items") or []
-    checked = int(ann.get("checked_count") or 0)
+    checked = _non_neg_int(ann.get("checked_count"))
     if flagged:
         ann_lines = [f"\n⚠️ <b>公告排雷预警</b>（{checked}检 / {len(flagged)}中）"]
         for item in flagged[:4]:
@@ -1361,13 +1374,15 @@ def _render_telegram_html(
         c_lines = [f"\n🎯 <b>跨策略高共识精选（Top {min(5, len(consensus))}/{len(consensus)}）</b>"]
         for idx, c in enumerate(consensus[:5], start=1):
             risk_mark = " ⚠️" if c.get("announcement_risk_flags") else ""
-            px = f" ¥{float(c['price']):.2f}" if c.get("price") is not None else ""
-            chg = f" · {_fmt_report_pct(c.get('change_pct'))}" if c.get("change_pct") is not None else ""
-            sc_txt = f" · {float(c['avg_final_score']):.1f}分" if c.get("avg_final_score") is not None else ""
+            px_val = finite_float(c.get("price"))
+            sc_val = finite_float(c.get("avg_final_score"))
+            px = f" ¥{px_val:.2f}" if px_val is not None else ""
+            chg = f" · {_fmt_report_pct(c.get('change_pct'))}" if finite_float(c.get("change_pct")) is not None else ""
+            sc_txt = f" · {sc_val:.1f}分" if sc_val is not None else ""
             strats_cn = "·".join(_strategy_display_name(report, s) for s in (c.get("strategies") or [])[:2])
             c_lines.append(
                 f"{idx}. <b>{esc(str(c.get('name', '')))}</b> <code>{esc(str(c.get('code', '')))}</code>{risk_mark}{esc(px)} · "
-                f"{esc(str(c.get('industry') or '-'))} · <b>{int(c.get('strategy_count', 0))}策略</b>"
+                f"{esc(str(c.get('industry') or '-'))} · <b>{_non_neg_int(c.get('strategy_count'))}策略</b>"
                 + (f"({esc(strats_cn)})" if strats_cn else "")
                 + f"{esc(sc_txt)}{esc(chg)}"
             )
@@ -1384,7 +1399,7 @@ def _render_telegram_html(
             )
             p_lines.append(
                 f"• <b>{esc(str(p.get('display_name') or p.get('pattern')))}</b>"
-                f"（{int(p.get('hit_count') or 0)}只 · {tag}）" + (f"：{sigs}" if sigs else "")
+                f"（{_non_neg_int(p.get('hit_count'))}只 · {tag}）" + (f"：{sigs}" if sigs else "")
             )
         parts.append("\n".join(p_lines))
 

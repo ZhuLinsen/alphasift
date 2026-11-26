@@ -1456,3 +1456,90 @@ def test_notify_retry_fmt_title_and_markdown_digest_scrub_nonfinite_and_bool():
     global_md = _render_markdown_digest(dirty_global, "fallback", title="Global")
     assert "0 组策略" in global_md and "0.0分" in global_md
     assert "nan" not in global_md.lower() and "inf" not in global_md.lower()
+
+
+def test_notify_feishu_card_and_telegram_html_scrub_nonfinite_and_bool():
+    import json
+    from alphasift.notify import _build_feishu_card, _render_telegram_html
+
+    dirty_cn = {
+        "schema_version": 1,
+        "trade_date": "2026-11-26",
+        "market_regime": {
+            "regime_stage": "divergence",
+            "regime_stage_label": "震荡",
+            "advance_ratio_pct": float("nan"),
+            "median_return_pct": float("inf"),
+            "seal_rate_pct": True,
+            "total_amount_yi": float("-inf"),
+            "prev_limit_up_avg_return_pct": True,
+            "non_st_limit_up_count": True,
+            "non_st_limit_down_count": float("nan"),
+            "max_consecutive_limit_up": "bad",
+        },
+        "announcement_risks": {"checked_count": True, "flagged_count": 0, "flagged_items": []},
+        "cross_strategy_synthesis": {
+            "consensus_picks": [{
+                "code": "000001",
+                "name": "平安银行",
+                "industry": "银行",
+                "price": float("nan"),
+                "pe_ratio": True,
+                "change_pct": float("inf"),
+                "avg_final_score": float("-inf"),
+                "strategy_count": True,
+                "strategies": ["dual_low"],
+            }],
+        },
+        "patterns": {
+            "active": [{
+                "pattern": "valid_pat",
+                "display_name": "放量突破",
+                "status": "active",
+                "hit_count": 2,
+                "replay_t5_net_excess_pct": float("nan"),
+                "signals": [{"name": "测试股", "code": "600000", "change_pct": float("inf")}],
+            }],
+            "experimental": [],
+        },
+    }
+
+    card = _build_feishu_card(dirty_cn, "fallback", title="Feishu")
+    card_json = json.dumps(card, allow_nan=False, ensure_ascii=False)
+    assert "0 涨停 / 0 跌停 · -" in card_json
+    assert "最高 0 板 · 昨涨停 -" in card_json
+    assert "**0 策略**" in card_json
+    assert "True 涨停" not in card_json and "nan" not in card_json.lower() and "inf" not in card_json.lower()
+
+    tg = _render_telegram_html(dirty_cn, "fallback", title="TG")
+    assert "上涨 <b>0.0%</b>" in tg
+    assert "涨跌停 <b>0/0</b>（封板 -）" in tg
+    assert "<b>0策略</b>" in tg
+    assert "nan" not in tg.lower() and "inf" not in tg.lower()
+
+    dirty_global = {
+        "object": "MarketDigest",
+        "trade_date": "2026-11-26",
+        "markets": ["us"],
+        "market_sections": [{
+            "market": "us",
+            "market_name": "美股",
+            "trade_date": "2026-11-26",
+            "strategy_count": True,
+            "top_picks": [{
+                "code": "AAPL",
+                "name": "Apple",
+                "price": float("nan"),
+                "change_pct": float("inf"),
+                "avg_final_score": True,
+                "strategies": ["global_value"],
+            }],
+        }],
+    }
+    g_card = json.dumps(_build_feishu_card(dirty_global, "fallback", title="Global"), allow_nan=False, ensure_ascii=False)
+    assert "0 组策略" in g_card and "0.0分" in g_card
+    assert "nan" not in g_card.lower() and "inf" not in g_card.lower()
+
+    g_tg = _render_telegram_html(dirty_global, "fallback", title="Global")
+    assert "0组策略" in g_tg and "0.0分" in g_tg
+    assert "nan" not in g_tg.lower() and "inf" not in g_tg.lower()
