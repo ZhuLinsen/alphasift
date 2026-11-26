@@ -157,3 +157,10 @@ def test_build_data_source_history_handles_corrupt_numeric_metadata(tmp_path):
     assert src["degradation_count"] == 0
     assert src["daily_enrich_count"] == 0
     assert src["stability_status"] == "ok"
+
+
+def test_build_data_source_history_scrubs_nonfinite_and_bool_limit(tmp_path):
+    for bad_limit in (True, float("nan"), float("inf"), -4):
+        payload = build_data_source_history(data_dir=tmp_path, limit=bad_limit)  # type: ignore[arg-type]
+        assert payload["limit"] == 0
+        assert payload["run_count"] == 0

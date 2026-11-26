@@ -18,7 +18,8 @@ def build_data_source_history(
     strategy: str | None = None,
 ) -> dict[str, object]:
     """Summarize recent saved-run source reliability without loading full runs."""
-    runs = list_saved_runs(data_dir=data_dir, limit=limit, strategy=strategy)
+    limit_val = max(safe_int(limit, default=0), 0)
+    runs = list_saved_runs(data_dir=data_dir, limit=limit_val, strategy=strategy)
     source_rows = [_source_summary(items) for items in _group_runs_by_snapshot_source(runs).values()]
     source_rows.sort(
         key=lambda item: (
@@ -33,7 +34,7 @@ def build_data_source_history(
         "schema_version": 1,
         "run_count": len(runs),
         "source_count": len(source_rows),
-        "limit": int(limit),
+        "limit": limit_val,
         "strategy_filter": strategy or "",
         "summary": _history_summary(runs),
         "snapshot_sources": source_rows,

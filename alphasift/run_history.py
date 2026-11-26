@@ -18,7 +18,8 @@ def build_strategy_run_summary(
     strategy: str | None = None,
 ) -> dict[str, object]:
     """Summarize saved runs by strategy without loading full run payloads."""
-    runs = list_saved_runs(data_dir=data_dir, limit=limit, strategy=strategy)
+    limit_val = max(safe_int(limit, default=0), 0)
+    runs = list_saved_runs(data_dir=data_dir, limit=limit_val, strategy=strategy)
     strategy_rows = [_strategy_summary(item) for item in _group_runs_by_strategy(runs).values()]
     strategy_rows.sort(
         key=lambda item: (
@@ -31,7 +32,7 @@ def build_strategy_run_summary(
         "schema_version": 1,
         "run_count": len(runs),
         "strategy_count": len(strategy_rows),
-        "limit": int(limit),
+        "limit": limit_val,
         "strategy_filter": strategy or "",
         "summary": _run_history_summary(runs),
         "strategies": strategy_rows,

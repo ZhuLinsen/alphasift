@@ -924,3 +924,18 @@ def test_evaluation_aggregations_scrub_nan_inf_and_bool_pick_metrics():
 
     for payload in (overall, portfolio, by_industry, by_tags, by_holding, direct_stats, brief):
         json.dumps(payload, allow_nan=False)
+
+
+def test_list_saved_runs_scrubs_nonfinite_and_bool_limit(tmp_path):
+    save_screen_result(
+        ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            run_id="run_limit_1",
+            picks=[Pick(rank=1, code="000001", name="平安银行", final_score=80, screen_score=80, price=10)],
+        ),
+        data_dir=tmp_path,
+    )
+    for bad_limit in (True, float("nan"), float("inf"), -2):
+        assert list_saved_runs(data_dir=tmp_path, limit=bad_limit) == []  # type: ignore[arg-type]
+    assert len(list_saved_runs(data_dir=tmp_path, limit=5)) == 1

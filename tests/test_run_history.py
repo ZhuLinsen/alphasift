@@ -140,3 +140,10 @@ def test_build_strategy_run_summary_scrubs_nonfinite_and_malformed_metadata(tmp_
     assert row["degradation_count"] == 2
     assert row["daily_enrich_count"] == 0
     assert row["average_llm_coverage"] is None
+
+
+def test_build_strategy_run_summary_scrubs_nonfinite_and_bool_limit(tmp_path):
+    for bad_limit in (True, float("nan"), float("inf"), -4):
+        payload = build_strategy_run_summary(data_dir=tmp_path, limit=bad_limit)  # type: ignore[arg-type]
+        assert payload["limit"] == 0
+        assert payload["run_count"] == 0

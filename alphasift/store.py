@@ -91,8 +91,8 @@ def list_saved_runs(
     runs_dir = data_dir / "runs"
     if not runs_dir.is_dir():
         return []
-    limit = int(limit)
-    if limit <= 0:
+    limit_val = max(safe_int(limit, default=0), 0)
+    if limit_val <= 0:
         return []
     items = []
     for path in sorted(runs_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
@@ -104,7 +104,7 @@ def list_saved_runs(
         if market and metadata.get("market") != market:
             continue
         items.append(metadata)
-        if len(items) >= limit:
+        if len(items) >= limit_val:
             break
     return items
 
