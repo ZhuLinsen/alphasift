@@ -937,5 +937,88 @@ def test_daily_brief_synthesis_and_rule_brief_scrub_nonfinite_and_bool():
     assert "真" not in text_blob and "true" not in text_blob.replace("rule_fallback", "")
 
 
+def test_daily_report_html_scrubs_nan_inf_bool_and_malformed_svg_ladder():
+    from alphasift.daily_report_html import render_daily_report_html
+
+    rendered = render_daily_report_html({
+        "trade_date": "2026-11-26",
+        "pack_trade_date": "2026-11-26",
+        "market_regime": {
+            "regime_stage_label": "震荡",
+            "advance_ratio_pct": True,
+            "median_return_pct": float("nan"),
+            "total_amount_yi": float("inf"),
+            "seal_rate_pct": float("inf"),
+            "prev_limit_up_avg_return_pct": False,
+            "prev_limit_up_win_rate_pct": float("-inf"),
+            "non_st_limit_up_count": float("inf"),
+            "non_st_limit_down_count": True,
+            "max_consecutive_limit_up": float("nan"),
+            "consecutive_board_ladder": {"bad": 1, "2": float("inf"), "3": 4, "1": True},
+            "return_distribution": {"flat": float("inf"), "pos0_3": True, "pos3_7": 5},
+        },
+        "announcement_risks": {"checked_count": True, "flagged_items": []},
+        "cross_strategy_synthesis": {
+            "consensus_picks": [
+                {
+                    "code": "600519",
+                    "name": "贵州茅台",
+                    "industry": "白酒",
+                    "strategy_count": True,
+                    "strategies": ["dual_low", "quality_value"],
+                    "avg_final_score": True,
+                    "change_pct": float("nan"),
+                    "price": float("inf"),
+                    "pe_ratio": True,
+                    "pb_ratio": float("-inf"),
+                }
+            ],
+            "sector_concentration": [{"industry": "白酒", "pick_count": True, "share_pct": float("inf")}],
+        },
+        "ai_highlights": [{"strategy": "dual_low", "overlap_pct": float("inf"), "rules_pick_count": True, "ai_pick_count": float("nan")}],
+        "strategies": [
+            {
+                "strategy": "dual_low",
+                "track": "rules",
+                "pick_count": float("inf"),
+                "picks": [{"rank": True, "code": "600519", "name": "贵州茅台", "final_score": float("nan"), "change_pct": float("inf")}],
+            }
+        ],
+        "patterns": {
+            "active": [],
+            "experimental": [
+                {
+                    "pattern": "box_breakout",
+                    "display_name": "箱体突破",
+                    "status": "experimental",
+                    "expectancy_tier": "positive_watch",
+                    "hit_count": True,
+                    "replay_t5_net_excess_pct": float("inf"),
+                    "wf_non_adverse_low_overhead_pct": float("-inf"),
+                    "wf_non_adverse_low_overhead_days": True,
+                    "wf_h1_purged_signals": float("inf"),
+                    "wf_low_overhead_threshold_pct": float("nan"),
+                    "signals": [
+                        {
+                            "code": "600519",
+                            "name": "贵州茅台",
+                            "change_pct": float("nan"),
+                            "overhead_supply_10pct": True,
+                            "kline": [[10, 11, 9, 10.5], [float("nan"), 11, 9, 10], [10, float("inf"), 9, 10]],
+                        }
+                    ],
+                }
+            ],
+        },
+    })
+    assert "¥inf" not in rendered.lower()
+    assert "pe 1.0" not in rendered.lower()
+    assert "nan%" not in rendered.lower()
+    assert "inf%" not in rendered.lower()
+    assert "3板" in rendered
+    assert "2板" not in rendered
+    assert 'y1="nan"' not in rendered.lower()
+
+
 
 

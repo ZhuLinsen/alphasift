@@ -4,14 +4,13 @@
 from __future__ import annotations
 
 import html
-import math
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 from alphasift.daily_brief import BRIEF_DISCLAIMER, resolve_strategy_display_names
 from alphasift.daily_report import _is_wf_joint_positive
-from alphasift.jsonutil import atomic_write_text, dumps_strict_json
+from alphasift.jsonutil import atomic_write_text, dumps_strict_json, finite_float, safe_int
 
 _DIST_BUCKETS: tuple[tuple[str, str, str], ...] = (
     ("le_neg7", "≤-7%", "down"),
@@ -33,9 +32,9 @@ def _build_wf_cli(pat: dict[str, Any]) -> str:
         return ""
     adv = [str(s).strip() for s in (pat.get("wf_h1_adverse_regimes") or []) if str(s).strip()]
     pos = [str(s).strip() for s in (pat.get("wf_h1_positive_regimes") or []) if str(s).strip()]
-    joint_days = int(pat.get("wf_non_adverse_low_overhead_days") or 0)
-    raw_cap = pat.get("wf_low_overhead_threshold_pct")
-    ov_cap = int(round(float(raw_cap))) if raw_cap not in (None, "") else 15
+    joint_days = safe_int(pat.get("wf_non_adverse_low_overhead_days"))
+    raw_cap = finite_float(pat.get("wf_low_overhead_threshold_pct"))
+    ov_cap = int(round(raw_cap)) if raw_cap is not None else 15
     if adv or joint_days > 0:
         adv_arg = f" --exclude-regimes {','.join(adv)}" if adv else ""
         ov_arg = f" --max-overhead-pct {ov_cap}" if joint_days > 0 else ""
@@ -90,13 +89,8 @@ def _i18n(key: str, **vars_map: object) -> str:
 
 
 def _fmt_pct(val: object, digits: int = 2) -> str:
-    if val is None:
-        return '<span class="dim">–</span>'
-    try:
-        num = float(val)
-    except (TypeError, ValueError):
-        return '<span class="dim">–</span>'
-    if not math.isfinite(num):
+    num = finite_float(val)
+    if num is None:
         return '<span class="dim">–</span>'
     cls = "up" if num > 0 else ("down" if num < 0 else "")
     sign = "+" if num > 0 else ""
@@ -104,13 +98,8 @@ def _fmt_pct(val: object, digits: int = 2) -> str:
 
 
 def _fmt_num(val: object, digits: int = 1, suffix: str = "", suffix_i18n: str = "") -> str:
-    if val is None:
-        return '<span class="dim">–</span>'
-    try:
-        num = float(val)
-    except (TypeError, ValueError):
-        return '<span class="dim">–</span>'
-    if not math.isfinite(num):
+    num = finite_float(val)
+    if num is None:
         return '<span class="dim">–</span>'
     if suffix_i18n:
         return f'{num:.{digits}f}<span {_i18n(suffix_i18n)}>{_esc(suffix)}</span>'
@@ -120,7 +109,7 @@ def _fmt_num(val: object, digits: int = 1, suffix: str = "", suffix_i18n: str = 
 def _render_dist_svg(dist: dict[str, Any] | None) -> str:
     if not isinstance(dist, dict) or not dist:
         return f'<div class="empty" {_i18n("no_dist")}>暂无涨跌幅分布统计</div>'
-    counts = [int(dist.get(k) or 0) for k, _, _ in _DIST_BUCKETS]
+    counts = [safe_int(dist.get(k)) for k, _, _ in _DIST_BUCKETS]
     max_v = max(1, *counts)
     width, height, top, bot = 360, 120, 18, 22
     bar_h = height - top - bot
@@ -154,10 +143,12 @@ def _render_mini_kline_svg(bars: list[Any] | None) -> str:
     parsed: list[tuple[float, float, float, float]] = []
     for item in bars:
         if isinstance(item, (list, tuple)) and len(item) >= 4:
-            try:
-                parsed.append((float(item[0]), float(item[1]), float(item[2]), float(item[3])))
-            except (TypeError, ValueError):
-                continue
+            o_f = finite_float(item[0])
+            h_f = finite_float(item[1])
+            l_f = finite_float(item[2])
+            c_f = finite_float(item[3])
+            if o_f is not None and h_f is not None and l_f is not None and c_f is not None:
+                parsed.append((o_f, h_f, l_f, c_f))
     if not parsed:
         return '<span class="dim">–</span>'
     lo = min(b[2] for b in parsed)
@@ -183,7 +174,13 @@ def _render_mini_kline_svg(bars: list[Any] | None) -> str:
 def _render_ladder(ladder: dict[str, Any] | None) -> str:
     if not isinstance(ladder, dict) or not ladder:
         return f'<div class="empty" {_i18n("ladder_empty")}>今日无非 ST 连板或首板分布</div>'
-    items = sorted(((int(k), int(v)) for k, v in ladder.items() if int(v or 0) > 0), reverse=True)
+    raw_items: list[tuple[int, int]] = []
+    for k, v in ladder.items():
+        board_n = safe_int(k, default=-1)
+        cnt_n = safe_int(v)
+        if board_n >= 0 and cnt_n > 0:
+            raw_items.append((board_n, cnt_n))
+    items = sorted(raw_items, reverse=True)
     if not items:
         return f'<div class="empty" {_i18n("ladder_empty")}>今日无非 ST 连板分布</div>'
     max_cnt = max(1, *(cnt for _, cnt in items))
@@ -326,11 +323,19 @@ def render_daily_report_html(
     adv_pct = _fmt_num(reg.get("advance_ratio_pct"), 1, "%")
     med_pct = _fmt_pct(reg.get("median_return_pct"))
     amt_str = _fmt_num(reg.get("total_amount_yi"), 0, " 亿", suffix_i18n="unit_yi")
-    seal_str = _fmt_num(reg.get("seal_rate_pct"), 1, "%")
+    seal_val = finite_float(reg.get("seal_rate_pct"))
+    seal_str = _fmt_num(seal_val, 1, "%")
     prev_lu = _fmt_pct(reg.get("prev_limit_up_avg_return_pct"))
-    lu = int(reg.get("non_st_limit_up_count") or 0)
-    ld = int(reg.get("non_st_limit_down_count") or 0)
-    max_streak = int(reg.get("max_consecutive_limit_up") or 0)
+    prev_win_val = finite_float(reg.get("prev_limit_up_win_rate_pct"))
+    lu = safe_int(reg.get("non_st_limit_up_count"))
+    ld = safe_int(reg.get("non_st_limit_down_count"))
+    max_streak = safe_int(reg.get("max_consecutive_limit_up"))
+    adv_cnt = safe_int(reg.get("advancing_count"))
+    dec_cnt = safe_int(reg.get("declining_count"))
+    traded_cnt = safe_int(reg.get("traded_count"))
+    one_up_cnt = safe_int(reg.get("one_price_limit_up_count"))
+    one_dn_cnt = safe_int(reg.get("one_price_limit_down_count"))
+    broken_cnt = safe_int(reg.get("non_st_broken_board_count"))
     reg_code = str(reg.get("regime_stage") or "-")
     reg_label = str(reg.get("regime_stage_label") or "-")
     stage_txt = f"盘面 · {_esc(reg_label)}"
@@ -342,12 +347,12 @@ def render_daily_report_html(
         <span class="badge accent" data-regime="{_esc(reg_code)}" data-regime-raw="{_esc(reg_label)}">{stage_txt}</span>
       </div>
       <div class="kpi-strip">
-        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_adv")}>上涨占比</div><div class="val">{adv_pct}</div><div class="sub" {_i18n("kpi_adv_sub", adv=int(reg.get('advancing_count') or 0), dec=int(reg.get('declining_count') or 0))}>涨 {int(reg.get('advancing_count') or 0)} / 跌 {int(reg.get('declining_count') or 0)}</div></div>
-        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_med")}>全市场中位数</div><div class="val">{med_pct}</div><div class="sub" {_i18n("kpi_med_sub", n=int(reg.get('traded_count') or 0))}>成交 {int(reg.get('traded_count') or 0)} 只</div></div>
-        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_amt")}>两市成交额</div><div class="val">{amt_str}</div><div class="sub" {_i18n("kpi_amt_sub", seal=f"{float(reg.get('seal_rate_pct') or 0):.1f}%" if reg.get("seal_rate_pct") is not None else "–")}>封板率 {seal_str}</div></div>
-        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_luld")}>非ST 涨停 / 跌停</div><div class="val"><span class="up">{lu}</span> / <span class="down">{ld}</span></div><div class="sub" {_i18n("kpi_luld_sub", up=int(reg.get('one_price_limit_up_count') or 0), dn=int(reg.get('one_price_limit_down_count') or 0))}>一字 {int(reg.get('one_price_limit_up_count') or 0)}/{int(reg.get('one_price_limit_down_count') or 0)}</div></div>
-        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_streak")}>连板最高</div><div class="val" {_i18n("kpi_streak_val", n=max_streak)}>{max_streak} 板</div><div class="sub" {_i18n("kpi_streak_sub", n=int(reg.get('non_st_broken_board_count') or 0))}>炸板 {int(reg.get('non_st_broken_board_count') or 0)} 只</div></div>
-        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_prevlu")}>昨涨停今日均收益</div><div class="val">{prev_lu}</div><div class="sub" {_i18n("kpi_prevlu_sub", win=f"{float(reg.get('prev_limit_up_win_rate_pct') or 0):.1f}%" if reg.get("prev_limit_up_win_rate_pct") is not None else "–")}>红盘率 {_fmt_num(reg.get('prev_limit_up_win_rate_pct'), 1, '%')}</div></div>
+        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_adv")}>上涨占比</div><div class="val">{adv_pct}</div><div class="sub" {_i18n("kpi_adv_sub", adv=adv_cnt, dec=dec_cnt)}>涨 {adv_cnt} / 跌 {dec_cnt}</div></div>
+        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_med")}>全市场中位数</div><div class="val">{med_pct}</div><div class="sub" {_i18n("kpi_med_sub", n=traded_cnt)}>成交 {traded_cnt} 只</div></div>
+        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_amt")}>两市成交额</div><div class="val">{amt_str}</div><div class="sub" {_i18n("kpi_amt_sub", seal=f"{seal_val:.1f}%" if seal_val is not None else "–")}>封板率 {seal_str}</div></div>
+        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_luld")}>非ST 涨停 / 跌停</div><div class="val"><span class="up">{lu}</span> / <span class="down">{ld}</span></div><div class="sub" {_i18n("kpi_luld_sub", up=one_up_cnt, dn=one_dn_cnt)}>一字 {one_up_cnt}/{one_dn_cnt}</div></div>
+        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_streak")}>连板最高</div><div class="val" {_i18n("kpi_streak_val", n=max_streak)}>{max_streak} 板</div><div class="sub" {_i18n("kpi_streak_sub", n=broken_cnt)}>炸板 {broken_cnt} 只</div></div>
+        <div class="kpi-cell"><div class="lbl" {_i18n("kpi_prevlu")}>昨涨停今日均收益</div><div class="val">{prev_lu}</div><div class="sub" {_i18n("kpi_prevlu_sub", win=f"{prev_win_val:.1f}%" if prev_win_val is not None else "–")}>红盘率 {_fmt_num(prev_win_val, 1, '%')}</div></div>
       </div>
       <div class="grid two-col" style="padding:14px 18px 18px;">
         <div class="sub-panel"><h3 class="subhead" {_i18n("sub_dist")}>7 档涨跌幅分布</h3>{_render_dist_svg(reg.get("return_distribution"))}</div>
@@ -359,7 +364,7 @@ def render_daily_report_html(
     # 3. Announcement Risk Alerts & Spotlight
     flagged = ann.get("flagged_items") or []
     spotlight = syn.get("risk_spotlight") or []
-    checked = int(ann.get("checked_count") or 0)
+    checked = safe_int(ann.get("checked_count"))
     if flagged:
         flag_cards_parts: list[str] = []
         for x in flagged:
@@ -430,12 +435,16 @@ def render_daily_report_html(
             if len(strat_list) > 3:
                 strat_badges += f' <span class="dim small">+{len(strat_list) - 3}</span>'
             val_parts: list[str] = []
-            if c.get("price") is not None:
-                val_parts.append(f'¥{float(c["price"]):.2f}')
-            if c.get("pe_ratio") is not None:
-                val_parts.append(f'PE {float(c["pe_ratio"]):.1f}')
-            if c.get("pb_ratio") is not None:
-                val_parts.append(f'PB {float(c["pb_ratio"]):.2f}')
+            price_f = finite_float(c.get("price"))
+            pe_f = finite_float(c.get("pe_ratio"))
+            pb_f = finite_float(c.get("pb_ratio"))
+            if price_f is not None:
+                val_parts.append(f"¥{price_f:.2f}")
+            if pe_f is not None:
+                val_parts.append(f"PE {pe_f:.1f}")
+            if pb_f is not None:
+                val_parts.append(f"PB {pb_f:.2f}")
+            strat_cnt = safe_int(c.get("strategy_count"))
             val_sub = f'<div class="small dim mono">{" · ".join(val_parts)}</div>' if val_parts else ""
             reason_sub = ""
             if c.get("reasons"):
@@ -444,7 +453,7 @@ def render_daily_report_html(
                 f'<tr><td><span class="rank-num {"top" if idx <= 3 else ""}">{idx}</span></td>'
                 f'<td class="l"><strong>{_esc(c.get("name"))}</strong> <span class="mono dim small">{_esc(c.get("code"))}</span>{val_sub}{reason_sub}</td>'
                 f'<td class="l dim">{_esc(c.get("industry"))}</td>'
-                f'<td><span class="badge accent" {_i18n("n_strats", n=int(c.get("strategy_count") or 0))}>{int(c.get("strategy_count") or 0)} 策略</span></td>'
+                f'<td><span class="badge accent" {_i18n("n_strats", n=strat_cnt)}>{strat_cnt} 策略</span></td>'
                 f'<td class="l">{strat_badges}</td>'
                 f'<td class="mono">{_fmt_num(c.get("avg_final_score"), 1)}</td>'
                 f'<td class="mono">{_fmt_pct(c.get("change_pct"))}</td>'
@@ -468,8 +477,8 @@ def render_daily_report_html(
     sector_html = (
         "".join(
             f'<div class="ladder-row"><span>{_esc(s.get("industry"))}</span>'
-            f'<div class="ladder-track"><div class="ladder-fill accent-bg" style="width:{min(100.0, float(s.get("share_pct") or 0.0)):.1f}%"></div></div>'
-            f'<span class="ladder-num">{int(s.get("pick_count") or 0)} ({_fmt_num(s.get("share_pct"), 1, "%")})</span></div>'
+            f'<div class="ladder-track"><div class="ladder-fill accent-bg" style="width:{min(100.0, max(0.0, finite_float(s.get("share_pct")) or 0.0)):.1f}%"></div></div>'
+            f'<span class="ladder-num">{safe_int(s.get("pick_count"))} ({_fmt_num(s.get("share_pct"), 1, "%")})</span></div>'
             for s in sectors
         )
         or f'<div class="dim small" {_i18n("no_sector")}>暂无行业分布</div>'
@@ -478,7 +487,10 @@ def render_daily_report_html(
     ai_cards_parts: list[str] = []
     none_span = f'<span {_i18n("none_lbl")}>无</span>'
     for h in ai_hl:
-        overlap_txt = f"{float(h.get('overlap_pct')):.1f}%" if h.get("overlap_pct") is not None else "–"
+        overlap_f = finite_float(h.get("overlap_pct"))
+        overlap_txt = f"{overlap_f:.1f}%" if overlap_f is not None else "–"
+        rules_cnt = safe_int(h.get("rules_pick_count"))
+        ai_cnt = safe_int(h.get("ai_pick_count"))
         mv = h.get("llm_market_view")
         view_html = f'<div><b {_i18n("ai_view")}>市场观点：</b>{_esc(mv)}</div>' if mv else ""
         added_names = "、".join(f'{x.get("name")}({x.get("code")})' for x in (h.get("added_by_ai") or []))
@@ -487,7 +499,7 @@ def render_daily_report_html(
         dropped_html = _esc(dropped_names) if dropped_names else none_span
         ai_cards_parts.append(
             f'<div class="card"><div class="card-top"><h3>{_sname_span(h.get("strategy"))}<span class="badge ai" {_i18n("ai_rebalance")}>AI 调仓</span></h3>'
-            f'<div class="sub" {_i18n("ai_sub", ov=overlap_txt, r=int(h.get("rules_pick_count") or 0), a=int(h.get("ai_pick_count") or 0))}>重合度 {overlap_txt} · 规则 {int(h.get("rules_pick_count") or 0)} / AI {int(h.get("ai_pick_count") or 0)}</div></div>'
+            f'<div class="sub" {_i18n("ai_sub", ov=overlap_txt, r=rules_cnt, a=ai_cnt)}>重合度 {overlap_txt} · 规则 {rules_cnt} / AI {ai_cnt}</div></div>'
             f'<div class="prose small" style="padding:10px 14px;">{view_html}'
             f'<div><b {_i18n("ai_add")}>AI 新增：</b>{added_html}</div>'
             f'<div><b {_i18n("ai_drop")}>AI 剔除：</b>{dropped_html}</div>'
@@ -534,7 +546,7 @@ def render_daily_report_html(
         picks = st.get("picks") or []
         if picks:
             rows = "".join(
-                f'<tr><td><span class="rank-num {"top" if int(pk.get("rank") or 9) <= 3 else ""}">{int(pk.get("rank") or 0)}</span></td>'
+                f'<tr><td><span class="rank-num {"top" if safe_int(pk.get("rank"), default=9) <= 3 else ""}">{safe_int(pk.get("rank"))}</span></td>'
                 f'<td class="l"><strong>{_esc(pk.get("name"))}</strong> <span class="mono dim small">{_esc(pk.get("code"))}</span></td>'
                 f'<td class="l dim">{_esc(pk.get("industry"))}</td>'
                 f'<td class="mono">{_fmt_num(pk.get("final_score"), 1)}</td>'
@@ -553,7 +565,7 @@ def render_daily_report_html(
             )
         else:
             tbl = f'<div class="empty" {_i18n("no_picks")}>无入选股票</div>'
-        n_picks = int(st.get("pick_count") or len(picks))
+        n_picks = safe_int(st.get("pick_count"), default=len(picks)) or len(picks)
         strat_cards.append(
             f'<div class="card"><div class="card-top"><h3>{_sname_span(st.get("strategy"))}{badge}</h3>'
             f'<div class="sub" {_i18n("strat_picks_cnt", n=n_picks)}>入选 {n_picks} 只</div></div>{tbl}</div>'
@@ -581,7 +593,7 @@ def render_daily_report_html(
                             )
                         )
                     ),
-                    -int(p.get("hit_count") or 0),
+                    -safe_int(p.get("hit_count")),
                     str(p.get("pattern") or ""),
                 )
             )
@@ -595,8 +607,8 @@ def render_daily_report_html(
                 else f'<span class="badge" {_i18n("pat_exp_watch")}>观察期</span>'
             )
             p_mid = str(pat.get("wf_eval_mid_date") or "").strip()
-            p_sig = int(pat.get("wf_h1_purged_signals") or 0)
-            p_days = int(pat.get("wf_h1_purged_days") or 0)
+            p_sig = safe_int(pat.get("wf_h1_purged_signals"))
+            p_days = safe_int(pat.get("wf_h1_purged_days"))
             purged_tip = (
                 (f"H1 exit_date < {p_mid} · purged {p_sig} ({p_days}d)" if p_mid else f"purged {p_sig} ({p_days}d)")
                 if pat.get("wf_boundary_verified")
@@ -613,21 +625,21 @@ def render_daily_report_html(
                 if pat.get("wf_boundary_verified") is False
                 else ""
             )
-            net_ex = pat.get("replay_t5_net_excess_pct")
+            net_ex = finite_float(pat.get("replay_t5_net_excess_pct"))
             replay_note = (
-                f'<span {_i18n("pat_t5_net", v=f"{float(net_ex):+.2f}%")}> · T+5净超额 {float(net_ex):+.2f}%</span>'
+                f'<span {_i18n("pat_t5_net", v=f"{net_ex:+.2f}%")}> · T+5净超额 {net_ex:+.2f}%</span>'
                 if net_ex is not None
                 else ""
             )
-            wf_joint_pct = pat.get("wf_non_adverse_low_overhead_pct")
-            wf_joint_days = int(pat.get("wf_non_adverse_low_overhead_days") or 0)
+            wf_joint_pct = finite_float(pat.get("wf_non_adverse_low_overhead_pct"))
+            wf_joint_days = safe_int(pat.get("wf_non_adverse_low_overhead_days"))
             if wf_joint_pct is not None and wf_joint_days > 0:
                 wf_joint_low = wf_joint_days < _WF_MIN_DAYS
                 cls_attr = ' class="wf-low"' if wf_joint_low else ""
                 low_tag = f'<span class="tag-low">&lt;{_WF_MIN_DAYS}d</span>' if wf_joint_low else ""
                 replay_note += (
-                    f'<span{cls_attr}{purged_title_attr} {_i18n("pat_wf_joint", v=f"{float(wf_joint_pct):+.2f}%", d=wf_joint_days)}>'
-                    f' · 联合OOS {float(wf_joint_pct):+.2f}%({wf_joint_days}d)</span>{low_tag}'
+                    f'<span{cls_attr}{purged_title_attr} {_i18n("pat_wf_joint", v=f"{wf_joint_pct:+.2f}%", d=wf_joint_days)}>'
+                    f' · 联合OOS {wf_joint_pct:+.2f}%({wf_joint_days}d)</span>{low_tag}'
                 )
             sigs = pat.get("signals") or []
             if sigs:
@@ -647,7 +659,7 @@ def render_daily_report_html(
                 )
             else:
                 body = f'<div class="empty" {_i18n("no_pat_sig")}>今日无触发信号</div>'
-            hits_n = int(pat.get("hit_count") or 0)
+            hits_n = safe_int(pat.get("hit_count"))
             pat_link = _dash_link("walk-forward-wrap", "link_pat_wf", "样本外回放 →", pat_id=pkey) if pkey else ""
             cli_cmd = _build_wf_cli(pat) if pkey else ""
             wf_cli_btn = (
@@ -664,7 +676,7 @@ def render_daily_report_html(
             )
     all_scan_pats = [*(pat_sec.get("active") or []), *(pat_sec.get("experimental") or [])]
     wf_mid_date = next((str(p.get("wf_eval_mid_date") or "").strip() for p in all_scan_pats if str(p.get("wf_eval_mid_date") or "").strip()), "")
-    total_purged = sum(int(p.get("wf_h1_purged_signals") or 0) for p in all_scan_pats)
+    total_purged = sum(safe_int(p.get("wf_h1_purged_signals")) for p in all_scan_pats)
     pat_boundary_footer = (
         f'<p class="dim small" style="margin:10px 0 0;" {_i18n("pat_wf_boundary_note_stats", mid=wf_mid_date, n=total_purged)}>'
         f'注：Walk-Forward H1 严格按实际退出日 &lt; {_esc(wf_mid_date)} 截断（累计剔除 {total_purged} 条跨界信号），避免 H2 价格区间泄漏进逆风判定。</p>'
