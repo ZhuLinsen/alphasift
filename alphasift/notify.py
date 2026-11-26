@@ -36,7 +36,7 @@ from alphasift.daily_report import (
     render_daily_im_card,
 )
 from alphasift.timeutil import parse_timestamp
-from alphasift.jsonutil import atomic_write_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, finite_float, safe_int
 
 SUPPORTED_CHANNELS: tuple[str, ...] = (
     "wecom",
@@ -598,16 +598,24 @@ def _safe_json(resp: Any) -> dict[str, Any]:
     return payload
 
 
+def _float_or(value: object, default: float = 0.0) -> float:
+    parsed = finite_float(value)
+    return parsed if parsed is not None else default
+
+
+def _non_neg_int(value: object, default: int = 0) -> int:
+    return max(safe_int(value, default=default), 0)
+
+
 def _retry_delay(resp: Any, default: float = 0.5) -> float:
     if getattr(resp, "status_code", None) == 429:
         headers = getattr(resp, "headers", None)
         if hasattr(headers, "get"):
             ra_raw = headers.get("Retry-After") or headers.get("retry-after")
             if ra_raw is not None:
-                try:
-                    return max(0.0, min(float(str(ra_raw).strip()), 5.0))
-                except ValueError:
-                    pass
+                parsed = finite_float(str(ra_raw).strip())
+                if parsed is not None:
+                    return max(0.0, min(parsed, 5.0))
     return default
 
 
@@ -620,7 +628,7 @@ def _post_with_retry(
     **kwargs: Any,
 ) -> Any:
     sleep = sleep_fn or time.sleep
-    attempts = max(0, int(max_retries)) + 1
+    attempts = _non_neg_int(max_retries, default=1) + 1
     for idx in range(attempts):
         resp = post_fn(url, **kwargs)
         code = getattr(resp, "status_code", None)
@@ -805,8 +813,8 @@ def _build_report_title(report: dict[str, Any] | None, *, fallback_title: str) -
         short_d = tdate[5:10] if len(tdate) >= 10 else (tdate or "-")
         reg = report.get("market_regime") or {}
         stage_lbl = str(reg.get("regime_stage_label") or "-")
-        adv = float(reg.get("advance_ratio_pct") or 0.0)
-        flagged_n = int((report.get("announcement_risks") or {}).get("flagged_count") or 0)
+        adv = _float_or(reg.get("advance_ratio_pct"))
+        flagged_n = _non_neg_int((report.get("announcement_risks") or {}).get("flagged_count"))
         cons_n = len(((report.get("cross_strategy_synthesis") or {}).get("consensus_picks")) or [])
         stale_tag = "[旧包]" if report.get("pack_is_stale") else ""
         return f"AlphaSift A股日报{stale_tag} ({short_d})｜{stage_lbl}·涨{adv:.0f}%·预警{flagged_n}·共识{cons_n}"
@@ -822,18 +830,18 @@ def _build_report_title(report: dict[str, Any] | None, *, fallback_title: str) -
 def _split_hit_patterns(report: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Return (primary_patterns, negative_watch_patterns) with non-zero hits."""
     pat_sec = report.get("patterns") or {}
-    active = [p for p in (pat_sec.get("active") or []) if int(p.get("hit_count") or 0) > 0]
-    exp = [p for p in (pat_sec.get("experimental") or []) if int(p.get("hit_count") or 0) > 0]
-    active.sort(key=lambda p: -int(p.get("hit_count") or 0))
+    active = [p for p in (pat_sec.get("active") or []) if _non_neg_int(p.get("hit_count")) > 0]
+    exp = [p for p in (pat_sec.get("experimental") or []) if _non_neg_int(p.get("hit_count")) > 0]
+    active.sort(key=lambda p: -_non_neg_int(p.get("hit_count")))
     pos_exp = [p for p in exp if p.get("expectancy_tier") != "negative_watch"]
     neg_exp = [p for p in exp if p.get("expectancy_tier") == "negative_watch"]
     pos_exp.sort(
         key=lambda p: (
             0 if p.get("expectancy_tier") == "positive_watch" else 1,
-            -int(p.get("hit_count") or 0),
+            -_non_neg_int(p.get("hit_count")),
         )
     )
-    neg_exp.sort(key=lambda p: -int(p.get("hit_count") or 0))
+    neg_exp.sort(key=lambda p: -_non_neg_int(p.get("hit_count")))
     return [*active, *pos_exp], neg_exp
 
 
@@ -850,16 +858,17 @@ def _render_markdown_digest(
         lines = [f"### {title}"]
         for sec in (report.get("market_sections") or [])[:6]:
             m_name = sec.get("market_name") or str(sec.get("market") or "").upper()
-            lines.append(f"\n**{m_name}**（{int(sec.get('strategy_count') or 0)} 组策略 · {sec.get('trade_date', '-')}）")
+            lines.append(f"\n**{m_name}**（{_non_neg_int(sec.get('strategy_count'))} 组策略 · {sec.get('trade_date', '-')}）")
             top_picks = sec.get("top_picks") or []
             if top_picks:
                 for p in top_picks[:4]:
-                    px = f" ¥{float(p['price']):.2f}" if p.get("price") is not None else ""
-                    chg = f" {_fmt_report_pct(p.get('change_pct'))}" if p.get("change_pct") is not None else ""
+                    px_val = finite_float(p.get("price"))
+                    px = f" ¥{px_val:.2f}" if px_val is not None else ""
+                    chg = f" {_fmt_report_pct(p.get('change_pct'))}" if finite_float(p.get("change_pct")) is not None else ""
                     strats = "·".join((p.get("strategy_display_names") or p.get("strategies") or [])[:2])
                     lines.append(
                         f"- **{p.get('name') or p.get('code')}** `{p.get('code')}`{px}{chg} · "
-                        f"{float(p.get('avg_final_score') or 0):.1f}分 ({strats})"
+                        f"{_float_or(p.get('avg_final_score')):.1f}分 ({strats})"
                     )
             else:
                 lines.append("- 暂无入选标的")
@@ -885,16 +894,16 @@ def _render_markdown_digest(
     assert report is not None
     reg = report.get("market_regime") or {}
     stage_lbl = str(reg.get("regime_stage_label") or "-")
-    adv = float(reg.get("advance_ratio_pct") or 0.0)
+    adv = _float_or(reg.get("advance_ratio_pct"))
     med_str = _fmt_report_pct(reg.get("median_return_pct"))
-    seal = reg.get("seal_rate_pct")
-    seal_str = "-" if seal is None else f"{float(seal):.1f}%"
-    amt = reg.get("total_amount_yi")
-    amt_str = "-" if amt is None else f"{float(amt):,.0f} 亿"
+    seal = finite_float(reg.get("seal_rate_pct"))
+    seal_str = "-" if seal is None else f"{seal:.1f}%"
+    amt = finite_float(reg.get("total_amount_yi"))
+    amt_str = "-" if amt is None else f"{amt:,.0f} 亿"
     prev_str = _fmt_report_pct(reg.get("prev_limit_up_avg_return_pct"))
-    lu = int(reg.get("non_st_limit_up_count") or 0)
-    ld = int(reg.get("non_st_limit_down_count") or 0)
-    max_streak = int(reg.get("max_consecutive_limit_up") or 0)
+    lu = _non_neg_int(reg.get("non_st_limit_up_count"))
+    ld = _non_neg_int(reg.get("non_st_limit_down_count"))
+    max_streak = _non_neg_int(reg.get("max_consecutive_limit_up"))
 
     if wecom_colors:
         head_line = f'### {title}\n> 盘面：<font color="info">{stage_lbl}</font>｜上涨 <font color="warning">{adv:.1f}%</font>（中位 {med_str}）｜涨跌停 {lu}/{ld}（封板 {seal_str}）｜最高 {max_streak}板 · 昨涨停 {prev_str} · 成交 {amt_str}'
@@ -906,7 +915,7 @@ def _render_markdown_digest(
 
     ann = report.get("announcement_risks") or {}
     flagged = ann.get("flagged_items") or []
-    checked = int(ann.get("checked_count") or 0)
+    checked = _non_neg_int(ann.get("checked_count"))
     if flagged:
         tag_open, tag_close = ('<font color="warning">', "</font>") if wecom_colors else ("", "")
         lines.append(f"\n**{tag_open}⚠️ 公告排雷预警（{checked}检/{len(flagged)}中）{tag_close}**")
@@ -938,12 +947,14 @@ def _render_markdown_digest(
         lines.append(f"\n**🎯 跨策略共识精选（Top {min(6, len(consensus))}/{len(consensus)}）**")
         for idx, c in enumerate(consensus[:6], start=1):
             strats = "·".join(_strategy_display_name(report, s) for s in (c.get("strategies") or [])[:3])
-            px = f" ¥{float(c['price']):.2f}" if c.get("price") is not None else ""
-            pe = f" PE {float(c['pe_ratio']):.1f}" if c.get("pe_ratio") is not None else ""
-            chg = f" {_fmt_report_pct(c.get('change_pct'))}" if c.get("change_pct") is not None else ""
+            px_val = finite_float(c.get("price"))
+            pe_val = finite_float(c.get("pe_ratio"))
+            px = f" ¥{px_val:.2f}" if px_val is not None else ""
+            pe = f" PE {pe_val:.1f}" if pe_val is not None else ""
+            chg = f" {_fmt_report_pct(c.get('change_pct'))}" if finite_float(c.get("change_pct")) is not None else ""
             lines.append(
                 f"{idx}. **{c.get('name', '')}** `{c.get('code', '')}`{px}{pe}{chg} · "
-                f"{int(c.get('strategy_count') or 0)}策略（{strats}）"
+                f"{_non_neg_int(c.get('strategy_count'))}策略（{strats}）"
             )
 
     primary_pats, neg_pats = _split_hit_patterns(report)
@@ -951,14 +962,15 @@ def _render_markdown_digest(
         lines.append("\n**📡 形态雷达触发**")
         for p in (primary_pats or neg_pats)[:4]:
             tag = "active" if p.get("status") == "active" else "观察期"
-            net_s = f" · T+5净{float(p['replay_t5_net_excess_pct']):+.2f}%" if p.get("replay_t5_net_excess_pct") is not None else ""
+            net_val = finite_float(p.get("replay_t5_net_excess_pct"))
+            net_s = f" · T+5净{net_val:+.2f}%" if net_val is not None else ""
             sigs = "、".join(
                 f"{s.get('name') or s.get('code')}({_fmt_report_pct(s.get('change_pct'))})"
                 for s in (p.get("signals") or [])[:3]
             )
-            lines.append(f"- **{p.get('display_name') or p.get('pattern')}**（{int(p.get('hit_count') or 0)}只 · {tag}{net_s}）：{sigs}")
+            lines.append(f"- **{p.get('display_name') or p.get('pattern')}**（{_non_neg_int(p.get('hit_count'))}只 · {tag}{net_s}）：{sigs}")
         if primary_pats and neg_pats:
-            neg_txt = "、".join(f"{p.get('display_name')}({int(p.get('hit_count') or 0)})" for p in neg_pats)
+            neg_txt = "、".join(f"{p.get('display_name')}({_non_neg_int(p.get('hit_count'))})" for p in neg_pats)
             lines.append(f"- 负期望形态（仅供参考）：{neg_txt}")
 
     detail_url = _resolved_report_url(report)
@@ -1006,13 +1018,8 @@ def _stage_palette(stage: str) -> tuple[str, str, str]:
 
 
 def _fmt_report_pct(val: object) -> str:
-    if val is None:
-        return "–"
-    try:
-        num = float(val)
-    except (TypeError, ValueError):
-        return "–"
-    if num != num:
+    num = finite_float(val)
+    if num is None:
         return "–"
     return f"{num:+.2f}%"
 
@@ -2538,7 +2545,7 @@ def push_daily_report(
                 skipped.append({"channel": channel, "reason": "dry_run"})
                 continue
 
-            attempts = int(existing.get("attempts", 0) or 0) + 1 if isinstance(existing, dict) else 1
+            attempts = _non_neg_int(existing.get("attempts"), default=0) + 1 if isinstance(existing, dict) else 1
             claim_record = {
                 "status": "pending",
                 "trade_date": trade_date,

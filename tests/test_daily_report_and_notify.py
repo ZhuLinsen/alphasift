@@ -1342,3 +1342,117 @@ def test_daily_report_scrubs_nonfinite_and_bool_metrics():
     })
     assert "nan" not in card.lower() and "inf" not in card.lower()
     assert dumps_strict_json({"entry": entry, "replay": replay_map})
+
+
+def test_notify_retry_fmt_title_and_markdown_digest_scrub_nonfinite_and_bool():
+    import types
+    from alphasift.notify import (
+        _build_report_title,
+        _fmt_report_pct,
+        _post_with_retry,
+        _render_markdown_digest,
+        _retry_delay,
+        _split_hit_patterns,
+    )
+
+    assert _fmt_report_pct(None) == "–"
+    assert _fmt_report_pct(float("nan")) == "–"
+    assert _fmt_report_pct(float("inf")) == "–"
+    assert _fmt_report_pct(float("-inf")) == "–"
+    assert _fmt_report_pct(True) == "–"
+    assert _fmt_report_pct(2.5) == "+2.50%"
+
+    assert _retry_delay(types.SimpleNamespace(status_code=429, headers={"Retry-After": "nan"}), default=0.7) == 0.7
+    assert _retry_delay(types.SimpleNamespace(status_code=429, headers={"Retry-After": "inf"}), default=0.7) == 0.7
+    assert _retry_delay(types.SimpleNamespace(status_code=429, headers={"Retry-After": "-2"}), default=0.7) == 0.0
+    assert _retry_delay(types.SimpleNamespace(status_code=429, headers={"Retry-After": "12"}), default=0.7) == 5.0
+
+    calls = []
+    sleeps = []
+
+    def fake_post(url, **kw):
+        calls.append(url)
+        return types.SimpleNamespace(status_code=503 if len(calls) == 1 else 200, headers={}, raise_for_status=lambda: None)
+
+    resp = _post_with_retry(fake_post, "https://example.com", max_retries=True, sleep_fn=sleeps.append)  # type: ignore[arg-type]
+    assert resp.status_code == 200
+    assert len(calls) == 2
+
+    dirty_cn_report = {
+        "schema_version": 1,
+        "trade_date": "2026-11-26",
+        "market_regime": {
+            "regime_stage": "divergence",
+            "regime_stage_label": "震荡分歧",
+            "advance_ratio_pct": float("nan"),
+            "median_return_pct": float("inf"),
+            "seal_rate_pct": True,
+            "total_amount_yi": float("-inf"),
+            "prev_limit_up_avg_return_pct": True,
+            "non_st_limit_up_count": float("nan"),
+            "non_st_limit_down_count": True,
+            "max_consecutive_limit_up": "bad",
+        },
+        "announcement_risks": {"checked_count": float("nan"), "flagged_count": True, "flagged_items": []},
+        "cross_strategy_synthesis": {
+            "consensus_picks": [{
+                "code": "000001",
+                "name": "平安银行",
+                "price": float("nan"),
+                "pe_ratio": True,
+                "change_pct": float("inf"),
+                "strategy_count": float("nan"),
+                "strategies": ["dual_low"],
+            }],
+        },
+        "patterns": {
+            "active": [{
+                "pattern": "double_bottom_breakout",
+                "display_name": "双底突破",
+                "status": "active",
+                "hit_count": True,
+                "replay_t5_net_excess_pct": float("nan"),
+            }, {
+                "pattern": "valid_pat",
+                "display_name": "放量突破",
+                "status": "active",
+                "hit_count": 2,
+                "replay_t5_net_excess_pct": float("inf"),
+                "signals": [{"name": "测试股", "code": "600000", "change_pct": float("nan")}],
+            }],
+            "experimental": [],
+        },
+    }
+    title = _build_report_title(dirty_cn_report, fallback_title="fallback")
+    assert "涨0%" in title and "预警0" in title and "nan" not in title.lower()
+
+    primary, neg = _split_hit_patterns(dirty_cn_report)
+    assert [p["pattern"] for p in primary] == ["valid_pat"]
+    assert neg == []
+
+    md = _render_markdown_digest(dirty_cn_report, "fallback", title=title)
+    assert "nan" not in md.lower() and "inf" not in md.lower()
+    assert "封板 -" in md and "成交 -" in md and "0策略" in md
+
+    dirty_global = {
+        "object": "MarketDigest",
+        "trade_date": "2026-11-26",
+        "markets": ["us"],
+        "market_sections": [{
+            "market": "us",
+            "market_name": "美股",
+            "trade_date": "2026-11-26",
+            "strategy_count": True,
+            "top_picks": [{
+                "code": "AAPL",
+                "name": "Apple",
+                "price": float("inf"),
+                "change_pct": True,
+                "avg_final_score": float("nan"),
+                "strategies": ["global_value"],
+            }],
+        }],
+    }
+    global_md = _render_markdown_digest(dirty_global, "fallback", title="Global")
+    assert "0 组策略" in global_md and "0.0分" in global_md
+    assert "nan" not in global_md.lower() and "inf" not in global_md.lower()
