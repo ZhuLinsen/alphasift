@@ -1255,3 +1255,90 @@ def test_consensus_announcement_prioritization_pattern_tiering_and_multi_market_
     assert res_us["status"] == "ok" and sorted(res_us["sent"]) == ["discord", "slack", "wecom"]
     ledger = json.loads(cfg.notify_state_path.read_text(encoding="utf-8"))
     assert f"{digest['trade_date']}:us+hk:wecom" in ledger
+
+
+def test_daily_report_scrubs_nonfinite_and_bool_metrics():
+    from alphasift.daily_report import _extract_pattern_replay_map, _extract_strategy_track_stats, _format_strategy_entry, render_daily_im_card
+    from alphasift.jsonutil import dumps_strict_json
+
+    bad_run = ScreenResult(
+        strategy="dual_low",
+        market="cn",
+        run_id="2026-11-26_cn",
+        track="rules",
+        created_at="2026-11-26T08:00:00Z",
+        picks=[
+            Pick(
+                rank=1,
+                code="600519",
+                name="贵州茅台",
+                industry="白酒",
+                price=float("inf"),
+                pe_ratio=float("nan"),
+                pb_ratio=True,
+                total_mv=float("inf"),
+                change_pct=float("-inf"),
+                final_score=float("nan"),
+                screen_score=float("inf"),
+                factor_scores={"value": float("nan"), "quality": True, "growth": 0.9},
+            )
+        ],
+    )
+    entry = _format_strategy_entry(bad_run)
+    p0 = entry["picks"][0]
+    assert p0["price"] is None
+    assert p0["pe_ratio"] is None
+    assert p0["pb_ratio"] is None
+    assert p0["market_cap_yi"] is None
+    assert p0["change_pct"] is None
+    assert p0["final_score"] == 0.0
+    assert p0["screen_score"] == 0.0
+    assert "成长因子靠前" in p0["ranking_reason"]
+
+    track_stats = _extract_strategy_track_stats({
+        "scorecard": [{
+            "market": "cn",
+            "strategy": "dual_low",
+            "track": "rules",
+            "windows": {"5": {"matched": True, "average_excess_return_pct": float("inf"), "beat_rate": float("nan")}},
+        }]
+    })
+    assert track_stats == {}
+
+    replay_map = _extract_pattern_replay_map({
+        "cost_bps": float("inf"),
+        "patterns": [{
+            "pattern": "double_bottom_breakout",
+            "horizons": {"t5": {"net_excess_mean_pct": float("nan"), "win_rate_pct": float("inf"), "scored": True}},
+            "walk_forward_regime_audit": {
+                "low_overhead_threshold_pct": float("inf"),
+                "h1_purged_signals": True,
+                "h2_non_adverse_low_overhead": {"days": float("nan"), "daily_mean_pct": float("inf")},
+                "delta_non_adverse_low_overhead_vs_h2_baseline_pct": float("-inf"),
+            },
+        }],
+    })
+    rm = replay_map["double_bottom_breakout"]
+    assert rm["replay_t5_net_excess_pct"] is None
+    assert rm["replay_t5_win_rate_pct"] is None
+    assert rm["replay_samples"] is None
+    assert rm["wf_low_overhead_threshold_pct"] == 15
+    assert rm["wf_non_adverse_low_overhead_days"] == 0
+    assert rm["wf_non_adverse_low_overhead_pct"] is None
+    assert rm["wf_joint_delta_pct"] is None
+    assert rm["wf_h1_purged_signals"] == 0
+
+    card = render_daily_im_card({
+        "trade_date": "2026-11-26",
+        "market_regime": {
+            "regime_stage_label": "震荡",
+            "advance_ratio_pct": float("nan"),
+            "seal_rate_pct": float("inf"),
+            "prev_limit_up_avg_return_pct": float("-inf"),
+            "total_amount_yi": float("nan"),
+            "median_return_pct": True,
+        },
+        "strategies": [entry],
+    })
+    assert "nan" not in card.lower() and "inf" not in card.lower()
+    assert dumps_strict_json({"entry": entry, "replay": replay_map})
