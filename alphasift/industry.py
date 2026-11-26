@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text
+from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, finite_float, safe_int
 from alphasift.normalize import (
     normalize_code,
     safe_float as _safe_float,
@@ -258,10 +258,12 @@ def fetch_akshare_board_map(
                 item = mapping.setdefault(code, {"industry": "", "concepts": ""})
                 if field == "industry" and not item["industry"]:
                     item["industry"] = board
-                    if board_item.get("rank") is not None:
-                        item["industry_rank"] = int(float(board_item["rank"]))
-                    if board_item.get("change_pct") is not None:
-                        item["industry_change_pct"] = _safe_float(board_item.get("change_pct"))
+                    rank_val = _safe_float(board_item.get("rank"))
+                    if rank_val is not None:
+                        item["industry_rank"] = int(rank_val)
+                    chg_val = _safe_float(board_item.get("change_pct"))
+                    if chg_val is not None:
+                        item["industry_change_pct"] = chg_val
                     item["industry_heat_score"] = heat_score
                 elif field == "concepts":
                     item["concepts"] = _merge_label_text(item.get("concepts", ""), board)
@@ -578,15 +580,18 @@ def _resolve_cache_ttl_seconds(
     cache_ttl_hours: float | None,
 ) -> float:
     if cache_ttl_seconds is not None:
-        return float(cache_ttl_seconds)
+        sec_val = finite_float(cache_ttl_seconds)
+        return max(0.0, sec_val) if sec_val is not None else 24.0 * 3600
     if cache_ttl_hours is not None:
-        return float(cache_ttl_hours) * 3600
+        hr_val = finite_float(cache_ttl_hours)
+        return max(0.0, hr_val) * 3600 if hr_val is not None else 24.0 * 3600
     raw_hours = (
         os.getenv("ALPHASIFT_INDUSTRY_PROVIDER_CACHE_TTL_HOURS", "").strip()
         or os.getenv("INDUSTRY_PROVIDER_CACHE_TTL_HOURS", "").strip()
         or "24"
     )
-    return max(0.0, float(raw_hours)) * 3600
+    env_hours = finite_float(raw_hours)
+    return max(0.0, env_hours if env_hours is not None else 24.0) * 3600
 
 
 def _akshare_board_cache_path(cache_dir: Path, *, max_boards: int) -> Path:
@@ -617,7 +622,7 @@ def _read_akshare_board_cache(
     if (
         payload.get("schema") != _AKSHARE_BOARD_CACHE_SCHEMA
         or payload.get("provider") != "akshare"
-        or int(payload.get("max_boards", 0) or 0) != int(max_boards)
+        or safe_int(payload.get("max_boards"), default=-1) != safe_int(max_boards, default=-2)
     ):
         return None, f"industry provider cache skipped: {path} schema mismatch"
     mapping = _normalize_cached_mapping(payload.get("mapping"))
@@ -786,10 +791,18 @@ def load_board_heat_trends(
             "heat": heat,
         })
 
+    eff_window = max(safe_int(window_size, default=5), 1)
+    eff_hot_score = finite_float(hot_score)
+    if eff_hot_score is None:
+        eff_hot_score = 60.0
+    eff_cooling_threshold = finite_float(cooling_threshold)
+    if eff_cooling_threshold is None:
+        eff_cooling_threshold = 5.0
+
     trends: dict[str, dict[str, object]] = {}
     for board, rows in grouped.items():
         ordered = sorted(rows, key=lambda item: str(item.get("generated_at", "")))
-        recent = ordered[-max(int(window_size), 1):]
+        recent = ordered[-eff_window:]
         heat_values = [
             heat
             for heat in (_safe_float(item.get("heat")) for item in recent)
@@ -804,7 +817,7 @@ def load_board_heat_trends(
         previous = heat_values[-2] if len(heat_values) >= 2 else last
         trend_score = last - first
         cooling_score = max(previous - last, 0.0)
-        persistence_score = sum(1 for heat in heat_values if heat >= hot_score) / len(heat_values) * 100
+        persistence_score = sum(1 for heat in heat_values if heat >= eff_hot_score) / len(heat_values) * 100
         trends[board] = {
             "board_heat_latest_score": round(last, 4),
             "board_heat_trend_score": round(trend_score, 4),
@@ -815,8 +828,8 @@ def load_board_heat_trends(
                 trend_score=trend_score,
                 cooling_score=cooling_score,
                 persistence_score=persistence_score,
-                hot_score=hot_score,
-                cooling_threshold=cooling_threshold,
+                hot_score=eff_hot_score,
+                cooling_threshold=eff_cooling_threshold,
             ),
         }
     return trends
@@ -834,7 +847,7 @@ def _apply_board_heat_trends(
         best = max(
             matches,
             key=lambda trend: (
-                int(trend.get("board_heat_observations", 0) or 0),
+                safe_int(trend.get("board_heat_observations"), default=0),
                 _safe_float(trend.get("board_heat_latest_score")) or 0.0,
                 abs(_safe_float(trend.get("board_heat_trend_score")) or 0.0),
             ),
@@ -935,18 +948,22 @@ def _board_heat_state(
 
 
 def _board_heat_score(*, change_pct: float | None, rank: float | None) -> float:
+    chg = finite_float(change_pct)
+    rnk = finite_float(rank)
     score = 50.0
-    if change_pct is not None:
-        score += change_pct * 6.0
-    if rank is not None and rank > 0:
-        score += max(0.0, 12.0 - min(rank, 12.0))
+    if chg is not None:
+        score += chg * 6.0
+    if rnk is not None and rnk > 0:
+        score += max(0.0, 12.0 - min(rnk, 12.0))
     return round(max(0.0, min(score, 100.0)), 4)
 
 
 def _board_heat_summary(board: str, *, change_pct: float | None, rank: float | None) -> str:
+    chg = finite_float(change_pct)
+    rnk = finite_float(rank)
     parts = [board]
-    if change_pct is not None:
-        parts.append(f"{change_pct:+.2f}%")
-    if rank is not None:
-        parts.append(f"rank={int(rank)}")
+    if chg is not None:
+        parts.append(f"{chg:+.2f}%")
+    if rnk is not None:
+        parts.append(f"rank={int(rnk)}")
     return ":".join(parts)

@@ -375,3 +375,46 @@ def test_eastmoney_industry_backfill_is_bounded_by_the_snapshot_budget(tmp_path,
     assert time_module.monotonic() - started < 2
     assert mapping == {}
     assert any("eastmoney" in note for note in notes)
+
+
+def test_industry_scrubs_nonfinite_and_bool_ttl_cache_max_boards_and_heat_helpers(tmp_path, monkeypatch):
+    import json
+    from alphasift.industry import (
+        _board_heat_score,
+        _board_heat_summary,
+        _read_akshare_board_cache,
+        _resolve_cache_ttl_seconds,
+    )
+
+    assert _resolve_cache_ttl_seconds(cache_ttl_seconds=float("nan"), cache_ttl_hours=None) == 24.0 * 3600
+    assert _resolve_cache_ttl_seconds(cache_ttl_seconds=True, cache_ttl_hours=None) == 24.0 * 3600  # type: ignore[arg-type]
+    assert _resolve_cache_ttl_seconds(cache_ttl_seconds=None, cache_ttl_hours=float("inf")) == 24.0 * 3600
+    monkeypatch.setenv("ALPHASIFT_INDUSTRY_PROVIDER_CACHE_TTL_HOURS", "nan")
+    assert _resolve_cache_ttl_seconds(cache_ttl_seconds=None, cache_ttl_hours=None) == 24.0 * 3600
+
+    cache_path = tmp_path / "bad_board_cache.json"
+    cache_path.write_text(
+        json.dumps({"schema": "v1", "provider": "akshare", "max_boards": "bad_int", "mapping": {}}),
+        encoding="utf-8",
+    )
+    mapping, note = _read_akshare_board_cache(cache_path, max_boards=10, ttl_seconds=3600.0)
+    assert mapping is None
+    assert "schema mismatch" in note
+
+    assert _board_heat_score(change_pct=float("nan"), rank=float("inf")) == 50.0
+    assert _board_heat_score(change_pct=True, rank=False) == 50.0  # type: ignore[arg-type]
+    assert _board_heat_summary("AI算力", change_pct=float("inf"), rank=True) == "AI算力"  # type: ignore[arg-type]
+
+    history_path = tmp_path / "history.jsonl"
+    history_path.write_text(
+        '{"board":"AI算力","generated_at":"2026-11-26","max_board_heat_score":72.0}\n',
+        encoding="utf-8",
+    )
+    trends = load_board_heat_trends(
+        history_path,
+        window_size=True,  # type: ignore[arg-type]
+        hot_score=float("nan"),
+        cooling_threshold=float("inf"),
+    )
+    assert trends["AI算力"]["board_heat_latest_score"] == 72.0
+    assert trends["AI算力"]["board_heat_persistence_score"] == 100.0

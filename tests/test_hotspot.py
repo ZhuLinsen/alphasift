@@ -551,3 +551,28 @@ def test_load_hotspot_timeline_skips_malformed_rows(tmp_path):
     assert len(events) == 1
     assert events[0].title == "订单增长"
     assert events[0].related_codes == ["300001"]
+
+
+def test_hotspot_scrubs_nonfinite_and_bool_heat_rank_and_clamp():
+    from alphasift.hotspot import HotspotSummary, _clamp, _hotspot_sort_key, score_hotspot_stock
+
+    assert _clamp(float("nan"), 0.0, 18.0) == 0.0
+    assert _clamp(float("inf"), 0.0, 18.0) == 0.0
+    assert _clamp(True, 0.0, 18.0) == 0.0  # type: ignore[arg-type]
+    assert _clamp(25.0, 0.0, 18.0) == 18.0
+
+    bad_item = HotspotSummary(
+        topic="测试概念",
+        heat_score=float("nan"),
+        trend_score=float("inf"),
+        persistence_score=True,  # type: ignore[arg-type]
+        cooling_score=float("-inf"),
+        change_pct=float("nan"),
+        rank=True,  # type: ignore[arg-type]
+    )
+    good_item = HotspotSummary(topic="真实算力", heat_score=76.0, change_pct=2.1, rank=2)
+    ordered = sorted([bad_item, good_item], key=_hotspot_sort_key, reverse=True)
+    assert ordered[0].topic == "真实算力"
+
+    stock_score = score_hotspot_stock({"change_pct": float("nan"), "amount": float("inf"), "net_inflow": True})
+    assert isinstance(stock_score, float) and stock_score == stock_score

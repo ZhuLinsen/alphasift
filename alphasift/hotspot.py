@@ -19,7 +19,12 @@ from alphasift.industry import (
     load_board_heat_trends,
 )
 from alphasift.normalize import normalize_code as _normalize_code  # strict: free-text paths
-from alphasift.jsonutil import atomic_write_strict_json, dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, dumps_strict_json, finite_float
+
+
+def _finite_or_default(value: object, default: float) -> float:
+    parsed = finite_float(value)
+    return parsed if parsed is not None else default
 
 
 HOTSPOT_STAGES = (
@@ -348,7 +353,8 @@ def discover_hotspots(
         cooling_score = _safe_float(trend.get("board_heat_cooling_score"))
         observations = int(_safe_float(trend.get("board_heat_observations")) or 0)
         state = _safe_text(trend.get("board_heat_state"))
-        heat_score = latest_score if latest_score is not None else float(row["heat_score"])
+        raw_heat = _safe_float(row.get("heat_score"))
+        heat_score = latest_score if latest_score is not None else (raw_heat if raw_heat is not None else 50.0)
         stage = classify_hotspot_stage(
             state=state,
             trend_score=trend_score,
@@ -1588,13 +1594,15 @@ def _load_history_trends(history_path: str | Path | None) -> dict[str, dict[str,
 
 
 def _hotspot_sort_key(item: HotspotSummary) -> tuple[float, float, float, float, float]:
-    trend = item.trend_score or 0.0
-    persistence = item.persistence_score or 0.0
-    cooling = item.cooling_score or 0.0
-    score = item.heat_score + max(trend, 0.0) * 0.35 + persistence * 0.05 - cooling * 0.6
-    change = item.change_pct if item.change_pct is not None else -999.0
-    rank_bonus = -float(item.rank or 999999)
-    return (score, item.heat_score, change, trend, rank_bonus)
+    heat = _finite_or_default(item.heat_score, 0.0)
+    trend = _finite_or_default(item.trend_score, 0.0)
+    persistence = _finite_or_default(item.persistence_score, 0.0)
+    cooling = _finite_or_default(item.cooling_score, 0.0)
+    score = heat + max(trend, 0.0) * 0.35 + persistence * 0.05 - cooling * 0.6
+    change = _finite_or_default(item.change_pct, -999.0)
+    rank = finite_float(item.rank)
+    rank_bonus = -(rank if rank is not None and rank != 0.0 else 999999.0)
+    return (score, heat, change, trend, rank_bonus)
 
 
 def _board_row_rank_key(item: dict[str, Any]) -> tuple[float, float, float]:
@@ -1703,4 +1711,7 @@ def _safe_bool(value: object) -> bool:
 
 
 def _clamp(value: float, lower: float, upper: float) -> float:
-    return max(lower, min(upper, value))
+    num = finite_float(value)
+    if num is None:
+        return lower
+    return max(lower, min(upper, num))
