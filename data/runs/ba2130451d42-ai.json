@@ -1,0 +1,782 @@
+{
+  "strategy": "capital_heat",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "momentum",
+  "snapshot_count": 5580,
+  "after_filter_count": 47,
+  "picks": [
+    {
+      "rank": 1,
+      "code": "600498",
+      "name": "烽火通信",
+      "final_score": 82.9857,
+      "screen_score": 72.64279287234044,
+      "llm_score": 88.0,
+      "ranking_reason": "多日主力资金净流入超40亿，量价配合健康且无负面舆情。",
+      "risk_summary": "静态PE偏高，若板块热度退潮面临估值消化压力。",
+      "price": 24.79,
+      "change_pct": 5.0,
+      "amount": 2026256751.0,
+      "total_mv": 33668971879.0,
+      "turnover_rate": 6.38,
+      "volume_ratio": 2.07,
+      "pe_ratio": 141.53900241,
+      "pb_ratio": 1.89224161,
+      "industry": "通信设备",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 55.0089,
+        "liquidity": 91.4894,
+        "momentum": 72.75,
+        "reversal": 5.0,
+        "activity": 82.9446,
+        "stability": 63.0,
+        "size": 95.7447,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.85,
+      "llm_sector": "通信设备",
+      "llm_theme": "通信设备与F5G",
+      "llm_tags": [
+        "趋势",
+        "流动性",
+        "sector:通信设备",
+        "theme:通信设备与F5G",
+        "style_fit:高度契合中盘成长与资金动量策略"
+      ],
+      "llm_catalysts": [
+        "F5G算力建设提速",
+        "行业集采放量"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "行业主力资金持续大额抢筹，板块扩散效应与硬筛排名均居前列。",
+      "llm_style_fit": "高度契合中盘成长与资金动量策略",
+      "llm_watch_items": [
+        "通信板块主力资金流向",
+        "5G/算力招投标节奏"
+      ],
+      "llm_invalidators": [
+        "主力资金连续净流出",
+        "跌破20日均线支撑"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 2,
+      "code": "300136",
+      "name": "信维通信",
+      "final_score": 76.8324,
+      "screen_score": 68.38738946808512,
+      "llm_score": 85.0,
+      "ranking_reason": "单日成交达35亿且换手良性，受益于太空算力产业共振。",
+      "risk_summary": "短期换手率超10%，需防范脉冲后震荡分流。",
+      "price": 38.44,
+      "change_pct": 4.6,
+      "amount": 3491421606.2,
+      "total_mv": 37193338445.0,
+      "turnover_rate": 10.85,
+      "volume_ratio": 1.83,
+      "pe_ratio": 53.88502967,
+      "pb_ratio": 4.46526921,
+      "industry": "电子设备制造",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 47.3304,
+        "liquidity": 97.8723,
+        "momentum": 71.45,
+        "reversal": 5.0,
+        "activity": 65.7636,
+        "stability": 62.5,
+        "size": 97.8723,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.82,
+      "llm_sector": "电子设备",
+      "llm_theme": "太空算力与卫星互联",
+      "llm_tags": [
+        "趋势",
+        "流动性",
+        "sector:电子设备",
+        "theme:太空算力与卫星互联",
+        "style_fit:适合高流动性进攻型策略"
+      ],
+      "llm_catalysts": [
+        "卫星互联网订单催化",
+        "太空算力商用推进"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "流动性因子全场领先，员工持股平稳解锁，机构持仓扎实。",
+      "llm_style_fit": "适合高流动性进攻型策略",
+      "llm_watch_items": [
+        "机构持仓变动",
+        "卫星互联网行业政策"
+      ],
+      "llm_invalidators": [
+        "日成交额骤降",
+        "核心业务放缓"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: 未发现额外加分项"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 1.8
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": []
+        }
+      },
+      "post_analysis_tags": [],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 3,
+      "code": "002275",
+      "name": "桂林三金",
+      "final_score": 75.4962,
+      "screen_score": 65.4936575531915,
+      "llm_score": 80.0,
+      "ranking_reason": "价值与动量因子表现均衡，公告无雷且涨跌幅配合度佳。",
+      "risk_summary": "中药板块整体非市场进攻主线，持续弹性可能受限。",
+      "price": 14.53,
+      "change_pct": 5.14,
+      "amount": 806936790.26,
+      "total_mv": 8537371758.0,
+      "turnover_rate": 10.67,
+      "volume_ratio": 2.55,
+      "pe_ratio": 20.21890057,
+      "pb_ratio": 2.53585802,
+      "industry": "中药生产",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 71.5446,
+        "liquidity": 70.2128,
+        "momentum": 73.205,
+        "reversal": 5.0,
+        "activity": 69.6786,
+        "stability": 61.24,
+        "size": 63.8298,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.83,
+      "llm_sector": "中药",
+      "llm_theme": "中药稳健防守与低估修复",
+      "llm_tags": [
+        "价值",
+        "防守",
+        "sector:中药",
+        "theme:中药稳健防守与低估修复",
+        "style_fit:契合防御反弹与高股息稳健配置策略"
+      ],
+      "llm_catalysts": [
+        "中药创新药审批",
+        "业绩稳健增长"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "PE仅20倍且量比达2.55，防御性资产出现资金回补迹象。",
+      "llm_style_fit": "契合防御反弹与高股息稳健配置策略",
+      "llm_watch_items": [
+        "OTC渠道销量",
+        "中药材原料成本"
+      ],
+      "llm_invalidators": [
+        "单季净利下滑",
+        "中药政策集采降价超预期"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 4,
+      "code": "301219",
+      "name": "腾远钴业",
+      "final_score": 74.9809,
+      "screen_score": 63.30150617021277,
+      "llm_score": 82.0,
+      "ranking_reason": "PB仅1.25且业绩扎实，处于性价比极佳的滞涨防守位。",
+      "risk_summary": "短期资金活跃度相对中庸，需等待周期品催化扩散。",
+      "price": 31.6,
+      "change_pct": 2.83,
+      "amount": 561393565.33,
+      "total_mv": 12097470565.0,
+      "turnover_rate": 6.44,
+      "volume_ratio": 1.78,
+      "pe_ratio": 12.41326872,
+      "pb_ratio": 1.25318751,
+      "industry": "金属非金属新材料",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 89.375,
+        "liquidity": 44.6809,
+        "momentum": 65.6975,
+        "reversal": 9.57,
+        "activity": 81.4128,
+        "stability": 69.51,
+        "size": 80.8511,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.88,
+      "llm_sector": "金属材料",
+      "llm_theme": "低估值战略小金属",
+      "llm_tags": [
+        "价值",
+        "防守",
+        "sector:金属材料",
+        "theme:低估值战略小金属",
+        "style_fit:深度契合低估值价值防守与均值回归策略"
+      ],
+      "llm_catalysts": [
+        "小金属价格反弹",
+        "下游新能源补库"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "价值因子居首(89.4)，PE仅12倍兼具安全边际与修复弹性。",
+      "llm_style_fit": "深度契合低估值价值防守与均值回归策略",
+      "llm_watch_items": [
+        "钴金属现货价格",
+        "季度业绩兑现度"
+      ],
+      "llm_invalidators": [
+        "小金属价格大幅下挫",
+        "毛利率剧烈下滑"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 5,
+      "code": "002716",
+      "name": "湖南白银",
+      "final_score": 73.5966,
+      "screen_score": 68.9943630851064,
+      "llm_score": 75.0,
+      "ranking_reason": "虽子公司计划检修15天，但资金流入显著且估值较合理。",
+      "risk_summary": "子公司停产或略微扰动当期采选产销量。",
+      "price": 6.56,
+      "change_pct": 5.47,
+      "amount": 1012630040.6,
+      "total_mv": 18519461518.0,
+      "turnover_rate": 6.7,
+      "volume_ratio": 1.59,
+      "pe_ratio": 36.89480297,
+      "pb_ratio": 4.39402075,
+      "industry": "稀有金属",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 54.7143,
+        "liquidity": 72.3404,
+        "momentum": 74.2775,
+        "reversal": 5.0,
+        "activity": 79.6146,
+        "stability": 61.59,
+        "size": 93.617,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.78,
+      "llm_sector": "稀有金属",
+      "llm_theme": "贵金属及铅锌采选",
+      "llm_tags": [
+        "趋势",
+        "事件",
+        "sector:稀有金属",
+        "theme:贵金属及铅锌采选",
+        "style_fit:适合周期顺势交易策略"
+      ],
+      "llm_catalysts": [
+        "白银价格走高",
+        "有色金属持续净流入"
+      ],
+      "llm_risks": [
+        "经营停产检修"
+      ],
+      "llm_thesis": "有色板块获资金持续净买入，检修停产影响短期可控。",
+      "llm_style_fit": "适合周期顺势交易策略",
+      "llm_watch_items": [
+        "宝山矿业复产进度",
+        "白银现货价格"
+      ],
+      "llm_invalidators": [
+        "停产检修期大幅延长",
+        "贵金属主升趋势破坏"
+      ],
+      "risk_score": 10.0,
+      "risk_level": "low",
+      "risk_penalty": 1.2,
+      "risk_flags": [
+        "经营停产检修"
+      ],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed；风险: 经营停产检修"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 3.4
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [
+            "经营停产检修"
+          ],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    }
+  ],
+  "run_id": "ba2130451d42-ai",
+  "track": "ai",
+  "llm_ranked": true,
+  "llm_market_view": "市场结构性分化明显，通信设备与低估值周期品获资金青睐，绩差高估值标的风险加剧。",
+  "llm_selection_logic": "重点考量基本面真实性、资金板块联动性与估值匹配度，严格排雷高估亏损与纯博弈标的。",
+  "llm_portfolio_risk": "高估值科技品种若遭遇大盘流动性收紧易回撤，部分题材股存在冲高回落压力。",
+  "llm_coverage": 1.0,
+  "llm_parse_errors": [],
+  "degradation": [
+    "Candidate context collected rows=12",
+    "Candidate context row errors: fund_flow: provider cooldown active (skipped 12 candidates)",
+    "LLM context truncated: trimmed=candidate_collected_context"
+  ],
+  "snapshot_source": "em_datacenter",
+  "source_errors": [],
+  "deep_analysis_requested": false,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "risk_enabled": true,
+  "portfolio_diversity_enabled": true,
+  "portfolio_concentration_notes": [
+    "Portfolio concentration bucket=半导体: penalized=2, codes=001270:半导体(-5.0),603360:化学制品(-10.0)",
+    "Portfolio concentration bucket=周期资源: penalized=2, codes=000506:贵金属(-5.0),002149:特种金属(-10.0)",
+    "Portfolio concentration bucket=科技电子: penalized=1, codes=603175:电子元件(-5.0)",
+    "Portfolio hard cap bucket=半导体: max=1, deferred=001270,603360",
+    "Portfolio hard cap bucket=周期资源: max=1, deferred=000506,002149",
+    "Portfolio hard cap bucket=科技电子: max=1, deferred=603175"
+  ],
+  "saved_path": "track/data/runs/ba2130451d42-ai.json",
+  "created_at": "2026-11-26T10:35:25.704365+00:00",
+  "portfolio_topic_exposure": {
+    "AI算力": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "300136"
+      ],
+      "overconcentrated": false
+    },
+    "医药": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "002275"
+      ],
+      "overconcentrated": false
+    },
+    "周期资源": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "002716"
+      ],
+      "overconcentrated": false
+    },
+    "科技电子": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600498"
+      ],
+      "overconcentrated": false
+    },
+    "金属材料": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "301219"
+      ],
+      "overconcentrated": false
+    }
+  },
+  "overconcentrated_topics": [],
+  "replacement_candidates": [
+    {
+      "code": "688535",
+      "name": "华海诚科",
+      "bucket": "半导体",
+      "sector": "半导体",
+      "final_score": 67.9036
+    },
+    {
+      "code": "002324",
+      "name": "普利特",
+      "bucket": "新能源",
+      "sector": "化学制品",
+      "final_score": 63.1398
+    },
+    {
+      "code": "001270",
+      "name": "铖昌科技",
+      "bucket": "半导体",
+      "sector": "半导体",
+      "final_score": 62.6092
+    },
+    {
+      "code": "603360",
+      "name": "百傲化学",
+      "bucket": "半导体",
+      "sector": "化学制品",
+      "final_score": 57.2311
+    },
+    {
+      "code": "000593",
+      "name": "德龙汇能",
+      "bucket": "公用事业",
+      "sector": "燃气",
+      "final_score": 54.6048
+    }
+  ],
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {}
+}

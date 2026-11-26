@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "run_id": "0ea91d37d68e",
+  "strategy": "blue_chip_income",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "income",
+  "created_at": "2026-11-26T10:32:54.536422+00:00",
+  "picks": 5,
+  "snapshot_count": 5580,
+  "after_filter_count": 72,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 0,
+  "degradation": [],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {},
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/0ea91d37d68e.json",
+  "report_path": "track/data/runs/0ea91d37d68e.md"
+}

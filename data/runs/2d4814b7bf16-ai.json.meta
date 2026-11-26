@@ -1,0 +1,32 @@
+{
+  "schema_version": 3,
+  "run_id": "2d4814b7bf16-ai",
+  "strategy": "blue_chip_income",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "income",
+  "created_at": "2026-11-26T10:34:35.703500+00:00",
+  "picks": 5,
+  "snapshot_count": 5580,
+  "after_filter_count": 72,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 3,
+  "degradation": [
+    "Candidate context collected rows=12",
+    "Candidate context row errors: fund_flow: provider cooldown active (skipped 12 candidates)",
+    "LLM context truncated: trimmed=candidate_collected_context"
+  ],
+  "llm_ranked": true,
+  "llm_coverage": 1.0,
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {},
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/2d4814b7bf16-ai.json",
+  "report_path": "track/data/runs/2d4814b7bf16-ai.md"
+}
