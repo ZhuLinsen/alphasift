@@ -317,3 +317,74 @@ def test_summarize_portfolio_exposure_flags_overconcentration_and_suggests_repla
     )
     assert "" not in uncls_exp
     assert "unclassified" in uncls_exp and uncls_over == []
+
+
+def test_risk_and_portfolio_overlays_scrub_nan_inf_bool_and_malformed_inputs():
+    from alphasift.models import Pick
+    from alphasift.risk import apply_portfolio_overlay, apply_risk_overlay, summarize_portfolio_exposure
+
+    p1 = Pick(
+        rank=1,
+        code="600519",
+        name="贵州茅台",
+        final_score=float("nan"),
+        screen_score=80.0,
+        change_pct=float("inf"),
+        volume_ratio=float("inf"),
+        turnover_rate=True,
+        pe_ratio=False,
+        pb_ratio=float("nan"),
+        signal_score=True,
+        llm_confidence=float("nan"),
+        daily_quality_score=False,
+        industry="白酒",
+    )
+    p2 = Pick(
+        rank=2,
+        code="000858",
+        name="五粮液",
+        final_score=78.0,
+        screen_score=78.0,
+        change_pct=1.5,
+        industry="白酒",
+    )
+
+    kept, deg = apply_risk_overlay(
+        [p1, p2],
+        max_penalty=float("nan"),
+        profile={"chase_points": "bad", "high_turnover_points": float("inf"), "abnormal_volume_ratio": True},
+    )
+    assert deg == []
+    assert [p.code for p in kept] == ["000858", "600519"]
+    # p1's NaN/Inf/bool metrics must NOT trigger Inf/bool risk flags or NaN scores
+    assert kept[1].final_score == 0.0
+    assert "abnormal_volume_ratio" not in kept[1].risk_flags
+    assert "high_turnover" not in kept[1].risk_flags
+    assert "negative_or_invalid_pe" not in kept[1].risk_flags
+    assert "weak_daily_signal" not in kept[1].risk_flags
+    assert "low_daily_quality" not in kept[1].risk_flags
+
+    p1.portfolio_penalty = float("nan")
+    ordered, notes = apply_portfolio_overlay(
+        [p2, p1],
+        max_same_sector=1,
+        concentration_penalty=4.0,
+        profile={"max_same_bucket": "bad", "concentration_penalty": float("inf")},
+    )
+    assert len(ordered) == 2 and notes
+    assert ordered[0].code == "000858"
+    assert ordered[1].portfolio_penalty == 4.0
+    assert ordered[1].final_score == -4.0
+
+    pool = [
+        Pick(rank=3, code="688981", name="中芯国际", final_score=float("inf"), screen_score=70.0, industry="半导体"),
+    ]
+    _, _, reps = summarize_portfolio_exposure(
+        ordered,
+        candidate_pool=pool,
+        max_same_bucket=True,
+        replacement_limit="nan",
+    )
+    assert len(reps) == 1
+    assert reps[0]["code"] == "688981"
+    assert reps[0]["final_score"] == 0.0

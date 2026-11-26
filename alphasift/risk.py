@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from alphasift.jsonutil import finite_float, safe_int
 from alphasift.models import Pick
 
 _DEFAULT_RISK_PROFILE = {
@@ -45,6 +46,11 @@ _DEFAULT_PORTFOLIO_BUCKETS = {
 }
 
 
+def _finite_or_default(value: object, default: float) -> float:
+    num = finite_float(value)
+    return default if num is None else num
+
+
 def apply_risk_overlay(
     picks: list[Pick],
     *,
@@ -56,7 +62,7 @@ def apply_risk_overlay(
     if not picks:
         return picks, []
 
-    max_penalty = max(float(max_penalty), 0.0)
+    max_penalty = max(_finite_or_default(max_penalty, 12.0), 0.0)
     degradation: list[str] = []
     kept: list[Pick] = []
     risk_profile = _risk_profile(profile)
@@ -68,14 +74,15 @@ def apply_risk_overlay(
         pick.risk_score = round(0.0 if max_penalty == 0 else min(points / max_penalty * 100, 100), 4)
         pick.risk_level = _risk_level(points, max_penalty)
         pick.risk_flags = _unique([*pick.risk_flags, *flags])
-        pick.final_score = round(float(pick.final_score) - penalty, 4)
-        pick.excluded_by_risk = veto_high_risk and pick.risk_level == "high"
+        base_score = _finite_or_default(pick.final_score, 0.0)
+        pick.final_score = round(base_score - penalty, 4)
+        pick.excluded_by_risk = bool(veto_high_risk) and pick.risk_level == "high"
         if pick.excluded_by_risk:
             degradation.append(f"Risk veto excluded {pick.code}: {', '.join(pick.risk_flags)}")
             continue
         kept.append(pick)
 
-    kept.sort(key=lambda item: item.final_score, reverse=True)
+    kept.sort(key=lambda item: _finite_or_default(item.final_score, 0.0), reverse=True)
     for i, pick in enumerate(kept, start=1):
         pick.rank = i
     return kept, degradation
@@ -106,14 +113,22 @@ def apply_portfolio_overlay(
     if not picks:
         return picks, []
 
-    portfolio_profile = profile or {}
-    max_same_sector = max(int(portfolio_profile.get("max_same_bucket", max_same_sector)), 1)
-    penalty_step = max(float(portfolio_profile.get("concentration_penalty", concentration_penalty)), 0.0)
+    portfolio_profile = profile if isinstance(profile, dict) else {}
+    default_bucket = max(safe_int(max_same_sector, default=1), 1)
+    max_same_sector = max(
+        safe_int(portfolio_profile.get("max_same_bucket"), default=default_bucket),
+        1,
+    )
+    default_step = max(_finite_or_default(concentration_penalty, 4.0), 0.0)
+    penalty_step = max(
+        _finite_or_default(portfolio_profile.get("concentration_penalty"), default_step),
+        0.0,
+    )
     hard_cap = str(portfolio_profile.get("mode", "soft")).strip().lower() == "hard_cap"
     if penalty_step == 0 and not hard_cap:
         return picks, []
 
-    ordered = sorted(picks, key=lambda item: item.final_score, reverse=True)
+    ordered = sorted(picks, key=lambda item: _finite_or_default(item.final_score, 0.0), reverse=True)
     if not any(_canonical_sector(_pick_sector(pick)) for pick in ordered):
         return ordered, [PORTFOLIO_DIVERSITY_SKIPPED_NOTE]
 
@@ -130,13 +145,15 @@ def apply_portfolio_overlay(
 
         penalty = min(penalty_step * excess, penalty_step * 3)
         flag = f"portfolio_sector_concentration:{bucket}"
-        pick.portfolio_penalty = round(float(pick.portfolio_penalty) + penalty, 4)
+        cur_penalty = _finite_or_default(pick.portfolio_penalty, 0.0)
+        cur_score = _finite_or_default(pick.final_score, 0.0)
+        pick.portfolio_penalty = round(cur_penalty + penalty, 4)
         pick.portfolio_flags = _unique([*pick.portfolio_flags, flag])
         pick.risk_flags = _unique([*pick.risk_flags, flag])
-        pick.final_score = round(float(pick.final_score) - penalty, 4)
+        pick.final_score = round(cur_score - penalty, 4)
         bucket_penalties.setdefault(bucket, []).append((pick.code, sector, penalty))
 
-    ordered.sort(key=lambda item: item.final_score, reverse=True)
+    ordered.sort(key=lambda item: _finite_or_default(item.final_score, 0.0), reverse=True)
     notes = [
         (
             f"Portfolio concentration bucket={bucket}: "
@@ -197,26 +214,33 @@ def assess_pick_risk(
     points = 0.0
     flags: list[str] = []
 
-    if pick.change_pct >= profile["chase_change_pct"]:
-        points += profile["chase_points"]
-        flags.append("single_day_chase_risk")
-    elif pick.change_pct <= profile["breakdown_change_pct"]:
-        points += profile["breakdown_points"]
-        flags.append("single_day_breakdown_risk")
+    change_pct = finite_float(pick.change_pct)
+    if change_pct is not None:
+        if change_pct >= profile["chase_change_pct"]:
+            points += profile["chase_points"]
+            flags.append("single_day_chase_risk")
+        elif change_pct <= profile["breakdown_change_pct"]:
+            points += profile["breakdown_points"]
+            flags.append("single_day_breakdown_risk")
 
-    if pick.volume_ratio is not None and pick.volume_ratio >= profile["abnormal_volume_ratio"]:
+    volume_ratio = finite_float(pick.volume_ratio)
+    if volume_ratio is not None and volume_ratio >= profile["abnormal_volume_ratio"]:
         points += profile["abnormal_volume_ratio_points"]
         flags.append("abnormal_volume_ratio")
-    if pick.turnover_rate is not None and pick.turnover_rate >= profile["high_turnover_rate"]:
+    turnover_rate = finite_float(pick.turnover_rate)
+    if turnover_rate is not None and turnover_rate >= profile["high_turnover_rate"]:
         points += profile["high_turnover_points"]
         flags.append("high_turnover")
-    if pick.pe_ratio is not None and pick.pe_ratio <= 0:
+    pe_ratio = finite_float(pick.pe_ratio)
+    if pe_ratio is not None and pe_ratio <= 0:
         points += profile["invalid_pe_points"]
         flags.append("negative_or_invalid_pe")
-    if pick.pb_ratio is not None and pick.pb_ratio >= profile["high_pb"]:
+    pb_ratio = finite_float(pick.pb_ratio)
+    if pb_ratio is not None and pb_ratio >= profile["high_pb"]:
         points += profile["high_pb_points"]
         flags.append("high_pb")
-    if pick.signal_score is not None and pick.signal_score < profile["weak_signal_score"]:
+    signal_score = finite_float(pick.signal_score)
+    if signal_score is not None and signal_score < profile["weak_signal_score"]:
         points += profile["weak_signal_points"]
         flags.append("weak_daily_signal")
     if pick.macd_status == "bearish":
@@ -225,7 +249,8 @@ def assess_pick_risk(
     if pick.rsi_status == "overbought":
         points += profile["rsi_overbought_points"]
         flags.append("rsi_overbought")
-    if pick.llm_confidence is not None and pick.llm_confidence < profile["low_llm_confidence"]:
+    llm_confidence = finite_float(pick.llm_confidence)
+    if llm_confidence is not None and llm_confidence < profile["low_llm_confidence"]:
         points += profile["low_llm_confidence_points"]
         flags.append("low_llm_confidence")
 
@@ -253,7 +278,8 @@ def _assess_daily_data_risk(pick: Pick, profile: dict[str, float]) -> tuple[floa
     points = 0.0
     flags: list[str] = []
 
-    if pick.daily_quality_score is not None and pick.daily_quality_score < profile["low_daily_quality_score"]:
+    daily_quality_score = finite_float(pick.daily_quality_score)
+    if daily_quality_score is not None and daily_quality_score < profile["low_daily_quality_score"]:
         points += profile["low_daily_quality_points"]
         flags.append("low_daily_quality")
 
@@ -309,7 +335,7 @@ def summarize_portfolio_exposure(
     if total == 0:
         return {}, [], []
 
-    limit = max(1, int(max_same_bucket))
+    limit = max(1, safe_int(max_same_bucket, default=1))
     bucket_picks: dict[str, list[Pick]] = {}
     selected_codes = {p.code for p in selected_picks}
     for pick in selected_picks:
@@ -330,14 +356,18 @@ def summarize_portfolio_exposure(
         if is_over:
             overconcentrated.append(bucket)
 
-    limit_count = max(0, int(replacement_limit))
+    limit_count = max(0, safe_int(replacement_limit, default=5))
     replacements: list[dict[str, object]] = []
     if limit_count > 0:
         seen_codes = set(selected_codes)
         active_buckets = set(bucket_picks.keys()) - {"unclassified"}
         ordered_pool = sorted(
             candidate_pool or [],
-            key=lambda p: (0 if _pick_bucket(p, buckets=buckets)[1] not in active_buckets else 1, -float(p.final_score), p.code),
+            key=lambda p: (
+                0 if _pick_bucket(p, buckets=buckets)[1] not in active_buckets else 1,
+                -_finite_or_default(p.final_score, 0.0),
+                p.code,
+            ),
         )
         for cand in ordered_pool:
             if cand.code in seen_codes:
@@ -353,7 +383,7 @@ def summarize_portfolio_exposure(
                 "name": cand.name,
                 "bucket": c_bucket,
                 "sector": c_sector,
-                "final_score": round(float(cand.final_score), 4),
+                "final_score": round(_finite_or_default(cand.final_score, 0.0), 4),
             })
             if len(replacements) >= limit_count:
                 break
@@ -395,9 +425,13 @@ def _pick_bucket(pick: Pick, *, buckets: object = None) -> tuple[str, str]:
 
 def _risk_profile(profile: dict[str, object] | None) -> dict[str, float]:
     result = dict(_DEFAULT_RISK_PROFILE)
-    for key, value in (profile or {}).items():
+    if not isinstance(profile, dict):
+        return result
+    for key, value in profile.items():
         if key in result:
-            result[key] = float(value)
+            num = finite_float(value)
+            if num is not None:
+                result[key] = num
     return result
 
 
