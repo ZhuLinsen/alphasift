@@ -23,7 +23,7 @@ from urllib3.util.retry import Retry
 from alphasift.markets import MarketSpec, get_market
 from alphasift.snapshot_yahoo import fetch_yahoo_snapshot
 from alphasift.source_guard import call_with_timeout, parse_source_timeout_seconds
-from alphasift.jsonutil import atomic_write_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, finite_float, safe_int
 
 logger = logging.getLogger(__name__)
 
@@ -293,15 +293,20 @@ class _PageBudget:
         return (min(_DIRECT_CONNECT_TIMEOUT_SECONDS, read), read)
 
 
+def _non_negative_float(value: object, default: float = 0.0) -> float:
+    parsed = finite_float(value)
+    return max(parsed, 0.0) if parsed is not None else default
+
+
 def _source_disabled_reason(source: str) -> str | None:
     now = time.monotonic()
     with _SOURCE_HEALTH_LOCK:
         state = _SOURCE_HEALTH.get(source)
         if not state:
             return None
-        disabled_until = float(state.get("disabled_until", 0.0))
+        disabled_until = _non_negative_float(state.get("disabled_until", 0.0))
         if disabled_until <= now:
-            if disabled_until:
+            if state.get("disabled_until"):
                 state["disabled_until"] = 0.0
             return None
         return f"temporarily disabled for {disabled_until - now:.1f}s after repeated failures"
@@ -310,24 +315,28 @@ def _source_disabled_reason(source: str) -> str | None:
 def _record_source_success(source: str, *, rows: int | None = None) -> None:
     with _SOURCE_HEALTH_LOCK:
         state = _SOURCE_HEALTH.setdefault(source, {"failures": 0.0, "disabled_until": 0.0})
-        successes = float(state.get("successes", 0.0)) + 1.0
+        successes = _non_negative_float(state.get("successes", 0.0)) + 1.0
         state["successes"] = successes
         state["failures"] = 0.0
         state["disabled_until"] = 0.0
         state["last_success_at"] = time.time()
-        if rows is not None:
-            state["last_rows"] = float(rows)
-            previous_avg = float(state.get("avg_rows", rows))
-            state["avg_rows"] = previous_avg + (float(rows) - previous_avg) / successes
+        parsed_rows = finite_float(rows)
+        if parsed_rows is not None and parsed_rows >= 0:
+            state["last_rows"] = parsed_rows
+            prev_avg = finite_float(state.get("avg_rows"))
+            if prev_avg is None or prev_avg < 0:
+                state["avg_rows"] = parsed_rows
+            else:
+                state["avg_rows"] = prev_avg + (parsed_rows - prev_avg) / successes
 
 
 def _record_source_failure(source: str, error: object | None = None) -> None:
     now = time.monotonic()
     with _SOURCE_HEALTH_LOCK:
         state = _SOURCE_HEALTH.setdefault(source, {"failures": 0.0, "disabled_until": 0.0})
-        failures = float(state.get("failures", 0.0)) + 1.0
+        failures = _non_negative_float(state.get("failures", 0.0)) + 1.0
         state["failures"] = failures
-        state["total_failures"] = float(state.get("total_failures", 0.0)) + 1.0
+        state["total_failures"] = _non_negative_float(state.get("total_failures", 0.0)) + 1.0
         state["last_failure_at"] = time.time()
         if error is not None:
             state["last_error"] = " ".join(str(error).split())
@@ -359,16 +368,14 @@ def _load_persisted_source_health(path: str | Path | None) -> dict[str, dict[str
     for name, raw in sources.items():
         if not isinstance(raw, dict):
             continue
-        try:
-            entry: dict[str, object] = {
-                "last_success_at": float(raw.get("last_success_at", 0) or 0),
-                "last_failure_at": float(raw.get("last_failure_at", 0) or 0),
-                "consecutive_failures": int(raw.get("consecutive_failures", 0) or 0),
-            }
-            if raw.get("last_duration_sec") is not None:
-                entry["last_duration_sec"] = float(raw["last_duration_sec"])
-        except (TypeError, ValueError):
-            continue
+        entry: dict[str, object] = {
+            "last_success_at": _non_negative_float(raw.get("last_success_at", 0.0)),
+            "last_failure_at": _non_negative_float(raw.get("last_failure_at", 0.0)),
+            "consecutive_failures": max(safe_int(raw.get("consecutive_failures"), default=0), 0),
+        }
+        dur = finite_float(raw.get("last_duration_sec"))
+        if dur is not None and dur >= 0:
+            entry["last_duration_sec"] = dur
         if raw.get("last_error"):
             entry["last_error"] = str(raw["last_error"])[:300]
         cleaned[str(name)] = entry
@@ -408,14 +415,19 @@ def _record_persisted_outcome(
 ) -> None:
     state = health.setdefault(source, {})
     now = time.time()
-    state["last_duration_sec"] = round(time.monotonic() - started, 2)
+    started_val = finite_float(started)
+    state["last_duration_sec"] = (
+        round(max(time.monotonic() - started_val, 0.0), 2)
+        if started_val is not None
+        else 0.0
+    )
     if ok:
         state["last_success_at"] = now
         state["consecutive_failures"] = 0
         state.pop("last_error", None)
     else:
         state["last_failure_at"] = now
-        state["consecutive_failures"] = int(state.get("consecutive_failures", 0) or 0) + 1
+        state["consecutive_failures"] = max(safe_int(state.get("consecutive_failures"), default=0), 0) + 1
         if error is not None:
             state["last_error"] = " ".join(str(error).split())[:300]
 
@@ -433,15 +445,16 @@ def _order_sources_by_persisted_health(
     """
     if not health:
         return list(sources), []
-    current = time.time() if now is None else now
+    parsed_now = finite_float(now)
+    current = time.time() if parsed_now is None else parsed_now
     healthy: list[str] = []
     demoted: list[str] = []
     for source in sources:
         state = health.get(source) or {}
-        last_failure = float(state.get("last_failure_at", 0) or 0)
-        last_success = float(state.get("last_success_at", 0) or 0)
+        last_failure = _non_negative_float(state.get("last_failure_at", 0.0))
+        last_success = _non_negative_float(state.get("last_success_at", 0.0))
         recently_failing = (
-            int(state.get("consecutive_failures", 0) or 0) > 0
+            max(safe_int(state.get("consecutive_failures"), default=0), 0) > 0
             and last_failure > last_success
             and current - last_failure < _PERSISTED_FAILURE_TTL_SECONDS
         )
@@ -466,18 +479,18 @@ def snapshot_source_health_snapshot(
         snapshot: dict[str, dict[str, float | bool | str]] = {}
         for source in requested:
             state = dict(_SOURCE_HEALTH.get(source, {}))
-            disabled_until = float(state.get("disabled_until", 0.0))
+            disabled_until = _non_negative_float(state.get("disabled_until", 0.0))
             cooldown_remaining = max(disabled_until - now, 0.0)
             snapshot[source] = {
-                "successes": float(state.get("successes", 0.0)),
-                "failures": float(state.get("failures", 0.0)),
-                "total_failures": float(state.get("total_failures", 0.0)),
-                "last_rows": float(state.get("last_rows", 0.0)),
-                "avg_rows": float(state.get("avg_rows", 0.0)),
+                "successes": _non_negative_float(state.get("successes", 0.0)),
+                "failures": _non_negative_float(state.get("failures", 0.0)),
+                "total_failures": _non_negative_float(state.get("total_failures", 0.0)),
+                "last_rows": _non_negative_float(state.get("last_rows", 0.0)),
+                "avg_rows": _non_negative_float(state.get("avg_rows", 0.0)),
                 "disabled": disabled_until > now,
                 "cooldown_remaining_seconds": round(cooldown_remaining, 4),
-                "last_success_at": float(state.get("last_success_at", 0.0)),
-                "last_failure_at": float(state.get("last_failure_at", 0.0)),
+                "last_success_at": _non_negative_float(state.get("last_success_at", 0.0)),
+                "last_failure_at": _non_negative_float(state.get("last_failure_at", 0.0)),
                 "last_error": str(state.get("last_error", "")),
             }
     return snapshot
