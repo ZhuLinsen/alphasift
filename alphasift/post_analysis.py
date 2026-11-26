@@ -13,12 +13,17 @@ import requests
 
 from alphasift.config import Config
 from alphasift.dsa import analyze_picks_with_dsa, apply_dsa_overlay
+from alphasift.jsonutil import finite_float, safe_int
 from alphasift.models import Pick
 from alphasift.normalize import (
     normalize_code,
-    safe_float as _safe_float,
     safe_string_list as _safe_string_list,
 )
+
+
+def _finite_or_default(value: object, default: float) -> float:
+    num = finite_float(value)
+    return default if num is None else num
 
 
 def _normalize_code(value: object) -> str:
@@ -98,23 +103,25 @@ def run_post_analyzers(
 
     for analyzer in analyzer_names:
         if analyzer == "dsa":
-            max_count = max_picks or config.post_analysis_max_picks
+            default_max = max(safe_int(config.post_analysis_max_picks, default=1), 0)
+            max_count = default_max if max_picks is None else max(safe_int(max_picks, default=default_max), 0)
             result, messages = _run_dsa_analyzer(result, run_id=run_id, config=config, max_picks=max_count)
         elif analyzer == "scorecard":
-            max_count = max_picks or len(result)
+            max_count = len(result) if max_picks is None else max(safe_int(max_picks, default=len(result)), 0)
             result, messages = _run_scorecard_analyzer(
                 result,
                 max_picks=max_count,
                 profile=scorecard_profile,
             )
         elif analyzer == "external_http":
-            max_count = max_picks or config.post_analysis_max_picks
+            default_max = max(safe_int(config.post_analysis_max_picks, default=1), 0)
+            max_count = default_max if max_picks is None else max(safe_int(max_picks, default=default_max), 0)
             result, messages = _run_external_http_analyzer(result, run_id=run_id, config=config, max_picks=max_count)
         else:
             messages = [f"Unknown post analyzer skipped: {analyzer}"]
         degradation.extend(messages)
 
-    result.sort(key=lambda item: item.final_score, reverse=True)
+    result.sort(key=lambda item: _finite_or_default(item.final_score, 0.0), reverse=True)
     for i, pick in enumerate(result, start=1):
         pick.rank = i
     return result, degradation
@@ -130,7 +137,7 @@ def _run_dsa_analyzer(
     if not config.dsa_api_url:
         raise ValueError("post analyzer 'dsa' requested but DSA_API_URL is not configured")
 
-    before_scores = {pick.code: float(pick.final_score) for pick in picks}
+    before_scores = {pick.code: _finite_or_default(pick.final_score, 0.0) for pick in picks}
     analyzed, degradation = analyze_picks_with_dsa(
         picks,
         run_id=run_id,
@@ -145,7 +152,8 @@ def _run_dsa_analyzer(
     for pick in analyzed:
         status = pick.deep_analysis_status
         summary = pick.deep_analysis_summary
-        delta = round(float(pick.final_score) - before_scores.get(pick.code, float(pick.final_score)), 4)
+        after_score = _finite_or_default(pick.final_score, 0.0)
+        delta = round(after_score - before_scores.get(pick.code, after_score), 4)
         _record_post_result(
             pick,
             "dsa",
@@ -170,7 +178,7 @@ def _run_scorecard_analyzer(
             _record_post_result(pick, "scorecard", status="skipped", summary="", score_delta=0.0)
             continue
         delta, flags, tags, summary = _scorecard_delta(pick, profile=profile)
-        pick.final_score = round(float(pick.final_score) + delta, 4)
+        pick.final_score = round(_finite_or_default(pick.final_score, 0.0) + delta, 4)
         pick.risk_flags = _unique([*pick.risk_flags, *flags])
         _record_post_result(
             pick,
@@ -220,11 +228,11 @@ def _run_external_http_analyzer(
         pick = by_code.get(code)
         if pick is None:
             continue
-        delta = _safe_float(item.get("score_delta"), 0.0)
+        delta = _finite_or_default(item.get("score_delta"), 0.0)
         summary = str(item.get("summary", "")).strip()
         risk_flags = _safe_string_list(item.get("risk_flags"))
         tags = _safe_string_list(item.get("tags"))
-        pick.final_score = round(float(pick.final_score) + delta, 4)
+        pick.final_score = round(_finite_or_default(pick.final_score, 0.0) + delta, 4)
         pick.risk_flags = _unique([*pick.risk_flags, *risk_flags])
         _record_post_result(
             pick,
@@ -248,12 +256,12 @@ def _scorecard_delta(
     profile: dict[str, object] | None = None,
 ) -> tuple[float, list[str], list[str], str]:
     profile = _scorecard_profile(profile)
-    factors = pick.factor_scores or {}
-    value = float(factors.get("value", 50))
-    stability = float(factors.get("stability", 50))
-    momentum = float(factors.get("momentum", 50))
-    activity = float(factors.get("activity", 50))
-    reversal = float(factors.get("reversal", 50))
+    factors = pick.factor_scores if isinstance(pick.factor_scores, dict) else {}
+    value = _finite_or_default(factors.get("value"), 50.0)
+    stability = _finite_or_default(factors.get("stability"), 50.0)
+    momentum = _finite_or_default(factors.get("momentum"), 50.0)
+    activity = _finite_or_default(factors.get("activity"), 50.0)
+    reversal = _finite_or_default(factors.get("reversal"), 50.0)
 
     delta = 0.0
     flags: list[str] = []
@@ -265,19 +273,22 @@ def _scorecard_delta(
     if momentum >= profile["capital_confirmed_momentum_min"] and activity >= profile["capital_confirmed_activity_min"]:
         delta += profile["capital_confirmed_bonus"]
         tags.append("capital_confirmed")
-    if reversal >= profile["controlled_reversal_min"] and pick.change_pct < 0:
+    change_pct = finite_float(pick.change_pct)
+    if reversal >= profile["controlled_reversal_min"] and change_pct is not None and change_pct < 0:
         delta += profile["controlled_reversal_bonus"]
         tags.append("controlled_reversal")
     if activity >= profile["hot_money_activity_min"] and stability < profile["hot_money_stability_max"]:
         delta -= profile["hot_money_penalty"]
         flags.append("hot_money_instability")
-    if pick.volume_ratio is not None and pick.volume_ratio >= profile["volume_spike_ratio"]:
+    volume_ratio = finite_float(pick.volume_ratio)
+    if volume_ratio is not None and volume_ratio >= profile["volume_spike_ratio"]:
         delta -= profile["volume_spike_penalty"]
         flags.append("volume_spike")
-    if pick.llm_confidence is not None:
-        if pick.llm_confidence >= profile["high_llm_confidence"]:
+    llm_confidence = finite_float(pick.llm_confidence)
+    if llm_confidence is not None:
+        if llm_confidence >= profile["high_llm_confidence"]:
             delta += profile["high_llm_confidence_bonus"]
-        elif pick.llm_confidence < profile["low_llm_confidence"]:
+        elif llm_confidence < profile["low_llm_confidence"]:
             delta -= profile["low_llm_confidence_penalty"]
             flags.append("low_llm_confidence")
     if pick.llm_catalysts:
@@ -286,7 +297,7 @@ def _scorecard_delta(
         delta -= min(len(pick.llm_risks) * profile["llm_risk_penalty"], profile["llm_risk_penalty_cap"])
         flags.extend(pick.llm_risks)
 
-    cap = max(float(profile["score_delta_cap"]), 0.0)
+    cap = max(_finite_or_default(profile["score_delta_cap"], 8.0), 0.0)
     delta = round(max(min(delta, cap), -cap), 4)
     summary = "本地后置评分: " + (
         "、".join(tags) if tags else "未发现额外加分项"
@@ -298,9 +309,13 @@ def _scorecard_delta(
 
 def _scorecard_profile(profile: dict[str, object] | None) -> dict[str, float]:
     result = dict(_DEFAULT_SCORECARD_PROFILE)
-    for key, value in (profile or {}).items():
+    if not isinstance(profile, dict):
+        return result
+    for key, value in profile.items():
         if key in result:
-            result[key] = float(value)
+            num = finite_float(value)
+            if num is not None:
+                result[key] = num
     return result
 
 
@@ -317,7 +332,7 @@ def _record_post_result(
 ) -> None:
     pick.post_analysis_status[analyzer] = status
     pick.post_analysis_summaries[analyzer] = summary
-    pick.post_analysis_score_deltas[analyzer] = round(float(score_delta), 4)
+    pick.post_analysis_score_deltas[analyzer] = round(_finite_or_default(score_delta, 0.0), 4)
     if payload is not None:
         pick.post_analysis_results[analyzer] = payload
     if risk_flags:

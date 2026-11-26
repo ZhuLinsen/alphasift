@@ -101,3 +101,47 @@ def test_external_http_analyzer_normalizes_returned_codes(monkeypatch):
     assert degradation == []
     assert result[0].final_score == 72
     assert result[0].post_analysis_status["external_http"] == "completed"
+
+
+def test_post_analyzers_scrub_nan_inf_bool_deltas_factors_and_profiles(monkeypatch):
+    import math
+
+    class BadFloatResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "ranked": [
+                    {"code": "000001", "score_delta": float("inf"), "summary": "恶意无穷增分"},
+                ]
+            }
+
+    monkeypatch.setattr("alphasift.post_analysis.requests.post", lambda *a, **kw: BadFloatResponse())
+
+    p1 = Pick(
+        rank=1,
+        code="000001",
+        name="平安银行",
+        final_score=float("nan"),
+        screen_score=70.0,
+        volume_ratio=float("inf"),
+        llm_confidence=True,
+        factor_scores={"value": float("inf"), "stability": float("nan"), "momentum": "bad", "activity": True},
+    )
+    p2 = Pick(rank=2, code="600519", name="贵州茅台", final_score=75.0, screen_score=75.0)
+
+    out, deg = run_post_analyzers(
+        [p1, p2],
+        analyzer_names=["scorecard", "external_http"],
+        run_id="run_guard",
+        config=Config(llm_api_key="", post_analyzer_url="http://example.test/rank"),
+        scorecard_profile={"score_delta_cap": float("inf"), "value_quality_bonus": "bad", "catalyst_bonus": True},
+    )
+    assert deg == []
+    assert [p.code for p in out] == ["600519", "000001"]
+    assert all(math.isfinite(float(p.final_score)) for p in out)
+    # p1's Inf volume_ratio & Inf external_http delta must NOT trigger volume_spike or Inf score
+    assert "volume_spike" not in out[1].risk_flags
+    assert out[1].final_score == 0.0
+    assert out[1].post_analysis_score_deltas["external_http"] == 0.0
