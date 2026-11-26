@@ -9,7 +9,6 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from email.message import EmailMessage
 from email.utils import formataddr
-import fcntl
 import hashlib
 import hmac
 import html as html_lib
@@ -722,11 +721,17 @@ def _ledger_lock(ledger_path: Path) -> Iterator[None]:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with _PROCESS_LOCK:
         with open(lock_path, "a+", encoding="utf-8") as handle:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-            try:
+            if os.name == "posix":
+                import fcntl
+
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                try:
+                    yield
+                finally:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            else:
+                # Non-POSIX (e.g. Windows): no flock; _PROCESS_LOCK still serializes threads.
                 yield
-            finally:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _safe_http_link(raw: object) -> str:
