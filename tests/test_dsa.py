@@ -137,3 +137,53 @@ def test_apply_dsa_overlay_uses_structured_scores_for_final_rerank():
     assert reranked[1].code == "BBB"
     assert reranked[1].rank == 2
     assert reranked[0].final_score > reranked[1].final_score
+
+
+def test_dsa_overlay_and_extractors_scrub_nan_inf_and_bool_scores(monkeypatch):
+    import math
+    from alphasift.dsa import analyze_picks_with_dsa
+
+    class FakeResp:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "query_id": "q-inf",
+                "report": {
+                    "summary": {
+                        "sentiment_score": float("inf"),
+                        "operation_advice": "买入",
+                        "trend_prediction": "看多",
+                    },
+                    "details": {
+                        "context_snapshot": {
+                            "trend_result": {
+                                "signal_score": True,
+                                "risk_factors": [],
+                            }
+                        }
+                    },
+                },
+            }
+
+    monkeypatch.setattr("alphasift.dsa.requests.post", lambda *a, **kw: FakeResp())
+
+    p1 = Pick(rank=1, code="600519", name="贵州茅台", final_score=float("nan"), screen_score=80.0)
+    p2 = Pick(rank=2, code="000858", name="五粮液", final_score=50.0, screen_score=50.0)
+
+    analyzed, deg = analyze_picks_with_dsa(
+        [p1, p2],
+        run_id="r71",
+        api_url="http://example.test",
+        max_picks=1,
+    )
+    assert deg == []
+    assert analyzed[0].deep_analysis_signal_score is None
+    assert analyzed[0].deep_analysis_sentiment_score is None
+
+    reranked = apply_dsa_overlay(analyzed)
+    assert [p.code for p in reranked] == ["000858", "600519"]
+    assert all(math.isfinite(float(p.final_score)) for p in reranked)
+    # p1 starts at scrubbed 0.0 + 8.0 ("买入") + 4.0 ("看多") == 12.0 without bool signal_score penalty (-9.8)
+    assert reranked[1].final_score == 12.0

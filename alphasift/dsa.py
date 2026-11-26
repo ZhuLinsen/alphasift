@@ -8,8 +8,13 @@ from urllib.parse import urlparse
 
 import requests
 
+from alphasift.jsonutil import dumps_strict_json, finite_float, safe_int as _json_safe_int
 from alphasift.models import Pick
-from alphasift.jsonutil import dumps_strict_json
+
+
+def _finite_or_default(value: object, default: float = 0.0) -> float:
+    num = finite_float(value)
+    return default if num is None else num
 
 logger = logging.getLogger(__name__)
 _DEFAULT_ANALYZE_PATH = "/api/v1/analysis/analyze"
@@ -46,10 +51,11 @@ def analyze_picks_with_dsa(
     """Run DSA deep analysis for the top picks and attach results in place."""
     if not api_url:
         raise ValueError("DSA_API_URL is required when deep_analysis=True")
-    if max_picks <= 0:
+    analyze_limit = max(_json_safe_int(max_picks, default=0), 0)
+    if analyze_limit <= 0:
         return picks, []
 
-    analyze_count = min(max_picks, len(picks))
+    analyze_count = min(analyze_limit, len(picks))
     degradation: list[str] = []
     endpoint = build_dsa_analyze_url(api_url)
 
@@ -214,13 +220,13 @@ def apply_dsa_overlay(picks: list[Pick]) -> list[Pick]:
     """Use DSA structured output as the final low-frequency risk/alpha overlay."""
     rescored: list[tuple[int, Pick]] = []
     for idx, pick in enumerate(picks):
-        base_score = float(pick.final_score)
+        base_score = _finite_or_default(pick.final_score, 0.0)
         if pick.deep_analysis_status == "completed":
             base_score += _compute_dsa_overlay_score(pick)
         pick.final_score = round(base_score, 4)
         rescored.append((idx, pick))
 
-    rescored.sort(key=lambda item: (-item[1].final_score, item[0]))
+    rescored.sort(key=lambda item: (-_finite_or_default(item[1].final_score, 0.0), item[0]))
     reranked = [pick for _, pick in rescored]
     for i, pick in enumerate(reranked, start=1):
         pick.rank = i
@@ -241,10 +247,12 @@ def _attach_deep_analysis_fields(pick: Pick, result: dict) -> None:
 def _compute_dsa_overlay_score(pick: Pick) -> float:
     score = 0.0
 
-    if pick.deep_analysis_signal_score is not None:
-        score += (pick.deep_analysis_signal_score - 50) * 0.20
-    if pick.deep_analysis_sentiment_score is not None:
-        score += (pick.deep_analysis_sentiment_score - 50) * 0.12
+    signal_score = finite_float(pick.deep_analysis_signal_score)
+    if signal_score is not None:
+        score += (signal_score - 50) * 0.20
+    sentiment_score = finite_float(pick.deep_analysis_sentiment_score)
+    if sentiment_score is not None:
+        score += (sentiment_score - 50) * 0.12
 
     advice = pick.deep_analysis_operation_advice.strip()
     score += _ADVICE_SCORE_MAP.get(advice, 0.0)
@@ -287,16 +295,14 @@ def _extract_risk_flags(trend_result: dict) -> list[str]:
     return [str(item).strip() for item in risks if str(item).strip()]
 
 
-def _safe_int(value) -> int | None:
-    try:
-        if value is None or value == "":
-            return None
-        return int(value)
-    except (TypeError, ValueError):
-        return None
+def _safe_int(value: object) -> int | None:
+    num = finite_float(value)
+    return None if num is None else int(num)
 
 
-def _safe_str(value) -> str:
-    if value is None:
+def _safe_str(value: object) -> str:
+    if value is None or isinstance(value, bool):
+        return ""
+    if isinstance(value, float) and finite_float(value) is None:
         return ""
     return str(value).strip()
