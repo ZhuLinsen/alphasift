@@ -41,6 +41,10 @@ _ANNOUNCEMENT_TIMEOUT_SEC = 25.0
 _MARKET_NEWS_TIMEOUT_SEC = 8.0
 _STOCK_NEWS_TIMEOUT_SEC = 15.0
 DEFAULT_DASHBOARD_URL = "https://alphasift.zhulinsen.tech/"
+
+
+def _non_neg_int(value: object, default: int = 0) -> int:
+    return max(safe_int(value, default=default), 0)
 _FACTOR_CN_LABELS = {
     "value": "估值",
     "quality": "质量",
@@ -137,7 +141,7 @@ def screen_announcement_risks(
     """Best-effort announcement risk check over shortlisted CN candidates."""
     deduped: list[dict[str, str]] = []
     seen: set[str] = set()
-    limit = max(0, int(max_codes))
+    limit = _non_neg_int(max_codes, default=20)
     for item in candidates:
         code = normalize_code(item.get("code"), allow_ticker=False)
         if not code or code in seen:
@@ -197,7 +201,7 @@ def screen_announcement_risks(
             "announcement_date": ann_date,
             "days_ago": days_ago,
             "recency": recency,
-            "consensus_count": int(prio.get(code, 0)),
+            "consensus_count": _non_neg_int(prio.get(code), default=0),
         }
         by_code[code] = info
         if neg_flags:
@@ -206,8 +210,8 @@ def screen_announcement_risks(
     flagged_items.sort(
         key=lambda x: (
             _RECENCY_RANK.get(str(x.get("recency") or "unknown"), 2),
-            -int(x.get("consensus_count") or 0),
-            int(x["days_ago"]) if x.get("days_ago") is not None else 999,
+            -_non_neg_int(x.get("consensus_count"), default=0),
+            safe_int(x.get("days_ago"), default=999),
             str(x.get("code") or ""),
         )
     )
@@ -392,7 +396,7 @@ def _build_ai_highlights(strategy_runs: Sequence[ScreenResult]) -> list[dict[str
             {
                 "code": str(p.code),
                 "name": str(p.name),
-                "final_score": round(float(p.final_score), 2),
+                "final_score": round(finite_float(p.final_score) or 0.0, 2),
                 "ranking_reason": str(getattr(p, "ranking_reason", "") or "")[:120],
             }
             for p in ai_run.picks
@@ -649,7 +653,7 @@ def build_daily_report(
             "expectancy_tier": exp_tier,
             "aligned_strategy": spec.aligned_strategy if spec is not None else None,
             "hit_count": len(hits),
-            "signals": [sig.to_dict() for sig in hits[: max(1, int(max_signals_per_pattern))]],
+            "signals": [sig.to_dict() for sig in hits[: max(1, _non_neg_int(max_signals_per_pattern, default=12))]],
         }
         if rep_stats:
             entry.update(rep_stats)
@@ -886,7 +890,10 @@ def build_daily_report(
     if ai_brief_mode in {"auto", "on"} and fb_reason.startswith("llm_error:"):
         report["degradation"].append(f"AI brief fallback: {fb_reason}")
 
-    card = render_daily_im_card(report, max_chars=min(int(max_card_chars), IM_CARD_MAX_CHARS))
+    card = render_daily_im_card(
+        report,
+        max_chars=min(_non_neg_int(max_card_chars, default=IM_CARD_MAX_CHARS), IM_CARD_MAX_CHARS),
+    )
     report["im_card_markdown"] = card
     report["im_card_chars"] = len(card)
     return report
@@ -894,7 +901,7 @@ def build_daily_report(
 
 def ensure_im_card_length(text: str, *, max_chars: int = IM_CARD_MAX_CHARS) -> str:
     """Guarantee IM card fits strictly within ``max_chars`` (<= 1199), preserving alerts & links."""
-    limit = min(max(80, int(max_chars)), IM_CARD_MAX_CHARS)
+    limit = min(max(80, _non_neg_int(max_chars, default=IM_CARD_MAX_CHARS)), IM_CARD_MAX_CHARS)
     cleaned = text.strip()
     if len(cleaned) <= limit:
         return cleaned
@@ -1039,14 +1046,14 @@ def render_daily_im_card(
     lines.append(
         f"> 盘面 **{reg.get('regime_stage_label', '-')}**｜"
         f"上涨 {(adv_pct if adv_pct is not None else 0.0):.1f}%{med_part}｜"
-        f"涨跌停 {reg.get('non_st_limit_up_count', 0)}/{reg.get('non_st_limit_down_count', 0)}（封板 {seal_str}）｜"
-        f"最高 {reg.get('max_consecutive_limit_up', 0)}板 · 昨涨停 {prev_str} · 成交 {amt_str}"
+        f"涨跌停 {_non_neg_int(reg.get('non_st_limit_up_count'))}/{_non_neg_int(reg.get('non_st_limit_down_count'))}（封板 {seal_str}）｜"
+        f"最高 {_non_neg_int(reg.get('max_consecutive_limit_up'))}板 · 昨涨停 {prev_str} · 成交 {amt_str}"
     )
 
     # Alert-first block: announcement risks BEFORE strategies and patterns, with reserved budget.
     ann = report.get("announcement_risks") or {}
     flagged = ann.get("flagged_items") or []
-    checked = int(ann.get("checked_count") or 0)
+    checked = _non_neg_int(ann.get("checked_count"))
     if flagged:
         lines.append(f"**⚠️ 公告排雷预警（{checked}检/{len(flagged)}中）**")
         bullet_budget = 340
@@ -1079,14 +1086,14 @@ def render_daily_im_card(
     strategies = report.get("strategies") or []
     rules_runs = [s for s in strategies if not (s.get("track") == "ai" or s.get("llm_ranked"))]
     ai_runs = [s for s in strategies if (s.get("track") == "ai" or s.get("llm_ranked"))]
-    rules_picks = sum(
-        int(s["pick_count"]) if s.get("pick_count") is not None else len(s.get("picks") or [])
-        for s in rules_runs
-    )
-    ai_picks = sum(
-        int(s["pick_count"]) if s.get("pick_count") is not None else len(s.get("picks") or [])
-        for s in ai_runs
-    )
+    def _strategy_pick_count(entry: dict[str, Any]) -> int:
+        raw = safe_int(entry.get("pick_count"), default=-1)
+        if raw >= 0:
+            return raw
+        return len(entry.get("picks") or [])
+
+    rules_picks = sum(_strategy_pick_count(s) for s in rules_runs)
+    ai_picks = sum(_strategy_pick_count(s) for s in ai_runs)
     ai_hl = report.get("ai_highlights") or []
     if ai_runs:
         added_n = sum(len(h.get("added_by_ai") or []) for h in ai_hl if isinstance(h, dict))
@@ -1111,7 +1118,7 @@ def render_daily_im_card(
     consensus = syn.get("consensus_picks") or []
     if consensus:
         top_c = "、".join(
-            f"{c['code']} {str(c.get('name') or '')[:6]}({c['strategy_count']}策略)"
+            f"{c.get('code') or ''} {str(c.get('name') or '')[:6]}({_non_neg_int(c.get('strategy_count'))}策略)"
             for c in consensus[:4]
         )
         lines.append(f"**多策略共识({len(consensus)})**：{top_c}")
@@ -1125,11 +1132,11 @@ def render_daily_im_card(
     pat_sec = report.get("patterns") or {}
     active = pat_sec.get("active") or []
     experimental = pat_sec.get("experimental") or []
-    active_hits = sum(int(p.get("hit_count") or 0) for p in active)
-    exp_hits = sum(int(p.get("hit_count") or 0) for p in experimental)
+    active_hits = sum(_non_neg_int(p.get("hit_count")) for p in active)
+    exp_hits = sum(_non_neg_int(p.get("hit_count")) for p in experimental)
     top_hit_pats = [
         p for p in (*active, *experimental)
-        if int(p.get("hit_count") or 0) > 0
+        if _non_neg_int(p.get("hit_count")) > 0
     ]
     top_hit_pats.sort(key=_im_pattern_rank_key)
     preferred_pats = [
@@ -1147,10 +1154,12 @@ def render_daily_im_card(
             if p.get("wf_today_adverse"):
                 tag_parts.append("逆风")
             elif _is_wf_joint_positive(p):
-                tag_parts.append(f"联合OOS{float(p['wf_non_adverse_low_overhead_pct']):+.2f}%")
+                joint_pct = finite_float(p.get("wf_non_adverse_low_overhead_pct"))
+                if joint_pct is not None:
+                    tag_parts.append(f"联合OOS{joint_pct:+.2f}%")
             tag = ("·" + "·".join(tag_parts)) if tag_parts else ""
             sig_txt = f"：{sigs}" if sigs else ""
-            pat_parts.append(f"{dname}({int(p.get('hit_count') or 0)}只{tag}{sig_txt})")
+            pat_parts.append(f"{dname}({_non_neg_int(p.get('hit_count'))}只{tag}{sig_txt})")
         lines.append("**形态雷达**：" + "；".join(pat_parts))
     else:
         lines.append(

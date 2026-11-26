@@ -1651,3 +1651,106 @@ def test_notify_email_html_discord_and_webhook_scrub_nonfinite_and_bool():
     email_global = _render_email_html(dirty_global, "fallback", title="Global")
     assert "0 组策略" in email_global
     assert "nan" not in email_global.lower() and "inf" not in email_global.lower()
+
+
+def test_daily_report_and_market_digest_scrub_nonfinite_and_bool() -> None:
+    from alphasift.daily_report import _build_ai_highlights, screen_announcement_risks
+    from alphasift.market_digest import render_market_digest_im_card
+
+    ann_out = screen_announcement_risks(
+        [{"code": "600519", "name": "茅台"}],
+        priority_counts={"600519": True},  # type: ignore[dict-item]
+        collector=lambda df, max_rows, cache_dir=None: (
+            [{"code": "600519", "name": "茅台", "negative_event_flags": ["立案"], "announcement": "2026-11-26 重大风险"}],
+            [],
+        ),
+        trade_date="2026-11-26",
+    )
+    assert ann_out["flagged_items"][0]["consensus_count"] == 0
+
+    ai_bad_run = ScreenResult(
+        strategy="dual_low",
+        market="cn",
+        run_id="dual_low_ai_nan",
+        track="ai",
+        llm_ranked=True,
+        picks=[
+            Pick(rank=1, code="000001", name="平安", industry="银行", final_score=float("nan"), screen_score=80.0, change_pct=1.2),
+        ],
+    )
+    highlights = _build_ai_highlights([ai_bad_run])
+    assert highlights[0]["added_by_ai"][0]["final_score"] == 0.0
+    json.dumps(highlights, allow_nan=False)
+
+    dirty_report = {
+        "trade_date": "2026-11-26",
+        "detail_url": "https://example.test/",
+        "market_regime": {
+            "regime_stage": "startup",
+            "regime_stage_label": "启动",
+            "advance_ratio_pct": float("nan"),
+            "non_st_limit_up_count": True,
+            "non_st_limit_down_count": float("nan"),
+            "max_consecutive_limit_up": "bad",
+            "seal_rate_pct": float("inf"),
+            "prev_limit_up_avg_return_pct": float("-inf"),
+            "total_amount_yi": float("nan"),
+            "median_return_pct": float("nan"),
+        },
+        "announcement_risks": {
+            "checked_count": True,
+            "flagged_items": [],
+        },
+        "strategies": [
+            {"strategy": "dual_low", "track": "rules", "pick_count": float("nan"), "picks": [{"code": "000001"}, {"code": "000002"}]},
+            {"strategy": "dual_low", "track": "ai", "llm_ranked": True, "pick_count": True, "picks": [{"code": "000001"}]},
+        ],
+        "cross_strategy_synthesis": {
+            "consensus_picks": [{"code": "000001", "name": "平安", "strategy_count": float("nan")}],
+        },
+        "patterns": {
+            "active": [
+                {"pattern": "bool_pat", "display_name": "布尔形态", "status": "active", "hit_count": True, "signals": []},
+                {"pattern": "valid_pat", "display_name": "放量突破", "status": "active", "hit_count": 2, "signals": [{"code": "600000", "name": "突破股"}], "wf_non_adverse_low_overhead_pct": 0.85, "wf_non_adverse_low_overhead_days": 20},
+            ],
+            "experimental": [
+                {"pattern": "nan_pat", "display_name": "无效形态", "status": "experimental", "hit_count": float("nan"), "signals": []},
+            ],
+        },
+    }
+    im_card = render_daily_im_card(dirty_report)
+    assert "涨跌停 0/0" in im_card
+    assert "最高 0板" in im_card
+    assert "0策略" in im_card
+    assert "放量突破(2只" in im_card
+    assert "规则 1 组(2只) / [AI] 1 组(1只)" in im_card
+    assert "True" not in im_card
+    assert "nan" not in im_card.lower() and "inf" not in im_card.lower()
+
+    dirty_digest = {
+        "trade_date": "2026-11-26",
+        "detail_url": "https://example.test/",
+        "market_sections": [
+            {
+                "market": "us",
+                "market_name": "美股",
+                "trade_date": "2026-11-26",
+                "strategy_count": True,
+                "top_picks": [{"code": "AAPL", "name": "Apple", "avg_final_score": float("nan")}],
+            },
+            {
+                "market": "hk",
+                "market_name": "港股",
+                "trade_date": "2026-11-26",
+                "strategy_count": float("nan"),
+                "top_picks": [{"code": "0700", "name": "腾讯", "avg_final_score": float("inf")}],
+            },
+        ],
+    }
+    digest_card = render_market_digest_im_card(dirty_digest)
+    assert "0 组策略" in digest_card
+    assert "0.0分" in digest_card
+    assert "True" not in digest_card
+    assert "nan" not in digest_card.lower() and "inf" not in digest_card.lower()
+
+    assert len(ensure_im_card_length("a" * 100, max_chars=True)) == 100  # type: ignore[arg-type]

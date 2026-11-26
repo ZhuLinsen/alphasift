@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from alphasift.config import Config
 from alphasift.daily_brief import resolve_strategy_display_names
 from alphasift.daily_report import IM_CARD_MAX_CHARS, _format_strategy_entry, ensure_im_card_length
-from alphasift.jsonutil import finite_float
+from alphasift.jsonutil import finite_float, safe_int
 from alphasift.market_news import fetch_region_market_news
 from alphasift.markets import get_market, latest_settled_close
 from alphasift.models import ScreenResult
@@ -171,7 +171,7 @@ def render_market_digest_im_card(
     if sections:
         for sec in sections[:6]:
             m_name = sec.get("market_name") or str(sec.get("market") or "").upper()
-            st_cnt = int(sec.get("strategy_count") or 0)
+            st_cnt = max(safe_int(sec.get("strategy_count"), default=0), 0)
             top = sec.get("top_picks") or []
             if top:
                 top_txt = "、".join(
