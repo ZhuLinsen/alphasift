@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """screen_score calculation."""
 
-import math
 import re
 
 import pandas as pd
 
+from alphasift.jsonutil import finite_float
 from alphasift.models import ScreeningConfig
 
 _FACTOR_COLUMNS = {
@@ -94,13 +94,8 @@ _DEFAULT_SCORING_PROFILE = {
 
 def _effective_rank_blend(raw_blend: object, sample_size: int) -> float:
     """Compute sample-size-tapered rank blend weight in [0.0, 1.0]."""
-    if raw_blend is None or isinstance(raw_blend, bool):
-        return 0.0
-    try:
-        val = float(raw_blend)
-    except (TypeError, ValueError):
-        return 0.0
-    if not math.isfinite(val):
+    val = finite_float(raw_blend)
+    if val is None:
         return 0.0
     clamped = min(max(val, 0.0), 1.0)
     if clamped <= 0.0 or sample_size <= 5:
@@ -156,18 +151,22 @@ def factor_score_columns() -> dict[str, str]:
 
 def _normalized_factor_weights(config: ScreeningConfig) -> dict[str, float]:
     """Use explicit factor weights, or derive a sane legacy default from tech_weight."""
+    tech_weight = finite_float(config.tech_weight)
+    safe_tech = 0.3 if tech_weight is None else min(max(tech_weight, 0.0), 1.0)
     raw_weights = config.factor_weights or {
-        "value": (1 - config.tech_weight) * 0.50,
-        "liquidity": (1 - config.tech_weight) * 0.25,
-        "stability": (1 - config.tech_weight) * 0.25,
-        "momentum": config.tech_weight * 0.55,
-        "activity": config.tech_weight * 0.45,
+        "value": (1.0 - safe_tech) * 0.50,
+        "liquidity": (1.0 - safe_tech) * 0.25,
+        "stability": (1.0 - safe_tech) * 0.25,
+        "momentum": safe_tech * 0.55,
+        "activity": safe_tech * 0.45,
     }
-    weights = {
-        factor: max(float(weight), 0.0)
-        for factor, weight in raw_weights.items()
-        if factor in _FACTOR_COLUMNS
-    }
+    weights: dict[str, float] = {}
+    for factor, raw_weight in raw_weights.items():
+        if factor not in _FACTOR_COLUMNS:
+            continue
+        num = finite_float(raw_weight)
+        if num is not None:
+            weights[factor] = max(num, 0.0)
     total = sum(weights.values())
     if total <= 0:
         return {"value": 0.4, "liquidity": 0.2, "momentum": 0.2, "activity": 0.2}
@@ -193,13 +192,10 @@ def _compute_factor_scores(df: pd.DataFrame, config: ScreeningConfig | None = No
 def _scoring_profile(config: ScreeningConfig) -> dict[str, float]:
     profile = dict(_DEFAULT_SCORING_PROFILE)
     for key, value in (config.scoring_profile or {}).items():
-        if key not in profile or value is None or isinstance(value, bool):
+        if key not in profile:
             continue
-        try:
-            numeric = float(value)
-        except (TypeError, ValueError):
-            continue
-        if math.isfinite(numeric):
+        numeric = finite_float(value)
+        if numeric is not None:
             profile[key] = numeric
     return profile
 
@@ -501,12 +497,12 @@ def _compute_topic_alignment_score(df: pd.DataFrame, profile: dict[str, float]) 
         overlap = candidate_topics & route_topics
         score = float(profile["topic_alignment_unknown_score"])
         if overlap:
-            score += float(profile["topic_alignment_match_bonus"])
-            heat = pd.to_numeric(row.get("board_heat_score"), errors="coerce")
-            if pd.notna(heat):
-                score += max(float(heat) - 50.0, 0.0) * float(profile["topic_alignment_heat_weight"])
+            score += profile["topic_alignment_match_bonus"]
+            heat = finite_float(row.get("board_heat_score"))
+            if heat is not None:
+                score += max(heat - 50.0, 0.0) * profile["topic_alignment_heat_weight"]
         else:
-            score -= float(profile["topic_alignment_unmatched_penalty"])
+            score -= profile["topic_alignment_unmatched_penalty"]
         scores.append(score)
     return pd.Series(scores, index=df.index).clip(0, 100)
 
@@ -576,7 +572,8 @@ def _topic_tokens(value: object) -> set[str]:
 def _numeric_column(df: pd.DataFrame, column: str) -> pd.Series:
     if column not in df.columns:
         return pd.Series(pd.NA, index=df.index)
-    return pd.to_numeric(df[column], errors="coerce")
+    numeric = pd.to_numeric(df[column], errors="coerce")
+    return numeric.replace([float("inf"), float("-inf")], pd.NA)
 
 
 def _rank_score(
@@ -585,13 +582,15 @@ def _rank_score(
     lower_is_better: bool,
     na_score: float = 50.0,
 ) -> pd.Series:
-    numeric = pd.to_numeric(series, errors="coerce")
+    safe_na = finite_float(na_score)
+    fill_val = 50.0 if safe_na is None else safe_na
+    numeric = pd.to_numeric(series, errors="coerce").replace([float("inf"), float("-inf")], pd.NA)
     if numeric.notna().sum() == 0:
-        return pd.Series(float(na_score), index=series.index)
+        return pd.Series(fill_val, index=series.index)
 
     ranks = numeric.rank(
         ascending=not lower_is_better,
         na_option="keep",
         pct=True,
     ) * 100
-    return ranks.fillna(float(na_score)).clip(0, 100)
+    return ranks.fillna(fill_val).clip(0, 100)

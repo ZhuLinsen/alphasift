@@ -368,3 +368,58 @@ def test_explain_topic_alignment_covers_direct_concept_unmatched_and_missing():
     exact_multi = explain_topic_alignment("Life Insurance", "", "Life Insurance:90")
     assert exact_multi["status"] == "aligned"
     assert exact_multi["role"] == "direct_industry"
+
+
+def test_scorer_scrubs_nan_inf_bool_weights_and_infinite_observations():
+    import math
+    from alphasift.models import ScreeningConfig
+    from alphasift.scorer import compute_screen_scores
+
+    df = pd.DataFrame([
+        {
+            "code": "600519",
+            "pe_ratio": 20.0,
+            "pb_ratio": 7.0,
+            "turnover_rate": 2.0,
+            "amount": 1e9,
+            "change_pct": 1.2,
+            "volume_ratio": 1.5,
+            "industry": "白酒",
+            "concepts": "",
+            "board_heat_summary": "白酒:90",
+            "board_heat_score": float("inf"),
+        },
+        {
+            "code": "000001",
+            "pe_ratio": float("inf"),
+            "pb_ratio": float("-inf"),
+            "turnover_rate": float("nan"),
+            "amount": float("inf"),
+            "change_pct": 0.5,
+            "volume_ratio": float("inf"),
+            "industry": "银行",
+            "concepts": "",
+            "board_heat_summary": "白酒:90",
+            "board_heat_score": True,
+        },
+    ])
+
+    cfg = ScreeningConfig(
+        factor_weights={
+            "value": float("nan"),
+            "momentum": float("inf"),
+            "liquidity": True,
+            "activity": "bad",
+            "stability": 0.5,
+        },
+        tech_weight=float("nan"),
+        scoring_profile={"factor_rank_blend": float("inf")},
+    )
+    out = compute_screen_scores(df, cfg)
+    assert all(math.isfinite(float(v)) for v in out["screen_score"])
+    # Infinite board_heat_score must NOT inflate topic_alignment beyond base+match_bonus (75.0)
+    assert float(out.loc[0, "factor_topic_alignment_score"]) == 75.0
+    assert float(out.loc[1, "factor_topic_alignment_score"]) == 38.0
+    # Infinite pe/amount must not poison size/value/liquidity scores with Inf/NaN
+    assert all(math.isfinite(float(v)) for v in out["factor_value_score"])
+    assert all(math.isfinite(float(v)) for v in out["factor_liquidity_score"])
