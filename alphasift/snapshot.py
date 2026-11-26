@@ -5,8 +5,9 @@ Fetches full-market real-time snapshots for screening.
 This is separate from single-stock realtime quotes.
 """
 
-import logging
 import json
+import logging
+import math
 import os
 import random
 import threading
@@ -769,7 +770,13 @@ def _eastmoney_request_interval_seconds() -> float:
 
 def _float_env(name: str, default: float) -> float:
     value = os.getenv(name, "").strip()
-    return float(value) if value else float(default)
+    if not value:
+        return float(default)
+    try:
+        parsed = float(value)
+    except ValueError:
+        return float(default)
+    return parsed if math.isfinite(parsed) else float(default)
 
 
 def _fetch_tushare() -> pd.DataFrame:

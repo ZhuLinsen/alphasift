@@ -654,3 +654,29 @@ def test_fetch_em_datacenter_requests_ohlcv_bse_and_quote_date(monkeypatch):
     assert df.loc[0, "circ_mv"] == pytest.approx(2.0e11)
     assert df.loc[1, "PRE_CLOSE_PRICE"] == 21.9
     assert df.loc[1, "circ_mv"] == pytest.approx(1.2e9)
+
+
+def test_eastmoney_request_interval_ignores_nonfinite_and_invalid_env(monkeypatch):
+    import math
+    from alphasift.snapshot import (
+        _EM_REQUEST_JITTER_SECONDS,
+        _EM_REQUEST_MIN_INTERVAL_SECONDS,
+        _eastmoney_request_interval_seconds,
+        _float_env,
+    )
+
+    monkeypatch.setenv("ALPHASIFT_EASTMONEY_MIN_INTERVAL_SEC", "nan")
+    monkeypatch.setenv("ALPHASIFT_EASTMONEY_JITTER_SEC", "-inf")
+    assert _float_env("ALPHASIFT_EASTMONEY_MIN_INTERVAL_SEC", 1.5) == 1.5
+    assert _float_env("ALPHASIFT_EASTMONEY_JITTER_SEC", 0.4) == 0.4
+
+    delay = _eastmoney_request_interval_seconds()
+    assert math.isfinite(delay)
+    assert delay >= _EM_REQUEST_MIN_INTERVAL_SECONDS
+    assert delay <= _EM_REQUEST_MIN_INTERVAL_SECONDS + _EM_REQUEST_JITTER_SECONDS
+
+    monkeypatch.setenv("ALPHASIFT_EASTMONEY_MIN_INTERVAL_SEC", "bad-float")
+    monkeypatch.setenv("ALPHASIFT_EASTMONEY_JITTER_SEC", "inf")
+    assert _float_env("ALPHASIFT_EASTMONEY_MIN_INTERVAL_SEC", 2.0) == 2.0
+    assert _float_env("ALPHASIFT_EASTMONEY_JITTER_SEC", 0.5) == 0.5
+    assert math.isfinite(_eastmoney_request_interval_seconds())

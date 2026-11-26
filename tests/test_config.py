@@ -421,3 +421,27 @@ def test_config_defaults_llm_max_tokens_to_8192(monkeypatch):
     assert Config.from_env().llm_max_tokens == 8192
 
 
+def test_config_from_env_handles_blank_malformed_and_nonfinite_numeric_envs(monkeypatch):
+    monkeypatch.setenv("LLM_MAX_TOKENS", "")
+    monkeypatch.setenv("DAILY_LOOKBACK_DAYS", "not-an-int")
+    monkeypatch.setenv("ALPHASIFT_EMAIL_SMTP_PORT", "bad")
+    monkeypatch.setenv("EMAIL_SMTP_PORT", "465")
+    monkeypatch.setenv("LLM_TEMPERATURE", "nan")
+    monkeypatch.setenv("LLM_TIMEOUT_SEC", "inf")
+    monkeypatch.setenv("DSA_TIMEOUT_SEC", "")
+    monkeypatch.setenv("POST_ANALYZER_TIMEOUT_SEC", "-inf")
+    monkeypatch.setenv("SNAPSHOT_FALLBACK_MAX_AGE_HOURS", "inf")
+    monkeypatch.setenv("ALPHASIFT_NOTIFY_TIMEOUT_SEC", "oops")
+
+    cfg = Config.from_env()
+    assert cfg.llm_max_tokens == 8192
+    assert cfg.daily_lookback_days == 120
+    assert cfg.email_smtp_port == 465
+    assert cfg.llm_temperature == 0.2
+    assert cfg.llm_timeout_sec == 60.0
+    assert cfg.dsa_timeout_sec == 120.0
+    assert cfg.post_analyzer_timeout_sec == 120.0
+    assert cfg.snapshot_fallback_max_age_hours is None
+    assert cfg.notify_timeout_sec == 10.0
+
+

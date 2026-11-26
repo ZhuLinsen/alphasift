@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Configuration."""
 
+import math
 import os
 import re
 from dataclasses import dataclass, field
@@ -380,21 +381,21 @@ class Config:
             llm_candidate_context_enabled=_parse_bool_env("LLM_CANDIDATE_CONTEXT_ENABLED", False),
             llm_candidate_context_max_candidates=max(
                 1,
-                int(os.getenv("LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES", "8")),
+                _parse_int_env("LLM_CANDIDATE_CONTEXT_MAX_CANDIDATES", 8),
             ),
             llm_candidate_context_providers=_parse_csv_env(
                 "LLM_CANDIDATE_CONTEXT_PROVIDERS",
                 ["news", "fund_flow", "announcement", "quote"],
             ),
-            llm_candidate_context_news_limit=max(1, int(os.getenv("LLM_CANDIDATE_CONTEXT_NEWS_LIMIT", "3"))),
+            llm_candidate_context_news_limit=max(1, _parse_int_env("LLM_CANDIDATE_CONTEXT_NEWS_LIMIT", 3)),
             llm_candidate_context_announcement_limit=max(
                 1,
-                int(os.getenv("LLM_CANDIDATE_CONTEXT_ANNOUNCEMENT_LIMIT", "3")),
+                _parse_int_env("LLM_CANDIDATE_CONTEXT_ANNOUNCEMENT_LIMIT", 3),
             ),
             llm_candidate_context_cache_enabled=_parse_bool_env("LLM_CANDIDATE_CONTEXT_CACHE_ENABLED", True),
             llm_candidate_context_cache_ttl_hours=max(
                 0,
-                int(os.getenv("LLM_CANDIDATE_CONTEXT_CACHE_TTL_HOURS", "24")),
+                _parse_int_env("LLM_CANDIDATE_CONTEXT_CACHE_TTL_HOURS", 24),
             ),
             llm_candidate_context_cache_dir=(
                 _parse_optional_path_env("ALPHASIFT_CANDIDATE_CONTEXT_CACHE_DIR")
@@ -404,13 +405,13 @@ class Config:
             llm_json_mode=_parse_bool_env("LLM_JSON_MODE", True),
             llm_silent=_parse_bool_env("LLM_SILENT", True),
             llm_rank_weight=_parse_float_env("LLM_RANK_WEIGHT", 0.40),
-            llm_candidate_multiplier=max(1, int(os.getenv("LLM_CANDIDATE_MULTIPLIER", "6"))),
-            llm_max_candidates=max(1, int(os.getenv("LLM_MAX_CANDIDATES", "30"))),
-            llm_max_retries=max(0, int(os.getenv("LLM_MAX_RETRIES", "1"))),
+            llm_candidate_multiplier=max(1, _parse_int_env("LLM_CANDIDATE_MULTIPLIER", 6)),
+            llm_max_candidates=max(1, _parse_int_env("LLM_MAX_CANDIDATES", 30)),
+            llm_max_retries=max(0, _parse_int_env("LLM_MAX_RETRIES", 1)),
             llm_min_coverage=_parse_float_env("LLM_MIN_COVERAGE", 0.60),
-            llm_context_max_chars=max(500, int(os.getenv("LLM_CONTEXT_MAX_CHARS", "4000"))),
+            llm_context_max_chars=max(500, _parse_int_env("LLM_CONTEXT_MAX_CHARS", 4000)),
             llm_timeout_sec=max(1.0, _parse_float_env("LLM_TIMEOUT_SEC", 60.0)),
-            llm_max_tokens=max(1, int(os.getenv("LLM_MAX_TOKENS", str(DEFAULT_LLM_MAX_TOKENS)))),
+            llm_max_tokens=max(1, _parse_int_env("LLM_MAX_TOKENS", DEFAULT_LLM_MAX_TOKENS)),
             snapshot_source_priority=_resolve_snapshot_source_priority(),
             fallback_snapshot_path=fallback_snapshot_path,
             source_health_path=_resolve_source_health_path(data_dir),
@@ -424,44 +425,46 @@ class Config:
             ],
             industry_provider=os.getenv("INDUSTRY_PROVIDER", "none"),
             industry_auto_backfill=_parse_bool_env("INDUSTRY_AUTO_BACKFILL", True),
-            industry_provider_max_boards=max(1, int(os.getenv("INDUSTRY_PROVIDER_MAX_BOARDS", "80"))),
+            industry_provider_max_boards=max(1, _parse_int_env("INDUSTRY_PROVIDER_MAX_BOARDS", 80)),
             industry_provider_cache_dir=industry_provider_cache_dir,
             industry_provider_cache_ttl_hours=max(
                 0,
-                int(
-                    os.getenv(
-                        "ALPHASIFT_INDUSTRY_PROVIDER_CACHE_TTL_HOURS",
-                        os.getenv("INDUSTRY_PROVIDER_CACHE_TTL_HOURS", "24"),
-                    )
+                _parse_int_env(
+                    "ALPHASIFT_INDUSTRY_PROVIDER_CACHE_TTL_HOURS",
+                    24,
+                    fallback_names=("INDUSTRY_PROVIDER_CACHE_TTL_HOURS",),
                 ),
             ),
             dsa_api_url=os.getenv("DSA_API_URL", ""),
             dsa_report_type=os.getenv("DSA_REPORT_TYPE", "detailed"),
-            dsa_max_picks=max(1, int(os.getenv("DSA_MAX_PICKS", "3"))),
-            dsa_timeout_sec=float(os.getenv("DSA_TIMEOUT_SEC", "120")),
+            dsa_max_picks=max(1, _parse_int_env("DSA_MAX_PICKS", 3)),
+            dsa_timeout_sec=max(1.0, _parse_float_env("DSA_TIMEOUT_SEC", 120.0)),
             dsa_force_refresh=_parse_bool_env("DSA_FORCE_REFRESH", False),
             dsa_notify=_parse_bool_env("DSA_NOTIFY", False),
             post_analyzers=_parse_csv_env("POST_ANALYZERS", DEFAULT_POST_ANALYZERS),
             post_analysis_max_picks=max(
                 1,
-                int(os.getenv("POST_ANALYSIS_MAX_PICKS", os.getenv("DSA_MAX_PICKS", "3"))),
+                _parse_int_env(
+                    "POST_ANALYSIS_MAX_PICKS",
+                    3,
+                    fallback_names=("DSA_MAX_PICKS",),
+                ),
             ),
             post_analyzer_url=os.getenv("POST_ANALYZER_URL", ""),
-            post_analyzer_timeout_sec=float(os.getenv("POST_ANALYZER_TIMEOUT_SEC", "120")),
+            post_analyzer_timeout_sec=max(1.0, _parse_float_env("POST_ANALYZER_TIMEOUT_SEC", 120.0)),
             daily_enrich_enabled=_parse_bool_env("DAILY_ENRICH_ENABLED", False),
-            daily_enrich_max_candidates=max(1, int(os.getenv("DAILY_ENRICH_MAX_CANDIDATES", "100"))),
-            daily_lookback_days=max(30, int(os.getenv("DAILY_LOOKBACK_DAYS", "120"))),
+            daily_enrich_max_candidates=max(1, _parse_int_env("DAILY_ENRICH_MAX_CANDIDATES", 100)),
+            daily_lookback_days=max(30, _parse_int_env("DAILY_LOOKBACK_DAYS", 120)),
             daily_source=os.getenv("DAILY_SOURCE", "auto"),
-            daily_fetch_retries=max(0, int(os.getenv("DAILY_FETCH_RETRIES", "2"))),
-            daily_fetch_max_workers=max(1, int(os.getenv("DAILY_FETCH_MAX_WORKERS", "1"))),
+            daily_fetch_retries=max(0, _parse_int_env("DAILY_FETCH_RETRIES", 2)),
+            daily_fetch_max_workers=max(1, _parse_int_env("DAILY_FETCH_MAX_WORKERS", 1)),
             daily_history_cache_dir=daily_history_cache_dir,
             daily_history_cache_ttl_hours=max(
                 0,
-                int(
-                    os.getenv(
-                        "ALPHASIFT_DAILY_HISTORY_CACHE_TTL_HOURS",
-                        os.getenv("DAILY_HISTORY_CACHE_TTL_HOURS", "24"),
-                    )
+                _parse_int_env(
+                    "ALPHASIFT_DAILY_HISTORY_CACHE_TTL_HOURS",
+                    24,
+                    fallback_names=("DAILY_HISTORY_CACHE_TTL_HOURS",),
                 ),
             ),
             daily_pack_enabled=_parse_bool_env("ALPHASIFT_DAILY_PACK_ENABLED", True),
@@ -472,7 +475,7 @@ class Config:
             portfolio_diversity_enabled=_parse_bool_env("PORTFOLIO_DIVERSITY_ENABLED", True),
             portfolio_max_same_llm_sector=max(
                 1,
-                int(os.getenv("PORTFOLIO_MAX_SAME_LLM_SECTOR", "1")),
+                _parse_int_env("PORTFOLIO_MAX_SAME_LLM_SECTOR", 1),
             ),
             portfolio_concentration_penalty=_parse_float_env("PORTFOLIO_CONCENTRATION_PENALTY", 4.0),
             evaluation_cost_bps=_parse_float_env("EVALUATION_COST_BPS", 0.0),
@@ -481,7 +484,7 @@ class Config:
             evaluation_price_path_enabled=_parse_bool_env("EVALUATION_PRICE_PATH_ENABLED", False),
             evaluation_price_path_lookback_days=max(
                 30,
-                int(os.getenv("EVALUATION_PRICE_PATH_LOOKBACK_DAYS", "90")),
+                _parse_int_env("EVALUATION_PRICE_PATH_LOOKBACK_DAYS", 90),
             ),
             data_dir=data_dir,
             notify_urls=_parse_notify_urls_env(),
@@ -543,7 +546,11 @@ class Config:
             ).strip(),
             email_smtp_port=max(
                 0,
-                int(os.getenv("ALPHASIFT_EMAIL_SMTP_PORT") or os.getenv("EMAIL_SMTP_PORT", "0") or "0"),
+                _parse_int_env(
+                    "ALPHASIFT_EMAIL_SMTP_PORT",
+                    0,
+                    fallback_names=("EMAIL_SMTP_PORT",),
+                ),
             ),
             custom_webhook_url=(
                 os.getenv("ALPHASIFT_CUSTOM_WEBHOOK_URL") or os.getenv("CUSTOM_WEBHOOK_URL", "")
@@ -581,11 +588,33 @@ def _resolve_dashboard_url() -> str:
     return ""
 
 
+def _parse_int_env(name: str, default: int, *, fallback_names: tuple[str, ...] = ()) -> int:
+    for key in (name, *fallback_names):
+        raw = os.getenv(key)
+        if raw is None:
+            continue
+        cleaned = raw.strip()
+        if not cleaned:
+            continue
+        try:
+            return int(cleaned)
+        except ValueError:
+            continue
+    return default
+
+
 def _parse_float_env(name: str, default: float) -> float:
     value = os.getenv(name)
-    if value is None or value == "":
+    if value is None:
         return default
-    return float(value)
+    cleaned = value.strip()
+    if not cleaned:
+        return default
+    try:
+        parsed = float(cleaned)
+    except ValueError:
+        return default
+    return parsed if math.isfinite(parsed) else default
 
 
 def _parse_notify_urls_env() -> list[str]:
@@ -609,7 +638,11 @@ def _parse_optional_float_env(name: str) -> float | None:
     cleaned = value.strip()
     if cleaned.lower() in {"", "none", "off", "false"}:
         return None
-    return float(cleaned)
+    try:
+        parsed = float(cleaned)
+    except ValueError:
+        return None
+    return parsed if math.isfinite(parsed) else None
 
 
 def _parse_llm_channels_env() -> list[dict[str, object]]:
