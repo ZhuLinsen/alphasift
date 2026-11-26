@@ -985,6 +985,17 @@ def _render_markdown_digest(
     return out
 
 
+def _response_code(payload: dict[str, Any], *keys: str, missing_default: int = -1) -> int:
+    has_any_key = False
+    for key in keys:
+        if key in payload:
+            has_any_key = True
+            val = payload.get(key)
+            if val is not None:
+                return safe_int(val, default=-1)
+    return missing_default if not has_any_key else -1
+
+
 def _send_wecom(
     webhook_url: str,
     content: str,
@@ -1002,7 +1013,7 @@ def _send_wecom(
         timeout=timeout_sec,
     )
     payload = _safe_json(resp)
-    if int(payload.get("errcode", -1)) != 0:
+    if _response_code(payload, "errcode") != 0:
         raise RuntimeError(f"wecom errcode={payload.get('errcode')} errmsg={payload.get('errmsg', '')}")
 
 
@@ -1910,8 +1921,8 @@ def _send_feishu(
         body["sign"] = _feishu_sign(ts, secret)
     resp = _post_with_retry(post_fn, webhook_url, json=body, timeout=timeout_sec)
     payload = _safe_json(resp)
-    code = payload.get("code", payload.get("StatusCode", -1))
-    if int(code) != 0:
+    if _response_code(payload, "code", "StatusCode") != 0:
+        code = payload.get("code", payload.get("StatusCode", -1))
         raise RuntimeError(f"feishu code={code} msg={payload.get('msg', payload.get('StatusMessage', ''))}")
 
 
@@ -1938,7 +1949,7 @@ def _send_dingtalk(
         timeout=timeout_sec,
     )
     payload = _safe_json(resp)
-    if int(payload.get("errcode", -1)) != 0:
+    if _response_code(payload, "errcode") != 0:
         raise RuntimeError(f"dingtalk errcode={payload.get('errcode')} errmsg={payload.get('errmsg', '')}")
 
 
@@ -1963,7 +1974,7 @@ def _send_pushplus(
         body["topic"] = topic
     resp = _post_with_retry(post_fn, "https://www.pushplus.plus/send", json=body, timeout=timeout_sec)
     payload = _safe_json(resp)
-    if int(payload.get("code", -1)) != 200:
+    if _response_code(payload, "code") != 200:
         raise RuntimeError(f"pushplus code={payload.get('code')} msg={payload.get('msg', '')}")
 
 
@@ -1992,7 +2003,7 @@ def _send_serverchan(
         timeout=timeout_sec,
     )
     payload = _safe_json(resp)
-    if int(payload.get("code", -1)) != 0:
+    if _response_code(payload, "code") != 0:
         raise RuntimeError(f"serverchan code={payload.get('code')} msg={payload.get('message', payload.get('info', ''))}")
 
 
@@ -2011,7 +2022,7 @@ def _send_bark(
         body["url"] = detail_url
     resp = _post_with_retry(post_fn, target, json=body, timeout=timeout_sec)
     payload = _safe_json(resp)
-    if int(payload.get("code", 200)) != 200:
+    if _response_code(payload, "code", missing_default=200) != 200:
         raise RuntimeError(f"bark code={payload.get('code')} msg={payload.get('message', '')}")
 
 
@@ -2103,7 +2114,10 @@ def _build_discord_embed(
         color = 2461419
         desc = f"Global Digest · {report.get('trade_date', '-')}"
         for sec in (report.get("market_sections") or [])[:5]:
-            top = ", ".join(f"{p.get('code')}({p.get('avg_final_score'):.0f})" for p in (sec.get("top_picks") or [])[:3])
+            top = ", ".join(
+                f"{p.get('code')}({_float_or(p.get('avg_final_score')):.0f})"
+                for p in (sec.get("top_picks") or [])[:3]
+            )
             fields.append({"name": str(sec.get("market_name") or sec.get("market")), "value": top or "暂无候选", "inline": True})
 
     embed = {
@@ -2345,7 +2359,7 @@ def _dispatch_target(
             title=title,
             report=report,
             smtp_host=str(extra.get("smtp_host") or ""),
-            smtp_port=int(extra.get("smtp_port") or 0),
+            smtp_port=_non_neg_int(extra.get("smtp_port")),
             timeout_sec=timeout,
             smtp_factory=smtp_factory,
         )

@@ -7,7 +7,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, dumps_strict_json, finite_float
+from alphasift.jsonutil import (
+    atomic_write_strict_json,
+    atomic_write_text,
+    dumps_strict_json,
+    finite_float,
+    safe_int,
+)
 from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
 
 RUN_REPORT_SCHEMA_VERSION = 1
@@ -20,7 +26,7 @@ def build_run_report_payload(
     max_picks: int = 10,
 ) -> dict[str, Any]:
     """Build a stable, UI-friendly report payload for a saved screen run."""
-    max_picks = max(1, int(max_picks))
+    max_picks = max(1, safe_int(max_picks, default=10))
     payload: dict[str, Any] = {
         "schema_version": RUN_REPORT_SCHEMA_VERSION,
         "object": "RunReport",

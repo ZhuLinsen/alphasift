@@ -1754,3 +1754,102 @@ def test_daily_report_and_market_digest_scrub_nonfinite_and_bool() -> None:
     assert "nan" not in digest_card.lower() and "inf" not in digest_card.lower()
 
     assert len(ensure_im_card_length("a" * 100, max_chars=True)) == 100  # type: ignore[arg-type]
+
+
+def test_notify_response_codes_discord_digest_smtp_and_report_robustness(tmp_path: Path) -> None:
+    import types
+
+    from alphasift.notify import (
+        _build_discord_embed,
+        _dispatch_target,
+        _send_bark,
+        _send_dingtalk,
+        _send_feishu,
+        _send_pushplus,
+        _send_serverchan,
+        _send_wecom,
+    )
+    from alphasift.report import build_run_report_payload
+
+    def _fake_post(payload_obj):
+        def _post(url, **kw):
+            return types.SimpleNamespace(
+                status_code=200,
+                headers={},
+                json=lambda: payload_obj,
+                text="",
+                raise_for_status=lambda: None,
+            )
+        return _post
+
+    for bad_payload in ({"errcode": None, "errmsg": "null"}, {"errcode": "bad"}, {"errcode": True}):
+        with pytest.raises(RuntimeError, match="wecom errcode="):
+            _send_wecom("https://qyapi.weixin.qq.com/hook", "body", timeout_sec=5.0, post_fn=_fake_post(bad_payload))
+        with pytest.raises(RuntimeError, match="dingtalk errcode="):
+            _send_dingtalk("https://oapi.dingtalk.com/hook", "body", title="DT", timeout_sec=5.0, post_fn=_fake_post(bad_payload))
+
+    _send_feishu("https://open.feishu.cn/hook", "body", title="FS", timeout_sec=5.0, post_fn=_fake_post({"code": None, "StatusCode": 0}))
+    for bad_code in ({"code": None, "msg": "bad"}, {"code": "ok"}, {"code": True}):
+        with pytest.raises(RuntimeError, match="feishu code="):
+            _send_feishu("https://open.feishu.cn/hook", "body", title="FS", timeout_sec=5.0, post_fn=_fake_post(bad_code))
+        with pytest.raises(RuntimeError, match="pushplus code="):
+            _send_pushplus("tok", "body", title="PP", timeout_sec=5.0, post_fn=_fake_post(bad_code))
+        with pytest.raises(RuntimeError, match="serverchan code="):
+            _send_serverchan("https://sctapi.ftqq.com/tok.send", "body", title="SC", timeout_sec=5.0, post_fn=_fake_post(bad_code))
+        with pytest.raises(RuntimeError, match="bark code="):
+            _send_bark("https://api.day.app/tok", "body", title="BK", timeout_sec=5.0, post_fn=_fake_post(bad_code))
+    _send_bark("https://api.day.app/tok", "body", title="BK", timeout_sec=5.0, post_fn=_fake_post({}))
+
+    dirty_digest = {
+        "object": "MarketDigest",
+        "trade_date": "2026-11-26",
+        "markets": ["us"],
+        "market_sections": [{
+            "market": "us",
+            "market_name": "美股",
+            "top_picks": [
+                {"code": "AAPL", "avg_final_score": None},
+                {"code": "MSFT", "avg_final_score": float("nan")},
+                {"code": "NVDA", "avg_final_score": True},
+            ],
+        }],
+    }
+    embed = _build_discord_embed(dirty_digest, "fallback", title="Digest")
+    val = embed["fields"][0]["value"]
+    assert "AAPL(0)" in val and "MSFT(0)" in val and "NVDA(0)" in val
+    assert "nan" not in val.lower() and "true" not in val.lower()
+
+    ports_seen: list[tuple[str, int]] = []
+
+    def _smtp_factory(host: str, port: int, *, mode: str, timeout: float):
+        ports_seen.append((host, port))
+        return types.SimpleNamespace(login=lambda u, p: None, send_message=lambda m: None, quit=lambda: None)
+
+    cfg = Config(data_dir=tmp_path)
+    for bad_port in ("bad", True):
+        _dispatch_target(
+            {
+                "channel": "email",
+                "target": "u@example.com",
+                "secret": "pw",
+                "extra": {"smtp_host": "smtp.example.com", "smtp_port": bad_port},
+            },
+            cfg,
+            report={},
+            content="body",
+            title="Test",
+            smtp_factory=_smtp_factory,
+        )
+    assert ports_seen == [("smtp.example.com", 465), ("smtp.example.com", 465)]
+
+    res = ScreenResult(
+        strategy="dual_low",
+        market="cn",
+        run_id="r1",
+        picks=[
+            Pick(rank=1, code="000001", name="平安", industry="银行", final_score=90.0, screen_score=85.0),
+            Pick(rank=2, code="600519", name="茅台", industry="白酒", final_score=88.0, screen_score=84.0),
+        ],
+    )
+    assert len(build_run_report_payload(res, max_picks=True)["top_picks"]) == 2  # type: ignore[arg-type]
+    assert len(build_run_report_payload(res, max_picks=float("nan"))["top_picks"]) == 2  # type: ignore[arg-type]
