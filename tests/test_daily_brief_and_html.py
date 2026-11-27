@@ -985,7 +985,7 @@ def test_daily_report_html_scrubs_nan_inf_bool_and_malformed_svg_ladder():
             }
         ],
         "patterns": {
-            "active": [],
+            "active": [None],
             "experimental": [
                 {
                     "pattern": "box_breakout",
@@ -999,13 +999,14 @@ def test_daily_report_html_scrubs_nan_inf_bool_and_malformed_svg_ladder():
                     "wf_h1_purged_signals": float("inf"),
                     "wf_low_overhead_threshold_pct": float("nan"),
                     "signals": [
+                        None,
                         {
                             "code": "600519",
                             "name": "贵州茅台",
                             "change_pct": float("nan"),
                             "overhead_supply_10pct": True,
-                            "kline": [[10, 11, 9, 10.5], [float("nan"), 11, 9, 10], [10, float("inf"), 9, 10]],
-                        }
+                            "kline": [[10, 9, 11, 10.5], [float("nan"), 11, 9, 10], [10, float("inf"), 9, 10]],
+                        },
                     ],
                 }
             ],
@@ -1018,6 +1019,9 @@ def test_daily_report_html_scrubs_nan_inf_bool_and_malformed_svg_ladder():
     assert "3板" in rendered
     assert "2板" not in rendered
     assert 'y1="nan"' not in rendered.lower()
+    assert 'class="sec-pills no-print"' in rendered
+    assert 'href="#patterns"' in rendered
+    assert 'y1="2.0"' in rendered
 
 
 

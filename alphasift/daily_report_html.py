@@ -148,12 +148,12 @@ def _render_mini_kline_svg(bars: list[Any] | None) -> str:
             l_f = finite_float(item[2])
             c_f = finite_float(item[3])
             if o_f is not None and h_f is not None and l_f is not None and c_f is not None:
-                parsed.append((o_f, h_f, l_f, c_f))
+                parsed.append((o_f, max(o_f, h_f, l_f, c_f), min(o_f, h_f, l_f, c_f), c_f))
     if not parsed:
         return '<span class="dim">–</span>'
     lo = min(b[2] for b in parsed)
     hi = max(b[1] for b in parsed)
-    span = max(hi - lo, hi * 0.005, 1e-6)
+    span = max(hi - lo, abs(hi) * 0.005, 1e-6)
     w, h, pad = 96, 28, 2
     step = (w - pad * 2) / len(parsed)
     bw = max(1.8, step * 0.65)
@@ -206,9 +206,9 @@ def _render_case_studies(track_summary: dict[str, Any] | None) -> str:
         windows = cmp.get("windows") or {}
         win = windows.get("5") or next(iter(windows.values()), {})
         cases = (win or {}).get("ai_case_studies") or {}
-        adds = cases.get("best_ai_adds") or []
-        avoids = cases.get("best_ai_avoids") or []
-        misses = cases.get("missed_by_ai") or []
+        adds = [x for x in (cases.get("best_ai_adds") or []) if isinstance(x, dict)]
+        avoids = [x for x in (cases.get("best_ai_avoids") or []) if isinstance(x, dict)]
+        misses = [x for x in (cases.get("missed_by_ai") or []) if isinstance(x, dict)]
         if not (adds or avoids or misses):
             continue
         strat_key = str(cmp.get("strategy") or "")
@@ -271,13 +271,13 @@ def render_daily_report_html(
     is_stale = bool(report.get("pack_is_stale"))
     stale_reason = str(report.get("stale_reason") or "").strip()
 
-    reg = report.get("market_regime") or {}
-    syn = report.get("cross_strategy_synthesis") or {}
-    brief = report.get("ai_brief") or {}
-    ann = report.get("announcement_risks") or {}
-    strategies = report.get("strategies") or []
-    ai_hl = report.get("ai_highlights") or []
-    pat_sec = report.get("patterns") or {}
+    reg = report.get("market_regime") if isinstance(report.get("market_regime"), dict) else {}
+    syn = report.get("cross_strategy_synthesis") if isinstance(report.get("cross_strategy_synthesis"), dict) else {}
+    brief = report.get("ai_brief") if isinstance(report.get("ai_brief"), dict) else {}
+    ann = report.get("announcement_risks") if isinstance(report.get("announcement_risks"), dict) else {}
+    strategies = [x for x in (report.get("strategies") or []) if isinstance(x, dict)]
+    ai_hl = [x for x in (report.get("ai_highlights") or []) if isinstance(x, dict)]
+    pat_sec = report.get("patterns") if isinstance(report.get("patterns"), dict) else {}
     degradation = report.get("degradation") or []
     summary_names = (track_summary.get("strategy_names") or {}) if isinstance(track_summary, dict) else {}
     report_names = report.get("strategy_display_names") if isinstance(report.get("strategy_display_names"), dict) else {}
@@ -362,8 +362,8 @@ def render_daily_report_html(
     """
 
     # 3. Announcement Risk Alerts & Spotlight
-    flagged = ann.get("flagged_items") or []
-    spotlight = syn.get("risk_spotlight") or []
+    flagged = [x for x in (ann.get("flagged_items") or []) if isinstance(x, dict)]
+    spotlight = [x for x in (syn.get("risk_spotlight") or []) if isinstance(x, dict)]
     checked = safe_int(ann.get("checked_count"))
     if flagged:
         flag_cards_parts: list[str] = []
@@ -425,7 +425,7 @@ def render_daily_report_html(
         news_block = ""
 
     # 4. Cross-strategy Consensus, Sector Concentration & AI Attribution
-    consensus = syn.get("consensus_picks") or []
+    consensus = [x for x in (syn.get("consensus_picks") or []) if isinstance(x, dict)]
     if consensus:
         c_rows_parts: list[str] = []
         for idx, c in enumerate(consensus, start=1):
@@ -473,7 +473,7 @@ def render_daily_report_html(
     else:
         consensus_html = f'<div class="empty" {_i18n("no_consensus")}>今日暂无 ≥2 个策略同时选中的共识标的。</div>'
 
-    sectors = syn.get("sector_concentration") or []
+    sectors = [x for x in (syn.get("sector_concentration") or []) if isinstance(x, dict)]
     sector_html = (
         "".join(
             f'<div class="ladder-row"><span>{_esc(s.get("industry"))}</span>'
@@ -493,8 +493,8 @@ def render_daily_report_html(
         ai_cnt = safe_int(h.get("ai_pick_count"))
         mv = h.get("llm_market_view")
         view_html = f'<div><b {_i18n("ai_view")}>市场观点：</b>{_esc(mv)}</div>' if mv else ""
-        added_names = "、".join(f'{x.get("name")}({x.get("code")})' for x in (h.get("added_by_ai") or []))
-        dropped_names = "、".join(f'{x.get("name")}({x.get("code")})' for x in (h.get("dropped_by_ai") or []))
+        added_names = "、".join(f'{x.get("name")}({x.get("code")})' for x in (h.get("added_by_ai") or []) if isinstance(x, dict))
+        dropped_names = "、".join(f'{x.get("name")}({x.get("code")})' for x in (h.get("dropped_by_ai") or []) if isinstance(x, dict))
         added_html = _esc(added_names) if added_names else none_span
         dropped_html = _esc(dropped_names) if dropped_names else none_span
         ai_cards_parts.append(
@@ -507,7 +507,7 @@ def render_daily_report_html(
         )
     ai_cards = "".join(ai_cards_parts)
 
-    resonance = syn.get("strategy_pattern_resonance") or []
+    resonance = [x for x in (syn.get("strategy_pattern_resonance") or []) if isinstance(x, dict)]
     res_items: list[str] = []
     for r in resonance:
         strat_spans = ", ".join(_sname_span(s) for s in (r.get("strategies") or []))
@@ -543,7 +543,7 @@ def render_daily_report_html(
     for st in strategies:
         tr = "ai" if st.get("track") == "ai" or st.get("llm_ranked") else "rules"
         badge = '<span class="badge ai">AI</span>' if tr == "ai" else f'<span class="badge" {_i18n("badge_rules")}>规则</span>'
-        picks = st.get("picks") or []
+        picks = [x for x in (st.get("picks") or []) if isinstance(x, dict)]
         if picks:
             rows = "".join(
                 f'<tr><td><span class="rank-num {"top" if safe_int(pk.get("rank"), default=9) <= 3 else ""}">{safe_int(pk.get("rank"))}</span></td>'
@@ -580,7 +580,7 @@ def render_daily_report_html(
     # 6. Pattern Radar Cards (active + expectancy-tiered experimental)
     pat_cards = []
     for bucket, is_active in (("active", True), ("experimental", False)):
-        pats_list = list(pat_sec.get(bucket) or [])
+        pats_list = [x for x in (pat_sec.get(bucket) or []) if isinstance(x, dict)]
         if not is_active:
             pats_list.sort(
                 key=lambda p: (
@@ -641,7 +641,7 @@ def render_daily_report_html(
                     f'<span{cls_attr}{purged_title_attr} {_i18n("pat_wf_joint", v=f"{wf_joint_pct:+.2f}%", d=wf_joint_days)}>'
                     f' · 联合OOS {wf_joint_pct:+.2f}%({wf_joint_days}d)</span>{low_tag}'
                 )
-            sigs = pat.get("signals") or []
+            sigs = [x for x in (pat.get("signals") or []) if isinstance(x, dict)]
             if sigs:
                 s_rows = "".join(
                     f'<tr><td class="l"><strong>{_esc(s.get("name"))}</strong> <span class="mono dim small">{_esc(s.get("code"))}</span></td>'
@@ -674,7 +674,10 @@ def render_daily_report_html(
                 f'<div class="card {"muted-card" if not is_active else ""}"{pat_id_attr}><div class="card-top"><h3><span data-pattern="{_esc(pkey)}">{_esc(dname)}</span><span style="display:inline-flex;flex-wrap:wrap;gap:4px;">{badge}{wf_adv_badge}{wf_pending_badge}</span></h3>'
                 f'<div class="sub"><span {_i18n("pat_hits_cnt", n=hits_n)}>命中 {hits_n} 只</span>{replay_note}{pat_link}{wf_cli_btn}</div></div>{body}</div>'
             )
-    all_scan_pats = [*(pat_sec.get("active") or []), *(pat_sec.get("experimental") or [])]
+    all_scan_pats = [
+        x for x in (*(pat_sec.get("active") or []), *(pat_sec.get("experimental") or []))
+        if isinstance(x, dict)
+    ]
     wf_mid_date = next((str(p.get("wf_eval_mid_date") or "").strip() for p in all_scan_pats if str(p.get("wf_eval_mid_date") or "").strip()), "")
     total_purged = sum(safe_int(p.get("wf_h1_purged_signals")) for p in all_scan_pats)
     pat_boundary_footer = (
@@ -779,6 +782,13 @@ main {{ max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }}
 .rpt-header h1 {{ margin: 4px 0 8px; font-size: clamp(21px, 2.5vw, 27px); letter-spacing: -0.025em; }}
 .eyebrow {{ font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: var(--accent-hi); }}
 .meta-row {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); font-family: var(--font-mono); }}
+.sec-pills {{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }}
+.sec-pill {{
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; color: var(--ink-2); background: var(--surface);
+  border: 1px solid var(--border); text-decoration: none;
+}}
+.sec-pill:hover {{ border-color: var(--accent-hi); color: var(--accent-hi); background: var(--accent-soft); text-decoration: none; }}
 
 .panel {{
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
@@ -948,6 +958,15 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       <span class="badge {'warn' if is_stale else 'ok'}" {_i18n("badge_stale" if is_stale else "badge_sync")}>{'旧包降级' if is_stale else '数据同步'}</span>
       <span>· <span {_i18n("meta_policy")}>口径：</span>{_policy_html(report.get('usage_policy'))}</span>
     </div>
+    <nav class="sec-pills no-print" aria-label="Section navigation">
+      <a class="sec-pill" href="#brief" {_i18n("nav_brief")}>盘后综述</a>
+      <a class="sec-pill" href="#panorama" {_i18n("nav_panorama")}>盘面全景</a>
+      {f'<a class="sec-pill" href="#news" {_i18n("nav_news")}>市场快讯</a>' if news_items else ""}
+      <a class="sec-pill" href="#announcements" {_i18n("nav_ann")}>公告排雷</a>
+      <a class="sec-pill" href="#synthesis" {_i18n("nav_syn")}>共识与 AI</a>
+      <a class="sec-pill" href="#strategies" {_i18n("nav_strats")}>策略精选</a>
+      <a class="sec-pill" href="#patterns" {_i18n("nav_patterns")}>形态雷达</a>
+    </nav>
   </header>
   {stale_html}
   {deg_html}
@@ -978,6 +997,13 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       badge_stale: "旧包降级",
       badge_sync: "数据同步",
       meta_policy: "口径：",
+      nav_brief: "盘后综述",
+      nav_panorama: "盘面全景",
+      nav_news: "市场快讯",
+      nav_ann: "公告排雷",
+      nav_syn: "共识与 AI",
+      nav_strats: "策略精选",
+      nav_patterns: "形态雷达",
       sec_brief: "盘后要点综述",
       brief_badge_rule: "规则统计合成",
       sub_regime: "盘面宽度与情绪",
@@ -1073,6 +1099,13 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       badge_stale: "Stale Fallback",
       badge_sync: "Pack Synced",
       meta_policy: "Policy: ",
+      nav_brief: "Brief",
+      nav_panorama: "Panorama",
+      nav_news: "News",
+      nav_ann: "Filings",
+      nav_syn: "Consensus & AI",
+      nav_strats: "Strategies",
+      nav_patterns: "Patterns",
       sec_brief: "Executive Post-Close Brief",
       brief_badge_llm: "AI Brief · {{model}}",
       brief_badge_rule: "Rule Synthesis",
@@ -1189,6 +1222,13 @@ footer {{ margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--borde
       badge_stale: "旧パック縮退",
       badge_sync: "同期済み",
       meta_policy: "方針：",
+      nav_brief: "要約",
+      nav_panorama: "パノラマ",
+      nav_news: "ニュース",
+      nav_ann: "適時開示",
+      nav_syn: "コンセンサス",
+      nav_strats: "戦略",
+      nav_patterns: "パターン",
       sec_brief: "引け後エグゼクティブ要約",
       brief_badge_llm: "AI 分析合成 · {{model}}",
       brief_badge_rule: "統計ルール合成",
