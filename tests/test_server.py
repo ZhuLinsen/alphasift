@@ -997,3 +997,91 @@ def test_parse_accept_q_rejects_nan_and_inf():
     assert _parse_accept_q(["q=-inf"]) == 0.0
     assert _prefers_html("text/html;q=nan, application/json;q=0.5", "") is False
 
+
+def test_workbench_ui_js_helpers_scrub_nonfinite_and_bool():
+    import json
+    import shutil
+    import subprocess
+
+    import pytest
+    from alphasift.workbench_ui import render_workbench_html
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not installed")
+
+    html = render_workbench_html()
+    start = html.index("  function finiteNum(")
+    end = html.index("  function renderHeaderAndTabs()")
+    js_slice = html[start:end]
+
+    runner = r"""
+const fs = require("fs");
+const vm = require("vm");
+const assert = require("assert");
+const snippet = fs.readFileSync(0, "utf8");
+function makeNode(tag, attrs, text) {
+  return {
+    tag,
+    attrs: Object.assign({}, attrs || {}),
+    text: text || "",
+    children: [],
+    setAttribute(k, v) { this.attrs[k] = String(v); },
+    appendChild(c) { this.children.push(c); },
+  };
+}
+const ctx = {
+  SVG_NS: "http://www.w3.org/2000/svg",
+  el: (tag, opts) => makeNode(tag, opts, opts && opts.text),
+  document: { createElementNS: (_ns, tag) => makeNode(tag) },
+};
+const api = vm.runInNewContext(snippet + "\n;({ finiteNum, nonNegInt, makeSvgKline });", ctx);
+
+assert.strictEqual(api.finiteNum(3.5), 3.5);
+assert.strictEqual(api.finiteNum(" -1.25 "), -1.25);
+assert.strictEqual(api.finiteNum(0), 0);
+assert.strictEqual(api.finiteNum(true), null);
+assert.strictEqual(api.finiteNum(false), null);
+assert.strictEqual(api.finiteNum(null), null);
+assert.strictEqual(api.finiteNum(""), null);
+assert.strictEqual(api.finiteNum("   "), null);
+assert.strictEqual(api.finiteNum([]), null);
+assert.strictEqual(api.finiteNum(NaN), null);
+assert.strictEqual(api.finiteNum(Infinity), null);
+
+assert.strictEqual(api.nonNegInt(5.9), 5);
+assert.strictEqual(api.nonNegInt("4"), 4);
+assert.strictEqual(api.nonNegInt(-1), 0);
+assert.strictEqual(api.nonNegInt(true, 7), 7);
+assert.strictEqual(api.nonNegInt(NaN, 2), 2);
+
+const badKline = api.makeSvgKline([[1, 2, null, 1.5], [1, true, 0, 1], [1, NaN, 0, 1]]);
+assert.strictEqual(badKline.tag, "span");
+assert.strictEqual(badKline.text, "-");
+
+const mixedKline = api.makeSvgKline([
+  [10, 12, 9, 11],
+  [1, Infinity, 0, 1],
+  [11, 13, 10, 12.5],
+]);
+assert.strictEqual(mixedKline.tag, "svg");
+assert.strictEqual(mixedKline.children.length, 4);
+for (const child of mixedKline.children) {
+  for (const val of Object.values(child.attrs)) {
+    assert.ok(!val.includes("NaN") && !val.includes("Infinity"), "bad attr: " + val);
+  }
+}
+console.log(JSON.stringify({ ok: true, children: mixedKline.children.length }));
+"""
+    proc = subprocess.run(
+        [node, "-e", runner],
+        input=js_slice,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    data = json.loads(proc.stdout.strip())
+    assert data["ok"] is True
+    assert data["children"] == 4
+
+

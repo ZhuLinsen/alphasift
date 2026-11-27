@@ -451,24 +451,45 @@ def render_workbench_html() -> str:
     } catch (_) {}
   }
 
+  function finiteNum(v) {
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    if (typeof v === "string" && v.trim() !== "") {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  }
+
+  function nonNegInt(v, fallback) {
+    const n = finiteNum(v);
+    if (n === null || n < 0) return fallback !== undefined ? fallback : 0;
+    return Math.trunc(n);
+  }
+
   function makeSvgKline(bars) {
     if (!Array.isArray(bars) || !bars.length) return el("span", { class: "kpi-sub", text: "-" });
+    const cleanBars = [];
     let lo = Infinity, hi = -Infinity;
     for (const b of bars) {
       if (!Array.isArray(b) || b.length < 4) continue;
-      if (b[2] < lo) lo = b[2];
-      if (b[1] > hi) hi = b[1];
+      const o = finiteNum(b[0]), h = finiteNum(b[1]), l = finiteNum(b[2]), c = finiteNum(b[3]);
+      if (o === null || h === null || l === null || c === null) continue;
+      const barLo = Math.min(o, h, l, c);
+      const barHi = Math.max(o, h, l, c);
+      if (barLo < lo) lo = barLo;
+      if (barHi > hi) hi = barHi;
+      cleanBars.push([o, barHi, barLo, c]);
     }
-    if (!Number.isFinite(lo) || !Number.isFinite(hi)) return el("span", { text: "-" });
-    const span = Math.max(hi - lo, hi * 0.005, 1e-6);
+    if (!cleanBars.length || !Number.isFinite(lo) || !Number.isFinite(hi)) return el("span", { class: "kpi-sub", text: "-" });
+    const span = Math.max(hi - lo, Math.abs(hi) * 0.005, 1e-6);
     const W = 92, H = 26, pad = 2;
-    const step = (W - pad * 2) / bars.length;
+    const step = (W - pad * 2) / cleanBars.length;
     const bw = Math.max(1.6, step * 0.65);
     const yFn = (p) => pad + (1 - (p - lo) / span) * (H - pad * 2);
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("class", "kline");
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
-    bars.forEach((b, i) => {
+    cleanBars.forEach((b, i) => {
       const [o, h, l, c] = b;
       const cx = (pad + (i + 0.5) * step).toFixed(1);
       const col = c >= o ? "var(--up)" : "var(--down)";
@@ -891,10 +912,11 @@ def render_workbench_html() -> str:
       const sCols = t("scan_cols");
       for (const pName of Object.keys(counts)) {
         const items = sigMap[pName] || [];
+        const cntVal = nonNegInt(counts[pName], 0);
         const card = el("div", { class: "card" }, [
           el("div", { style: "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;" }, [
             el("strong", { text: (items[0] && items[0].display_name) || pName }),
-            makeBadge(String(counts[pName] || 0), (counts[pName] || 0) > 0 ? "accent" : ""),
+            makeBadge(String(cntVal), cntVal > 0 ? "accent" : ""),
           ]),
         ]);
         if (!items.length) {
@@ -905,13 +927,14 @@ def render_workbench_html() -> str:
           stbl.appendChild(el("thead", null, el("tr", null, sCols.map((c) => el("th", { text: c })))));
           const sbody = el("tbody");
           for (const it of items.slice(0, 6)) {
-            const chg = Number(it.change_pct || 0);
-            const ov = it.overhead_supply_10pct !== null && it.overhead_supply_10pct !== undefined
-              ? Number(it.overhead_supply_10pct).toFixed(0) + "%"
-              : "-";
+            const chgNum = finiteNum(it.change_pct);
+            const chgCls = "mono" + (chgNum !== null ? (chgNum >= 0 ? " chg-up" : " chg-down") : "");
+            const chgTxt = chgNum !== null ? ((chgNum > 0 ? "+" : "") + chgNum.toFixed(2) + "%") : "-";
+            const ovNum = finiteNum(it.overhead_supply_10pct);
+            const ov = ovNum !== null ? ovNum.toFixed(0) + "%" : "-";
             sbody.appendChild(el("tr", null, [
               el("td", null, [el("strong", { text: it.name || it.code }), el("div", { class: "kpi-sub mono", text: it.code })]),
-              el("td", { class: "mono " + (chg >= 0 ? "chg-up" : "chg-down"), text: (chg > 0 ? "+" : "") + chg.toFixed(2) + "%" }),
+              el("td", { class: chgCls, text: chgTxt }),
               el("td", { class: "mono", text: ov }),
               el("td", null, makeSvgKline(it.kline)),
             ]));
@@ -942,19 +965,19 @@ def render_workbench_html() -> str:
       for (const item of rRows) {
         const wf = item.walk_forward_regime_audit || {};
         const grad = item.graduation || {};
-        const deltaVal = wf.delta_non_adverse_low_overhead_vs_h2_baseline_pct;
-        const hasDelta = deltaVal !== null && deltaVal !== undefined && Number.isFinite(Number(deltaVal));
-        const dNum = hasDelta ? Number(deltaVal) : 0;
-        const deltaTxt = hasDelta ? ((dNum > 0 ? "+" : "") + dNum.toFixed(2) + "%") : "-";
+        const dNum = finiteNum(wf.delta_non_adverse_low_overhead_vs_h2_baseline_pct);
+        const deltaTxt = dNum !== null ? ((dNum > 0 ? "+" : "") + dNum.toFixed(2) + "%") : "-";
         const posRegs = Array.isArray(wf.h1_positive_regimes) && wf.h1_positive_regimes.length ? wf.h1_positive_regimes.join(", ") : "-";
         const isGrad = Boolean(grad.graduated);
+        const totSig = nonNegInt(item.total_signals, null);
+        const purgedSig = nonNegInt(wf.h1_purged_signals, null);
         rBody.appendChild(el("tr", null, [
           el("td", null, [el("strong", { text: item.display_name || item.pattern }), el("div", { class: "kpi-sub", text: item.pattern })]),
-          el("td", { class: "mono", text: String(item.total_signals ?? "-") }),
+          el("td", { class: "mono", text: totSig !== null ? String(totSig) : "-" }),
           el("td", { class: "mono", text: String(wf.eval_mid_date || "-") }),
           el("td", { class: "kpi-sub", text: posRegs }),
-          el("td", { class: "mono " + (hasDelta ? (dNum >= 0 ? "chg-up" : "chg-down") : ""), text: deltaTxt }),
-          el("td", { class: "mono", text: String(wf.h1_purged_signals ?? "-") }),
+          el("td", { class: "mono" + (dNum !== null ? (dNum >= 0 ? " chg-up" : " chg-down") : ""), text: deltaTxt }),
+          el("td", { class: "mono", text: purgedSig !== null ? String(purgedSig) : "-" }),
           el("td", null, makeBadge(isGrad ? "active" : String(item.mode || "experimental"), isGrad ? "ok" : "warn")),
         ]));
       }
@@ -1028,7 +1051,10 @@ def render_workbench_html() -> str:
       const badges = el("div", { style: "margin-bottom:8px;" });
       for (const [bName, info] of bucketEntries) {
         const tone = info && info.overconcentrated ? "bad" : "accent";
-        badges.appendChild(makeBadge(bName + ": " + String(info.count || 0) + " (" + String(info.share_pct || 0) + "%)", tone));
+        const bCount = nonNegInt(info && info.count, 0);
+        const shareNum = finiteNum(info && info.share_pct);
+        const shareTxt = shareNum !== null ? (Number.isInteger(shareNum) ? String(shareNum) : shareNum.toFixed(1)) : "0";
+        badges.appendChild(makeBadge(bName + ": " + String(bCount) + " (" + shareTxt + "%)", tone));
       }
       expCard.appendChild(badges);
     }
@@ -1052,11 +1078,14 @@ def render_workbench_html() -> str:
       const alignTone = alignSt === "aligned" ? "ok" : alignSt === "unmatched" ? "warn" : "";
       const riskLvl = p.risk_level || "unassessed";
       const riskTone = riskLvl === "high" ? "bad" : riskLvl === "medium" ? "warn" : riskLvl === "low" ? "ok" : "";
+      const rankVal = nonNegInt(p.rank, null);
+      const scoreVal = finiteNum(p.final_score) ?? finiteNum(p.screen_score);
+      const scoreTxt = scoreVal !== null ? (Number.isInteger(scoreVal) ? String(scoreVal) : scoreVal.toFixed(1)) : "-";
       tbody.appendChild(el("tr", null, [
-        el("td", { class: "mono", text: String(p.rank || "-") }),
+        el("td", { class: "mono", text: rankVal !== null ? String(rankVal) : "-" }),
         el("td", null, [el("strong", { text: String(p.name || p.code) }), el("div", { class: "kpi-sub mono", text: String(p.code || "") })]),
         el("td", { text: String(p.industry || "-") }),
-        el("td", { class: "mono", text: String(p.final_score ?? p.screen_score ?? "-") }),
+        el("td", { class: "mono", text: scoreTxt }),
         el("td", null, [
           makeBadge(alignSt, alignTone),
           el("span", { class: "kpi-sub", text: (p.matched_topics || []).join(", ") }),
@@ -1185,9 +1214,10 @@ def render_workbench_html() -> str:
       return;
     }
 
+    const imCardChars = nonNegInt(d.im_card_chars, 0);
     const metaRow = el("div", { style: "margin-bottom:12px;" }, [
       makeBadge(String(d.trade_date || "-"), "accent"),
-      makeBadge(String(d.im_card_chars || 0) + " chars", "ok"),
+      makeBadge(String(imCardChars) + " chars", "ok"),
     ]);
     root.appendChild(metaRow);
 
@@ -1198,10 +1228,11 @@ def render_workbench_html() -> str:
     for (const sec of sections) {
       const top = Array.isArray(sec.top_picks) ? sec.top_picks : [];
       if (top.length) anyPick = true;
+      const secStratCount = nonNegInt(sec.strategy_count, 0);
       const card = el("div", { class: "card" }, [
         el("div", { class: "card-head-row" }, [
           el("strong", { text: String(sec.market_name || sec.market || "").toUpperCase() + " (" + String(sec.market || "").toUpperCase() + ")" }),
-          makeBadge(String(sec.strategy_count || 0) + " · " + String(sec.trade_date || "-"), top.length ? "accent" : ""),
+          makeBadge(String(secStratCount) + " · " + String(sec.trade_date || "-"), top.length ? "accent" : ""),
         ]),
       ]);
       if (!top.length) {
@@ -1212,19 +1243,18 @@ def render_workbench_html() -> str:
         tbl.appendChild(el("thead", null, el("tr", null, dCols.map((c, idx) => el("th", { class: idx >= 2 ? "mono" : "", text: c })))));
         const tbody = el("tbody");
         for (const p of top) {
-          const scoreTxt = p.avg_final_score !== null && p.avg_final_score !== undefined
-            ? Number(p.avg_final_score).toFixed(1)
-            : "-";
-          const hasChg = p.change_pct !== null && p.change_pct !== undefined && Number.isFinite(Number(p.change_pct));
-          const chgNum = hasChg ? Number(p.change_pct) : 0;
-          const chgCls = hasChg ? ("mono " + (chgNum >= 0 ? "chg-up" : "chg-down")) : "mono";
-          const chgTxt = hasChg ? ((chgNum > 0 ? "+" : "") + chgNum.toFixed(2) + "%") : "-";
+          const avgScoreNum = finiteNum(p.avg_final_score);
+          const scoreTxt = avgScoreNum !== null ? avgScoreNum.toFixed(1) : "-";
+          const chgNum = finiteNum(p.change_pct);
+          const chgCls = chgNum !== null ? ("mono " + (chgNum >= 0 ? "chg-up" : "chg-down")) : "mono";
+          const chgTxt = chgNum !== null ? ((chgNum > 0 ? "+" : "") + chgNum.toFixed(2) + "%") : "-";
           const stratList = Array.isArray(p.strategy_display_names) && p.strategy_display_names.length
             ? p.strategy_display_names
             : (p.strategies || []);
+          const stratCount = nonNegInt(p.strategy_count, 1);
           tbody.appendChild(el("tr", null, [
             el("td", null, [el("strong", { text: String(p.name || p.code || "") }), el("div", { class: "kpi-sub mono", text: String(p.code || "") })]),
-            el("td", { class: "kpi-sub", text: String(p.strategy_count || 1) + " · " + stratList.slice(0, 2).join(", ") }),
+            el("td", { class: "kpi-sub", text: String(stratCount) + " · " + stratList.slice(0, 2).join(", ") }),
             el("td", { class: "mono", text: scoreTxt }),
             el("td", { class: chgCls, text: chgTxt }),
           ]));
