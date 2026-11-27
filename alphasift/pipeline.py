@@ -835,10 +835,9 @@ def _event_source_weights(event_profile: dict[str, object]) -> dict[str, float] 
         return None
     result: dict[str, float] = {}
     for key, raw in value.items():
-        try:
-            result[str(key)] = float(raw)
-        except (TypeError, ValueError):
-            continue
+        parsed = _safe_float(raw)
+        if parsed is not None:
+            result[str(key)] = parsed
     return result or None
 
 

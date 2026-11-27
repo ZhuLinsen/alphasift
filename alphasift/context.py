@@ -9,7 +9,18 @@ from pathlib import Path
 
 import pandas as pd
 
+from alphasift.jsonutil import finite_float, safe_int
 from alphasift.normalize import normalize_code
+
+
+def _finite_series(series: pd.Series) -> pd.Series:
+    if series.dtype == object:
+        series = series.where(~series.map(lambda v: isinstance(v, bool)))
+    return (
+        pd.to_numeric(series, errors="coerce")
+        .replace([float("inf"), float("-inf")], float("nan"))
+        .dropna()
+    )
 
 
 def _normalize_code(value: object) -> str:
@@ -178,7 +189,7 @@ def summarize_snapshot_context(df: pd.DataFrame | None, *, title: str) -> str:
 
     lines = [f"【{title}】", f"样本数: {len(df)}"]
     if "change_pct" in df.columns:
-        change = pd.to_numeric(df["change_pct"], errors="coerce").dropna()
+        change = _finite_series(df["change_pct"])
         if not change.empty:
             positive_ratio = (change > 0).mean() * 100
             lines.append(
@@ -187,13 +198,15 @@ def summarize_snapshot_context(df: pd.DataFrame | None, *, title: str) -> str:
                 f"中位涨跌幅 {change.median():.2f}%, "
                 f"平均涨跌幅 {change.mean():.2f}%"
             )
-            lines.append("涨跌极值: " + _format_extremes(df, change, ascending=False))
+            extremes = _format_extremes(df, change, ascending=False)
+            if extremes:
+                lines.append("涨跌极值: " + extremes)
     if "amount" in df.columns:
-        amount = pd.to_numeric(df["amount"], errors="coerce").dropna()
+        amount = _finite_series(df["amount"])
         if not amount.empty:
             lines.append(f"成交额中位数: {amount.median():.0f}")
     if "volume_ratio" in df.columns:
-        volume_ratio = pd.to_numeric(df["volume_ratio"], errors="coerce").dropna()
+        volume_ratio = _finite_series(df["volume_ratio"])
         if not volume_ratio.empty:
             hot_ratio = (volume_ratio >= 2).mean() * 100
             lines.append(f"量比>=2占比: {hot_ratio:.1f}%")
@@ -220,7 +233,7 @@ def summarize_candidate_profile(df: pd.DataFrame | None) -> str:
     if available:
         averages = []
         for label, col in available.items():
-            series = pd.to_numeric(df[col], errors="coerce").dropna()
+            series = _finite_series(df[col])
             if not series.empty:
                 averages.append(f"{label}{series.mean():.1f}")
         if averages:
@@ -229,8 +242,8 @@ def summarize_candidate_profile(df: pd.DataFrame | None) -> str:
         leaders = []
         columns = [col for col in ("code", "name") if col in df.columns]
         for label, col in available.items():
-            series = pd.to_numeric(df[col], errors="coerce")
-            if series.dropna().empty or not columns:
+            series = _finite_series(df[col])
+            if series.empty or not columns:
                 continue
             idx = series.idxmax()
             row = df.loc[idx]
@@ -239,7 +252,7 @@ def summarize_candidate_profile(df: pd.DataFrame | None) -> str:
             lines.append("因子领先: " + "，".join(leaders[:8]))
 
     if "screen_score" in df.columns:
-        screen_score = pd.to_numeric(df["screen_score"], errors="coerce").dropna()
+        screen_score = _finite_series(df["screen_score"])
         if not screen_score.empty:
             lines.append(
                 f"主评分分布: 最高{screen_score.max():.1f}，"
@@ -264,8 +277,9 @@ def summarize_candidate_identity(df: pd.DataFrame | None, *, limit: int = 30) ->
     if df is None or df.empty or "code" not in df.columns:
         return ""
 
+    limit_n = max(safe_int(limit, default=30), 1)
     lines = ["【候选身份】"]
-    for _, row in df.head(max(int(limit), 1)).iterrows():
+    for _, row in df.head(limit_n).iterrows():
         code = _normalize_code(row.get("code", row.get("代码", "")))
         if not code:
             continue
@@ -288,8 +302,8 @@ def summarize_candidate_identity(df: pd.DataFrame | None, *, limit: int = 30) ->
             fields.append(f"board_heat_score={heat}")
         suffix = ": " + ", ".join(fields) if fields else ""
         lines.append(f"- {code} {name}{suffix}")
-    if len(df) > limit:
-        lines.append(f"...[candidate_identity_omitted:{len(df) - limit}]")
+    if len(df) > limit_n:
+        lines.append(f"...[candidate_identity_omitted:{len(df) - limit_n}]")
     return "\n".join(lines) if len(lines) > 1 else ""
 
 
@@ -316,10 +330,9 @@ def summarize_event_profile(event_profile: dict[str, object] | None) -> str:
             text = _safe_context_value(source, max_len=40)
             if not text:
                 continue
-            try:
-                items.append(f"{text}={float(weight):.2f}")
-            except (TypeError, ValueError):
-                continue
+            parsed_w = finite_float(weight)
+            if parsed_w is not None:
+                items.append(f"{text}={parsed_w:.2f}")
         if items:
             lines.append("来源权重: " + "，".join(items))
     return "\n".join(lines) if len(lines) > 1 else ""
@@ -444,11 +457,13 @@ def _load_candidate_context_rows(path: Path) -> list[dict[str, object]]:
 def _safe_context_value(value: object, *, max_len: int = 280) -> str:
     if value is None:
         return ""
+    if isinstance(value, float) and finite_float(value) is None:
+        return ""
     if isinstance(value, list):
         text = ",".join(str(item).strip() for item in value if str(item).strip())
     else:
         text = str(value).strip()
-    if not text or text.lower() in {"nan", "none", "<na>"}:
+    if not text or text.lower() in {"nan", "none", "<na>", "inf", "-inf", "+inf", "infinity", "-infinity", "+infinity", "nat"}:
         return ""
     return text[:max_len]
 
@@ -476,8 +491,8 @@ def _section(
         text=text.strip(),
         kind=kind,
         priority=priority,
-        min_chars=max(int(min_chars), 0),
-        weight=max(int(weight), 1),
+        min_chars=max(safe_int(min_chars, default=0), 0),
+        weight=max(safe_int(weight, default=1), 1),
         line_aware=line_aware,
     )
 
@@ -617,16 +632,19 @@ def _append_marker_within_limit(text: str, marker: str, *, max_chars: int) -> st
 
 
 def _format_extremes(df: pd.DataFrame, change: pd.Series, *, ascending: bool) -> str:
-    columns = [col for col in ("code", "name", "change_pct") if col in df.columns]
+    columns = [col for col in ("code", "name") if col in df.columns]
     if not columns:
         return ""
-    top = df.loc[change.sort_values(ascending=ascending).head(3).index, columns]
+    ordered = change.sort_values(ascending=ascending).head(3)
     items = []
-    for _, row in top.iterrows():
+    for idx, pct_val in ordered.items():
+        val = finite_float(pct_val)
+        if val is None:
+            continue
+        row = df.loc[idx]
         code = str(row.get("code", ""))
         name = str(row.get("name", ""))
-        pct = row.get("change_pct", 0)
-        items.append(f"{code}{name}({float(pct):.2f}%)")
+        items.append(f"{code}{name}({val:.2f}%)")
     return ", ".join(items)
 
 
@@ -648,11 +666,12 @@ def _summarize_label_distribution(df: pd.DataFrame, column: str) -> str:
 def _summarize_board_heat(df: pd.DataFrame, *, limit: int = 5) -> str:
     if "board_heat_score" not in df.columns:
         return ""
-    values = pd.to_numeric(df["board_heat_score"], errors="coerce")
-    if values.dropna().empty:
+    values = _finite_series(df["board_heat_score"])
+    if values.empty:
         return ""
+    limit_n = max(safe_int(limit, default=5), 1)
     items = []
-    for idx in values.sort_values(ascending=False).dropna().head(limit).index:
+    for idx in values.sort_values(ascending=False).head(limit_n).index:
         row = df.loc[idx]
         code = str(row.get("code", "") or "")
         name = str(row.get("name", "") or "")

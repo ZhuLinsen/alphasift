@@ -223,3 +223,60 @@ def test_build_llm_context_preserves_candidate_sections_under_budget():
     assert "context_trimmed" in context
     assert degradation
     assert degradation[0].startswith("LLM context truncated:")
+
+
+def test_context_and_event_weights_scrub_nonfinite_and_bool() -> None:
+    from alphasift.context import (
+        summarize_candidate_identity,
+        summarize_candidate_profile,
+        summarize_event_profile,
+        summarize_snapshot_context,
+    )
+    from alphasift.pipeline import _event_source_weights
+
+    df = pd.DataFrame([
+        {
+            "code": "000001",
+            "name": "平安银行",
+            "change_pct": float("inf"),
+            "amount": float("nan"),
+            "volume_ratio": True,
+            "factor_value_score": float("inf"),
+            "screen_score": float("nan"),
+            "board_heat_score": float("inf"),
+            "industry": "银行",
+        },
+        {
+            "code": "600000",
+            "name": "浦发银行",
+            "change_pct": 2.5,
+            "amount": 5e8,
+            "volume_ratio": 2.4,
+            "factor_value_score": 82.0,
+            "screen_score": 88.5,
+            "board_heat_score": 76.0,
+            "industry": "银行",
+        },
+    ])
+
+    snap_txt = summarize_snapshot_context(df, title="测试全市场")
+    assert "2.50%" in snap_txt and "500000000" in snap_txt and "100.0%" in snap_txt
+    assert "nan" not in snap_txt.lower() and "inf" not in snap_txt.lower()
+
+    prof_txt = summarize_candidate_profile(df)
+    assert "价值82.0" in prof_txt and "88.5" in prof_txt and "600000浦发银行:76.0" in prof_txt
+    assert "nan" not in prof_txt.lower() and "inf" not in prof_txt.lower()
+
+    id_txt = summarize_candidate_identity(df, limit=True)  # type: ignore[arg-type]
+    assert "000001 平安银行" in id_txt and "600000 浦发银行" in id_txt
+    assert "nan" not in id_txt.lower() and "inf" not in id_txt.lower()
+
+    ev_txt = summarize_event_profile({
+        "source_weights": {"eastmoney": 1.5, "bad_nan": float("nan"), "bad_inf": float("inf"), "bad_bool": True},
+    })
+    assert "eastmoney=1.50" in ev_txt
+    assert "bad_" not in ev_txt and "nan" not in ev_txt.lower() and "inf" not in ev_txt.lower()
+
+    assert _event_source_weights({
+        "source_weights": {"eastmoney": 1.5, "bad_nan": float("nan"), "bad_inf": float("inf"), "bad_bool": True},
+    }) == {"eastmoney": 1.5}
