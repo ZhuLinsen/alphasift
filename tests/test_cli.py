@@ -796,3 +796,88 @@ def test_cli_safe_float_rejects_bool_and_non_finite_values():
     assert records[0]["max_board_heat_score"] == 88.5
     assert "88.5" in dumps_strict_json(records[0], indent=None)
 
+
+def test_cli_formatters_scrub_nonfinite_and_bool_values():
+    import types
+
+    from alphasift.cli import (
+        _fmt_optional_float,
+        _fmt_pct,
+        _format_failure_review_explain,
+        _format_market_stats_explain,
+        _format_partial_benchmark,
+        _format_pattern_scan_explain,
+        _format_snapshot_reconciliation_explain,
+        _format_strategy_match_line,
+        _format_top_factor_weights,
+        _top_failure_dimension_items,
+    )
+
+    match_line = _format_strategy_match_line({"name": "demo", "score": float("nan"), "category": "value"})
+    assert match_line.startswith(" 0.0 ") and "nan" not in match_line.lower()
+    assert _format_top_factor_weights({"a": float("nan"), "b": True, "c": 0.4}) == "c:0.40"
+    assert _format_top_factor_weights({"a": float("inf")}) == "-"
+
+    assert _format_partial_benchmark({"evaluated_pick_count": True, "benchmark_pick_count": float("nan")}) == ""
+    assert _fmt_pct(float("nan")) == "-"
+    assert _fmt_pct(True) == "-"  # type: ignore[arg-type]
+    assert _fmt_optional_float(float("inf")) == "-"
+
+    dims = _top_failure_dimension_items({
+        "bad": {"failure_count": True, "worst_return_pct": float("nan"), "average_return_pct": -1.0},
+        "real": {"failure_count": 2, "worst_return_pct": -5.5, "average_return_pct": -3.0},
+    })
+    assert dims[0].startswith("real:n=2")
+
+    fail_lines = _format_failure_review_explain({
+        "summary": {"total_picks": 1, "failure_count": 1, "failure_rate_pct": 100.0},
+        "failure_samples": [{"run_id": "r1", "strategy": "s1", "rank": 1, "code": "000001", "return_pct": float("nan"), "status": "ok", "failure_reasons": []}],
+    })
+    assert any("000001" in ln and "nan" not in ln.lower() for ln in fail_lines)
+
+    recon_lines = _format_snapshot_reconciliation_explain({
+        "summary": {"source_count": 1, "ok_source_count": 1},
+        "sources": [{"source": "akshare", "status": "ok", "rows": 10, "overlap_with_baseline_ratio": float("inf")}],
+    })
+    assert any("akshare" in ln and "inf" not in ln.lower() for ln in recon_lines)
+
+    reg = types.SimpleNamespace(
+        trade_date="2026-11-26",
+        regime_stage="startup",
+        regime_stage_label="启动",
+        advance_ratio_pct=float("nan"),
+        non_st_limit_up_count=True,
+        non_st_broken_board_count=float("nan"),
+        seal_rate_pct=float("inf"),
+        non_st_limit_down_count=False,
+        max_consecutive_limit_up=float("nan"),
+        prev_limit_up_avg_return_pct=float("-inf"),
+        total_amount_yi=float("nan"),
+        consecutive_board_ladder={},
+        regime_reasons=["ok"],
+        usage_policy="normal",
+    )
+    mkt_out = _format_market_stats_explain([reg])
+    assert "2026-11-26" in mkt_out and "nan" not in mkt_out.lower() and "inf" not in mkt_out.lower()
+
+    sig = types.SimpleNamespace(
+        code="000001",
+        name="平安",
+        industry="银行",
+        change_pct=float("nan"),
+        proxy_amount=float("inf"),
+        overhead_supply_10pct=float("nan"),
+        observe_date="",
+        observe_lag_days=0,
+    )
+    scan = types.SimpleNamespace(
+        trade_date="2026-11-26",
+        universe_count=100,
+        market_regime=reg,
+        usage_policy="normal",
+        patterns_evaluated=["box_breakout"],
+        signals_by_pattern={"box_breakout": [sig]},
+    )
+    pat_out = _format_pattern_scan_explain(scan, limit=True)  # type: ignore[arg-type]
+    assert "000001" in pat_out and "nan" not in pat_out.lower() and "inf" not in pat_out.lower()
+

@@ -24,7 +24,7 @@ from alphasift.hotspot import (
     save_hotspots_json,
 )
 from alphasift.industry import fetch_akshare_board_map, save_industry_map
-from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, dumps_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, dumps_strict_json, safe_int
 from alphasift.normalize import safe_float as normalize_safe_float
 from alphasift.overview import build_overview
 from alphasift.performance_history import build_strategy_performance_summary
@@ -1753,8 +1753,9 @@ def _format_strategy_match_line(item: dict[str, object]) -> str:
     data = ",".join(str(value) for value in item.get("data_requirements", []) or []) or "-"
     matched = _format_match_tokens(item.get("matched", []) or [])
     missing = _format_match_tokens(item.get("missing", []) or [])
+    score_val = _safe_float(item.get("score"))
     return (
-        f"{float(item.get('score', 0.0)):>4.1f} "
+        f"{(score_val if score_val is not None else 0.0):>4.1f} "
         f"{str(item.get('name', '')):<24} "
         f"{str(item.get('category', '-')):<9} "
         f"style={_format_strategy_style(style):<40} "
@@ -1790,8 +1791,11 @@ def _format_match_tokens(values: object, *, limit: int = 6) -> str:
 def _format_top_factor_weights(weights: dict[str, float], *, limit: int = 4) -> str:
     if not weights:
         return "-"
-    ordered = sorted(weights.items(), key=lambda item: (-float(item[1]), item[0]))[:limit]
-    return ",".join(f"{name}:{float(value):.2f}" for name, value in ordered)
+    clean = [(str(name), val) for name, raw in weights.items() if (val := _safe_float(raw)) is not None]
+    if not clean:
+        return "-"
+    ordered = sorted(clean, key=lambda item: (-item[1], item[0]))[:limit]
+    return ",".join(f"{name}:{value:.2f}" for name, value in ordered)
 
 
 def _format_strategy_style(style: dict[str, object]) -> str:
@@ -2084,8 +2088,8 @@ def _format_data_quality_review_explain(review: object) -> list[str]:
 def _format_partial_benchmark(window: dict) -> str:
     """When only some picks have benchmark data, bench/excess cover just
     those picks; show how many and their own average return."""
-    evaluated = int(window.get("evaluated_pick_count") or 0)
-    matched = int(window.get("benchmark_pick_count") or 0)
+    evaluated = max(safe_int(window.get("evaluated_pick_count"), default=0), 0)
+    matched = max(safe_int(window.get("benchmark_pick_count"), default=0), 0)
     if not evaluated or matched >= evaluated:
         return ""
     return f"bench_n={matched}/{evaluated} matched_ret={window.get('average_matched_return_pct')!s} "
@@ -2196,8 +2200,8 @@ def _format_failure_review_explain(
                 if not isinstance(reason_values, list):
                     reason_values = []
                 reasons = ",".join(str(value) for value in reason_values[:4]) or "-"
-                ret = item.get("return_pct")
-                ret_text = "-" if ret is None else f"{float(ret):.2f}%"
+                ret = _safe_float(item.get("return_pct"))
+                ret_text = "-" if ret is None else f"{ret:.2f}%"
                 lines.append(
                     f"{str(item.get('run_id') or ''):<16} {str(item.get('strategy') or ''):<20} "
                     f"{item.get('rank')!s:<4} {str(item.get('code') or ''):<8} "
@@ -2314,18 +2318,22 @@ def _top_dimension_items(items: dict, *, limit: int = 5) -> list[str]:
 def _top_failure_dimension_items(items: object, *, limit: int = 5) -> list[str]:
     if not isinstance(items, dict):
         return []
+    def _failure_sort_key(item: tuple[str, dict]) -> tuple[int, bool, float, str]:
+        worst = _safe_float(item[1].get("worst_return_pct"))
+        return (
+            -max(safe_int(item[1].get("failure_count"), default=0), 0),
+            worst is None,
+            worst if worst is not None else 0.0,
+            item[0],
+        )
+
     ranked = sorted(
         (
             (str(label), stats)
             for label, stats in items.items()
             if isinstance(stats, dict)
         ),
-        key=lambda item: (
-            -int(item[1].get("failure_count", 0) or 0),
-            item[1].get("worst_return_pct") is None,
-            float(item[1].get("worst_return_pct") or 0),
-            item[0],
-        ),
+        key=_failure_sort_key,
     )
     return [
         (
@@ -2337,11 +2345,13 @@ def _top_failure_dimension_items(items: object, *, limit: int = 5) -> list[str]:
 
 
 def _fmt_pct(value: float | None) -> str:
-    return "-" if value is None else f"{float(value):.2f}%"
+    num = _safe_float(value)
+    return "-" if num is None else f"{num:.2f}%"
 
 
 def _fmt_optional_float(value: float | None) -> str:
-    return "-" if value is None else f"{float(value):.2f}"
+    num = _safe_float(value)
+    return "-" if num is None else f"{num:.2f}"
 
 
 def _format_audit_explain(result: dict) -> str:
@@ -2515,8 +2525,8 @@ def _format_snapshot_reconciliation_explain(reconciliation: dict) -> list[str]:
         for item in sources:
             missing = _join_or_dash(item.get("missing_fields") or [])
             errors = _join_or_dash(item.get("errors") or [])
-            overlap = item.get("overlap_with_baseline_ratio")
-            overlap_text = "-" if overlap is None else f"{float(overlap):.2f}"
+            overlap = _safe_float(item.get("overlap_with_baseline_ratio"))
+            overlap_text = "-" if overlap is None else f"{overlap:.2f}"
             lines.append(
                 f"{str(item.get('source') or ''):<16} {str(item.get('status') or ''):<9} "
                 f"{item.get('rows', 0)!s:<6} {overlap_text:<7} "
@@ -2727,14 +2737,23 @@ def _format_markets_explain(specs: list) -> str:
 def _format_market_stats_explain(items: list) -> str:
     lines = ["date       stage       up%    lu  brk  seal%   ld  maxLB  prevLU%   amt_yi"]
     for item in items:
-        seal = "-" if item.seal_rate_pct is None else f"{item.seal_rate_pct:5.1f}"
-        prev_ret = "-" if item.prev_limit_up_avg_return_pct is None else f"{item.prev_limit_up_avg_return_pct:+6.2f}"
-        amt = "-" if item.total_amount_yi is None else f"{item.total_amount_yi:8.1f}"
+        seal_val = _safe_float(item.seal_rate_pct)
+        seal = "-" if seal_val is None else f"{seal_val:5.1f}"
+        prev_val = _safe_float(item.prev_limit_up_avg_return_pct)
+        prev_ret = "-" if prev_val is None else f"{prev_val:+6.2f}"
+        amt_val = _safe_float(item.total_amount_yi)
+        amt = "-" if amt_val is None else f"{amt_val:8.1f}"
+        adv_val = _safe_float(item.advance_ratio_pct)
+        adv = "  -  " if adv_val is None else f"{adv_val:5.1f}"
+        lu_cnt = max(safe_int(item.non_st_limit_up_count, default=0), 0)
+        brk_cnt = max(safe_int(item.non_st_broken_board_count, default=0), 0)
+        ld_cnt = max(safe_int(item.non_st_limit_down_count, default=0), 0)
+        max_lb = max(safe_int(item.max_consecutive_limit_up, default=0), 0)
         stage_disp = f"{item.regime_stage}({item.regime_stage_label})"
         lines.append(
-            f"{item.trade_date} {stage_disp:<11} {item.advance_ratio_pct:5.1f} "
-            f"{item.non_st_limit_up_count:4d} {item.non_st_broken_board_count:4d} {seal:>6} "
-            f"{item.non_st_limit_down_count:4d} {item.max_consecutive_limit_up:6d} {prev_ret:>8} {amt:>8}"
+            f"{item.trade_date} {stage_disp:<11} {adv} "
+            f"{lu_cnt:4d} {brk_cnt:4d} {seal:>6} "
+            f"{ld_cnt:4d} {max_lb:6d} {prev_ret:>8} {amt:>8}"
         )
     if items:
         last = items[-1]
@@ -2745,21 +2764,28 @@ def _format_market_stats_explain(items: list) -> str:
 
 def _format_pattern_scan_explain(scan_result, *, limit: int = 20) -> str:
     reg = scan_result.market_regime
+    lu_cnt = max(safe_int(reg.non_st_limit_up_count, default=0), 0)
+    ld_cnt = max(safe_int(reg.non_st_limit_down_count, default=0), 0)
+    limit_n = max(1, safe_int(limit, default=20))
     lines = [
         f"trade_date={scan_result.trade_date} universe={scan_result.universe_count} "
-        f"regime={reg.regime_stage}({reg.regime_stage_label}) lu={reg.non_st_limit_up_count} "
-        f"ld={reg.non_st_limit_down_count} policy={scan_result.usage_policy}"
+        f"regime={reg.regime_stage}({reg.regime_stage_label}) lu={lu_cnt} "
+        f"ld={ld_cnt} policy={scan_result.usage_policy}"
     ]
     for pattern_name in scan_result.patterns_evaluated:
         items = scan_result.signals_by_pattern.get(pattern_name, [])
         lines.append(f"[{pattern_name}] hits={len(items)}")
-        for sig in items[: max(1, int(limit))]:
+        for sig in items[:limit_n]:
             obs = f" obs={sig.observe_date}(-{sig.observe_lag_days}d)" if sig.observe_date else ""
-            ov = f"{sig.overhead_supply_10pct:.1f}%" if sig.overhead_supply_10pct is not None else "-"
-            amt_m = f"{sig.proxy_amount / 1e8:.2f}亿" if sig.proxy_amount is not None else "-"
+            ov_val = _safe_float(sig.overhead_supply_10pct)
+            ov = f"{ov_val:.1f}%" if ov_val is not None else "-"
+            amt_val = _safe_float(sig.proxy_amount)
+            amt_m = f"{amt_val / 1e8:.2f}亿" if amt_val is not None else "-"
+            chg_val = _safe_float(sig.change_pct)
+            chg_txt = f"{chg_val:+5.2f}%" if chg_val is not None else "   -  "
             lines.append(
                 f"  {sig.code} {sig.name or '-':<8} {sig.industry or '-':<8} "
-                f"chg={sig.change_pct:+5.2f}% amt={amt_m:<7} ov10={ov}{obs}"
+                f"chg={chg_txt} amt={amt_m:<7} ov10={ov}{obs}"
             )
     return "\n".join(lines)
 
