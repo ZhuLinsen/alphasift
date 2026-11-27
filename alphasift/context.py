@@ -186,6 +186,8 @@ def summarize_snapshot_context(df: pd.DataFrame | None, *, title: str) -> str:
     """Summarize breadth, activity and extremes from a snapshot DataFrame."""
     if df is None or df.empty:
         return ""
+    if not df.index.is_unique:
+        df = df.reset_index(drop=True)
 
     lines = [f"【{title}】", f"样本数: {len(df)}"]
     if "change_pct" in df.columns:
@@ -217,6 +219,8 @@ def summarize_candidate_profile(df: pd.DataFrame | None) -> str:
     """Summarize factor conflicts and leadership inside the candidate pool."""
     if df is None or df.empty:
         return ""
+    if not df.index.is_unique:
+        df = df.reset_index(drop=True)
 
     lines = ["【候选池结构】"]
     factor_cols = {
@@ -245,9 +249,13 @@ def summarize_candidate_profile(df: pd.DataFrame | None) -> str:
             series = _finite_series(df[col])
             if series.empty or not columns:
                 continue
-            idx = series.idxmax()
-            row = df.loc[idx]
-            leaders.append(f"{label}:{row.get('code', '')}{row.get('name', '')}({series.loc[idx]:.1f})")
+            pos = int(series.argmax())
+            idx = series.index[pos]
+            val = float(series.iloc[pos])
+            row = _first_row_at(df, idx)
+            code = _safe_context_value(row.get("code"), max_len=24)
+            name = _safe_context_value(row.get("name"), max_len=40)
+            leaders.append(f"{label}:{code}{name}({val:.1f})")
         if leaders:
             lines.append("因子领先: " + "，".join(leaders[:8]))
 
@@ -399,7 +407,10 @@ def _candidate_maps(candidate_df: pd.DataFrame) -> tuple[dict[str, str], dict[st
         code = _normalize_code(row.get("code", row.get("代码", "")))
         if not code:
             continue
-        candidate_names[code] = str(row.get("name", row.get("名称", "")) or "")
+        candidate_names[code] = _safe_context_value(
+            row.get("name") if "name" in row else row.get("名称"),
+            max_len=40,
+        )
         candidate_order.setdefault(code, idx)
     return candidate_names, candidate_order
 
@@ -503,17 +514,24 @@ def _join_bounded_context_sections(
     max_chars: int,
     degradation: list[str] | None,
 ) -> str:
+    effective_max = (
+        4000
+        if isinstance(max_chars, bool) or finite_float(max_chars) is None
+        else max(safe_int(max_chars, default=4000), 0)
+    )
+    if effective_max <= 0:
+        return ""
     sections = [section for section in sections if section.text.strip()]
     combined = "\n\n".join(section.text for section in sections).strip()
     if not combined:
         return ""
-    if len(combined) <= max_chars:
+    if len(combined) <= effective_max:
         return combined
 
     marker_line = f"【上下文降级】{_CONTEXT_TRIM_MARKER} low-priority context trimmed."
-    budget = max(int(max_chars) - len(marker_line) - 2, 0)
+    budget = max(effective_max - len(marker_line) - 2, 0)
     if budget <= 0:
-        return marker_line[:max_chars]
+        return marker_line[:effective_max]
 
     allocations = _allocate_section_budgets(sections, budget)
     chunks: list[str] = []
@@ -532,10 +550,10 @@ def _join_bounded_context_sections(
             f"【上下文降级】{_CONTEXT_TRIM_MARKER} "
             f"trimmed={trimmed_labels}"
         )
-        result = _append_marker_within_limit(result, marker_line, max_chars=max_chars)
+        result = _append_marker_within_limit(result, marker_line, max_chars=effective_max)
         if degradation is not None:
             degradation.append(f"LLM context truncated: trimmed={trimmed_labels}")
-    return result[:max_chars]
+    return result[:effective_max]
 
 
 def _allocate_section_budgets(sections: list[_ContextSection], budget: int) -> list[int]:
@@ -631,19 +649,26 @@ def _append_marker_within_limit(text: str, marker: str, *, max_chars: int) -> st
     return text[:keep].rstrip() + "\n" + marker
 
 
+def _first_row_at(df: pd.DataFrame, idx: object) -> pd.Series:
+    row = df.loc[idx]
+    return row.iloc[0] if isinstance(row, pd.DataFrame) else row
+
+
 def _format_extremes(df: pd.DataFrame, change: pd.Series, *, ascending: bool) -> str:
     columns = [col for col in ("code", "name") if col in df.columns]
     if not columns:
         return ""
     ordered = change.sort_values(ascending=ascending).head(3)
     items = []
-    for idx, pct_val in ordered.items():
+    seen_pos: set[int] = set()
+    for pos, (idx, pct_val) in enumerate(zip(ordered.index, ordered.to_numpy(), strict=False)):
         val = finite_float(pct_val)
-        if val is None:
+        if val is None or pos in seen_pos:
             continue
-        row = df.loc[idx]
-        code = str(row.get("code", ""))
-        name = str(row.get("name", ""))
+        seen_pos.add(pos)
+        row = _first_row_at(df, idx)
+        code = _safe_context_value(row.get("code"), max_len=24)
+        name = _safe_context_value(row.get("name"), max_len=40)
         items.append(f"{code}{name}({val:.2f}%)")
     return ", ".join(items)
 
@@ -671,11 +696,14 @@ def _summarize_board_heat(df: pd.DataFrame, *, limit: int = 5) -> str:
         return ""
     limit_n = max(safe_int(limit, default=5), 1)
     items = []
-    for idx in values.sort_values(ascending=False).head(limit_n).index:
-        row = df.loc[idx]
-        code = str(row.get("code", "") or "")
-        name = str(row.get("name", "") or "")
-        label = str(row.get("board_heat_summary", "") or row.get("industry", "") or "")
+    top_series = values.sort_values(ascending=False).head(limit_n)
+    for idx, heat_val in zip(top_series.index, top_series.to_numpy(), strict=False):
+        row = _first_row_at(df, idx)
+        code = _safe_context_value(row.get("code"), max_len=24)
+        name = _safe_context_value(row.get("name"), max_len=40)
+        label = _safe_context_value(row.get("board_heat_summary"), max_len=60) or _safe_context_value(
+            row.get("industry"), max_len=60
+        )
         trend = _safe_context_value(row.get("board_heat_trend_score"), max_len=20)
         persistence = _safe_context_value(row.get("board_heat_persistence_score"), max_len=20)
         cooling = _safe_context_value(row.get("board_heat_cooling_score"), max_len=20)
@@ -685,7 +713,7 @@ def _summarize_board_heat(df: pd.DataFrame, *, limit: int = 5) -> str:
         cooling_text = f",cooling={cooling}" if cooling else ""
         state_text = f",state={state}" if state else ""
         items.append(
-            f"{code}{name}:{float(values.loc[idx]):.1f}"
+            f"{code}{name}:{float(heat_val):.1f}"
             f"{trend_text}{persistence_text}{cooling_text}{state_text}({label[:60]})"
         )
     return "，".join(items)

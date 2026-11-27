@@ -280,3 +280,39 @@ def test_context_and_event_weights_scrub_nonfinite_and_bool() -> None:
     assert _event_source_weights({
         "source_weights": {"eastmoney": 1.5, "bad_nan": float("nan"), "bad_inf": float("inf"), "bad_bool": True},
     }) == {"eastmoney": 1.5}
+
+
+def test_context_handles_duplicate_index_null_names_and_bad_max_chars():
+    from alphasift.context import build_llm_context, summarize_candidate_profile, summarize_snapshot_context
+
+    dup_df = pd.DataFrame(
+        [
+            {
+                "code": "000001",
+                "name": float("nan"),
+                "change_pct": 1.0,
+                "factor_value_score": 60.0,
+                "board_heat_score": 55.0,
+                "industry": "银行",
+            },
+            {
+                "code": "600000",
+                "name": pd.NA,
+                "change_pct": 3.5,
+                "factor_value_score": 85.0,
+                "board_heat_score": 82.0,
+                "industry": "银行",
+            },
+        ],
+        index=[0, 0],
+    )
+    snap = summarize_snapshot_context(dup_df, title="重复索引")
+    prof = summarize_candidate_profile(dup_df)
+    assert "600000(3.50%)" in snap and "000001(1.00%)" in snap
+    assert "600000(85.0)" in prof and "600000:82.0" in prof
+    assert "nan" not in (snap + prof).lower() and "<na>" not in (snap + prof).lower()
+
+    assert build_llm_context(base_context="市场平稳" * 20, max_chars=-5) == ""
+    assert build_llm_context(base_context="市场平稳" * 20, max_chars=0) == ""
+    assert "市场平稳" in build_llm_context(base_context="市场平稳" * 20, max_chars=True)  # type: ignore[arg-type]
+    assert "市场平稳" in build_llm_context(base_context="市场平稳" * 20, max_chars=float("nan"))  # type: ignore[arg-type]
