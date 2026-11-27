@@ -1,0 +1,32 @@
+{
+  "session": "us",
+  "date": "2026-11-27",
+  "finished_at": "2026-11-27T22:34:41+00:00",
+  "entries": [
+    {
+      "market": "us",
+      "strategy": "global_value",
+      "track": "rules",
+      "status": "ok",
+      "run_id": "8bcf6ae035a0",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.1
+    },
+    {
+      "market": "us",
+      "strategy": "us_momentum_quality",
+      "track": "rules",
+      "status": "ok",
+      "run_id": "8e898863b040",
+      "picks": 5,
+      "snapshot_source": "yahoo_screener",
+      "degradation": 0,
+      "seconds": 0.1
+    }
+  ],
+  "effective_dates": {
+    "us": "2026-11-27"
+  }
+}

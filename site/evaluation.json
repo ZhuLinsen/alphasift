@@ -1,5 +1,5 @@
 {
- "evaluated_at": "2026-11-27T14:44:29+00:00",
+ "evaluated_at": "2026-11-27T22:34:42+00:00",
  "entry_mode_switch_date": "2026-11-21",
  "windows": [
   5,
@@ -1523,7 +1523,7 @@
    }
   },
   "7284e8e0148c": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1628,7 +1628,7 @@
    }
   },
   "3a753b288834": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3278,7 +3278,7 @@
    }
   },
   "7da1a5d66a44": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3317,7 +3317,7 @@
     "10": {
      "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
-     "benchmark_return_pct": null,
+     "benchmark_return_pct": -3.8039,
      "pending": 5,
      "picks": {
       "BBD": {
@@ -3383,7 +3383,7 @@
    }
   },
   "5dccc124ea86": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3422,7 +3422,7 @@
     "10": {
      "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
-     "benchmark_return_pct": null,
+     "benchmark_return_pct": -3.8039,
      "pending": 5,
      "picks": {
       "BRK-B": {
@@ -5033,7 +5033,7 @@
    }
   },
   "cae43eb6e6a1": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5138,7 +5138,7 @@
    }
   },
   "a6da12b31a6a": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6818,7 +6818,7 @@
    }
   },
   "77d92e7d72d2": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6923,7 +6923,7 @@
    }
   },
   "100906b58dd7": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8603,7 +8603,7 @@
    }
   },
   "c3a8bec3b6c1": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8708,7 +8708,7 @@
    }
   },
   "d9a3978492b8": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10358,7 +10358,7 @@
    }
   },
   "96281996813e": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10463,7 +10463,7 @@
    }
   },
   "8cd58ac4aead": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12128,13 +12128,13 @@
    }
   },
   "40621daaf4ec": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
-     "benchmark_return_pct": null,
+     "benchmark_return_pct": 1.7391,
      "pending": 5,
      "picks": {
       "FIS": {
@@ -12233,13 +12233,13 @@
    }
   },
   "0d1365962ccc": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "S&P 500 (SPY)",
-     "benchmark_return_pct": null,
+     "benchmark_return_pct": 1.7391,
      "pending": 5,
      "picks": {
       "CVS": {
@@ -13853,7 +13853,7 @@
    }
   },
   "fd0f0b1106ce": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13958,7 +13958,7 @@
    }
   },
   "d9edc25a4bc7": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16493,7 +16493,7 @@
    }
   },
   "c11df143d52b": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16634,7 +16634,7 @@
    }
   },
   "d47c9ef26663": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19910,7 +19910,7 @@
    }
   },
   "56d3dfc9e86b": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -20051,7 +20051,7 @@
    }
   },
   "e8960dfe5dfe": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23468,7 +23468,7 @@
    }
   },
   "ed5aa8fc9808": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23579,7 +23579,7 @@
    }
   },
   "1aefc4b99d39": {
-   "evaluated_at": "2026-11-27T14:44:29+00:00",
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -29535,6 +29535,228 @@
        "excess_return_pct": null
       },
       "GAIL.NS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "8bcf6ae035a0": {
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "CTVA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "GDS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "RUN": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "ZIM": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CMCSA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "CTVA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "GDS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "RUN": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "ZIM": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CMCSA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "CTVA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "GDS": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "RUN": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "ZIM": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "CMCSA": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    }
+   }
+  },
+  "8e898863b040": {
+   "evaluated_at": "2026-11-27T22:34:42+00:00",
+   "final": false,
+   "windows": {
+    "5": {
+     "entry_mode": "next_open",
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "B": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PBR-A": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PBR": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "QCOM": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "NU": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "10": {
+     "entry_mode": "next_open",
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "B": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PBR-A": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PBR": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "QCOM": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "NU": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      }
+     },
+     "untradable": 0,
+     "untradable_share_pct": 0.0
+    },
+    "20": {
+     "entry_mode": "next_open",
+     "benchmark": "S&P 500 (SPY)",
+     "benchmark_return_pct": null,
+     "pending": 5,
+     "picks": {
+      "B": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PBR-A": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "PBR": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "QCOM": {
+       "status": "pending",
+       "return_pct": null,
+       "excess_return_pct": null
+      },
+      "NU": {
        "status": "pending",
        "return_pct": null,
        "excess_return_pct": null
