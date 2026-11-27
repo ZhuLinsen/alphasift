@@ -1,0 +1,33 @@
+{
+  "schema_version": 3,
+  "run_id": "adddb36bfd33-ai",
+  "strategy": "low_volatility_quality",
+  "market": "cn",
+  "strategy_version": "1.2",
+  "strategy_category": "quality",
+  "created_at": "2026-11-27T10:36:43.299070+00:00",
+  "picks": 5,
+  "snapshot_count": 5578,
+  "after_filter_count": 61,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 2,
+  "degradation": [
+    "Candidate context collected rows=12",
+    "LLM context truncated: trimmed=candidate_collected_context"
+  ],
+  "llm_ranked": true,
+  "llm_coverage": 1.0,
+  "daily_enriched": true,
+  "daily_enrich_count": 206,
+  "daily_source_counts": {
+    "pack": 206
+  },
+  "daily_quality_flag_counts": {},
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/adddb36bfd33-ai.json",
+  "report_path": "track/data/runs/adddb36bfd33-ai.md"
+}

@@ -1,0 +1,34 @@
+{
+  "schema_version": 3,
+  "run_id": "ccf7f8580339",
+  "strategy": "volume_breakout",
+  "market": "cn",
+  "strategy_version": "1.2",
+  "strategy_category": "trend",
+  "created_at": "2026-11-27T10:32:23.695953+00:00",
+  "picks": 0,
+  "snapshot_count": 5578,
+  "after_filter_count": 0,
+  "snapshot_source": "em_datacenter",
+  "source_error_count": 0,
+  "source_errors": [],
+  "degradation_count": 1,
+  "degradation": [
+    "No candidates after daily hard filter"
+  ],
+  "llm_ranked": false,
+  "llm_coverage": null,
+  "daily_enriched": true,
+  "daily_enrich_count": 40,
+  "daily_source_counts": {
+    "pack": 40
+  },
+  "daily_quality_flag_counts": {
+    "short_history_lt30": 1
+  },
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "path": "track/data/runs/ccf7f8580339.json",
+  "report_path": "track/data/runs/ccf7f8580339.md"
+}

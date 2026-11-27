@@ -1,0 +1,760 @@
+{
+  "strategy": "capital_heat",
+  "market": "cn",
+  "strategy_version": "1.1",
+  "strategy_category": "momentum",
+  "snapshot_count": 5578,
+  "after_filter_count": 130,
+  "picks": [
+    {
+      "rank": 1,
+      "code": "000725",
+      "name": "京东方A",
+      "final_score": 82.8402,
+      "screen_score": 73.7336180769231,
+      "llm_score": 86.0,
+      "ranking_reason": "主力净流入4.18亿元且量比健康，市值容量与流动性支撑强劲。",
+      "risk_summary": "面板行业下游终端需求复苏不及预期。",
+      "price": 4.8,
+      "change_pct": 6.67,
+      "amount": 7895171173.67,
+      "total_mv": 176896773427.0,
+      "turnover_rate": 4.87,
+      "volume_ratio": 1.91,
+      "pe_ratio": 32.12343674,
+      "pb_ratio": 1.34429761,
+      "industry": "电子器件",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 65.5058,
+        "liquidity": 99.2308,
+        "momentum": 76.8515,
+        "reversal": 5.0,
+        "activity": 79.5186,
+        "stability": 57.99,
+        "size": 99.2308,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.86,
+      "llm_sector": "电子器件",
+      "llm_theme": "面板周期筑底与股份注销",
+      "llm_tags": [
+        "价值",
+        "流动性",
+        "sector:电子器件",
+        "theme:面板周期筑底与股份注销",
+        "style_fit:契合大容量稳健白马与底仓配置风格"
+      ],
+      "llm_catalysts": [
+        "面板报价回升",
+        "机构持续加仓"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "10亿元回购已全部注销提升每股收益，社保大额新进持仓背书。",
+      "llm_style_fit": "契合大容量稳健白马与底仓配置风格",
+      "llm_watch_items": [
+        "大尺寸面板价格",
+        "机构持仓变动"
+      ],
+      "llm_invalidators": [
+        "四季度业绩大幅逊于预期"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 2,
+      "code": "603799",
+      "name": "华友钴业",
+      "final_score": 82.0466,
+      "screen_score": 71.07758346153847,
+      "llm_score": 88.0,
+      "ranking_reason": "PE仅10倍且主力单日净流入超4.7亿元，回购推进节奏极为迅速。",
+      "risk_summary": "钴镍等工业金属价格二次探底风险。",
+      "price": 32.68,
+      "change_pct": 7.5,
+      "amount": 2820567383.0,
+      "total_mv": 61880479256.0,
+      "turnover_rate": 4.72,
+      "volume_ratio": 1.57,
+      "pe_ratio": 9.97395307,
+      "pb_ratio": 1.2252579,
+      "industry": "稀有金属",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 83.9358,
+        "liquidity": 95.3846,
+        "momentum": 73.075,
+        "reversal": 5.0,
+        "activity": 77.4359,
+        "stability": 55.5,
+        "size": 93.0769,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.88,
+      "llm_sector": "稀有金属",
+      "llm_theme": "大额回购与周期复苏",
+      "llm_tags": [
+        "价值",
+        "事件",
+        "sector:稀有金属",
+        "theme:大额回购与周期复苏",
+        "style_fit:高度契合价值重估与事件驱动偏好"
+      ],
+      "llm_catalysts": [
+        "回购继续实施",
+        "金属价格企稳"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "15亿元大额注销式回购叠加专项贷款落地，极低估值提供高安全边际。",
+      "llm_style_fit": "高度契合价值重估与事件驱动偏好",
+      "llm_watch_items": [
+        "回购执行进度",
+        "锂钴现货报价"
+      ],
+      "llm_invalidators": [
+        "金属价格超预期下行"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 3,
+      "code": "600522",
+      "name": "中天科技",
+      "final_score": 76.1821,
+      "screen_score": 68.63676615384615,
+      "llm_score": 83.0,
+      "ranking_reason": "放量大涨9.29%且成交额达37.6亿元，产业政策逻辑高度契合。",
+      "risk_summary": "海风及电网招标建设进度延迟。",
+      "price": 22.95,
+      "change_pct": 9.29,
+      "amount": 3759870265.0,
+      "total_mv": 78327194513.0,
+      "turnover_rate": 4.98,
+      "volume_ratio": 1.84,
+      "pe_ratio": 17.15810864,
+      "pb_ratio": 1.95157781,
+      "industry": "通信设备",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 66.0058,
+        "liquidity": 98.4615,
+        "momentum": 64.9305,
+        "reversal": 5.0,
+        "activity": 79.597,
+        "stability": 46.18,
+        "size": 93.8462,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.84,
+      "llm_sector": "通信设备",
+      "llm_theme": "通信网络建设与海缆景气",
+      "llm_tags": [
+        "趋势",
+        "流动性",
+        "sector:通信设备",
+        "theme:通信网络建设与海缆景气",
+        "style_fit:契合景气成长与政策催化共振偏好"
+      ],
+      "llm_catalysts": [
+        "新基建招标放量",
+        "海缆订单落地"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "通信网纲领性文件出台利好光通信海缆龙头，PE不足18倍性价比突出。",
+      "llm_style_fit": "契合景气成长与政策催化共振偏好",
+      "llm_watch_items": [
+        "电网与海风中标公告"
+      ],
+      "llm_invalidators": [
+        "行业竞争加剧毛利率骤降"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: 未发现额外加分项"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 1.8
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": []
+        }
+      },
+      "post_analysis_tags": [],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 4,
+      "code": "300059",
+      "name": "东方财富",
+      "final_score": 75.246,
+      "screen_score": 68.410075,
+      "llm_score": 81.0,
+      "ranking_reason": "成交额达88.9亿元领跑全场，充当市场进攻风向标。",
+      "risk_summary": "市场交易额冲高回落导致贝塔弹性减弱。",
+      "price": 19.13,
+      "change_pct": 9.13,
+      "amount": 8885947866.08,
+      "total_mv": 302678683609.0,
+      "turnover_rate": 3.51,
+      "volume_ratio": 2.35,
+      "pe_ratio": 20.3216866,
+      "pb_ratio": 2.95589008,
+      "industry": "互联网金融",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 52.0727,
+        "liquidity": 100.0,
+        "momentum": 65.6585,
+        "reversal": 5.0,
+        "activity": 76.6191,
+        "stability": 47.46,
+        "size": 100.0,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.82,
+      "llm_sector": "互联网金融",
+      "llm_theme": "市场放量与券商贝塔",
+      "llm_tags": [
+        "流动性",
+        "趋势",
+        "sector:互联网金融",
+        "theme:市场放量与券商贝塔",
+        "style_fit:高度适配流动性进攻与牛市高贝塔策略"
+      ],
+      "llm_catalysts": [
+        "全市场成交破万亿",
+        "资本市场利好"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "全市场普涨及放量最大受益者，流动性与市值容量因子位列候选榜首。",
+      "llm_style_fit": "高度适配流动性进攻与牛市高贝塔策略",
+      "llm_watch_items": [
+        "全市场单日成交额"
+      ],
+      "llm_invalidators": [
+        "大盘量能大幅萎缩"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: 未发现额外加分项"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 1.8
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": []
+        }
+      },
+      "post_analysis_tags": [],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 5,
+      "code": "301029",
+      "name": "怡合达",
+      "final_score": 74.6517,
+      "screen_score": 69.4194426923077,
+      "llm_score": 72.0,
+      "ranking_reason": "估值PE 25.5倍处于历史偏低分位，具备设备更新周期弹力。",
+      "risk_summary": "制造业资本开支复苏节奏滞后。",
+      "price": 24.63,
+      "change_pct": 6.44,
+      "amount": 715641314.93,
+      "total_mv": 15660608957.0,
+      "turnover_rate": 6.73,
+      "volume_ratio": 2.55,
+      "pe_ratio": 25.51781203,
+      "pb_ratio": 3.55374069,
+      "industry": "通用设备",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": null,
+      "signal_score": null,
+      "ma_bullish": null,
+      "price_above_ma20": null,
+      "macd_status": "",
+      "rsi_status": "",
+      "breakout_20d_pct": null,
+      "range_20d_pct": null,
+      "volume_ratio_20d": null,
+      "body_pct": null,
+      "pullback_to_ma20_pct": null,
+      "consolidation_days_20d": null,
+      "volatility_20d_pct": null,
+      "max_drawdown_20d_pct": null,
+      "atr_20_pct": null,
+      "daily_quality_score": null,
+      "daily_quality_flags": "",
+      "daily_source": "",
+      "factor_scores": {
+        "value": 46.5771,
+        "liquidity": 63.0769,
+        "momentum": 77.43,
+        "reversal": 5.0,
+        "activity": 83.8626,
+        "stability": 58.68,
+        "size": 61.5385,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.75,
+      "llm_sector": "通用设备",
+      "llm_theme": "工控自动化与FA零部件",
+      "llm_tags": [
+        "趋势",
+        "sector:通用设备",
+        "theme:工控自动化与FA零部件",
+        "style_fit:适配偏好动量突破与通用制造复苏策略"
+      ],
+      "llm_catalysts": [
+        "制造业PMI回暖",
+        "设备更新政策发力"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "动量因子居首达77.4，量比2.55显示资金关注度显著提升。",
+      "llm_style_fit": "适配偏好动量突破与通用制造复苏策略",
+      "llm_watch_items": [
+        "FA业务订单增速"
+      ],
+      "llm_invalidators": [
+        "制造业下游投资持续下滑"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.2
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    }
+  ],
+  "run_id": "1f1b1450b785-ai",
+  "track": "ai",
+  "llm_ranked": true,
+  "llm_market_view": "市场普涨且中位数涨幅达6.9%，高流动性与回购/政策催化品种占优。",
+  "llm_selection_logic": "优选低估值配合大额回购注销标的，兼顾成交量能持续性与行业景气共振，压制极端高估值炒作。",
+  "llm_portfolio_risk": "市场普涨后易面临获利回吐分化，且科技通信与周期资源板块权重集中度偏高。",
+  "llm_coverage": 1.0,
+  "llm_parse_errors": [],
+  "degradation": [
+    "Candidate context collected rows=12",
+    "LLM context truncated: trimmed=candidate_collected_context"
+  ],
+  "snapshot_source": "em_datacenter",
+  "source_errors": [],
+  "deep_analysis_requested": false,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "daily_enriched": false,
+  "daily_enrich_count": 0,
+  "risk_enabled": true,
+  "portfolio_diversity_enabled": true,
+  "portfolio_concentration_notes": [
+    "Portfolio concentration bucket=科技电子: penalized=2, codes=000063:通信设备(-5.0),603920:电子元件(-10.0)",
+    "Portfolio concentration bucket=周期资源: penalized=1, codes=002466:稀有金属(-5.0)",
+    "Portfolio hard cap bucket=科技电子: max=1, deferred=000063,603920",
+    "Portfolio hard cap bucket=周期资源: max=1, deferred=002466"
+  ],
+  "saved_path": "track/data/runs/1f1b1450b785-ai.json",
+  "created_at": "2026-11-27T10:35:14.754284+00:00",
+  "portfolio_topic_exposure": {
+    "周期资源": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "603799"
+      ],
+      "overconcentrated": false
+    },
+    "电子器件": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "000725"
+      ],
+      "overconcentrated": false
+    },
+    "科技电子": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600522"
+      ],
+      "overconcentrated": false
+    },
+    "通用设备": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "301029"
+      ],
+      "overconcentrated": false
+    },
+    "金融": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "300059"
+      ],
+      "overconcentrated": false
+    }
+  },
+  "overconcentrated_topics": [],
+  "replacement_candidates": [
+    {
+      "code": "688213",
+      "name": "思特威",
+      "bucket": "半导体",
+      "sector": "半导体",
+      "final_score": 69.9624
+    },
+    {
+      "code": "002202",
+      "name": "金风科技",
+      "bucket": "电源设备",
+      "sector": "电源设备",
+      "final_score": 68.8846
+    },
+    {
+      "code": "002226",
+      "name": "江南化工",
+      "bucket": "化学制品",
+      "sector": "化学制品",
+      "final_score": 67.8726
+    },
+    {
+      "code": "002407",
+      "name": "多氟多",
+      "bucket": "化学新材料",
+      "sector": "化学新材料",
+      "final_score": 67.6517
+    },
+    {
+      "code": "600118",
+      "name": "中国卫星",
+      "bucket": "航空航天",
+      "sector": "航空航天",
+      "final_score": 59.375
+    }
+  ],
+  "daily_source_counts": {},
+  "daily_quality_flag_counts": {}
+}

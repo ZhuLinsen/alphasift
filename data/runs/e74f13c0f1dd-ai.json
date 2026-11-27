@@ -1,0 +1,793 @@
+{
+  "strategy": "quality_value",
+  "market": "cn",
+  "strategy_version": "1.2",
+  "strategy_category": "value",
+  "snapshot_count": 5578,
+  "after_filter_count": 34,
+  "picks": [
+    {
+      "rank": 1,
+      "code": "600901",
+      "name": "江苏金租",
+      "final_score": 81.1602,
+      "screen_score": 75.60041642588234,
+      "llm_score": 80.0,
+      "ranking_reason": "发布重回报2.0方案，收盘创历史新高后良性回踩，反转因子领先。",
+      "risk_summary": "股价处历史高位区域，板块整体资金有小幅流出压力。",
+      "price": 7.79,
+      "change_pct": -1.27,
+      "amount": 403239021.0,
+      "total_mv": 45118639497.0,
+      "turnover_rate": 0.9,
+      "volume_ratio": 1.22,
+      "pe_ratio": 12.92639319,
+      "pb_ratio": 1.68706926,
+      "industry": "非银行金融",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 19.1131,
+      "signal_score": 80.6896,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "neutral",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -1.6414,
+      "range_20d_pct": 8.3447,
+      "volume_ratio_20d": 1.4376,
+      "body_pct": -0.7643,
+      "pullback_to_ma20_pct": 1.3729,
+      "consolidation_days_20d": 20,
+      "volatility_20d_pct": 20.4888,
+      "max_drawdown_20d_pct": -2.4204,
+      "atr_20_pct": 2.6508,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 78.2279,
+        "liquidity": 70.5882,
+        "momentum": 66.4198,
+        "reversal": 77.51,
+        "activity": 81.0482,
+        "stability": 77.8728,
+        "size": 94.1176,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.84,
+      "llm_sector": "非银行金融",
+      "llm_theme": "稳健金租与提质增效分红",
+      "llm_tags": [
+        "价值",
+        "防守",
+        "sector:非银行金融",
+        "theme:稳健金租与提质增效分红",
+        "style_fit:契合追求低波动与稳定回报偏好"
+      ],
+      "llm_catalysts": [
+        "三季报业绩说明会",
+        "提质增效方案实施"
+      ],
+      "llm_risks": [
+        "短期历史高位震荡"
+      ],
+      "llm_thesis": "零售租赁资产质量扎实，分红回报方案进一步强化中长期配置价值。",
+      "llm_style_fit": "契合追求低波动与稳定回报偏好",
+      "llm_watch_items": [
+        "资产不良率",
+        "息差变动"
+      ],
+      "llm_invalidators": [
+        "不良率大幅抬头",
+        "信贷资产发生恶性违约"
+      ],
+      "risk_score": 10.0,
+      "risk_level": "low",
+      "risk_penalty": 1.2,
+      "risk_flags": [
+        "短期历史高位震荡"
+      ],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality、controlled_reversal；风险: 短期历史高位震荡"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 5.0
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [
+            "短期历史高位震荡"
+          ],
+          "tags": [
+            "value_quality",
+            "controlled_reversal"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality",
+        "controlled_reversal"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 2,
+      "code": "600428",
+      "name": "中远海特",
+      "final_score": 80.7999,
+      "screen_score": 75.6665726435294,
+      "llm_score": 82.0,
+      "ranking_reason": "PE仅10倍，估值极具吸引力，特种航运景气度持续且股东会顺利召开。",
+      "risk_summary": "短期主力资金呈小幅净流出，外贸海运运价存周期波动。",
+      "price": 11.22,
+      "change_pct": 1.81,
+      "amount": 482500971.0,
+      "total_mv": 30786786832.0,
+      "turnover_rate": 1.59,
+      "volume_ratio": 1.37,
+      "pe_ratio": 10.03504697,
+      "pb_ratio": 1.69755746,
+      "industry": "港口航运",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 2.1858,
+      "signal_score": 72.765,
+      "ma_bullish": false,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -4.8346,
+      "range_20d_pct": 14.8148,
+      "volume_ratio_20d": 1.2193,
+      "body_pct": 2.1858,
+      "pullback_to_ma20_pct": 2.7237,
+      "consolidation_days_20d": 17,
+      "volatility_20d_pct": 37.6356,
+      "max_drawdown_20d_pct": -11.092,
+      "atr_20_pct": 3.5918,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 81.1103,
+        "liquidity": 82.3529,
+        "momentum": 69.981,
+        "reversal": 30.99,
+        "activity": 84.2129,
+        "stability": 75.3018,
+        "size": 73.5294,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.85,
+      "llm_sector": "港口航运",
+      "llm_theme": "特种航运景气与高股息",
+      "llm_tags": [
+        "价值",
+        "高股息",
+        "sector:港口航运",
+        "theme:特种航运景气与高股息",
+        "style_fit:高度契合稳健低估值策略"
+      ],
+      "llm_catalysts": [
+        "特种船运价维持高位",
+        "分红预期明确"
+      ],
+      "llm_risks": [
+        "主力资金短期流出"
+      ],
+      "llm_thesis": "特种船队供需紧平衡，低估值与稳健盈利提供坚实安全边际。",
+      "llm_style_fit": "高度契合稳健低估值策略",
+      "llm_watch_items": [
+        "BDI及特种船运价",
+        "主力资金转向"
+      ],
+      "llm_invalidators": [
+        "全球贸易需求急剧萎缩",
+        "运价断崖式下跌"
+      ],
+      "risk_score": 10.0,
+      "risk_level": "low",
+      "risk_penalty": 1.2,
+      "risk_flags": [
+        "主力资金短期流出"
+      ],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality；风险: 主力资金短期流出"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 3.8
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [
+            "主力资金短期流出"
+          ],
+          "tags": [
+            "value_quality"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 3,
+      "code": "600600",
+      "name": "青岛啤酒",
+      "final_score": 78.5195,
+      "screen_score": 74.1991178635294,
+      "llm_score": 76.0,
+      "ranking_reason": "稳定性因子达81.3居候选前列，均线上方多头排列，抗周期能力强。",
+      "risk_summary": "现饮消费场景恢复略缓，估值弹性较小。",
+      "price": 55.63,
+      "change_pct": 0.47,
+      "amount": 455514951.0,
+      "total_mv": 75890174581.0,
+      "turnover_rate": 1.16,
+      "volume_ratio": 0.92,
+      "pe_ratio": 17.37136779,
+      "pb_ratio": 2.33628559,
+      "industry": "饮料",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 9.0998,
+      "signal_score": 89.1849,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -0.3761,
+      "range_20d_pct": 10.8553,
+      "volume_ratio_20d": 1.0545,
+      "body_pct": 0.5967,
+      "pullback_to_ma20_pct": 4.1322,
+      "consolidation_days_20d": 19,
+      "volatility_20d_pct": 25.7255,
+      "max_drawdown_20d_pct": -3.6836,
+      "atr_20_pct": 2.4052,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 60.2794,
+        "liquidity": 79.4118,
+        "momentum": 74.8202,
+        "reversal": 54.89,
+        "activity": 80.623,
+        "stability": 81.2922,
+        "size": 97.0588,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.82,
+      "llm_sector": "饮料",
+      "llm_theme": "啤酒龙头高端化与防守稳定性",
+      "llm_tags": [
+        "防守",
+        "价值",
+        "sector:饮料",
+        "theme:啤酒龙头高端化与防守稳定性",
+        "style_fit:适合底仓配置型防守策略"
+      ],
+      "llm_catalysts": [
+        "高端产品销量超预期",
+        "成本端大麦价格回落"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "高端化产品结构稳步推进，现金流与资产质量优异。",
+      "llm_style_fit": "适合底仓配置型防守策略",
+      "llm_watch_items": [
+        "高端单品动销",
+        "大麦包材成本"
+      ],
+      "llm_invalidators": [
+        "消费需求超预期降速",
+        "渠道库存大幅积压"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 3.6
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 4,
+      "code": "000902",
+      "name": "新洋丰",
+      "final_score": 76.7563,
+      "screen_score": 68.92718015058823,
+      "llm_score": 77.0,
+      "ranking_reason": "价值因子得分高达84.6，PE仅11.6倍，股价盘整充分且放量蓄势。",
+      "risk_summary": "化肥原料单质肥价格波动可能影响复合肥毛利率节奏。",
+      "price": 14.99,
+      "change_pct": 0.94,
+      "amount": 212202705.24,
+      "total_mv": 18808476196.0,
+      "turnover_rate": 1.25,
+      "volume_ratio": 1.28,
+      "pe_ratio": 11.64290463,
+      "pb_ratio": 1.46723221,
+      "industry": "化肥农药",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 4.1696,
+      "signal_score": 75.4593,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "neutral",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -1.3816,
+      "range_20d_pct": 8.5714,
+      "volume_ratio_20d": 1.1844,
+      "body_pct": 0.9428,
+      "pullback_to_ma20_pct": 1.5376,
+      "consolidation_days_20d": 20,
+      "volatility_20d_pct": 28.1803,
+      "max_drawdown_20d_pct": -3.5216,
+      "atr_20_pct": 3.1087,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 84.5735,
+        "liquidity": 35.2941,
+        "momentum": 64.1016,
+        "reversal": 48.78,
+        "activity": 82.5805,
+        "stability": 78.2351,
+        "size": 47.0588,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.82,
+      "llm_sector": "化肥农药",
+      "llm_theme": "复合肥龙头低估值修复",
+      "llm_tags": [
+        "价值",
+        "防守",
+        "sector:化肥农药",
+        "theme:复合肥龙头低估值修复",
+        "style_fit:契合低估值安全边际筛选风格"
+      ],
+      "llm_catalysts": [
+        "冬储化肥采购启动",
+        "磷矿石价格上行"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "磷肥及复合肥一体化成本优势突出，估值处于历史偏底部区间。",
+      "llm_style_fit": "契合低估值安全边际筛选风格",
+      "llm_watch_items": [
+        "磷矿石与硫磺价格",
+        "复合肥开工率"
+      ],
+      "llm_invalidators": [
+        "农资需求大幅萎缩",
+        "环保限产导致停工"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: value_quality"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 4.6
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "value_quality"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "value_quality"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    },
+    {
+      "rank": 5,
+      "code": "600312",
+      "name": "平高电气",
+      "final_score": 75.6766,
+      "screen_score": 67.46104333176471,
+      "llm_score": 79.0,
+      "ranking_reason": "动量因子位列前茅，放量突破均线压制，基本面与技术面共振。",
+      "risk_summary": "估值相对传统电力装备偏中位，对订单交付节奏要求高。",
+      "price": 22.56,
+      "change_pct": 2.04,
+      "amount": 526927269.0,
+      "total_mv": 30612144731.0,
+      "turnover_rate": 1.75,
+      "volume_ratio": 1.0,
+      "pe_ratio": 22.36522993,
+      "pb_ratio": 2.56049626,
+      "industry": "输变电设备",
+      "concepts": "",
+      "industry_rank": null,
+      "industry_change_pct": null,
+      "industry_heat_score": null,
+      "concept_heat_score": null,
+      "board_heat_score": null,
+      "board_heat_latest_score": null,
+      "board_heat_trend_score": null,
+      "board_heat_persistence_score": null,
+      "board_heat_cooling_score": null,
+      "board_heat_observations": null,
+      "board_heat_state": "",
+      "board_heat_summary": "",
+      "change_60d": 14.104,
+      "signal_score": 90.9364,
+      "ma_bullish": true,
+      "price_above_ma20": true,
+      "macd_status": "bullish",
+      "rsi_status": "neutral",
+      "breakout_20d_pct": -0.9223,
+      "range_20d_pct": 11.782,
+      "volume_ratio_20d": 1.0429,
+      "body_pct": 2.0814,
+      "pullback_to_ma20_pct": 4.0255,
+      "consolidation_days_20d": 19,
+      "volatility_20d_pct": 31.7525,
+      "max_drawdown_20d_pct": -5.7904,
+      "atr_20_pct": 3.699,
+      "daily_quality_score": 100.0,
+      "daily_quality_flags": "",
+      "daily_source": "pack",
+      "factor_scores": {
+        "value": 38.1618,
+        "liquidity": 85.2941,
+        "momentum": 78.7497,
+        "reversal": 26.16,
+        "activity": 83.11,
+        "stability": 76.7924,
+        "size": 70.5882,
+        "theme_heat": 50.0,
+        "topic_alignment": 50.0
+      },
+      "llm_confidence": 0.83,
+      "llm_sector": "输变电设备",
+      "llm_theme": "电网特高压设备高景气",
+      "llm_tags": [
+        "趋势",
+        "流动性",
+        "sector:输变电设备",
+        "theme:电网特高压设备高景气",
+        "style_fit:适合顺周期与产业景气动量配置"
+      ],
+      "llm_catalysts": [
+        "电网重大招标落地",
+        "出海订单放量"
+      ],
+      "llm_risks": [],
+      "llm_thesis": "特高压GIS设备主导地位稳固，受益电网投资加速与出海拓展。",
+      "llm_style_fit": "适合顺周期与产业景气动量配置",
+      "llm_watch_items": [
+        "国网集招份额",
+        "海外交付进度"
+      ],
+      "llm_invalidators": [
+        "特高压招标延期",
+        "海外认证受阻"
+      ],
+      "risk_score": 0.0,
+      "risk_level": "low",
+      "risk_penalty": 0.0,
+      "risk_flags": [],
+      "excluded_by_risk": false,
+      "portfolio_penalty": 0.0,
+      "portfolio_flags": [],
+      "post_analysis_status": {
+        "scorecard": "completed"
+      },
+      "post_analysis_summaries": {
+        "scorecard": "本地后置评分: capital_confirmed"
+      },
+      "post_analysis_score_deltas": {
+        "scorecard": 3.6
+      },
+      "post_analysis_results": {
+        "scorecard": {
+          "risk_flags": [],
+          "tags": [
+            "capital_confirmed"
+          ]
+        }
+      },
+      "post_analysis_tags": [
+        "capital_confirmed"
+      ],
+      "dsa_context": {},
+      "dsa_news": [],
+      "dsa_analysis_summary": "",
+      "deep_analysis_status": "not_requested",
+      "deep_analysis_query_id": "",
+      "deep_analysis_summary": "",
+      "deep_analysis_error": "",
+      "deep_analysis_result": null,
+      "deep_analysis_signal_score": null,
+      "deep_analysis_sentiment_score": null,
+      "deep_analysis_operation_advice": "",
+      "deep_analysis_trend_prediction": "",
+      "deep_analysis_risk_flags": [],
+      "topic_alignment_status": "unassessed",
+      "topic_alignment_role": "none",
+      "topic_alignment_reason": "缺少题材或热点路线标签，无法评估对齐",
+      "matched_topics": [],
+      "unmatched_topics": []
+    }
+  ],
+  "run_id": "e74f13c0f1dd-ai",
+  "track": "ai",
+  "llm_ranked": true,
+  "llm_market_view": "大盘普涨但候选池走势分化，低估值稳健品种与电网高景气龙头具备良好配置性价比。",
+  "llm_selection_logic": "优先低估值高现金流防守标的，结合电网与特种运输产业景气度，严格回避高位过热与资金净流出过大个股。",
+  "llm_portfolio_risk": "组合偏向顺周期与公用事业/消费防守，若市场风格极度偏向微盘投机可能面临阶段性跑输风险。",
+  "llm_coverage": 1.0,
+  "llm_parse_errors": [],
+  "degradation": [
+    "Candidate context collected rows=12",
+    "LLM context truncated: trimmed=candidate_collected_context"
+  ],
+  "snapshot_source": "em_datacenter",
+  "source_errors": [],
+  "deep_analysis_requested": false,
+  "post_analyzers": [
+    "scorecard"
+  ],
+  "daily_enriched": true,
+  "daily_enrich_count": 135,
+  "risk_enabled": true,
+  "portfolio_diversity_enabled": true,
+  "portfolio_concentration_notes": [
+    "Portfolio concentration bucket=新能源: penalized=1, codes=000400:输变电设备(-4.5)",
+    "Portfolio concentration bucket=饮料: penalized=1, codes=000729:饮料(-4.5)",
+    "Portfolio hard cap bucket=新能源: max=1, deferred=000400",
+    "Portfolio hard cap bucket=饮料: max=1, deferred=000729"
+  ],
+  "saved_path": "track/data/runs/e74f13c0f1dd-ai.json",
+  "created_at": "2026-11-27T10:39:06.502349+00:00",
+  "portfolio_topic_exposure": {
+    "化肥农药": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "000902"
+      ],
+      "overconcentrated": false
+    },
+    "基建航运": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600428"
+      ],
+      "overconcentrated": false
+    },
+    "新能源": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600312"
+      ],
+      "overconcentrated": false
+    },
+    "金融": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600901"
+      ],
+      "overconcentrated": false
+    },
+    "饮料": {
+      "count": 1,
+      "share_pct": 20.0,
+      "codes": [
+        "600600"
+      ],
+      "overconcentrated": false
+    }
+  },
+  "overconcentrated_topics": [],
+  "replacement_candidates": [
+    {
+      "code": "600323",
+      "name": "瀚蓝环境",
+      "bucket": "公用事业",
+      "sector": "环保",
+      "final_score": 70.9776
+    },
+    {
+      "code": "000100",
+      "name": "TCL科技",
+      "bucket": "科技电子",
+      "sector": "电子元件",
+      "final_score": 70.945
+    },
+    {
+      "code": "600398",
+      "name": "海澜之家",
+      "bucket": "服装家纺",
+      "sector": "服装家纺",
+      "final_score": 70.7116
+    },
+    {
+      "code": "600710",
+      "name": "苏美达",
+      "bucket": "贸易",
+      "sector": "贸易",
+      "final_score": 68.2168
+    },
+    {
+      "code": "601216",
+      "name": "君正集团",
+      "bucket": "周期资源",
+      "sector": "化学原料",
+      "final_score": 67.5097
+    }
+  ],
+  "daily_source_counts": {
+    "pack": 135
+  },
+  "daily_quality_flag_counts": {}
+}
