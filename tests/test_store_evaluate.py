@@ -939,3 +939,83 @@ def test_list_saved_runs_scrubs_nonfinite_and_bool_limit(tmp_path):
     for bad_limit in (True, float("nan"), float("inf"), -2):
         assert list_saved_runs(data_dir=tmp_path, limit=bad_limit) == []  # type: ignore[arg-type]
     assert len(list_saved_runs(data_dir=tmp_path, limit=5)) == 1
+
+
+def test_evaluate_rejects_nonpositive_and_nonfinite_entry_and_snapshot_prices(tmp_path):
+    from dataclasses import asdict
+    import json
+
+    from alphasift.evaluate import _price_path_metrics, _summarize_price_path
+
+    run = ScreenResult(
+        strategy="dual_low",
+        market="cn",
+        run_id="run_bad_prices",
+        created_at="2026-10-08T18:30:00+08:00",
+        picks=[
+            Pick(rank=1, code="000001", name="nan_entry", final_score=90, screen_score=90, price=float("nan")),
+            Pick(rank=2, code="000002", name="inf_entry", final_score=85, screen_score=85, price=float("inf")),
+            Pick(rank=3, code="000003", name="zero_entry", final_score=80, screen_score=80, price=0.0),
+            Pick(rank=4, code="000004", name="neg_entry", final_score=75, screen_score=75, price=-5.0),
+            Pick(rank=5, code="000005", name="zero_snap", final_score=70, screen_score=70, price=10.0),
+            Pick(rank=6, code="000006", name="neg_snap", final_score=65, screen_score=65, price=10.0),
+            Pick(rank=7, code="000007", name="bool_snap", final_score=60, screen_score=60, price=10.0),
+            Pick(rank=8, code="600000", name="ok_pick", final_score=55, screen_score=55, price=10.0),
+        ],
+    )
+    snapshot = pd.DataFrame([
+        {"code": "000001", "price": 12.0},
+        {"code": "000002", "price": 12.0},
+        {"code": "000003", "price": 12.0},
+        {"code": "000004", "price": 12.0},
+        {"code": "000005", "price": 0.0},
+        {"code": "000006", "price": -3.0},
+        {"code": "000007", "price": True},
+        {"code": "600000", "price": 11.0},
+    ])
+
+    save_screen_result(run, data_dir=tmp_path)
+    cfg = Config(data_dir=tmp_path, evaluation_price_path_enabled=False)
+
+    for res in (
+        evaluate_result_against_snapshot(run, snapshot),
+        evaluate_saved_run("run_bad_prices", config=cfg, current_snapshot=snapshot),
+    ):
+        by_code = {p.code: p for p in res.picks}
+        for bad_code in ("000001", "000002", "000003", "000004"):
+            assert by_code[bad_code].status == "bad_entry_price"
+            assert by_code[bad_code].return_pct is None
+        for miss_code in ("000005", "000006", "000007"):
+            assert by_code[miss_code].status == "missing"
+            assert by_code[miss_code].return_pct is None
+        assert by_code["600000"].status == "ok"
+        assert by_code["600000"].return_pct == 10.0
+        assert res.average_return_pct == 10.0
+        assert res.median_return_pct == 10.0
+        assert res.win_rate == 100.0
+        json.dumps(asdict(res), allow_nan=False)
+
+    assert _price_path_metrics(
+        pd.DataFrame([{"date": "2026-10-09", "close": 11.0, "high": 11.5, "low": 10.5}]),
+        entry_price=float("nan"),
+        created_at="2026-10-08T18:30:00+08:00",
+        cost_bps=0.0,
+    )["path_status"] == "bad_entry_price"
+    assert _price_path_metrics(
+        pd.DataFrame([{"date": "2026-10-09", "close": 11.0, "high": 11.5, "low": 10.5}]),
+        entry_price=None,  # type: ignore[arg-type]
+        created_at="2026-10-08T18:30:00+08:00",
+        cost_bps=0.0,
+    )["path_status"] == "bad_entry_price"
+    path_summary = _summarize_price_path(
+        pd.DataFrame([
+            {"date": "2026-10-09", "close": 11.0, "high": float("inf"), "low": -2.0},
+            {"date": "2026-10-10", "close": 12.0, "high": 12.5, "low": 9.5},
+        ]),
+        entry_price=10.0,
+        cost_bps=float("nan"),
+    )
+    assert path_summary["path_status"] == "ok"
+    assert path_summary["path_end_return_pct"] == 20.0
+    assert path_summary["max_runup_pct"] == 25.0
+    assert path_summary["max_drawdown_pct"] == -5.0
