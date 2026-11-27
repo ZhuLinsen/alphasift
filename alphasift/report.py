@@ -119,10 +119,10 @@ def _run_summary(result: ScreenResult) -> dict[str, Any]:
         "strategy_version": result.strategy_version,
         "strategy_category": result.strategy_category,
         "created_at": result.created_at,
-        "snapshot_count": result.snapshot_count,
-        "after_filter_count": result.after_filter_count,
+        "snapshot_count": _non_neg_int(result.snapshot_count),
+        "after_filter_count": _non_neg_int(result.after_filter_count),
         "pick_count": len(result.picks),
-        "llm_ranked": result.llm_ranked,
+        "llm_ranked": bool(result.llm_ranked),
         "llm_coverage": finite_float(result.llm_coverage),
         "post_analyzers": list(result.post_analyzers),
         "saved_path": result.saved_path,
@@ -133,12 +133,14 @@ def _summary_cards(
     result: ScreenResult,
     evaluation: EvaluationResult | None,
 ) -> list[dict[str, Any]]:
+    snapshot_count = _non_neg_int(result.snapshot_count)
+    after_filter_count = _non_neg_int(result.after_filter_count)
     cards = [
-        _card("Snapshot Rows", result.snapshot_count, _count_status(result.snapshot_count)),
-        _card("After Filter", result.after_filter_count, _count_status(result.after_filter_count)),
+        _card("Snapshot Rows", snapshot_count, _count_status(snapshot_count)),
+        _card("After Filter", after_filter_count, _count_status(after_filter_count)),
         _card("Picks", len(result.picks), _count_status(len(result.picks))),
-        _card("LLM Ranked", result.llm_ranked, "ok" if result.llm_ranked else "skipped"),
-        _card("Daily Enriched", result.daily_enriched, "ok" if result.daily_enriched else "skipped"),
+        _card("LLM Ranked", bool(result.llm_ranked), "ok" if result.llm_ranked else "skipped"),
+        _card("Daily Enriched", bool(result.daily_enriched), "ok" if result.daily_enriched else "skipped"),
         _card(
             "Degradation",
             len(result.degradation),
@@ -161,8 +163,8 @@ def _source_health_summary(result: ScreenResult) -> dict[str, Any]:
         "snapshot_source": result.snapshot_source,
         "source_errors": list(result.source_errors),
         "degradation": list(result.degradation),
-        "daily_enriched": result.daily_enriched,
-        "daily_enrich_count": result.daily_enrich_count,
+        "daily_enriched": bool(result.daily_enriched),
+        "daily_enrich_count": _non_neg_int(result.daily_enrich_count),
         "post_analyzers": list(result.post_analyzers),
         "portfolio_concentration_notes": list(result.portfolio_concentration_notes),
         "portfolio_topic_exposure": dict(result.portfolio_topic_exposure),
@@ -172,12 +174,12 @@ def _source_health_summary(result: ScreenResult) -> dict[str, Any]:
 
 
 def _sorted_picks(picks: list[Pick]) -> list[Pick]:
-    return sorted(picks, key=lambda pick: (pick.rank or 999999, -(finite_float(pick.final_score) or 0.0)))
+    return sorted(picks, key=lambda pick: (_rank_sort_value(pick.rank), -(finite_float(pick.final_score) or 0.0)))
 
 
 def _pick_card(pick: Pick) -> dict[str, Any]:
     return {
-        "rank": pick.rank,
+        "rank": _opt_int(pick.rank),
         "code": pick.code,
         "name": pick.name,
         "final_score": _round_value(pick.final_score),
@@ -221,7 +223,7 @@ def _eval_pick_sort_key(item: PickEvaluation) -> tuple[bool, float, int]:
     return (
         ret is None,
         -(ret if ret is not None else -999999.0),
-        item.rank,
+        _rank_sort_value(item.rank),
     )
 
 
@@ -230,19 +232,22 @@ def _evaluation_summary(
     *,
     max_picks: int,
 ) -> dict[str, Any]:
+    horizon_days = _opt_int(evaluation.horizon_days)
+    if horizon_days is not None and horizon_days <= 0:
+        horizon_days = None
     return {
         "run_id": evaluation.run_id,
         "strategy": evaluation.strategy,
         "evaluated_at": evaluation.evaluated_at,
-        "elapsed_days": evaluation.elapsed_days,
+        "elapsed_days": _opt_int(evaluation.elapsed_days),
         "snapshot_source": evaluation.snapshot_source,
         "average_return_pct": _round_value(evaluation.average_return_pct),
         "median_return_pct": _round_value(evaluation.median_return_pct),
         "win_rate": _round_value(evaluation.win_rate),
         "entry_mode": evaluation.entry_mode,
-        "horizon_days": evaluation.horizon_days,
-        "pending_count": evaluation.pending_count,
-        "untradable_count": evaluation.untradable_count,
+        "horizon_days": horizon_days,
+        "pending_count": _non_neg_int(evaluation.pending_count),
+        "untradable_count": _non_neg_int(evaluation.untradable_count),
         "untradable_share_pct": _round_value(evaluation.untradable_share_pct),
         "missing_count": len(evaluation.missing_codes),
         "missing_codes": list(evaluation.missing_codes),
@@ -256,7 +261,7 @@ def _evaluation_summary(
 
 def _evaluation_pick_card(pick: PickEvaluation) -> dict[str, Any]:
     return {
-        "rank": pick.rank,
+        "rank": _opt_int(pick.rank),
         "code": pick.code,
         "name": pick.name,
         "entry_price": _round_value(pick.entry_price),
@@ -368,6 +373,20 @@ def _win_rate_status(value: float | None) -> str:
 def _round_value(value: Any) -> float | None:
     num = finite_float(value)
     return round(num, 4) if num is not None else None
+
+
+def _non_neg_int(value: object) -> int:
+    return max(safe_int(value, default=0), 0)
+
+
+def _opt_int(value: object) -> int | None:
+    num = finite_float(value)
+    return int(num) if num is not None else None
+
+
+def _rank_sort_value(value: object) -> int:
+    parsed = _opt_int(value)
+    return parsed if parsed is not None and parsed > 0 else 999999
 
 
 def _fmt(value: Any) -> str:

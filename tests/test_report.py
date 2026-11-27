@@ -237,3 +237,37 @@ def test_build_run_report_payload_and_markdown_scrubs_nonfinite_and_bool():
     assert "- average_return_pct: -" in markdown
     assert "nan" not in markdown.lower()
     assert "inf" not in markdown.lower()
+
+    # Non-finite/bool/string counts and ranks must sort deterministically and emit strict JSON
+    run.snapshot_count = float("nan")  # type: ignore[assignment]
+    run.after_filter_count = True  # type: ignore[assignment]
+    run.daily_enrich_count = float("inf")  # type: ignore[assignment]
+    run.picks.append(
+        Pick(
+            rank=float("nan"),  # type: ignore[arg-type]
+            code="600000",
+            name="浦发银行",
+            final_score=75.0,
+            screen_score=75.0,
+        )
+    )
+    run.picks[0].rank = "bad"  # type: ignore[assignment]
+    evaluation.elapsed_days = float("nan")  # type: ignore[arg-type]
+    evaluation.horizon_days = True  # type: ignore[arg-type]
+    evaluation.pending_count = float("inf")  # type: ignore[assignment]
+    evaluation.untradable_count = float("nan")  # type: ignore[assignment]
+    evaluation.picks.append(
+        PickEvaluation(rank="bad", code="600000", name="浦发银行", entry_price=10.0, return_pct=1.0)  # type: ignore[arg-type]
+    )
+    evaluation.picks[0].rank = float("nan")  # type: ignore[arg-type]
+
+    payload_bad = build_run_report_payload(run, evaluation=evaluation, max_picks=5)
+    assert payload_bad["run"]["snapshot_count"] == 0
+    assert payload_bad["run"]["after_filter_count"] == 0
+    assert payload_bad["source_health"]["daily_enrich_count"] == 0
+    assert payload_bad["top_picks"][0]["rank"] is None
+    assert payload_bad["evaluation"]["elapsed_days"] is None
+    assert payload_bad["evaluation"]["horizon_days"] is None
+    assert payload_bad["evaluation"]["pending_count"] == 0
+    assert payload_bad["evaluation"]["untradable_count"] == 0
+    json.dumps(payload_bad, allow_nan=False)
