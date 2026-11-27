@@ -1263,4 +1263,39 @@ def test_pattern_spec_and_mini_kline_reject_nonfinite_and_bool_params(tmp_path):
             load_pattern(p)
 
 
+def test_pattern_replay_handles_empty_and_corrupt_benchmark_rows(tmp_path):
+    from alphasift.jsonutil import dumps_strict_json
+
+    dates = _dates(75)
+    pack = _make_ohlcv_pack({"600000": _flat_bars(75)}, dates=dates)
+
+    # Empty benchmark DataFrame (live_benchmark=0 path from server.py) must not KeyError
+    empty_report = replay_patterns(pack, benchmark_df=pd.DataFrame(), horizons=(5,), warmup_days=60)
+    assert empty_report["universe_baseline"]["t5"]["sessions"] == 0
+    dumps_strict_json(empty_report)
+
+    # Bad dates, zero/negative/non-finite prices in CSV & direct benchmark_df must be filtered cleanly
+    csv_path = tmp_path / "bench.csv"
+    csv_path.write_text(
+        "date,open,close\n"
+        "not-a-date,3000,3010\n"
+        f"{dates[0]},0,3010\n"
+        f"{dates[1]},3000,-5\n"
+        f"{dates[2]},inf,3010\n"
+        f"{dates[3]},3005,3015\n",
+        encoding="utf-8",
+    )
+    loaded = load_cn_benchmark(benchmark_csv=csv_path)
+    assert list(loaded["date"]) == [dates[3]]
+
+    dirty_bench = pd.DataFrame({
+        "date": ["bad-date", *dates],
+        "open": [3000.0, 0.0, float("inf"), *[3000.0] * (len(dates) - 2)],
+        "close": [3010.0, -1.0, 3005.0, *[3005.0] * (len(dates) - 2)],
+    })
+    rep = replay_patterns(pack, benchmark_df=dirty_bench, horizons=(5,), warmup_days=60)
+    assert rep["universe_baseline"]["t5"]["sessions"] > 0
+    dumps_strict_json(rep)
+
+
 

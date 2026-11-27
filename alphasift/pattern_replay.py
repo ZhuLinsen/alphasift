@@ -83,13 +83,58 @@ def load_cn_benchmark(
                 break
         if df is None:
             raise RuntimeError("; ".join(errors))
+    if not {"date", "open", "close"}.issubset(df.columns):
+        raise RuntimeError("Benchmark history missing required columns: date, open, close")
+    parsed_dates = _parse_benchmark_dates(df["date"])
+    open_num = pd.to_numeric(df["open"], errors="coerce").replace([float("inf"), float("-inf")], float("nan"))
+    close_num = pd.to_numeric(df["close"], errors="coerce").replace([float("inf"), float("-inf")], float("nan"))
     out = pd.DataFrame({
-        "date": pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d"),
-        "open": pd.to_numeric(df["open"], errors="coerce"),
-        "close": pd.to_numeric(df["close"], errors="coerce"),
+        "date": parsed_dates.dt.strftime("%Y-%m-%d"),
+        "open": open_num,
+        "close": close_num,
     })
+    out = out[parsed_dates.notna() & (out["open"] > 0) & (out["close"] > 0)]
     out = out.dropna(subset=["date", "open", "close"]).drop_duplicates(subset=["date"], keep="last")
     return out.sort_values("date").reset_index(drop=True)
+
+
+def _parse_benchmark_dates(series: pd.Series) -> pd.Series:
+    try:
+        return pd.to_datetime(series, format="mixed", errors="coerce")
+    except (TypeError, ValueError):
+        return pd.to_datetime(series, errors="coerce")
+
+
+def _extract_benchmark_maps(
+    benchmark_df: pd.DataFrame | None,
+) -> tuple[dict[str, float], dict[str, float]]:
+    if benchmark_df is None or not isinstance(benchmark_df, pd.DataFrame) or benchmark_df.empty:
+        return {}, {}
+    if not {"date", "open", "close"}.issubset(benchmark_df.columns):
+        return {}, {}
+    parsed_dates = _parse_benchmark_dates(benchmark_df["date"])
+    bench_open: dict[str, float] = {}
+    bench_close: dict[str, float] = {}
+    for dt_val, raw_open, raw_close in zip(parsed_dates, benchmark_df["open"], benchmark_df["close"]):
+        if pd.isna(dt_val):
+            continue
+        day_str = dt_val.strftime("%Y-%m-%d")
+        op = finite_float(raw_open)
+        cl = finite_float(raw_close)
+        if op is not None and op > 0.0:
+            bench_open[day_str] = op
+        if cl is not None and cl > 0.0:
+            bench_close[day_str] = cl
+    return bench_open, bench_close
+
+
+def _benchmark_return_pct(b_open: object, b_close: object) -> float | None:
+    op = finite_float(b_open)
+    cl = finite_float(b_close)
+    if op is None or cl is None or op <= 0.0 or cl <= 0.0:
+        return None
+    ret = (cl / op - 1.0) * 100.0
+    return ret if math.isfinite(ret) else None
 
 
 def _mean_or_none(vals: Sequence[object]) -> float | None:
@@ -909,9 +954,9 @@ def _compute_universe_baseline_with_daily(
                 continue
             bo = bench_open.get(dates[t_in])
             bc = bench_close.get(dates[t_out])
-            if bo is None or bc is None or bo <= 0:
+            bench_ret = _benchmark_return_pct(bo, bc)
+            if bench_ret is None:
                 continue
-            bench_ret = (bc / bo - 1.0) * 100.0
 
             tradable = (
                 active[t]
@@ -1039,8 +1084,7 @@ def replay_patterns(
     if benchmark_df is None:
         benchmark_df = load_cn_benchmark(lookback_days=max(len(daily_pack.dates) + 40, 320))
 
-    bench_open = dict(zip(benchmark_df["date"].astype(str), benchmark_df["open"].astype(float)))
-    bench_close = dict(zip(benchmark_df["date"].astype(str), benchmark_df["close"].astype(float)))
+    bench_open, bench_close = _extract_benchmark_maps(benchmark_df)
 
     limit_masks = compute_limit_masks(daily_pack)
     regime_series = compute_market_regime_series(daily_pack, masks=limit_masks)
@@ -1175,14 +1219,8 @@ def replay_patterns(
                     gross_excess_ret = None
                     excess_ret = None
                     net_excess_ret = None
-                    if (
-                        b_open is not None
-                        and b_close is not None
-                        and math.isfinite(b_open)
-                        and math.isfinite(b_close)
-                        and b_open > 0
-                    ):
-                        bench_ret = (b_close / b_open - 1.0) * 100.0
+                    bench_ret = _benchmark_return_pct(b_open, b_close)
+                    if bench_ret is not None:
                         gross_excess_ret = gross_raw_ret - bench_ret
                         excess_ret = raw_ret - bench_ret
                         net_excess_ret = gross_excess_ret - gate_cost_bps / 100.0
