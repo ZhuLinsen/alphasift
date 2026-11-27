@@ -1,5 +1,5 @@
 {
- "evaluated_at": "2026-11-27T10:40:10+00:00",
+ "evaluated_at": "2026-11-27T13:45:15+00:00",
  "entry_mode_switch_date": "2026-11-21",
  "windows": [
   5,
@@ -8,7 +8,7 @@
  ],
  "runs": {
   "28be39e77643": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -113,7 +113,7 @@
    }
   },
   "c63a1b4153ec": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -218,7 +218,7 @@
    }
   },
   "3d741fc4cf90": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -323,7 +323,7 @@
    }
   },
   "04b49195e690": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -428,7 +428,7 @@
    }
   },
   "cd868266db57": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -533,7 +533,7 @@
    }
   },
   "b1e65d099af5": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -638,7 +638,7 @@
    }
   },
   "0573822768fe": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -743,7 +743,7 @@
    }
   },
   "bbb47cbbdda1": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -848,7 +848,7 @@
    }
   },
   "130036dc6adb": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -953,7 +953,7 @@
    }
   },
   "3f625e8988ac": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -998,7 +998,7 @@
    }
   },
   "09c66dcc0293": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1103,7 +1103,7 @@
    }
   },
   "ab6f795eb02c": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1208,7 +1208,7 @@
    }
   },
   "6f853e39a776": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1313,7 +1313,7 @@
    }
   },
   "31891fcb2a51": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1418,7 +1418,7 @@
    }
   },
   "b80426ffb848": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1523,7 +1523,7 @@
    }
   },
   "7284e8e0148c": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1628,7 +1628,7 @@
    }
   },
   "3a753b288834": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1733,7 +1733,7 @@
    }
   },
   "8ecf7868e140": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1838,7 +1838,7 @@
    }
   },
   "6588f474e775": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -1943,7 +1943,7 @@
    }
   },
   "6a1ce78f9ccc": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2048,7 +2048,7 @@
    }
   },
   "dc3ba817041a": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2153,7 +2153,7 @@
    }
   },
   "94c67da05580": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2258,7 +2258,7 @@
    }
   },
   "ce1c1f9fcceb": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2363,7 +2363,7 @@
    }
   },
   "7b6eeb4c4615": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2468,7 +2468,7 @@
    }
   },
   "4c020626b42c": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2573,7 +2573,7 @@
    }
   },
   "e542dc2b3e64": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2663,7 +2663,7 @@
    }
   },
   "15e1991f7c13": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2753,7 +2753,7 @@
    }
   },
   "fb85cfe13d06": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2858,7 +2858,7 @@
    }
   },
   "aefef30419b1": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -2898,32 +2898,32 @@
      "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": -3.4664,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "5401.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -2.7817,
+       "excess_return_pct": 0.6847
       },
       "9104.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.297,
+       "excess_return_pct": 3.1694
       },
       "9501.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -4.8674,
+       "excess_return_pct": -1.401
       },
       "5021.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -3.1339,
+       "excess_return_pct": 0.3325
       },
       "5713.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -16.6554,
+       "excess_return_pct": -13.189
       }
      }
     },
@@ -2963,7 +2963,7 @@
    }
   },
   "2b37fa27278c": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3068,7 +3068,7 @@
    }
   },
   "31530f1b14ba": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3173,7 +3173,7 @@
    }
   },
   "1c647076df21": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3213,32 +3213,32 @@
      "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": 1.2168,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "PFC.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -2.0977,
+       "excess_return_pct": -3.3145
       },
       "BANKBARODA.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.4527,
+       "excess_return_pct": -1.6695
       },
       "ONGC.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.0846,
+       "excess_return_pct": -1.3014
       },
       "BPCL.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.947,
+       "excess_return_pct": -2.1638
       },
       "HINDALCO.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -4.2531,
+       "excess_return_pct": -5.4699
       }
      }
     },
@@ -3278,7 +3278,7 @@
    }
   },
   "7da1a5d66a44": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3383,7 +3383,7 @@
    }
   },
   "5dccc124ea86": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3488,7 +3488,7 @@
    }
   },
   "816bcd05aa4f": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3593,7 +3593,7 @@
    }
   },
   "747a7b7c8473": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3698,7 +3698,7 @@
    }
   },
   "f779d428dd13": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3803,7 +3803,7 @@
    }
   },
   "d64d1a49c711": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -3908,7 +3908,7 @@
    }
   },
   "0f4b9945faf3": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4013,7 +4013,7 @@
    }
   },
   "1c46a4373312": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4118,7 +4118,7 @@
    }
   },
   "0e9d1bece9f9": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4223,7 +4223,7 @@
    }
   },
   "0d0e8a94ccb3": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4328,7 +4328,7 @@
    }
   },
   "989cbd17f9a6": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4433,7 +4433,7 @@
    }
   },
   "4ad4740fa2d1": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4508,7 +4508,7 @@
    }
   },
   "be40b2a91b44": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4548,32 +4548,32 @@
      "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": -3.9887,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "0390.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -8.3893,
+       "excess_return_pct": -4.4006
       },
       "1339.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.9921,
+       "excess_return_pct": 2.9966
       },
       "0998.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -4.5482,
+       "excess_return_pct": -0.5595
       },
       "0267.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -5.6738,
+       "excess_return_pct": -1.6851
       },
       "0762.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -2.3127,
+       "excess_return_pct": 1.676
       }
      }
     },
@@ -4613,7 +4613,7 @@
    }
   },
   "6578aebb99f0": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4718,7 +4718,7 @@
    }
   },
   "b33578996407": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4758,32 +4758,32 @@
      "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": -7.0853,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "001450.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -5.5249,
+       "excess_return_pct": 1.5604
       },
       "071050.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 13.0435,
+       "excess_return_pct": 20.1288
       },
       "000270.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 0.1057,
+       "excess_return_pct": 7.191
       },
       "002380.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -6.158,
+       "excess_return_pct": 0.9273
       },
       "078930.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -16.6667,
+       "excess_return_pct": -9.5814
       }
      }
     },
@@ -4823,7 +4823,7 @@
    }
   },
   "53b1b0d946bf": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -4863,32 +4863,32 @@
      "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": -9.9989,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "2615.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -7.907,
+       "excess_return_pct": 2.0919
       },
       "1605.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -12.9323,
+       "excess_return_pct": -2.9334
       },
       "5871.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -3.6715,
+       "excess_return_pct": 6.3274
       },
       "1102.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -7.1329,
+       "excess_return_pct": 2.866
       },
       "2603.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -3.301,
+       "excess_return_pct": 6.6979
       }
      }
     },
@@ -4928,7 +4928,7 @@
    }
   },
   "9921aba10081": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5033,7 +5033,7 @@
    }
   },
   "cae43eb6e6a1": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5138,7 +5138,7 @@
    }
   },
   "a6da12b31a6a": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5243,7 +5243,7 @@
    }
   },
   "40cbcae026c9": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5348,7 +5348,7 @@
    }
   },
   "84570506a887": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5453,7 +5453,7 @@
    }
   },
   "0dc71660d5c5": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5558,7 +5558,7 @@
    }
   },
   "1c5232db4154": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5663,7 +5663,7 @@
    }
   },
   "febf5fb8fdb5": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5768,7 +5768,7 @@
    }
   },
   "416dc307ab65": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5873,7 +5873,7 @@
    }
   },
   "31c9bce9cade": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -5978,7 +5978,7 @@
    }
   },
   "235d499a8dad": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6083,7 +6083,7 @@
    }
   },
   "c09ca1e09eef": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6188,7 +6188,7 @@
    }
   },
   "c3a8746d9f1a": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6293,7 +6293,7 @@
    }
   },
   "7b4229065144": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6398,7 +6398,7 @@
    }
   },
   "852c099b8b30": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6503,7 +6503,7 @@
    }
   },
   "729692c11a10": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6608,7 +6608,7 @@
    }
   },
   "ae6f35d280d7": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6713,7 +6713,7 @@
    }
   },
   "abfd266d249e": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6818,7 +6818,7 @@
    }
   },
   "77d92e7d72d2": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -6923,7 +6923,7 @@
    }
   },
   "100906b58dd7": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7028,7 +7028,7 @@
    }
   },
   "03bcaf2b3a19": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7133,7 +7133,7 @@
    }
   },
   "84a23329a79b": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7238,7 +7238,7 @@
    }
   },
   "40d821fa11c7": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7343,7 +7343,7 @@
    }
   },
   "02e6907c754f": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7448,7 +7448,7 @@
    }
   },
   "28c868a2410f": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7553,7 +7553,7 @@
    }
   },
   "995b2ba72331": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7658,7 +7658,7 @@
    }
   },
   "e39dd43c6abb": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7763,7 +7763,7 @@
    }
   },
   "5720b6cc16be": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7868,7 +7868,7 @@
    }
   },
   "3ed225d4d190": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -7973,7 +7973,7 @@
    }
   },
   "920d4ed584e7": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8078,7 +8078,7 @@
    }
   },
   "9da52e088202": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8183,7 +8183,7 @@
    }
   },
   "83832ae6d420": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8288,7 +8288,7 @@
    }
   },
   "84a4c72b0882": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8393,7 +8393,7 @@
    }
   },
   "543ded1a65b6": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8498,7 +8498,7 @@
    }
   },
   "6c1a6d92ffc9": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8603,7 +8603,7 @@
    }
   },
   "c3a8bec3b6c1": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8708,7 +8708,7 @@
    }
   },
   "d9a3978492b8": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8813,7 +8813,7 @@
    }
   },
   "a181afdf0746": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -8918,7 +8918,7 @@
    }
   },
   "aaf95f0b8f06": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -9023,7 +9023,7 @@
    }
   },
   "10240da9fca5": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -9128,7 +9128,7 @@
    }
   },
   "edd2ed824a01": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -9233,7 +9233,7 @@
    }
   },
   "586345ab6ea8": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -9338,7 +9338,7 @@
    }
   },
   "4fedf1ca647d": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -9443,7 +9443,7 @@
    }
   },
   "b8f2c6e47070": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -9548,7 +9548,7 @@
    }
   },
   "1753a3937a4c": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -9653,7 +9653,7 @@
    }
   },
   "02ea01c70c5b": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -9758,7 +9758,7 @@
    }
   },
   "111a31f77a93": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -9833,7 +9833,7 @@
    }
   },
   "bb77611e2849": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -9938,7 +9938,7 @@
    }
   },
   "b9072c1bc829": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10043,7 +10043,7 @@
    }
   },
   "a6ac35eca0b1": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10148,7 +10148,7 @@
    }
   },
   "8a994391eb07": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10253,7 +10253,7 @@
    }
   },
   "81ea991c0ce4": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10358,7 +10358,7 @@
    }
   },
   "96281996813e": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10463,7 +10463,7 @@
    }
   },
   "8cd58ac4aead": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10568,7 +10568,7 @@
    }
   },
   "4e309602d1b6": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10673,7 +10673,7 @@
    }
   },
   "effe118f4bc5": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10778,7 +10778,7 @@
    }
   },
   "bfd390c989d8": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10883,7 +10883,7 @@
    }
   },
   "28123553a358": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -10988,7 +10988,7 @@
    }
   },
   "9f444bae7426": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11093,7 +11093,7 @@
    }
   },
   "06877eea7018": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11198,7 +11198,7 @@
    }
   },
   "d819a3788d3d": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11303,7 +11303,7 @@
    }
   },
   "36035f3f862d": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11408,7 +11408,7 @@
    }
   },
   "6f94360067bd": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11513,7 +11513,7 @@
    }
   },
   "6cf0641cad4d": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11603,7 +11603,7 @@
    }
   },
   "398505fe1826": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11708,39 +11708,39 @@
    }
   },
   "beb6e1708b12": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "Nikkei 225",
      "benchmark_return_pct": -1.2333,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "9501.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 3.7542,
+       "excess_return_pct": 4.9875
       },
       "1605.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 0.3274,
+       "excess_return_pct": 1.5607
       },
       "9104.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.9592,
+       "excess_return_pct": 4.1925
       },
       "7261.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -2.6966,
+       "excess_return_pct": -1.4633
       },
       "5401.T": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.3781,
+       "excess_return_pct": 0.8552
       }
      }
     },
@@ -11813,7 +11813,7 @@
    }
   },
   "6ad3a299bbe4": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -11918,7 +11918,7 @@
    }
   },
   "5d1aeb4eaae8": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12023,39 +12023,39 @@
    }
   },
   "0bd0fd374327": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "Nifty 50",
      "benchmark_return_pct": 0.3641,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "ONGC.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -0.0935,
+       "excess_return_pct": -0.4576
       },
       "PFC.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.146,
+       "excess_return_pct": -1.5101
       },
       "CANBK.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -3.6168,
+       "excess_return_pct": -3.9809
       },
       "HINDALCO.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.4286,
+       "excess_return_pct": 1.0645
       },
       "OIL.NS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 0.5918,
+       "excess_return_pct": 0.2277
       }
      }
     },
@@ -12128,7 +12128,7 @@
    }
   },
   "40621daaf4ec": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12233,7 +12233,7 @@
    }
   },
   "0d1365962ccc": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12338,7 +12338,7 @@
    }
   },
   "903f276257ea": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12443,7 +12443,7 @@
    }
   },
   "94878e573030": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12548,7 +12548,7 @@
    }
   },
   "abe4d5b9ce5a": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12653,7 +12653,7 @@
    }
   },
   "2c6037453680": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12758,7 +12758,7 @@
    }
   },
   "1dc905bbd73b": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12863,7 +12863,7 @@
    }
   },
   "a86b9166d90c": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -12968,7 +12968,7 @@
    }
   },
   "6a11bbd1a8a4": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13073,7 +13073,7 @@
    }
   },
   "71432366dbdd": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13178,7 +13178,7 @@
    }
   },
   "25f961fa86dc": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13283,7 +13283,7 @@
    }
   },
   "34d37cfe27c6": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13328,39 +13328,39 @@
    }
   },
   "e347268087b6": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "Hang Seng",
      "benchmark_return_pct": 1.2671,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "0267.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -2.2857,
+       "excess_return_pct": -3.5528
       },
       "0001.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -1.4582,
+       "excess_return_pct": -2.7253
       },
       "1339.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 0.3015,
+       "excess_return_pct": -0.9656
       },
       "1398.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": -3.2974,
+       "excess_return_pct": -4.5645
       },
       "0358.HK": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 4.3833,
+       "excess_return_pct": 3.1162
       }
      }
     },
@@ -13433,7 +13433,7 @@
    }
   },
   "4cfbc2370262": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13538,39 +13538,39 @@
    }
   },
   "5d5a100be65f": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "KOSPI",
      "benchmark_return_pct": 0.9388,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "015760.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.3483,
+       "excess_return_pct": 1.4095
       },
       "071050.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 18.0842,
+       "excess_return_pct": 17.1454
       },
       "000270.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 7.3696,
+       "excess_return_pct": 6.4308
       },
       "001450.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.7027,
+       "excess_return_pct": 1.7639
       },
       "002380.KS": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.8895,
+       "excess_return_pct": 0.9507
       }
      }
     },
@@ -13643,39 +13643,39 @@
    }
   },
   "f98603d79f74": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
      "entry_mode": "close",
      "benchmark": "TAIEX",
      "benchmark_return_pct": 9.0882,
-     "pending": 5,
+     "pending": 0,
      "picks": {
       "9904.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 3.719,
+       "excess_return_pct": -5.3692
       },
       "3702.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.5484,
+       "excess_return_pct": -7.5398
       },
       "1102.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 2.6275,
+       "excess_return_pct": -6.4607
       },
       "2915.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 1.1881,
+       "excess_return_pct": -7.9001
       },
       "2451.TW": {
-       "status": "pending",
-       "return_pct": null,
-       "excess_return_pct": null
+       "status": "ok",
+       "return_pct": 13.2701,
+       "excess_return_pct": 4.1819
       }
      }
     },
@@ -13748,7 +13748,7 @@
    }
   },
   "ddc8088385f0": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13853,7 +13853,7 @@
    }
   },
   "fd0f0b1106ce": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -13958,7 +13958,7 @@
    }
   },
   "d9edc25a4bc7": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14063,7 +14063,7 @@
    }
   },
   "156a913c1ae4": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14204,7 +14204,7 @@
    }
   },
   "6613616efd6a": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14345,7 +14345,7 @@
    }
   },
   "8569fb33f270": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14486,7 +14486,7 @@
    }
   },
   "b567a26340f8": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14627,7 +14627,7 @@
    }
   },
   "924ce637df79": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14768,7 +14768,7 @@
    }
   },
   "f4fb8c477098": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -14909,7 +14909,7 @@
    }
   },
   "beb302e28be2": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15050,7 +15050,7 @@
    }
   },
   "cc6d2a4b4c0d": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15191,7 +15191,7 @@
    }
   },
   "ce96177ab2fd": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15365,7 +15365,7 @@
    }
   },
   "42a28f2fab6b": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15506,7 +15506,7 @@
    }
   },
   "e58392a02827": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15547,7 +15547,7 @@
        "status": "pending",
        "return_pct": null,
        "excess_return_pct": null,
-       "entry_open": 252500.0,
+       "entry_open": 250062.7437,
        "entry_date": "2026-11-24"
       }
      },
@@ -15592,7 +15592,7 @@
        "status": "pending",
        "return_pct": null,
        "excess_return_pct": null,
-       "entry_open": 252500.0,
+       "entry_open": 250062.7437,
        "entry_date": "2026-11-24"
       }
      },
@@ -15637,7 +15637,7 @@
        "status": "pending",
        "return_pct": null,
        "excess_return_pct": null,
-       "entry_open": 252500.0,
+       "entry_open": 250062.7437,
        "entry_date": "2026-11-24"
       }
      },
@@ -15647,7 +15647,7 @@
    }
   },
   "2ec3b9064662": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15788,7 +15788,7 @@
    }
   },
   "620cc83c5388": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -15929,7 +15929,7 @@
    }
   },
   "91b40e722ac3-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16070,7 +16070,7 @@
    }
   },
   "6ba53358a405-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16211,7 +16211,7 @@
    }
   },
   "095041bc869c-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16352,7 +16352,7 @@
    }
   },
   "66eff3d86d52-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16493,7 +16493,7 @@
    }
   },
   "c11df143d52b": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16634,7 +16634,7 @@
    }
   },
   "d47c9ef26663": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16775,7 +16775,7 @@
    }
   },
   "948994dc7901": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -16916,7 +16916,7 @@
    }
   },
   "2582051054e0": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17057,7 +17057,7 @@
    }
   },
   "13064d6c5680": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17198,7 +17198,7 @@
    }
   },
   "86cb29c21dd9": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17339,7 +17339,7 @@
    }
   },
   "ec7aedf6a2c4": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17480,7 +17480,7 @@
    }
   },
   "236c711f2b82": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17621,7 +17621,7 @@
    }
   },
   "a63ea3f085a3": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17762,7 +17762,7 @@
    }
   },
   "3e1727fd25ee": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -17903,7 +17903,7 @@
    }
   },
   "5a9582023d2c": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18077,7 +18077,7 @@
    }
   },
   "4614730a0fd2-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18218,7 +18218,7 @@
    }
   },
   "83b4c487a532-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18359,7 +18359,7 @@
    }
   },
   "b3bbfa484255-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18500,7 +18500,7 @@
    }
   },
   "f830727f326e-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18641,7 +18641,7 @@
    }
   },
   "144207f07026-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18782,7 +18782,7 @@
    }
   },
   "b9552882ae4e-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -18923,7 +18923,7 @@
    }
   },
   "dc00ca356c47-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19064,7 +19064,7 @@
    }
   },
   "32d2d83a2aa9-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19205,7 +19205,7 @@
    }
   },
   "c6459845708d-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19346,7 +19346,7 @@
    }
   },
   "f6b388583e82": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19487,7 +19487,7 @@
    }
   },
   "5b275de35104": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19628,7 +19628,7 @@
    }
   },
   "b3988bbe95ba": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19769,7 +19769,7 @@
    }
   },
   "1bfc5266997c": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -19910,7 +19910,7 @@
    }
   },
   "56d3dfc9e86b": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -20051,7 +20051,7 @@
    }
   },
   "e8960dfe5dfe": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -20192,7 +20192,7 @@
    }
   },
   "bdca25c1ee0f": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -20333,7 +20333,7 @@
    }
   },
   "70603c533a27": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -20474,7 +20474,7 @@
    }
   },
   "26bde993ddf2": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -20615,7 +20615,7 @@
    }
   },
   "fe679b85af02": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -20756,7 +20756,7 @@
    }
   },
   "48f49efa68a4": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -20897,7 +20897,7 @@
    }
   },
   "2c38e7461d30": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -21038,7 +21038,7 @@
    }
   },
   "76ed91670a2f": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -21179,7 +21179,7 @@
    }
   },
   "5395b0fcc727": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -21320,7 +21320,7 @@
    }
   },
   "219f1ac01c11": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -21494,7 +21494,7 @@
    }
   },
   "a50b40606ed7-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -21635,7 +21635,7 @@
    }
   },
   "a3b5ea269a7b-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -21776,7 +21776,7 @@
    }
   },
   "4be4ff5c5e55-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -21917,7 +21917,7 @@
    }
   },
   "d15d64037021-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -22058,7 +22058,7 @@
    }
   },
   "9174dc6aa9da-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -22199,7 +22199,7 @@
    }
   },
   "6c6464043ff4-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -22340,7 +22340,7 @@
    }
   },
   "640caf6f41de-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -22481,7 +22481,7 @@
    }
   },
   "ca79aaf4bee0-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -22622,7 +22622,7 @@
    }
   },
   "99ca5743279a-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -22763,7 +22763,7 @@
    }
   },
   "8adad2fb9e9b": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -22904,7 +22904,7 @@
    }
   },
   "6bb7ed39b298": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23045,7 +23045,7 @@
    }
   },
   "896e6d5c5915": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23186,7 +23186,7 @@
    }
   },
   "a801d790a875": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23327,7 +23327,7 @@
    }
   },
   "e870226cce6e": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23468,7 +23468,7 @@
    }
   },
   "ed5aa8fc9808": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23579,7 +23579,7 @@
    }
   },
   "1aefc4b99d39": {
-   "evaluated_at": "2026-11-27T03:47:51+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23690,7 +23690,7 @@
    }
   },
   "9959c3bad344": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23831,7 +23831,7 @@
    }
   },
   "0ea91d37d68e": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -23972,7 +23972,7 @@
    }
   },
   "0db4bdf29bd2": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -24113,7 +24113,7 @@
    }
   },
   "c1b574d7dbb4": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -24254,7 +24254,7 @@
    }
   },
   "fe1f6e573d43": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -24395,7 +24395,7 @@
    }
   },
   "2bb26dfa0b71": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -24536,7 +24536,7 @@
    }
   },
   "dfff786c6042": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -24677,7 +24677,7 @@
    }
   },
   "4ae22b3704b0": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -24818,7 +24818,7 @@
    }
   },
   "3ee11af14aa9": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -24992,7 +24992,7 @@
    }
   },
   "d5e286c9a61d-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -25133,7 +25133,7 @@
    }
   },
   "2d4814b7bf16-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -25274,7 +25274,7 @@
    }
   },
   "ba2130451d42-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -25415,7 +25415,7 @@
    }
   },
   "70fdea9d03ed-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -25556,7 +25556,7 @@
    }
   },
   "ea7c83b47c5a-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -25697,7 +25697,7 @@
    }
   },
   "c5b166b4849e-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -25838,7 +25838,7 @@
    }
   },
   "57a8c21e72b4-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -25979,7 +25979,7 @@
    }
   },
   "a58780fc79ff-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -26120,7 +26120,7 @@
    }
   },
   "b0a8044f0578-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -26261,7 +26261,7 @@
    }
   },
   "025bd0cede19": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -26273,22 +26273,30 @@
       "3908.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 14.32,
+       "entry_date": "2026-11-27"
       },
       "0390.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 2.625,
+       "entry_date": "2026-11-27"
       },
       "1339.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.85,
+       "entry_date": "2026-11-27"
       },
       "0267.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.91,
+       "entry_date": "2026-11-27"
       },
       "1109.HK": {
        "status": "pending",
@@ -26308,22 +26316,30 @@
       "3908.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 14.32,
+       "entry_date": "2026-11-27"
       },
       "0390.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 2.625,
+       "entry_date": "2026-11-27"
       },
       "1339.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.85,
+       "entry_date": "2026-11-27"
       },
       "0267.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.91,
+       "entry_date": "2026-11-27"
       },
       "1109.HK": {
        "status": "pending",
@@ -26343,22 +26359,30 @@
       "3908.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 14.32,
+       "entry_date": "2026-11-27"
       },
       "0390.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 2.625,
+       "entry_date": "2026-11-27"
       },
       "1339.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 4.85,
+       "entry_date": "2026-11-27"
       },
       "0267.HK": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 11.91,
+       "entry_date": "2026-11-27"
       },
       "1109.HK": {
        "status": "pending",
@@ -26372,7 +26396,7 @@
    }
   },
   "7a0d2833d686": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -26384,27 +26408,37 @@
       "7261.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 1077.5,
+       "entry_date": "2026-11-27"
       },
       "5401.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 683.0,
+       "entry_date": "2026-11-27"
       },
       "1605.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 3339.0,
+       "entry_date": "2026-11-27"
       },
       "9501.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 430.0,
+       "entry_date": "2026-11-27"
       },
       "543A.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 251.0,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26419,27 +26453,37 @@
       "7261.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 1077.5,
+       "entry_date": "2026-11-27"
       },
       "5401.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 683.0,
+       "entry_date": "2026-11-27"
       },
       "1605.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 3339.0,
+       "entry_date": "2026-11-27"
       },
       "9501.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 430.0,
+       "entry_date": "2026-11-27"
       },
       "543A.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 251.0,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26454,27 +26498,37 @@
       "7261.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 1077.5,
+       "entry_date": "2026-11-27"
       },
       "5401.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 683.0,
+       "entry_date": "2026-11-27"
       },
       "1605.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 3339.0,
+       "entry_date": "2026-11-27"
       },
       "9501.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 430.0,
+       "entry_date": "2026-11-27"
       },
       "543A.T": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 251.0,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26483,7 +26537,7 @@
    }
   },
   "3e85987eb9a1": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -26495,27 +26549,37 @@
       "034730.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 430500.0,
+       "entry_date": "2026-11-27"
       },
       "000270.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 92900.0,
+       "entry_date": "2026-11-27"
       },
       "078930.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 69200.0,
+       "entry_date": "2026-11-27"
       },
       "001450.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 34000.0,
+       "entry_date": "2026-11-27"
       },
       "267250.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 114700.0,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26530,27 +26594,37 @@
       "034730.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 430500.0,
+       "entry_date": "2026-11-27"
       },
       "000270.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 92900.0,
+       "entry_date": "2026-11-27"
       },
       "078930.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 69200.0,
+       "entry_date": "2026-11-27"
       },
       "001450.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 34000.0,
+       "entry_date": "2026-11-27"
       },
       "267250.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 114700.0,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26565,27 +26639,37 @@
       "034730.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 430500.0,
+       "entry_date": "2026-11-27"
       },
       "000270.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 92900.0,
+       "entry_date": "2026-11-27"
       },
       "078930.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 69200.0,
+       "entry_date": "2026-11-27"
       },
       "001450.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 34000.0,
+       "entry_date": "2026-11-27"
       },
       "267250.KS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 114700.0,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26594,7 +26678,7 @@
    }
   },
   "923cf0d825cf": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -26606,27 +26690,37 @@
       "2603.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 253.5,
+       "entry_date": "2026-11-27"
       },
       "2615.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 101.0,
+       "entry_date": "2026-11-27"
       },
       "9904.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 24.8,
+       "entry_date": "2026-11-27"
       },
       "5871.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 101.5,
+       "entry_date": "2026-11-27"
       },
       "1605.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 29.3,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26641,27 +26735,37 @@
       "2603.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 253.5,
+       "entry_date": "2026-11-27"
       },
       "2615.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 101.0,
+       "entry_date": "2026-11-27"
       },
       "9904.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 24.8,
+       "entry_date": "2026-11-27"
       },
       "5871.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 101.5,
+       "entry_date": "2026-11-27"
       },
       "1605.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 29.3,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26676,27 +26780,37 @@
       "2603.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 253.5,
+       "entry_date": "2026-11-27"
       },
       "2615.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 101.0,
+       "entry_date": "2026-11-27"
       },
       "9904.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 24.8,
+       "entry_date": "2026-11-27"
       },
       "5871.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 101.5,
+       "entry_date": "2026-11-27"
       },
       "1605.TW": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 29.3,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26705,7 +26819,7 @@
    }
   },
   "aefaded6fd79": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -26717,27 +26831,37 @@
       "ONGC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 223.5,
+       "entry_date": "2026-11-27"
       },
       "PFC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 331.0,
+       "entry_date": "2026-11-27"
       },
       "CANBK.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 131.5,
+       "entry_date": "2026-11-27"
       },
       "GAIL.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 187.88,
+       "entry_date": "2026-11-27"
       },
       "BPCL.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 305.5,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26752,27 +26876,37 @@
       "ONGC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 223.5,
+       "entry_date": "2026-11-27"
       },
       "PFC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 331.0,
+       "entry_date": "2026-11-27"
       },
       "CANBK.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 131.5,
+       "entry_date": "2026-11-27"
       },
       "GAIL.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 187.88,
+       "entry_date": "2026-11-27"
       },
       "BPCL.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 305.5,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26787,27 +26921,37 @@
       "ONGC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 223.5,
+       "entry_date": "2026-11-27"
       },
       "PFC.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 331.0,
+       "entry_date": "2026-11-27"
       },
       "CANBK.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 131.5,
+       "entry_date": "2026-11-27"
       },
       "GAIL.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 187.88,
+       "entry_date": "2026-11-27"
       },
       "BPCL.NS": {
        "status": "pending",
        "return_pct": null,
-       "excess_return_pct": null
+       "excess_return_pct": null,
+       "entry_open": 305.5,
+       "entry_date": "2026-11-27"
       }
      },
      "untradable": 0,
@@ -26816,7 +26960,7 @@
    }
   },
   "797aa04e5daf": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -26927,7 +27071,7 @@
    }
   },
   "02dbf43f1cb7": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -27038,7 +27182,7 @@
    }
   },
   "950b63482de0": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -27149,7 +27293,7 @@
    }
   },
   "6daa17b5b5f6": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -27260,7 +27404,7 @@
    }
   },
   "95303b8cac47": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -27371,7 +27515,7 @@
    }
   },
   "99102d2e4002": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -27482,7 +27626,7 @@
    }
   },
   "da64d886017b": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -27593,7 +27737,7 @@
    }
   },
   "dc195a334c84": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -27704,7 +27848,7 @@
    }
   },
   "90ede6aeec50": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -27848,7 +27992,7 @@
    }
   },
   "65b2f7423320-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -27959,7 +28103,7 @@
    }
   },
   "30feb2ac9f84-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -28070,7 +28214,7 @@
    }
   },
   "1f1b1450b785-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -28181,7 +28325,7 @@
    }
   },
   "a0eb67d690ff-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -28292,7 +28436,7 @@
    }
   },
   "adddb36bfd33-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -28403,7 +28547,7 @@
    }
   },
   "c4ddc0c37c2c-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -28514,7 +28658,7 @@
    }
   },
   "9b9a5515b65c-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -28625,7 +28769,7 @@
    }
   },
   "e74f13c0f1dd-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -28736,7 +28880,7 @@
    }
   },
   "09b12fef9150-ai": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -28847,7 +28991,7 @@
    }
   },
   "2efeb4d462a8": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -28958,7 +29102,7 @@
    }
   },
   "ee92f2519eed": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -29069,7 +29213,7 @@
    }
   },
   "8b6b706bb032": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -29180,7 +29324,7 @@
    }
   },
   "86761def016b": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {
@@ -29291,7 +29435,7 @@
    }
   },
   "0ad865fa4317": {
-   "evaluated_at": "2026-11-27T10:40:10+00:00",
+   "evaluated_at": "2026-11-27T13:45:15+00:00",
    "final": false,
    "windows": {
     "5": {

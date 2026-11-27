@@ -74,6 +74,13 @@ main { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }
 .rpt-header h1 { margin: 4px 0 8px; font-size: clamp(21px, 2.5vw, 27px); letter-spacing: -0.025em; }
 .eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: var(--accent-hi); }
 .meta-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+.sec-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.sec-pill {
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; color: var(--ink-2); background: var(--surface);
+  border: 1px solid var(--border); text-decoration: none;
+}
+.sec-pill:hover { border-color: var(--accent-hi); color: var(--accent-hi); background: var(--accent-soft); text-decoration: none; }
 
 .panel {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
@@ -243,26 +250,35 @@ footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border
       <span class="badge ok" data-i18n="badge_sync">数据同步</span>
       <span>· <span data-i18n="meta_policy">口径：</span><code data-i18n="policy_cn_slice">仅A股 · 情绪仅切片观察</code></span>
     </div>
+    <nav class="sec-pills no-print" aria-label="Section navigation">
+      <a class="sec-pill" href="#brief" data-i18n="nav_brief">盘后综述</a>
+      <a class="sec-pill" href="#panorama" data-i18n="nav_panorama">盘面全景</a>
+      <a class="sec-pill" href="#news" data-i18n="nav_news">市场快讯</a>
+      <a class="sec-pill" href="#announcements" data-i18n="nav_ann">公告排雷</a>
+      <a class="sec-pill" href="#synthesis" data-i18n="nav_syn">共识与 AI</a>
+      <a class="sec-pill" href="#strategies" data-i18n="nav_strats">策略精选</a>
+      <a class="sec-pill" href="#patterns" data-i18n="nav_patterns">形态雷达</a>
+    </nav>
   </header>
   
   
   
     <section class="panel brief-box" id="brief">
       <div class="sec-head"><h2 data-i18n="sec_brief">盘后要点综述</h2><span class="badge ai" data-i18n="brief_badge_llm" data-i18n-vars="{&quot;model&quot;: &quot;gemini-3.8-flash&quot;}">AI 深度合成 · gemini-3.8-flash</span></div>
-      <div class="brief-headline">全市场放量突破2万亿元呈现普涨高潮，量化共识聚焦防御性低估蓝筹与缩量回踩标的</div>
+      <div class="brief-headline">A股放量破2万亿现普涨主升行情，涨跌中位数达6.91%，跨策略资金向低估值蓝筹与高流动性品种沉淀</div>
       <div class="grid two-col">
         <div class="sub-panel">
           <h3 class="subhead" data-i18n="sub_regime">盘面宽度与情绪</h3>
-          <p class="prose">2026年11月27日市场进入主升阶段，两市成交额达20172.82亿元，涨跌比达96.52%，涨幅中位数高达6.91%，全市场超420只个股涨停，封板率86.64%，前日涨停个股平均溢价5.49%，展现极强赚钱效应与情绪高潮。盘后快讯方面，高端制造产业需求向好，但个别题材股发布涉及大客户供货占比较低的澄清说明，盘面在全面放量走强后需关注情绪分化。</p>
+          <p class="prose">市场处于主升阶段，全天成交额达20172.82亿元，上涨个股占比96.52%，涨跌幅中位数高达6.91%。非ST涨停428家，跌停仅1家，封板率达86.64%，昨日涨停品种次日平均收益达5.49%，最高连板达6板。全市场逾2700只个股涨幅超过7%，形成极强赚钱效应。在高度普涨的市场情绪下，高流动性与政策驱动方向表现活跃，但盘面呈现大面积推升后的结构性筹码沉淀特征。</p>
         </div>
         <div class="sub-panel">
           <h3 class="subhead" data-i18n="sub_consensus">策略共振与 AI 观察</h3>
-          <p class="prose">跨策略共识高度集中于防御性与回踩修复特征，平安银行、中国中车、海尔智家、青岛啤酒与中国移动等受蓝筹收益质量、缩量回踩及超跌反转策略共同覆盖。行业分布上银行占比达18.6%。AI端在资金热度策略中主动替换高估标的，纳入中天科技与东方财富等流动性进攻品种，在均衡多因子与双低选股策略中则强调防范银行过度集中并优选低估值修复标的。</p>
+          <p class="prose">行业共识上，银行板块以18.6%的占比居首，汽车、港口航运、饮料等各占5.1%。跨策略共识聚焦平安银行、中国中车、海尔智家、青岛啤酒与中国移动，多策略共振呈现“低估值、缩量回踩与超跌反转”特征。AI端在资金热度策略调仓显著（重合度25%），增配中天科技、东方财富与怡合达，剔除中兴通讯等标的；在均衡多因子与双低选股策略中分别增配九丰能源与苏州银行，强化估值防御与流动性匹配。</p>
         </div>
       </div>
       <div class="grid two-col" style="margin-top:10px;">
-        <div class="sub-panel"><h3 class="subhead" data-i18n="sub_risk">风险提示</h3><ul class="bullet-list"><li>恒工精密面临异动公告与高波动风险，TCL科技触及超买警示</li><li>策略组合对银行板块持仓集中度偏高，需防范极端分化行情下的流动性冲击与回撤风险</li></ul></div>
-        <div class="sub-panel"><h3 class="subhead" data-i18n="sub_watch">次日观察点</h3><ul class="bullet-list"><li>2万亿级别总成交额的持续性及大涨后获利盘兑现情况</li><li>连板梯队（最高6连板）与涨停封板率在次日早盘的溢价分化表现</li></ul></div>
+        <div class="sub-panel"><h3 class="subhead" data-i18n="sub_risk">风险提示</h3><ul class="bullet-list"><li>全市场极度普涨与中位数高涨幅后，短线获利盘积累面临冲高回吐与结构分化风险。</li><li>组合层面金融及银行板块集中度较高，需防范板块资金分流及净息差压力，同时注意恒工精密异动高波动及TCL科技RSI超买风险。</li></ul></div>
+        <div class="sub-panel"><h3 class="subhead" data-i18n="sub_watch">次日观察点</h3><ul class="bullet-list"><li>全市场成交额能否稳固在2万亿元上方及炸板率变化</li><li>428家涨停个股的次日溢价水平与最高连板晋级情况</li><li>银行等防御性高权重共识品种的资金承接与分化表现</li></ul></div>
       </div>
     </section>
     
@@ -292,7 +308,7 @@ footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border
         <h2 data-i18n="sec_news">📰 市场热点与政策快讯</h2>
         <span class="badge">东方财富7x24 · 同花顺快讯</span>
       </div>
-      <ul class="bullet-list"><li><span class="badge">市场要闻</span> <b>蕾奥规划：股东拟协议转让5.84%公司股份</b> <span class="dim small">东方财富7x24 11-27 18:35</span></li><li><span class="badge">公司动态</span> <b>海天精工：高端机床装备需求旺盛 Q4排产较为饱和</b> <span class="dim small">东方财富7x24 11-27 18:33</span></li><li><span class="badge">板块产业</span> <b>华胜天成：截至2026年9月30日 公司向华为的供货金额不足100万元</b> <span class="dim small">东方财富7x24 11-27 18:28</span></li><li><span class="badge">市场要闻</span> <b>中国铝业：签订几内亚氧化铝项目EPC总承包合同</b> <span class="dim small">东方财富7x24 11-27 18:26</span></li><li><span class="badge">市场要闻</span> <b>香港交易所将于明年起为证券市场半日交易提供常规交收服务</b> <span class="dim small">东方财富7x24 11-27 18:24</span></li><li><span class="badge">市场要闻</span> <b>科创50指数调整5只样本 长鑫科技、燕东微、华峰测控等新纳入</b> <span class="dim small">东方财富7x24 11-27 18:19</span></li></ul>
+      <ul class="bullet-list"><li><span class="badge">市场要闻</span> <b>宇树发布全身实时遥操“身外化身V3.0 守护”</b> <span class="dim small">东方财富7x24 11-27 21:28</span></li><li><span class="badge">板块产业</span> <b>美团：与微信AI助手小微试点按计划推进</b> <span class="dim small">东方财富7x24 11-27 21:28</span></li><li><span class="badge">公司动态</span> <b>美团：Keemart已在沙特覆盖20座城市</b> <span class="dim small">东方财富7x24 11-27 21:26</span></li><li><span class="badge">公司动态</span> <b>美团：2027年将加大线下零售布局</b> <span class="dim small">东方财富7x24 11-27 21:26</span></li><li><span class="badge">板块产业</span> <b>美团王兴：预计明年AI相关的资本支出将低于今年</b> <span class="dim small">东方财富7x24 11-27 21:18</span></li><li><span class="badge">宏观政策</span> <b>*ST岭南：收到股票及可转换公司债券终止上市决定</b> <span class="dim small">东方财富7x24 11-27 21:11</span></li></ul>
     </section>
     
   
@@ -331,7 +347,7 @@ footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border
       <p class="dim small" style="margin:10px 0 0;" data-i18n="pat_wf_boundary_note_stats" data-i18n-vars="{&quot;mid&quot;: &quot;2026-07-03&quot;, &quot;n&quot;: 680}">注：Walk-Forward H1 严格按实际退出日 &lt; 2026-07-03 截断（累计剔除 680 条跨界信号），避免 H2 价格区间泄漏进逆风判定。</p>
     </section>
     
-  <footer><span data-i18n="disclaimer">仅供量化研究与复盘观察，不构成投资建议。</span> · <span data-i18n="footer_tag">量化形态观测与回测基准</span> · <a href="https://github.com/ZhuLinsen/alphasift" data-i18n="footer_repo">GitHub 开源仓库</a> · Generated 2026-11-27T10:40:53.066433+00:00</footer>
+  <footer><span data-i18n="disclaimer">仅供量化研究与复盘观察，不构成投资建议。</span> · <span data-i18n="footer_tag">量化形态观测与回测基准</span> · <a href="https://github.com/ZhuLinsen/alphasift" data-i18n="footer_repo">GitHub 开源仓库</a> · Generated 2026-11-27T13:46:27.542723+00:00</footer>
 </main>
 <script>
 (function () {
@@ -351,6 +367,13 @@ footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border
       badge_stale: "旧包降级",
       badge_sync: "数据同步",
       meta_policy: "口径：",
+      nav_brief: "盘后综述",
+      nav_panorama: "盘面全景",
+      nav_news: "市场快讯",
+      nav_ann: "公告排雷",
+      nav_syn: "共识与 AI",
+      nav_strats: "策略精选",
+      nav_patterns: "形态雷达",
       sec_brief: "盘后要点综述",
       brief_badge_rule: "规则统计合成",
       sub_regime: "盘面宽度与情绪",
@@ -446,6 +469,13 @@ footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border
       badge_stale: "Stale Fallback",
       badge_sync: "Pack Synced",
       meta_policy: "Policy: ",
+      nav_brief: "Brief",
+      nav_panorama: "Panorama",
+      nav_news: "News",
+      nav_ann: "Filings",
+      nav_syn: "Consensus & AI",
+      nav_strats: "Strategies",
+      nav_patterns: "Patterns",
       sec_brief: "Executive Post-Close Brief",
       brief_badge_llm: "AI Brief · {model}",
       brief_badge_rule: "Rule Synthesis",
@@ -562,6 +592,13 @@ footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border
       badge_stale: "旧パック縮退",
       badge_sync: "同期済み",
       meta_policy: "方針：",
+      nav_brief: "要約",
+      nav_panorama: "パノラマ",
+      nav_news: "ニュース",
+      nav_ann: "適時開示",
+      nav_syn: "コンセンサス",
+      nav_strats: "戦略",
+      nav_patterns: "パターン",
       sec_brief: "引け後エグゼクティブ要約",
       brief_badge_llm: "AI 分析合成 · {model}",
       brief_badge_rule: "統計ルール合成",
