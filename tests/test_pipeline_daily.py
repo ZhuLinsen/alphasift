@@ -540,3 +540,74 @@ def test_screen_populates_topic_alignment_and_portfolio_exposure(tmp_path):
     assert isinstance(res.portfolio_topic_exposure, dict)
     assert res.portfolio_topic_exposure
     assert len(res.replacement_candidates) <= 1
+
+
+def test_screen_and_sort_scrub_nan_weights_missing_names_and_bad_limits(tmp_path):
+    df = pd.DataFrame([
+        {"code": "600000", "screen_score": 80, "factor_value_score": 70, "factor_stability_score": 80},
+        {"code": "000001", "screen_score": 80, "factor_value_score": 70, "factor_stability_score": 90},
+    ])
+    bad_weights = {"momentum": float("nan"), "value": float("inf"), "stability": "bad"}
+    sorted_df = _sort_screened_candidates(df, ScreeningConfig(factor_weights=bad_weights))  # type: ignore[arg-type]
+    assert list(sorted_df["code"]) == ["000001", "600000"]
+
+    snapshot = pd.DataFrame([
+        {
+            "code": "601997",
+            "name": float("nan"),
+            "price": 7.5,
+            "amount": 180_000_000,
+            "total_mv": 20_000_000_000,
+            "pe_ratio": 5.0,
+            "pb_ratio": 0.4,
+            "change_pct": 1.0,
+            "turnover_rate": 2.0,
+            "volume_ratio": 1.2,
+            "industry": "银行",
+        },
+        {
+            "code": "601117",
+            "name": pd.NA,
+            "price": 8.0,
+            "amount": 300_000_000,
+            "total_mv": 45_000_000_000,
+            "pe_ratio": 7.0,
+            "pb_ratio": 0.7,
+            "change_pct": 1.5,
+            "turnover_rate": 2.5,
+            "volume_ratio": 1.3,
+            "industry": "建筑施工",
+        },
+        {
+            "code": "600741",
+            "name": "华域汽车",
+            "price": 16.0,
+            "amount": 250_000_000,
+            "total_mv": 48_000_000_000,
+            "pe_ratio": 8.0,
+            "pb_ratio": 0.8,
+            "change_pct": 0.8,
+            "turnover_rate": 1.8,
+            "volume_ratio": 1.1,
+            "industry": "汽车",
+        },
+    ])
+    snapshot.attrs["market"] = "cn"
+    snapshot.attrs["snapshot_source"] = "test"
+    cfg = Config(data_dir=tmp_path)
+    res = screen(
+        "dual_low",
+        market="cn",
+        max_output=True,  # type: ignore[arg-type]
+        use_llm=False,
+        daily_enrich=False,
+        daily_enrich_max_candidates=float("nan"),  # type: ignore[arg-type]
+        config=cfg,
+        snapshot_df=snapshot,
+        allow_snapshot_refetch=False,
+    )
+    assert len(res.picks) == 3
+    by_code = {p.code: p for p in res.picks}
+    assert by_code["601997"].name == ""
+    assert by_code["601117"].name == ""
+    assert by_code["600741"].name == "华域汽车"

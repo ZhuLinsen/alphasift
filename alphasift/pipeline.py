@@ -142,7 +142,7 @@ def screen(
             f"Strategy '{strategy}' does not support market '{market}'. "
             f"Supported: {', '.join(screening.market_scope)}"
         )
-    output_count = max_output or screening.max_output
+    output_count = _positive_int(max_output, _positive_int(screening.max_output, 10))
     analyzer_names = normalize_post_analyzers(
         post_analyzers if post_analyzers is not None else config.post_analyzers
     )
@@ -154,7 +154,10 @@ def screen(
     )
     daily_needed = requires_daily_features(screening.hard_filters)
     daily_requested = config.daily_enrich_enabled if daily_enrich is None else daily_enrich
-    daily_limit = daily_enrich_max_candidates or config.daily_enrich_max_candidates
+    daily_limit = _positive_int(
+        daily_enrich_max_candidates,
+        _positive_int(config.daily_enrich_max_candidates, 20),
+    )
     snapshot_filters = without_daily_filters(screening.hard_filters) if daily_needed else screening.hard_filters
 
     # 2. Fetch snapshot (or isolate a valid pre-fetched snapshot for reuse)
@@ -358,7 +361,8 @@ def screen(
                 )
                 daily_enriched = True
                 daily_errors = [str(item) for item in enriched.attrs.get("daily_errors", [])]
-                daily_enrich_count = int(enriched.attrs.get("daily_success_count", len(enriched)))
+                raw_success = enriched.attrs.get("daily_success_count", len(enriched))
+                daily_enrich_count = 0 if isinstance(raw_success, bool) else max(_safe_int(raw_success) or 0, 0)
                 daily_source_counts = dict(enriched.attrs.get("daily_source_counts", {}) or {})
                 daily_quality_flag_counts = dict(enriched.attrs.get("daily_quality_flag_counts", {}) or {})
                 daily_source_order_notes = [str(item) for item in enriched.attrs.get("daily_source_order_notes", [])]
@@ -702,7 +706,7 @@ def _df_to_picks(df: pd.DataFrame) -> list[Pick]:
         picks.append(Pick(
             rank=i + 1,
             code=normalize_code(row.get("code", row.get("代码", "")), allow_ticker=True),
-            name=str(row.get("name", row.get("名称", row.get("股票名称", "")))),
+            name=_safe_text(row.get("name", row.get("名称", row.get("股票名称", "")))),
             screen_score=screen_val,
             final_score=screen_val,
             price=_safe_float(row.get("price", row.get("最新价"))) or 0.0,
@@ -763,7 +767,7 @@ def _sort_screened_candidates(df: pd.DataFrame, screening=None) -> pd.DataFrame:
             factor
             for factor, _weight in sorted(
                 screening.factor_weights.items(),
-                key=lambda item: (-float(item[1]), item[0]),
+                key=lambda item: (-(_safe_float(item[1]) or 0.0), str(item[0])),
             )
         ]
     sort_columns = [
@@ -992,6 +996,13 @@ def _attach_pack_daily_features(
     for col, values in columns.items():
         enriched[col] = values
     return enriched, matched
+
+
+def _positive_int(value: object, default: int) -> int:
+    if isinstance(value, bool):
+        return default
+    parsed = _safe_int(value)
+    return parsed if parsed is not None and parsed > 0 else default
 
 
 def _safe_text(v: object) -> str:
