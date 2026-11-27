@@ -77,7 +77,8 @@ def enrich_daily_features(
     This intentionally runs after broad snapshot filtering; it is not a full
     market historical-data pass.
     """
-    if df.empty or max_rows <= 0:
+    effective_max_rows = 0 if isinstance(max_rows, bool) else max(safe_int(max_rows, default=0), 0)
+    if df.empty or effective_max_rows <= 0:
         return df.copy()
 
     result = df.copy()
@@ -87,7 +88,7 @@ def enrich_daily_features(
     daily_source_order_notes: list[str] = []
     daily_source_health: dict[str, object] = {}
     success_count = 0
-    selected_index = list(result.index[:max_rows])
+    selected_index = list(result.index[:effective_max_rows])
     fetch_requests: list[tuple[object, str]] = []
     for idx in selected_index:
         raw_code = str(result.at[idx, "code"] if "code" in result.columns else "").strip()
@@ -938,7 +939,7 @@ def compute_daily_features(hist: pd.DataFrame) -> dict[str, object]:
 
     return {
         "daily_data_points": int(len(close)),
-        "change_60d": None if change_60d is None else round(float(change_60d), 4),
+        "change_60d": _round_or_none(change_60d),
         "ma5": last_ma5,
         "ma20": last_ma20,
         "ma60": last_ma60,
@@ -946,11 +947,19 @@ def compute_daily_features(hist: pd.DataFrame) -> dict[str, object]:
         "price_above_ma20": price_above_ma20,
         "macd_status": macd_status,
         "rsi_status": rsi_status,
-        "rsi14": None if rsi_value is None else round(float(rsi_value), 4),
-        "signal_score": round(float(signal_score), 4),
+        "rsi14": _round_or_none(rsi_value),
+        "signal_score": _round_or_none(signal_score),
         **shape,
         **quality,
     }
+
+
+def _clean_numeric_series(series: pd.Series) -> pd.Series:
+    return (
+        pd.to_numeric(series, errors="coerce")
+        .replace([float("inf"), float("-inf")], float("nan"))
+        .dropna()
+    )
 
 
 def _normalize_daily_history(hist: pd.DataFrame) -> pd.DataFrame:
@@ -970,7 +979,9 @@ def _normalize_daily_history(hist: pd.DataFrame) -> pd.DataFrame:
         raise RuntimeError("daily history has no close column")
     for col in ("open", "high", "low", "close", "volume"):
         if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+            df[col] = pd.to_numeric(df[col], errors="coerce").replace(
+                [float("inf"), float("-inf")], float("nan")
+            )
     df = df.dropna(subset=["close"]).copy()
     for col in ("open", "high", "low"):
         if col not in df.columns:
@@ -1121,15 +1132,17 @@ def _volume_ratio_20d(df: pd.DataFrame) -> float | None:
 
 
 def _volatility_20d_pct(close: pd.Series) -> float | None:
-    values = pd.to_numeric(close, errors="coerce").dropna()
-    returns = values.pct_change().dropna()
+    values = _clean_numeric_series(close)
+    values = values[values > 0]
+    returns = values.pct_change().replace([float("inf"), float("-inf")], float("nan")).dropna()
     if len(returns) < 2:
         return None
     return float(returns.std()) * (252 ** 0.5) * 100
 
 
 def _max_drawdown_pct(close: pd.Series) -> float | None:
-    values = pd.to_numeric(close, errors="coerce").dropna()
+    values = _clean_numeric_series(close)
+    values = values[values > 0]
     if values.empty:
         return None
     running_high = values.cummax()
@@ -1140,9 +1153,9 @@ def _max_drawdown_pct(close: pd.Series) -> float | None:
 def _atr_20_pct(df: pd.DataFrame) -> float | None:
     if not {"high", "low", "close"}.issubset(df.columns):
         return None
-    high = pd.to_numeric(df["high"], errors="coerce")
-    low = pd.to_numeric(df["low"], errors="coerce")
-    close = pd.to_numeric(df["close"], errors="coerce")
+    high = pd.to_numeric(df["high"], errors="coerce").replace([float("inf"), float("-inf")], float("nan"))
+    low = pd.to_numeric(df["low"], errors="coerce").replace([float("inf"), float("-inf")], float("nan"))
+    close = pd.to_numeric(df["close"], errors="coerce").replace([float("inf"), float("-inf")], float("nan"))
     previous_close = close.shift(1)
     true_range = pd.concat([
         high - low,
@@ -1178,10 +1191,9 @@ def _body_pct(row: pd.Series) -> float | None:
     return (float(close_price) / float(open_price) - 1.0) * 100
 
 
-def _round_or_none(value: float | None) -> float | None:
-    if value is None or pd.isna(value):
-        return None
-    return round(float(value), 4)
+def _round_or_none(value: object) -> float | None:
+    parsed = finite_float(value)
+    return round(parsed, 4) if parsed is not None else None
 
 
 def _compute_macd_status(close: pd.Series) -> str:
@@ -1256,10 +1268,9 @@ def _compute_signal_score(
 
 
 def _last_float(series: pd.Series) -> float | None:
-    value = series.iloc[-1]
-    if pd.isna(value):
+    if series.empty:
         return None
-    return round(float(value), 4)
+    return _round_or_none(series.iloc[-1])
 
 
 def _is_true(value: bool) -> bool:

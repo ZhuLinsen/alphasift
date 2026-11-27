@@ -994,3 +994,26 @@ def test_daily_health_workers_ttl_and_cache_args_scrub_nonfinite_and_bool(tmp_pa
     os.utime(cache_file, (stale_time, stale_time))
     assert _read_daily_history_cache(cache_file, ttl_seconds=float("nan")) is None
     assert _read_daily_history_cache(cache_file, ttl_seconds=True) is None  # type: ignore[arg-type]
+
+
+def test_compute_daily_features_and_enrich_scrub_inf_zero_and_bad_max_rows():
+    import json
+
+    hist = pd.DataFrame({
+        "日期": pd.date_range("2026-01-01", periods=30).astype(str),
+        "开盘": [10.0] * 28 + [float("inf"), 10.0],
+        "最高": [11.0] * 28 + [float("inf"), 11.0],
+        "最低": [9.0] * 28 + [0.0, 9.5],
+        "收盘": [0.0] + [10.0 + i * 0.1 for i in range(1, 28)] + [float("inf"), 11.0],
+        "成交量": [1000.0] * 28 + [float("inf"), 1200.0],
+    })
+    features = compute_daily_features(hist)
+    json.dumps(features, allow_nan=False)
+    assert features["daily_data_points"] == 29
+    assert features["volatility_20d_pct"] is not None
+    assert float(features["max_drawdown_20d_pct"]) <= 0.0
+
+    df_in = pd.DataFrame([{"code": "000001"}])
+    for bad_rows in (True, float("nan"), 0, -3):
+        out = enrich_daily_features(df_in, max_rows=bad_rows)  # type: ignore[arg-type]
+        assert list(out.columns) == ["code"]
