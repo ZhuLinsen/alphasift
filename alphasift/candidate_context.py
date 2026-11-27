@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 import inspect
 import json
+import math
 from pathlib import Path
 import re
 import threading
@@ -16,7 +17,7 @@ import pandas as pd
 import requests
 
 from alphasift.source_guard import call_with_timeout
-from alphasift.jsonutil import atomic_write_strict_json, finite_float
+from alphasift.jsonutil import atomic_write_strict_json, finite_float, safe_int
 
 _NEGATIVE_EVENT_KEYWORDS = {
     "减持": ("减持", "拟减持", "被动减持"),
@@ -171,19 +172,25 @@ def collect_candidate_context(
     eligibility; it only supplies LLM research material for already shortlisted
     candidates.
     """
-    if candidate_df.empty or "code" not in candidate_df.columns or max_rows <= 0:
+    eff_max_rows = safe_int(max_rows, default=8)
+    if candidate_df is None or candidate_df.empty or "code" not in candidate_df.columns or eff_max_rows <= 0:
         return [], []
 
+    eff_news_limit = max(safe_int(news_limit, default=3), 1)
+    eff_announcement_limit = max(safe_int(announcement_limit, default=3), 1)
+    eff_ttl_hours = max(safe_int(cache_ttl_hours, default=24), 0)
     providers = _normalize_providers(providers or [])
+    if not providers:
+        return [], []
     tasks: list[dict[str, str]] = []
-    for _, candidate in candidate_df.head(max_rows).iterrows():
+    for _, candidate in candidate_df.head(eff_max_rows).iterrows():
         code = _normalize_code(candidate.get("code", ""))
         if not code or code == "000000":
             continue
         tasks.append(
             {
                 "code": code,
-                "name": str(candidate.get("name", "") or ""),
+                "name": _safe_text(candidate.get("name", ""), max_len=120),
             }
         )
 
@@ -197,10 +204,10 @@ def collect_candidate_context(
             results[index] = _collect_candidate_context_row(
                 task,
                 providers=providers,
-                news_limit=news_limit,
-                announcement_limit=announcement_limit,
+                news_limit=eff_news_limit,
+                announcement_limit=eff_announcement_limit,
                 cache_dir=cache_dir,
-                cache_ttl_hours=cache_ttl_hours,
+                cache_ttl_hours=eff_ttl_hours,
                 source_weights=source_weights,
             )
     else:
@@ -210,10 +217,10 @@ def collect_candidate_context(
                     _collect_candidate_context_row,
                     task,
                     providers=providers,
-                    news_limit=news_limit,
-                    announcement_limit=announcement_limit,
+                    news_limit=eff_news_limit,
+                    announcement_limit=eff_announcement_limit,
                     cache_dir=cache_dir,
-                    cache_ttl_hours=cache_ttl_hours,
+                    cache_ttl_hours=eff_ttl_hours,
                     source_weights=source_weights,
                 ): index
                 for index, task in enumerate(tasks)
@@ -337,19 +344,22 @@ def _collect_candidate_context_row(
 
 def _fetch_stock_news_search_fallback(code: str, *, limit: int = 3, name: str = "") -> str:
     norm_code = str(code).zfill(6)
-    clean_name = str(name or "").strip()
+    eff_limit = max(safe_int(limit, default=3), 1)
+    clean_name = _safe_text(name, max_len=120)
     query = f'"{clean_name}" {norm_code} 股票 最新新闻' if clean_name else f"{norm_code} 股票 最新新闻 公告"
     try:
         from alphasift.market_news import search_stock_news_via_web
 
-        items = search_stock_news_via_web(query, limit=max(limit * 2, 4))
+        items = search_stock_news_via_web(query, limit=max(eff_limit * 2, 4))
     except Exception:  # noqa: BLE001
         return ""
     cur_year = datetime.now().year
     stale_years = tuple(f"{y}年" for y in range(2020, cur_year))
     lines: list[str] = []
-    for item in items:
-        title = str(item.get("title") or "").strip()
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        title = _safe_text(item.get("title"), max_len=240)
         if not title:
             continue
         # Reject index/quote-page SEO boilerplate (e.g. 上证指数 000001 or stale historical snapshots)
@@ -357,16 +367,20 @@ def _fetch_stock_news_search_fallback(code: str, *, limit: int = 3, name: str = 
             continue
         if any(sy in title for sy in stale_years):
             continue
-        line = " ".join(x for x in (item.get("published_at"), item.get("source"), title) if x)
+        published_at = _safe_text(item.get("published_at"), max_len=40)
+        source = _safe_text(item.get("source"), max_len=60)
+        line = " ".join(x for x in (published_at, source, title) if x)
         if line:
             lines.append(line)
-        if len(lines) >= limit:
+        if len(lines) >= eff_limit:
             break
     return _compress_text(" | ".join(_dedupe(lines)), max_len=520)
 
 
 def fetch_stock_news_summary(code: str, *, limit: int = 3, name: str = "") -> str:
     norm_code = str(code).zfill(6)
+    eff_limit = max(safe_int(limit, default=3), 1)
+    clean_name = _safe_text(name, max_len=120)
     items: list[str] = []
     try:
         import akshare as ak
@@ -378,7 +392,7 @@ def fetch_stock_news_summary(code: str, *, limit: int = 3, name: str = "") -> st
             label=f"stock_news_em:{norm_code}",
         )
         if df is not None and not df.empty:
-            for _, row in df.head(max(limit, 1)).iterrows():
+            for _, row in df.head(eff_limit).iterrows():
                 title = _first_value(row, ["新闻标题", "标题", "title"])
                 published_at = _first_value(row, ["发布时间", "时间", "date"])
                 source = _first_value(row, ["文章来源", "来源", "source"])
@@ -389,7 +403,7 @@ def fetch_stock_news_summary(code: str, *, limit: int = 3, name: str = "") -> st
         items = []
 
     if not items:
-        fallback = _fetch_stock_news_search_fallback(norm_code, limit=limit, name=name)
+        fallback = _fetch_stock_news_search_fallback(norm_code, limit=eff_limit, name=clean_name)
         if fallback:
             return fallback
         return ""
@@ -399,6 +413,7 @@ def fetch_stock_news_summary(code: str, *, limit: int = 3, name: str = "") -> st
 def fetch_stock_announcement_summary(code: str, *, limit: int = 3) -> str:
     import akshare as ak
 
+    eff_limit = max(safe_int(limit, default=3), 1)
     end = datetime.now().strftime("%Y%m%d")
     start = (datetime.now() - timedelta(days=45)).strftime("%Y%m%d")
     df = ak.stock_zh_a_disclosure_report_cninfo(
@@ -415,9 +430,9 @@ def fetch_stock_announcement_summary(code: str, *, limit: int = 3) -> str:
         date = _first_value(row, ["公告时间", "公告日期", "date"])
         if title:
             dated_items.append((date, " ".join(item for item in [date, title] if item)))
-    # Ensure newest disclosures appear first before slicing to `limit`.
+    # Ensure newest disclosures appear first before slicing to `eff_limit`.
     dated_items.sort(key=lambda pair: pair[0], reverse=True)
-    items = [text for _, text in dated_items[: max(limit, 1)]]
+    items = [text for _, text in dated_items[:eff_limit]]
     return _compress_text(" | ".join(_dedupe(items)), max_len=520)
 
 
@@ -446,10 +461,14 @@ def fetch_stock_fund_flow_summary(code: str) -> str:
         return ""
     row = df.iloc[-1]
     fields = []
+    seen_columns: set[str] = set()
     for column in df.columns:
         name = str(column)
+        if name in seen_columns:
+            continue
+        seen_columns.add(name)
         if any(keyword in name for keyword in ["日期", "主力净流入", "超大单净流入", "大单净流入", "净占比"]):
-            value = _safe_text(row.get(column))
+            value = _row_text_value(row, column)
             if value:
                 fields.append(f"{name}={value}")
     return _compress_text("，".join(fields[:8]), max_len=420)
@@ -580,12 +599,14 @@ def _ensure_context_row_enrichment(
 ) -> None:
     successful_sources = successful_sources or _successful_sources_from_row(row)
     requested_sources = requested_sources or successful_sources
-    if source_weights is not None or not isinstance(row.get("source_weight_score"), (int, float)):
+    if source_weights is not None or finite_float(row.get("source_weight_score")) is None:
         row["source_weight_score"] = _source_weight_score(
             successful_sources,
             requested_sources,
             source_weights=source_weights,
         )
+    if finite_float(row.get("source_confidence")) is None:
+        row["source_confidence"] = _source_confidence(successful_sources, requested_sources)
     if not isinstance(row.get("announcement_categories"), list):
         row["announcement_categories"] = classify_announcement_categories(row)
     if not isinstance(row.get("event_tags"), list):
@@ -636,22 +657,42 @@ def _part(parts: list[str], index: int) -> str:
     return _safe_text(parts[index] if index < len(parts) else "", max_len=80)
 
 
+def _row_text_value(row: pd.Series, column: object) -> str:
+    raw = row.get(column)
+    if isinstance(raw, pd.Series):
+        for elem in raw.tolist():
+            cleaned = _safe_text(elem)
+            if cleaned:
+                return cleaned
+        return ""
+    return _safe_text(raw)
+
+
 def _first_value(row: pd.Series, columns: list[str]) -> str:
     for column in columns:
         if column in row.index:
-            value = _safe_text(row.get(column))
+            value = _row_text_value(row, column)
             if value:
                 return value
     return ""
 
 
 def _safe_text(value: object, *, max_len: int = 240) -> str:
-    if value is None:
+    eff_max_len = max(safe_int(max_len, default=240), 0)
+    if value is None or eff_max_len <= 0:
         return ""
+    if isinstance(value, float) and not math.isfinite(value):
+        return ""
+    if not isinstance(value, (list, tuple, set, dict, pd.Series, pd.DataFrame)):
+        try:
+            if pd.isna(value):
+                return ""
+        except (TypeError, ValueError):
+            pass
     text = str(value).strip()
-    if not text or text.lower() in {"nan", "none", "<na>"}:
+    if not text or text.lower() in {"nan", "none", "<na>", "nat", "null", "inf", "-inf"}:
         return ""
-    return text[:max_len]
+    return text[:eff_max_len]
 
 
 def _normalize_code(value: object) -> str:
@@ -674,7 +715,8 @@ def _normalize_providers(providers: list[str]) -> list[str]:
     result = []
     seen = set()
     for item in providers:
-        key = aliases.get(str(item).strip().lower(), str(item).strip().lower())
+        cleaned = _safe_text(item, max_len=40).lower()
+        key = aliases.get(cleaned, cleaned)
         if key and key not in seen:
             seen.add(key)
             result.append(key)
@@ -764,16 +806,19 @@ def _successful_sources_from_row(row: dict[str, object]) -> list[str]:
 
 
 def _compress_text(value: object, *, max_len: int) -> str:
-    text = _safe_text(value, max_len=max(max_len * 2, 240))
+    eff_max = max(safe_int(max_len, default=240), 0)
+    if eff_max <= 0:
+        return ""
+    text = _safe_text(value, max_len=max(eff_max * 2, 240))
     if not text:
         return ""
     text = " ".join(text.replace("\n", " ").split())
-    if len(text) <= max_len:
+    if len(text) <= eff_max:
         return text
-    cut = text[:max_len]
+    cut = text[:eff_max]
     for delimiter in (" | ", "；", "。", "，", " "):
         idx = cut.rfind(delimiter)
-        if idx >= max_len * 0.55:
+        if idx >= eff_max * 0.55:
             return cut[:idx].rstrip() + "..."
     return cut.rstrip() + "..."
 
@@ -793,12 +838,14 @@ def _read_cache(
     cache_ttl_hours: int,
 ) -> dict[str, object] | None:
     path = _cache_path(cache_dir, code, providers)
-    if path is None or not path.is_file() or cache_ttl_hours <= 0:
+    eff_ttl = safe_int(cache_ttl_hours, default=24)
+    if path is None or not path.is_file() or eff_ttl <= 0:
         return None
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         cached_at = datetime.fromisoformat(str(data.get("cached_at", "")))
-        if datetime.now() - cached_at > timedelta(hours=cache_ttl_hours):
+        now = datetime.now(cached_at.tzinfo) if cached_at.tzinfo is not None else datetime.now()
+        if now - cached_at > timedelta(hours=eff_ttl):
             return None
         row = data.get("row")
         return row if isinstance(row, dict) else None

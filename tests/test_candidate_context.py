@@ -566,3 +566,72 @@ def test_candidate_context_scrubs_nonfinite_and_bool_cooldown_and_weights():
         assert weights["quote"] == 0.0
     finally:
         reset_provider_cooldowns()
+
+
+def test_candidate_context_handles_na_names_duplicate_columns_tz_cache_and_bad_limits(
+    monkeypatch,
+    tmp_path,
+):
+    from datetime import datetime, timezone
+
+    # 1) Timezone-aware ISO cached_at + bool/NaN enrichment fields should work cleanly
+    cache_file = tmp_path / "000001_news.json"
+    cache_file.write_text(
+        f"""
+        {{
+          "cached_at": "{datetime(2999, 1, 1, tzinfo=timezone.utc).isoformat()}",
+          "row": {{
+            "code": "000001",
+            "name": "平安银行",
+            "news": "回购进展",
+            "source_weight_score": true,
+            "source_confidence": null
+          }}
+        }}
+        """,
+        encoding="utf-8",
+    )
+
+    # 2) Duplicate columns in akshare fund_flow should extract first scalar safely
+    class FakeAkshare:
+        @staticmethod
+        def stock_news_em(symbol, **_kwargs):
+            return pd.DataFrame(
+                [["标题A", "标题B", "2026-11-28"]],
+                columns=["新闻标题", "新闻标题", "发布时间"],
+            )
+
+        @staticmethod
+        def stock_individual_fund_flow(stock, market):
+            return pd.DataFrame(
+                [["2026-11-28", "100万", "200万"]],
+                columns=["日期", "主力净流入", "主力净流入"],
+            )
+
+    monkeypatch.setitem(__import__("sys").modules, "akshare", FakeAkshare)
+
+    candidates = pd.DataFrame([
+        {"code": "000001", "name": float("nan")},
+        {"code": "000002", "name": pd.NA},
+    ])
+    rows, errors = collect_candidate_context(
+        candidates,
+        max_rows=True,  # type: ignore[arg-type]
+        providers=["news", None, pd.NA],  # type: ignore[list-item]
+        news_limit=False,  # type: ignore[arg-type]
+        announcement_limit=-3,
+        cache_dir=tmp_path,
+        cache_ttl_hours=True,  # type: ignore[arg-type]
+    )
+    assert errors == []
+    assert [row["code"] for row in rows] == ["000001", "000002"]
+    assert rows[0]["source_weight_score"] == 1.0
+    assert rows[0]["source_confidence"] == 1.0
+    assert rows[1]["name"] == ""
+    assert "标题A" in str(rows[1]["news"])
+
+    flow_summary = candidate_context.fetch_stock_fund_flow_summary("000001")
+    assert flow_summary == "日期=2026-11-28，主力净流入=100万"
+    assert candidate_context._compress_text("abc", max_len=-5) == ""
+    assert candidate_context._compress_text("abc", max_len=False) == "abc"  # type: ignore[arg-type]
+    assert candidate_context._compress_text("abcdef", max_len=True) == "abcdef"  # type: ignore[arg-type]
