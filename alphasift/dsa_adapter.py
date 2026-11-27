@@ -11,10 +11,23 @@ from dataclasses import asdict, is_dataclass
 from typing import Any, Dict, List
 
 from alphasift import __version__
+from alphasift.jsonutil import finite_float, json_safe, safe_int
 from alphasift.pipeline import screen as run_screen
 from alphasift.strategy import list_strategies as load_strategies
 
 CONTRACT_VERSION = "1"
+
+
+def _safe_list(value: Any) -> List[Any]:
+    if isinstance(value, (list, tuple)):
+        return [json_safe(item) for item in value]
+    return []
+
+
+def _safe_dict(value: Any) -> Dict[str, Any]:
+    if isinstance(value, dict):
+        return {str(key): json_safe(val) for key, val in value.items()}
+    return {}
 
 
 def get_contract_version() -> str:
@@ -86,18 +99,18 @@ def screen(
         "strategy_version": result.strategy_version,
         "strategy_category": result.strategy_category,
         "market": result.market,
-        "snapshot_count": result.snapshot_count,
-        "after_filter_count": result.after_filter_count,
-        "llm_ranked": result.llm_ranked,
+        "snapshot_count": max(safe_int(result.snapshot_count, default=0), 0),
+        "after_filter_count": max(safe_int(result.after_filter_count, default=0), 0),
+        "llm_ranked": bool(result.llm_ranked),
         "llm_market_view": result.llm_market_view,
         "llm_selection_logic": result.llm_selection_logic,
         "llm_portfolio_risk": result.llm_portfolio_risk,
-        "llm_coverage": result.llm_coverage,
-        "llm_parse_errors": list(result.llm_parse_errors),
+        "llm_coverage": finite_float(result.llm_coverage),
+        "llm_parse_errors": _safe_list(result.llm_parse_errors),
         "candidate_count": len(picks),
         "candidates": picks,
-        "warnings": list(result.degradation),
-        "source_errors": list(result.source_errors),
+        "warnings": _safe_list(result.degradation),
+        "source_errors": _safe_list(result.source_errors),
     }
 
 
@@ -105,41 +118,59 @@ def _normalize_pick(raw: Any, fallback_rank: int) -> Dict[str, Any]:
     item = _to_plain(raw)
     if not isinstance(item, dict):
         item = {"code": str(item)}
-    score = item.get("final_score")
+    raw_rank = safe_int(item.get("rank"), default=0)
+    rank = raw_rank if raw_rank > 0 else max(safe_int(fallback_rank, default=1), 1)
+    screen_score = finite_float(item.get("screen_score"))
+    score = finite_float(item.get("final_score"))
     if score is None:
-        score = item.get("screen_score")
-    reason = item.get("llm_thesis") or item.get("ranking_reason") or item.get("risk_summary") or _build_reason(item)
+        score = screen_score
+    raw_factors = item.get("factor_scores")
+    factor_scores = (
+        {
+            str(key): num
+            for key, val in raw_factors.items()
+            if (num := finite_float(val)) is not None
+        }
+        if isinstance(raw_factors, dict)
+        else {}
+    )
+    reason = (
+        item.get("llm_thesis")
+        or item.get("ranking_reason")
+        or item.get("risk_summary")
+        or _build_reason(item)
+    )
     return {
-        "rank": item.get("rank") or fallback_rank,
+        "rank": rank,
         "code": item.get("code") or item.get("symbol") or item.get("stock_code") or "",
         "name": item.get("name") or item.get("stock_name") or "",
         "score": score,
-        "screen_score": item.get("screen_score"),
+        "screen_score": screen_score,
         "reason": reason,
         "risk_level": item.get("risk_level") or "",
-        "risk_flags": list(item.get("risk_flags") or []),
-        "llm_score": item.get("llm_score"),
-        "llm_confidence": item.get("llm_confidence"),
+        "risk_flags": _safe_list(item.get("risk_flags")),
+        "llm_score": finite_float(item.get("llm_score")),
+        "llm_confidence": finite_float(item.get("llm_confidence")),
         "llm_sector": item.get("llm_sector") or "",
         "llm_theme": item.get("llm_theme") or "",
-        "llm_tags": list(item.get("llm_tags") or []),
+        "llm_tags": _safe_list(item.get("llm_tags")),
         "llm_thesis": item.get("llm_thesis") or "",
-        "llm_catalysts": list(item.get("llm_catalysts") or []),
-        "llm_risks": list(item.get("llm_risks") or []),
-        "llm_watch_items": list(item.get("llm_watch_items") or []),
-        "llm_invalidators": list(item.get("llm_invalidators") or []),
+        "llm_catalysts": _safe_list(item.get("llm_catalysts")),
+        "llm_risks": _safe_list(item.get("llm_risks")),
+        "llm_watch_items": _safe_list(item.get("llm_watch_items")),
+        "llm_invalidators": _safe_list(item.get("llm_invalidators")),
         "llm_style_fit": item.get("llm_style_fit") or "",
-        "price": item.get("price"),
-        "change_pct": item.get("change_pct"),
-        "amount": item.get("amount"),
+        "price": finite_float(item.get("price")),
+        "change_pct": finite_float(item.get("change_pct")),
+        "amount": finite_float(item.get("amount")),
         "industry": item.get("industry") or "",
-        "factor_scores": dict(item.get("factor_scores") or {}),
-        "dsa_context": dict(item.get("dsa_context") or {}),
-        "dsa_news": list(item.get("dsa_news") or []),
+        "factor_scores": factor_scores,
+        "dsa_context": _safe_dict(item.get("dsa_context")),
+        "dsa_news": _safe_list(item.get("dsa_news")),
         "dsa_analysis_summary": item.get("dsa_analysis_summary") or "",
-        "post_analysis_summaries": dict(item.get("post_analysis_summaries") or {}),
-        "post_analysis_tags": list(item.get("post_analysis_tags") or []),
-        "raw": item,
+        "post_analysis_summaries": _safe_dict(item.get("post_analysis_summaries")),
+        "post_analysis_tags": _safe_list(item.get("post_analysis_tags")),
+        "raw": json_safe(item),
     }
 
 
@@ -153,8 +184,13 @@ def _build_reason(item: Dict[str, Any]) -> str:
     parts: List[str] = []
     factors = item.get("factor_scores") or {}
     if isinstance(factors, dict):
+        clean_factors = [
+            (str(key), num)
+            for key, value in factors.items()
+            if (num := finite_float(value)) is not None
+        ]
         top_factors = sorted(
-            ((key, value) for key, value in factors.items() if isinstance(value, (int, float))),
+            clean_factors,
             key=lambda pair: pair[1],
             reverse=True,
         )[:3]

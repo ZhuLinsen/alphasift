@@ -112,3 +112,68 @@ def test_status_is_fail_open(monkeypatch):
     assert payload["available"] is False
     assert payload["contract_version"] == "1"
     assert "boom" in payload["error"]
+
+
+def test_screen_scrubs_nonfinite_bool_and_malformed_pick_fields(monkeypatch):
+    import json
+    import math
+
+    monkeypatch.setattr(
+        dsa_adapter,
+        "run_screen",
+        lambda *args, **kwargs: ScreenResult(
+            strategy="dual_low",
+            market="cn",
+            strategy_version="1",
+            strategy_category="value",
+            snapshot_count=True,
+            after_filter_count=-3,
+            run_id="run_bad",
+            llm_ranked=False,
+            llm_coverage=float("nan"),
+            picks=[
+                {
+                    "rank": True,
+                    "code": "000001",
+                    "name": "PingAn",
+                    "final_score": float("nan"),
+                    "screen_score": 76.5,
+                    "llm_score": float("inf"),
+                    "llm_confidence": True,
+                    "price": float("-inf"),
+                    "change_pct": math.nan,
+                    "amount": False,
+                    "risk_flags": "not-a-list",
+                    "factor_scores": {
+                        "nan_f": float("nan"),
+                        "inf_f": float("inf"),
+                        "bool_f": True,
+                        "momentum": 84.2,
+                    },
+                    "dsa_context": {"quote": {"price": float("nan")}},
+                }
+            ],
+        ),
+    )
+
+    payload = dsa_adapter.screen("dual_low")
+    encoded = json.dumps(payload, allow_nan=False)
+    assert encoded
+
+    assert payload["snapshot_count"] == 0
+    assert payload["after_filter_count"] == 0
+    assert payload["llm_coverage"] is None
+
+    cand = payload["candidates"][0]
+    assert cand["rank"] == 1
+    assert cand["score"] == 76.5
+    assert cand["screen_score"] == 76.5
+    assert cand["llm_score"] is None
+    assert cand["llm_confidence"] is None
+    assert cand["price"] is None
+    assert cand["change_pct"] is None
+    assert cand["amount"] is None
+    assert cand["risk_flags"] == []
+    assert cand["factor_scores"] == {"momentum": 84.2}
+    assert cand["reason"] == "Top factors: momentum 84.2"
+    assert cand["dsa_context"] == {"quote": {"price": None}}
