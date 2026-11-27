@@ -423,3 +423,46 @@ def test_scorer_scrubs_nan_inf_bool_weights_and_infinite_observations():
     # Infinite pe/amount must not poison size/value/liquidity scores with Inf/NaN
     assert all(math.isfinite(float(v)) for v in out["factor_value_score"])
     assert all(math.isfinite(float(v)) for v in out["factor_liquidity_score"])
+    assert all(math.isfinite(float(v)) for v in out["factor_theme_heat_score"])
+
+    # Infinite intraday/60d changes, turnover, signal, volatility, and board heat must never produce Inf/NaN factor scores
+    extreme_df = pd.DataFrame([
+        {
+            "code": "300750",
+            "change_pct": float("inf"),
+            "change_60d": float("-inf"),
+            "turnover_rate": float("inf"),
+            "volume_ratio": float("-inf"),
+            "signal_score": float("inf"),
+            "volatility_20d_pct": float("inf"),
+            "max_drawdown_20d_pct": float("-inf"),
+            "atr_20_pct": float("inf"),
+            "daily_quality_score": float("-inf"),
+            "board_heat_score": float("inf"),
+            "board_heat_trend_score": float("inf"),
+            "board_heat_persistence_score": float("inf"),
+            "board_heat_cooling_score": float("inf"),
+        }
+    ])
+    extreme_out = compute_screen_scores(
+        extreme_df,
+        ScreeningConfig(
+            factor_weights={
+                "momentum": 0.2,
+                "reversal": 0.2,
+                "activity": 0.2,
+                "stability": 0.2,
+                "theme_heat": 0.2,
+            }
+        ),
+    )
+    for col in (
+        "screen_score",
+        "factor_momentum_score",
+        "factor_reversal_score",
+        "factor_activity_score",
+        "factor_stability_score",
+        "factor_theme_heat_score",
+    ):
+        val = float(extreme_out.loc[0, col])
+        assert math.isfinite(val), f"{col}={val}"

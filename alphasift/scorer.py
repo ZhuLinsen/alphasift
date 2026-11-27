@@ -233,12 +233,12 @@ def _compute_value_score(df: pd.DataFrame) -> pd.Series:
     score = pd.Series(50.0, index=df.index)
 
     if "pe_ratio" in df.columns:
-        pe = pd.to_numeric(df["pe_ratio"], errors="coerce")
+        pe = _numeric_column(df, "pe_ratio")
         pe_score = _rank_score(pe.where((pe > 0) & (pe < 500)), lower_is_better=True, na_score=25)
         score = score * 0.35 + pe_score * 0.65
 
     if "pb_ratio" in df.columns:
-        pb = pd.to_numeric(df["pb_ratio"], errors="coerce")
+        pb = _numeric_column(df, "pb_ratio")
         pb_score = _rank_score(pb.where((pb > 0) & (pb < 50)), lower_is_better=True, na_score=25)
         score = score * 0.55 + pb_score * 0.45
 
@@ -251,7 +251,7 @@ def _compute_liquidity_score(df: pd.DataFrame) -> pd.Series:
 
     import numpy as np
 
-    amount = pd.to_numeric(df["amount"], errors="coerce")
+    amount = _numeric_column(df, "amount")
     log_amount = np.log10(amount.clip(lower=1))
     return _rank_score(log_amount.where(amount > 0), lower_is_better=False, na_score=20)
 
@@ -260,7 +260,7 @@ def _compute_momentum_score(df: pd.DataFrame, profile: dict[str, float]) -> pd.S
     score = pd.Series(50.0, index=df.index)
 
     if "change_pct" in df.columns:
-        change = pd.to_numeric(df["change_pct"], errors="coerce").fillna(0)
+        change = _numeric_column(df, "change_pct", default=0.0)
         # Prefer constructive positive moves, but penalize chase-risk near limit-up.
         intraday_score = profile["momentum_base"] + change * profile["momentum_intraday_slope"]
         intraday_score = intraday_score - (
@@ -272,7 +272,7 @@ def _compute_momentum_score(df: pd.DataFrame, profile: dict[str, float]) -> pd.S
         score = score * 0.35 + intraday_score.clip(5, 100) * 0.65
 
     if "change_60d" in df.columns:
-        change_60d = pd.to_numeric(df["change_60d"], errors="coerce").fillna(0)
+        change_60d = _numeric_column(df, "change_60d", default=0.0)
         trend_score = profile["momentum_60d_base"] + change_60d * profile["momentum_60d_slope"]
         trend_score = trend_score - (
             change_60d - profile["momentum_60d_overheat_pct"]
@@ -283,7 +283,7 @@ def _compute_momentum_score(df: pd.DataFrame, profile: dict[str, float]) -> pd.S
         score = score * 0.60 + trend_score.clip(5, 100) * 0.40
 
     if "signal_score" in df.columns:
-        signal = pd.to_numeric(df["signal_score"], errors="coerce").fillna(50)
+        signal = _numeric_column(df, "signal_score", default=50.0)
         score = score * 0.70 + signal.clip(0, 100) * 0.30
 
     if "macd_status" in df.columns:
@@ -300,7 +300,7 @@ def _compute_reversal_score(df: pd.DataFrame, profile: dict[str, float]) -> pd.S
     if "change_pct" not in df.columns:
         return pd.Series(50.0, index=df.index)
 
-    change = pd.to_numeric(df["change_pct"], errors="coerce").fillna(0)
+    change = _numeric_column(df, "change_pct", default=0.0)
     # Reversal setups prefer controlled weakness, not collapse.
     score = 100 - (
         change - profile["reversal_ideal_change_pct"]
@@ -319,7 +319,7 @@ def _compute_reversal_score(df: pd.DataFrame, profile: dict[str, float]) -> pd.S
             "overbought": -profile["rsi_overbought_penalty"],
         }).fillna(0)
     if "change_60d" in df.columns:
-        change_60d = pd.to_numeric(df["change_60d"], errors="coerce").fillna(0)
+        change_60d = _numeric_column(df, "change_60d", default=0.0)
         score = score - (change_60d - 35).clip(lower=0) * 0.5
         score = score - (-change_60d - 35).clip(lower=0) * 0.8
     return score.clip(5, 100)
@@ -329,7 +329,7 @@ def _compute_activity_score(df: pd.DataFrame, profile: dict[str, float]) -> pd.S
     score = pd.Series(50.0, index=df.index)
 
     if "volume_ratio" in df.columns:
-        volume_ratio = pd.to_numeric(df["volume_ratio"], errors="coerce").fillna(1.0)
+        volume_ratio = _numeric_column(df, "volume_ratio", default=1.0)
         vr_score = 100 - (
             volume_ratio - profile["activity_ideal_volume_ratio"]
         ).abs() * profile["activity_volume_ratio_distance_slope"]
@@ -339,7 +339,7 @@ def _compute_activity_score(df: pd.DataFrame, profile: dict[str, float]) -> pd.S
         score = score * 0.45 + vr_score.clip(5, 100) * 0.55
 
     if "turnover_rate" in df.columns:
-        turnover = pd.to_numeric(df["turnover_rate"], errors="coerce").fillna(0)
+        turnover = _numeric_column(df, "turnover_rate", default=0.0)
         turnover_score = 100 - (
             turnover - profile["activity_ideal_turnover_rate"]
         ).abs() * profile["activity_turnover_distance_slope"]
@@ -356,52 +356,52 @@ def _compute_stability_score(df: pd.DataFrame, profile: dict[str, float]) -> pd.
     score = pd.Series(profile["stability_base"], index=df.index)
 
     if "change_pct" in df.columns:
-        change = pd.to_numeric(df["change_pct"], errors="coerce").fillna(0)
+        change = _numeric_column(df, "change_pct", default=0.0)
         score -= change.abs().clip(upper=10) * profile["stability_change_abs_penalty_slope"]
         score -= (
             change - profile["stability_hot_change_pct"]
         ).clip(lower=0) * profile["stability_hot_change_penalty_slope"]
 
     if "turnover_rate" in df.columns:
-        turnover = pd.to_numeric(df["turnover_rate"], errors="coerce").fillna(0)
+        turnover = _numeric_column(df, "turnover_rate", default=0.0)
         score -= (
             turnover - profile["stability_high_turnover_rate"]
         ).clip(lower=0) * profile["stability_high_turnover_penalty_slope"]
 
     if "volume_ratio" in df.columns:
-        volume_ratio = pd.to_numeric(df["volume_ratio"], errors="coerce").fillna(1)
+        volume_ratio = _numeric_column(df, "volume_ratio", default=1.0)
         score -= (
             volume_ratio - profile["stability_high_volume_ratio"]
         ).clip(lower=0) * profile["stability_high_volume_ratio_penalty_slope"]
 
     if "pe_ratio" in df.columns:
-        pe = pd.to_numeric(df["pe_ratio"], errors="coerce")
+        pe = _numeric_column(df, "pe_ratio")
         score = score.where((pe.isna()) | (pe > 0), score - profile["stability_invalid_pe_penalty"])
 
     if "signal_score" in df.columns:
-        signal = pd.to_numeric(df["signal_score"], errors="coerce").fillna(50)
+        signal = _numeric_column(df, "signal_score", default=50.0)
         score = score + (signal - 50) * 0.12
 
     if "volatility_20d_pct" in df.columns:
-        volatility = pd.to_numeric(df["volatility_20d_pct"], errors="coerce")
+        volatility = _numeric_column(df, "volatility_20d_pct")
         score -= (
             volatility - profile["stability_high_volatility_pct"]
         ).clip(lower=0).fillna(0) * profile["stability_high_volatility_penalty_slope"]
 
     if "max_drawdown_20d_pct" in df.columns:
-        drawdown = pd.to_numeric(df["max_drawdown_20d_pct"], errors="coerce")
+        drawdown = _numeric_column(df, "max_drawdown_20d_pct")
         score -= (
             profile["stability_max_drawdown_floor_pct"] - drawdown
         ).clip(lower=0).fillna(0) * profile["stability_drawdown_penalty_slope"]
 
     if "atr_20_pct" in df.columns:
-        atr = pd.to_numeric(df["atr_20_pct"], errors="coerce")
+        atr = _numeric_column(df, "atr_20_pct")
         score -= (
             atr - profile["stability_high_atr_pct"]
         ).clip(lower=0).fillna(0) * profile["stability_high_atr_penalty_slope"]
 
     if "daily_quality_score" in df.columns:
-        quality = pd.to_numeric(df["daily_quality_score"], errors="coerce")
+        quality = _numeric_column(df, "daily_quality_score")
         score -= (
             profile["stability_low_daily_quality_score"] - quality
         ).clip(lower=0).fillna(0) * profile["stability_low_daily_quality_penalty_slope"]
@@ -420,7 +420,7 @@ def _compute_size_score(df: pd.DataFrame) -> pd.Series:
 
     import numpy as np
 
-    mv = pd.to_numeric(df["total_mv"], errors="coerce")
+    mv = _numeric_column(df, "total_mv")
     log_mv = np.log10(mv.clip(lower=1))
     return _rank_score(log_mv.where(mv > 0), lower_is_better=False, na_score=35)
 
@@ -428,16 +428,16 @@ def _compute_size_score(df: pd.DataFrame) -> pd.Series:
 def _compute_theme_heat_score(df: pd.DataFrame, profile: dict[str, float]) -> pd.Series:
     base = pd.Series(profile["theme_heat_unknown_score"], index=df.index)
     if "board_heat_score" in df.columns:
-        score = pd.to_numeric(df["board_heat_score"], errors="coerce").fillna(base)
+        score = _numeric_column(df, "board_heat_score").fillna(base)
     elif "industry_heat_score" in df.columns or "concept_heat_score" in df.columns:
         industry = _numeric_column(df, "industry_heat_score")
         concept = _numeric_column(df, "concept_heat_score")
         score = pd.concat([industry, concept], axis=1).max(axis=1).fillna(base)
     elif "industry_change_pct" in df.columns:
-        change = pd.to_numeric(df["industry_change_pct"], errors="coerce").fillna(0)
+        change = _numeric_column(df, "industry_change_pct", default=0.0)
         score = base + change * profile["theme_heat_change_slope"]
         if "industry_rank" in df.columns:
-            rank = pd.to_numeric(df["industry_rank"], errors="coerce")
+            rank = _numeric_column(df, "industry_rank")
             score += (
                 (profile["theme_heat_rank_bonus"] - rank.clip(lower=1, upper=10))
                 .clip(lower=0)
@@ -447,9 +447,9 @@ def _compute_theme_heat_score(df: pd.DataFrame, profile: dict[str, float]) -> pd
         return base.clip(0, 100)
 
     if "board_heat_trend_score" in df.columns:
-        trend = pd.to_numeric(df["board_heat_trend_score"], errors="coerce").fillna(0)
+        trend = _numeric_column(df, "board_heat_trend_score", default=0.0)
         if "board_heat_observations" in df.columns:
-            observations = pd.to_numeric(df["board_heat_observations"], errors="coerce").fillna(0)
+            observations = _numeric_column(df, "board_heat_observations", default=0.0)
         else:
             observations = pd.Series(profile["theme_heat_trend_min_observations"], index=df.index)
         trend_is_reliable = observations >= profile["theme_heat_trend_min_observations"]
@@ -462,7 +462,7 @@ def _compute_theme_heat_score(df: pd.DataFrame, profile: dict[str, float]) -> pd
         score = score + (trend_bonus - cooling_penalty).where(trend_is_reliable, 0)
 
     if "board_heat_persistence_score" in df.columns:
-        persistence = pd.to_numeric(df["board_heat_persistence_score"], errors="coerce").fillna(0)
+        persistence = _numeric_column(df, "board_heat_persistence_score", default=0.0)
         persistence_bonus = (
             (persistence - profile["theme_heat_persistence_min_score"]).clip(lower=0)
             * profile["theme_heat_persistence_slope"]
@@ -470,7 +470,7 @@ def _compute_theme_heat_score(df: pd.DataFrame, profile: dict[str, float]) -> pd
         score = score + persistence_bonus
 
     if "board_heat_cooling_score" in df.columns:
-        cooling = pd.to_numeric(df["board_heat_cooling_score"], errors="coerce").fillna(0)
+        cooling = _numeric_column(df, "board_heat_cooling_score", default=0.0)
         cooling_penalty = (cooling * profile["theme_heat_cooling_score_penalty_slope"]).clip(
             upper=profile["theme_heat_cooling_score_penalty_cap"]
         )
@@ -569,11 +569,13 @@ def _topic_tokens(value: object) -> set[str]:
     return tokens
 
 
-def _numeric_column(df: pd.DataFrame, column: str) -> pd.Series:
+def _numeric_column(df: pd.DataFrame, column: str, *, default: float | None = None) -> pd.Series:
     if column not in df.columns:
-        return pd.Series(pd.NA, index=df.index)
-    numeric = pd.to_numeric(df[column], errors="coerce")
-    return numeric.replace([float("inf"), float("-inf")], pd.NA)
+        fill = float("nan") if default is None else default
+        return pd.Series(fill, index=df.index, dtype="float64")
+    numeric = pd.to_numeric(df[column], errors="coerce").astype("float64")
+    cleaned = numeric.replace([float("inf"), float("-inf")], float("nan"))
+    return cleaned if default is None else cleaned.fillna(default)
 
 
 def _rank_score(
@@ -584,7 +586,9 @@ def _rank_score(
 ) -> pd.Series:
     safe_na = finite_float(na_score)
     fill_val = 50.0 if safe_na is None else safe_na
-    numeric = pd.to_numeric(series, errors="coerce").replace([float("inf"), float("-inf")], pd.NA)
+    numeric = pd.to_numeric(series, errors="coerce").astype("float64").replace(
+        [float("inf"), float("-inf")], float("nan")
+    )
     if numeric.notna().sum() == 0:
         return pd.Series(fill_val, index=series.index)
 
