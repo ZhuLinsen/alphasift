@@ -40,13 +40,13 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text  # noqa: E402
+from alphasift.jsonutil import atomic_write_strict_json, atomic_write_text, finite_float, safe_int  # noqa: E402
 
 SESSIONS = {"asia": ["cn", "hk", "jp", "kr", "tw", "in"], "us": ["us"]}
 WINDOWS = [5, 10, 20]
 SNAPSHOT_TIMEOUT_SEC = 5 * 60
 SCREEN_TIMEOUT_SEC = 20 * 60
-AI_SCREEN_TIMEOUT_SEC = max(60, int(os.getenv("ALPHASIFT_AI_SCREEN_TIMEOUT_SEC", "210")))
+AI_SCREEN_TIMEOUT_SEC = max(60, safe_int(os.getenv("ALPHASIFT_AI_SCREEN_TIMEOUT_SEC"), default=210))
 AI_TRACK_MARKETS = frozenset({"cn"})
 MAX_MISSING_RETRY_DAYS = 90
 SKIPPED_STATUSES = frozenset({"skipped_holiday", "skipped_duplicate"})
@@ -305,7 +305,7 @@ def record_cn_patterns(
         payload["stale_reason"] = f"数据包截止 {pack_date}，落后目标交易日 {target_expected}（降级展示）"
 
     sig_codes: list[str] = []
-    cap = max(1, int(max_signals_per_pattern))
+    cap = max(1, safe_int(max_signals_per_pattern, default=20))
     for pat_name, items in payload.get("signals_by_pattern", {}).items():
         trimmed = list(items)[:cap]
         payload["signals_by_pattern"][pat_name] = trimmed
@@ -1027,7 +1027,7 @@ def _load_latest_report_summary(path: Path) -> dict[str, Any] | None:
         "ai_brief": ai_brief,
         "market_news": compact_news,
         "announcement_risks": {
-            "checked_count": int(ann.get("checked_count") or 0),
+            "checked_count": max(safe_int(ann.get("checked_count"), default=0), 0),
             "flagged_count": len(flagged),
             "flagged_items": flagged,
             "errors": list(ann.get("errors") or []),
@@ -1294,14 +1294,15 @@ def _window_pick_details(
     names = {str(p.get("code")): str(p.get("name") or "") for p in run_item.get("picks", []) if p.get("code")}
     details: dict[str, dict[str, Any]] = {}
     for code, out in picks.items():
-        if out.get("status") == "ok" and out.get("excess_return_pct") is not None:
+        ex_val = finite_float(out.get("excess_return_pct"))
+        if out.get("status") == "ok" and ex_val is not None:
             sc = str(code)
             details[sc] = {
                 "date": str(run_item.get("date") or ""),
                 "code": sc,
                 "name": names.get(sc, ""),
-                "return_pct": _round(out.get("return_pct"), 2),
-                "excess_return_pct": _round(float(out["excess_return_pct"]), 2),
+                "return_pct": _round(finite_float(out.get("return_pct")), 2),
+                "excess_return_pct": _round(ex_val, 2),
             }
     return details
 
@@ -1315,8 +1316,9 @@ def _window_day_excess_stats(
     picks = win.get("picks") or {}
     by_code: dict[str, float] = {}
     for code, out in picks.items():
-        if out.get("status") == "ok" and out.get("excess_return_pct") is not None:
-            by_code[str(code)] = float(out["excess_return_pct"])
+        ex_val = finite_float(out.get("excess_return_pct"))
+        if out.get("status") == "ok" and ex_val is not None:
+            by_code[str(code)] = ex_val
     if not by_code:
         return None, {}
     return float(statistics.fmean(by_code.values())), by_code
@@ -1403,35 +1405,48 @@ def track_comparison(
                         rules_dropped_items.append(r_details[c])
 
             paired_days = len(deltas)
-            sample_sufficient = paired_days >= int(min_paired_days)
+            min_days = max(safe_int(min_paired_days, default=MIN_PAIRED_AI_DAYS), 1)
+            sample_sufficient = paired_days >= min_days
             re = _round(statistics.fmean(rules_day_vals)) if rules_day_vals else None
             ae = _round(statistics.fmean(ai_day_vals)) if ai_day_vals else None
             best_ai_adds = sorted(
-                (item for item in ai_unique_items if float(item["excess_return_pct"]) > 0),
-                key=lambda x: (-float(x["excess_return_pct"]), x["date"], x["code"]),
+                (
+                    item for item in ai_unique_items
+                    if (v := finite_float(item.get("excess_return_pct"))) is not None and v > 0
+                ),
+                key=lambda x: (-(finite_float(x.get("excess_return_pct")) or 0.0), x["date"], x["code"]),
             )[:3]
             worst_ai_adds = sorted(
-                (item for item in ai_unique_items if float(item["excess_return_pct"]) < 0),
-                key=lambda x: (float(x["excess_return_pct"]), x["date"], x["code"]),
+                (
+                    item for item in ai_unique_items
+                    if (v := finite_float(item.get("excess_return_pct"))) is not None and v < 0
+                ),
+                key=lambda x: (finite_float(x.get("excess_return_pct")) or 0.0, x["date"], x["code"]),
             )[:2]
             best_ai_avoids = sorted(
-                (item for item in rules_dropped_items if float(item["excess_return_pct"]) < 0),
-                key=lambda x: (float(x["excess_return_pct"]), x["date"], x["code"]),
+                (
+                    item for item in rules_dropped_items
+                    if (v := finite_float(item.get("excess_return_pct"))) is not None and v < 0
+                ),
+                key=lambda x: (finite_float(x.get("excess_return_pct")) or 0.0, x["date"], x["code"]),
             )[:3]
             missed_by_ai = sorted(
-                (item for item in rules_dropped_items if float(item["excess_return_pct"]) > 0),
-                key=lambda x: (-float(x["excess_return_pct"]), x["date"], x["code"]),
+                (
+                    item for item in rules_dropped_items
+                    if (v := finite_float(item.get("excess_return_pct"))) is not None and v > 0
+                ),
+                key=lambda x: (-(finite_float(x.get("excess_return_pct")) or 0.0), x["date"], x["code"]),
             )[:2]
             win_deltas[str(window)] = {
                 "paired_days": paired_days,
-                "min_paired_days": int(min_paired_days),
+                "min_paired_days": min_days,
                 "sample_sufficient": sample_sufficient,
                 "rules_matched": rules_matched,
                 "ai_matched": ai_matched,
                 "rules_excess_pct": re,
                 "ai_excess_pct": ae,
                 "ai_minus_rules_pct": _round(statistics.fmean(deltas)) if sample_sufficient else None,
-                "delta_hidden_reason": None if sample_sufficient else f"同日配对 {paired_days} < {int(min_paired_days)} 天",
+                "delta_hidden_reason": None if sample_sufficient else f"同日配对 {paired_days} < {min_days} 天",
                 "ai_win_days": ai_win_days,
                 "ai_win_day_rate": _round(ai_win_days / paired_days, 3) if paired_days else None,
                 "ai_unique_count": len(ai_unique_vals),
@@ -1495,7 +1510,7 @@ def _build_pattern_board(track: Path) -> dict[str, Any] | None:
             "generated_at": replay.get("generated_at"),
             "entry_mode": replay.get("entry_mode", "next_open"),
             "benchmark": replay.get("benchmark", "sh000300"),
-            "cost_bps": float(replay.get("cost_bps", 0.0)),
+            "cost_bps": finite_float(replay.get("cost_bps")) or 0.0,
             "graduation_rule": replay.get("graduation_rule"),
             "pack_summary": replay.get("pack_summary"),
             "regime_distribution": replay.get("regime_distribution"),
@@ -1698,10 +1713,10 @@ def render_atom_feed(
     t5_leaders = [
         r
         for r in sc
-        if ((r.get("windows") or {}).get("5") or {}).get("average_excess_return_pct") is not None
+        if finite_float(((r.get("windows") or {}).get("5") or {}).get("average_excess_return_pct")) is not None
     ]
     t5_leaders.sort(
-        key=lambda r: float(((r.get("windows") or {}).get("5") or {})["average_excess_return_pct"]),
+        key=lambda r: finite_float(((r.get("windows") or {}).get("5") or {}).get("average_excess_return_pct")) or 0.0,
         reverse=True,
     )
     leader_line = ""
@@ -1709,26 +1724,27 @@ def render_atom_feed(
         top = t5_leaders[0]
         w5 = top["windows"]["5"]
         s_name = (summary.get("strategy_names") or {}).get(top.get("strategy"), top.get("strategy"))
-        ex = float(w5["average_excess_return_pct"])
-        beat = w5.get("beat_rate")
-        beat_txt = f", beat {round(float(beat) * 100)}%" if beat is not None else ""
+        ex = finite_float(w5.get("average_excess_return_pct")) or 0.0
+        beat = finite_float(w5.get("beat_rate"))
+        beat_txt = f", beat {round(beat * 100)}%" if beat is not None else ""
+        ev_cnt = max(safe_int(w5.get("evaluated"), default=0), 0)
         leader_line = (
             f"T+5 leader ({top.get('market', '').upper()}): "
-            f"{s_name} ({ex:+.2f}% excess, n={w5.get('evaluated', 0)}{beat_txt})."
+            f"{s_name} ({ex:+.2f}% excess, n={ev_cnt}{beat_txt})."
         )
 
     latest_rep = summary.get("latest_report") or {}
     brief_headline = str(((latest_rep.get("ai_brief") or {}).get("headline") or "")).strip()
     rep_date = str(latest_rep.get("trade_date") or "").strip()
 
-    days = (summary.get("days") or [])[: max(1, int(max_entries))]
+    days = (summary.get("days") or [])[: max(1, safe_int(max_entries, default=14))]
     entries_xml: list[str] = []
     latest_by_mkt = summary.get("latest") or {}
     for idx, day_info in enumerate(days):
         day = str(day_info.get("date") or "").strip()
         if not day:
             continue
-        run_cnt = int(day_info.get("runs") or 0)
+        run_cnt = max(safe_int(day_info.get("runs"), default=0), 0)
         entry_updated = updated if idx == 0 else f"{day}T18:30:00+08:00"
         title_bits = [f"AlphaSift · {day}", f"{run_cnt} runs"]
         summary_bits = [f"{run_cnt} strategy runs recorded on {day}."]
@@ -1802,22 +1818,26 @@ def _read_json(path: Path) -> Any:
 
 
 def _round(value: Any, digits: int = 4) -> Any:
+    if isinstance(value, bool) or value is None:
+        return None
     if isinstance(value, float):
-        return round(value, digits) if value == value else None
+        return round(value, digits) if finite_float(value) is not None else None
     return value
 
 
 def _mean(values) -> float | None:
-    values = list(values)
-    return _round(statistics.fmean(values)) if values else None
+    clean = [v for raw in values if (v := finite_float(raw)) is not None]
+    return _round(statistics.fmean(clean)) if clean else None
 
 
 def _pct(value: float | None) -> str:
-    return "–" if value is None else f"{value:+.2f}%"
+    num = finite_float(value)
+    return "–" if num is None else f"{num:+.2f}%"
 
 
 def _rate(value: float | None) -> str:
-    return "–" if value is None else f"{value * 100:.0f}%"
+    num = finite_float(value)
+    return "–" if num is None else f"{num * 100:.0f}%"
 
 
 def _now() -> str:

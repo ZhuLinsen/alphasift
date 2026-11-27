@@ -396,3 +396,85 @@ def test_track_record_page_html_js_syntax_and_drilldown_hooks(tmp_path: Path) ->
         js_file.write_text(scripts[-1], encoding="utf-8")
         proc = subprocess.run([node, "--check", str(js_file)], capture_output=True, text=True, check=False)
         assert proc.returncode == 0, proc.stderr
+
+
+def test_track_record_builders_scrub_nonfinite_and_bool() -> None:
+    import json
+    from scripts.track_record import _mean, _pct, _rate, _round, render_atom_feed, track_comparison
+
+    assert _round(float("inf")) is None
+    assert _round(float("-inf")) is None
+    assert _round(float("nan")) is None
+    assert _round(True) is None
+    assert _round(1.23456, 2) == 1.23
+
+    assert _mean([float("inf"), True, float("nan"), 2.0, 4.0]) == 3.0
+    assert _mean([float("nan"), True]) is None
+
+    assert _pct(float("inf")) == "–"
+    assert _pct(True) == "–"  # type: ignore[arg-type]
+    assert _rate(float("nan")) == "–"
+    assert _rate(False) == "–"  # type: ignore[arg-type]
+
+    runs = [
+        {
+            "run_id": "r1",
+            "date": "2026-11-26",
+            "market": "cn",
+            "strategy": "dual_low",
+            "track": "rules",
+            "picks": [{"code": "000001", "name": "平安"}, {"code": "000002", "name": "万科"}],
+        },
+        {
+            "run_id": "a1",
+            "date": "2026-11-26",
+            "market": "cn",
+            "strategy": "dual_low",
+            "track": "ai",
+            "picks": [{"code": "000001", "name": "平安"}, {"code": "600000", "name": "浦发"}],
+        },
+    ]
+    evaluation = {
+        "r1": {
+            "windows": {
+                "5": {
+                    "picks": {
+                        "000001": {"status": "ok", "return_pct": 1.0, "excess_return_pct": 0.5},
+                        "000002": {"status": "ok", "return_pct": float("nan"), "excess_return_pct": float("inf")},
+                    },
+                },
+            },
+        },
+        "a1": {
+            "windows": {
+                "5": {
+                    "picks": {
+                        "000001": {"status": "ok", "return_pct": 2.0, "excess_return_pct": 1.2},
+                        "600000": {"status": "ok", "return_pct": True, "excess_return_pct": True},
+                    },
+                },
+            },
+        },
+    }
+    cmp_out = track_comparison(runs, evaluation, min_paired_days=1)
+    assert len(cmp_out) == 1
+    assert cmp_out[0]["windows"]["5"]["ai_minus_rules_pct"] == 0.7
+    json.dumps(cmp_out, allow_nan=False)
+
+    summary = {
+        "generated_at": "2026-11-26T22:00:00Z",
+        "strategy_names": {"dual_low": "双低", "bad": "无效"},
+        "scorecard": [
+            {"market": "cn", "strategy": "bad", "windows": {"5": {"average_excess_return_pct": float("nan"), "beat_rate": float("nan"), "evaluated": True}}},
+            {"market": "cn", "strategy": "dual_low", "windows": {"5": {"average_excess_return_pct": 1.25, "beat_rate": 0.6, "evaluated": 12}}},
+        ],
+        "days": [
+            {"date": "2026-11-26", "runs": True},
+            {"date": "2026-11-25", "runs": float("nan")},
+        ],
+    }
+    feed_xml = render_atom_feed(summary, max_entries=True)  # type: ignore[arg-type]
+    assert "+1.25% excess" in feed_xml
+    assert "0 runs" in feed_xml
+    assert "True" not in feed_xml
+    assert "nan" not in feed_xml.lower() and "inf" not in feed_xml.lower()
