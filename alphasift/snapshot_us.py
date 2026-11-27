@@ -15,6 +15,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime
 import pandas as pd
 
+from alphasift.jsonutil import finite_float
+
 logger = logging.getLogger(__name__)
 
 _SP500_WIKI_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
@@ -116,10 +118,14 @@ def fetch_us_snapshot(
                 if ticker not in data.columns.get_level_values(0):
                     return None
                 hist = data[ticker].copy()
-            if hist.empty:
+            if hist.empty or "Close" not in hist.columns:
                 return None
 
-            hist = hist[hist["Close"].notna()]
+            close_vals = pd.to_numeric(hist["Close"], errors="coerce").replace(
+                [float("inf"), float("-inf")],
+                pd.NA,
+            )
+            hist = hist[close_vals.notna() & (close_vals > 0)]
             if len(hist) < 2:
                 return None
 
@@ -136,19 +142,46 @@ def fetch_us_snapshot(
 
             latest = hist.iloc[-1]
             prev = hist.iloc[-2]
-            price = float(latest["Close"])
-            prev_close = float(prev["Close"])
-            volume = float(latest["Volume"])
-            change_pct = ((price - prev_close) / prev_close * 100) if prev_close > 0 else 0.0
+            price = finite_float(latest["Close"])
+            prev_close = finite_float(prev["Close"])
+            if price is None or price <= 0:
+                return None
+            change_pct = (
+                ((price - prev_close) / prev_close * 100.0)
+                if (prev_close is not None and prev_close > 0)
+                else 0.0
+            )
 
-            vol_20d = float(hist["Volume"].tail(20).mean())
-            vol_10d = float(hist["Volume"].tail(10).mean())
+            if "Volume" in hist.columns:
+                raw_vol = finite_float(latest["Volume"])
+                volume = raw_vol if (raw_vol is not None and raw_vol >= 0) else 0.0
+                vol_series = (
+                    pd.to_numeric(hist["Volume"], errors="coerce")
+                    .replace([float("inf"), float("-inf")], pd.NA)
+                    .dropna()
+                )
+                vol_series = vol_series[vol_series >= 0]
+                vol_20d = finite_float(vol_series.tail(20).mean()) or 0.0
+                vol_10d = finite_float(vol_series.tail(10).mean()) or 0.0
+            else:
+                volume = 0.0
+                vol_20d = 0.0
+                vol_10d = 0.0
             volume_ratio = (volume / vol_20d) if vol_20d > 0 else 1.0
 
-            info = yf.Ticker(ticker).fast_info
-            market_cap = getattr(info, "market_cap", None) or 0
-            shares = getattr(info, "shares", None) or 0
-            turnover_rate = (volume / shares * 100) if shares > 0 else 0.0
+            market_cap = 0.0
+            shares = 0.0
+            try:
+                info = yf.Ticker(ticker).fast_info
+                mc_val = finite_float(getattr(info, "market_cap", None))
+                if mc_val is not None and mc_val > 0:
+                    market_cap = mc_val
+                sh_val = finite_float(getattr(info, "shares", None))
+                if sh_val is not None and sh_val > 0:
+                    shares = sh_val
+            except Exception as exc:
+                logger.debug("fast_info failed for %s: %s", ticker, exc)
+            turnover_rate = (volume / shares * 100.0) if shares > 0 else 0.0
 
             return (
                 {
@@ -194,7 +227,10 @@ def fetch_us_snapshot(
     ]
     for col in numeric_cols:
         if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+            df[col] = pd.to_numeric(df[col], errors="coerce").replace(
+                [float("inf"), float("-inf")],
+                pd.NA,
+            )
 
     df = df.dropna(subset=["price"])
     df = df[df["price"] > 0]
@@ -211,6 +247,9 @@ def fetch_us_snapshot(
 
 def _enrich_info_fields(df: pd.DataFrame) -> None:
     """Best-effort enrichment of pe_ratio, pb_ratio, industry from yfinance info."""
+    if df.empty:
+        return
+
     import yfinance as yf
 
     from alphasift.snapshot_yahoo import sanitize_yahoo_pb
@@ -222,9 +261,11 @@ def _enrich_info_fields(df: pd.DataFrame) -> None:
     for idx in df.index:
         ticker = df.at[idx, "code"]
         try:
-            info = yf.Ticker(ticker).info
+            info = yf.Ticker(ticker).info or {}
             if pd.isna(df.at[idx, "pe_ratio"]) or df.at[idx, "pe_ratio"] == 0:
-                df.at[idx, "pe_ratio"] = info.get("trailingPE")
+                pe_val = finite_float(info.get("trailingPE"))
+                if pe_val is not None:
+                    df.at[idx, "pe_ratio"] = pe_val
             if pd.isna(df.at[idx, "pb_ratio"]) or df.at[idx, "pb_ratio"] == 0:
                 trading_currency = str(info.get("currency") or "")
                 financial_currency = str(info.get("financialCurrency") or trading_currency)
@@ -234,9 +275,13 @@ def _enrich_info_fields(df: pd.DataFrame) -> None:
                     financial_currency=financial_currency,
                 )
             if not df.at[idx, "industry"]:
-                df.at[idx, "industry"] = info.get("industry", "")
+                industry = str(info.get("industry") or "").strip()
+                if industry:
+                    df.at[idx, "industry"] = industry
             if not df.at[idx, "name"] or df.at[idx, "name"] == ticker:
-                df.at[idx, "name"] = info.get("shortName", ticker)
+                short_name = str(info.get("shortName") or "").strip()
+                if short_name:
+                    df.at[idx, "name"] = short_name
         except Exception:
             pass
 

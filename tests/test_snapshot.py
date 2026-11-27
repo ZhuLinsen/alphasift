@@ -530,6 +530,72 @@ def test_fetch_us_snapshot_single_ticker_with_multiindex(monkeypatch):
     assert download_kwargs["end"] > pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d")
 
 
+def test_fetch_us_snapshot_scrubs_nan_inf_volumes_and_failing_fast_info(monkeypatch):
+    import sys
+    import types
+
+    multi_cols = pd.MultiIndex.from_tuples(
+        [
+            ("AAPL", "Close"),
+            ("AAPL", "Volume"),
+            ("BADINF", "Close"),
+            ("BADINF", "Volume"),
+        ],
+        names=["Ticker", "Price"],
+    )
+    hist_df = pd.DataFrame(
+        {
+            ("AAPL", "Close"): [100.0, 102.0],
+            ("AAPL", "Volume"): [float("nan"), float("nan")],
+            ("BADINF", "Close"): [50.0, float("inf")],
+            ("BADINF", "Volume"): [1_000.0, 1_000.0],
+        },
+        index=pd.date_range("2026-05-19", periods=2),
+    )
+    hist_df.columns = multi_cols
+
+    class FlakyFastInfo:
+        @property
+        def market_cap(self):
+            raise RuntimeError("fast_info unavailable")
+
+        @property
+        def shares(self):
+            return float("nan")
+
+    class FakeTicker:
+        def __init__(self, ticker):
+            self.fast_info = FlakyFastInfo()
+            self.info = {
+                "trailingPE": float("inf"),
+                "priceToBook": float("nan"),
+                "industry": None,
+                "shortName": None,
+            }
+
+    fake_yf = types.ModuleType("yfinance")
+    fake_yf.download = lambda *args, **kwargs: hist_df
+    fake_yf.Ticker = FakeTicker
+    monkeypatch.setitem(sys.modules, "yfinance", fake_yf)
+
+    from alphasift.snapshot_us import fetch_us_snapshot
+
+    df = fetch_us_snapshot(["AAPL", "BADINF"])
+
+    assert list(df["code"]) == ["AAPL"]
+    row = df.iloc[0]
+    assert row["price"] == 102.0
+    assert row["change_pct"] == 2.0
+    assert row["amount"] == 0.0
+    assert row["avg_amount"] == 0.0
+    assert row["volume_ratio"] == 1.0
+    assert row["total_mv"] == 0.0
+    assert row["turnover_rate"] == 0.0
+    assert pd.isna(row["pe_ratio"])
+    assert row["industry"] == ""
+    assert row["name"] == "AAPL"
+
+
 def test_fetch_sina_stops_when_snapshot_budget_is_spent(monkeypatch):
     import alphasift.snapshot as snapshot_module
 
