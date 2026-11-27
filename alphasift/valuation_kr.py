@@ -13,6 +13,7 @@ Set ``ALPHASIFT_KR_VALUATION=0`` to skip it.
 from __future__ import annotations
 
 import logging
+import math
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -20,6 +21,8 @@ from concurrent.futures import TimeoutError as FuturesTimeout
 
 import pandas as pd
 import requests
+
+from alphasift.jsonutil import finite_float, safe_int
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +48,16 @@ def enrich_kr_valuation(
     """Fill missing ``pe_ratio`` / ``pb_ratio`` on KR rows. Returns (frame, errors)."""
     if df.empty or "code" not in df.columns:
         return df, []
+    workers = max(1, safe_int(max_workers, default=_DEFAULT_WORKERS))
+    budget = finite_float(budget_seconds)
+    if budget is not None and budget < 0:
+        budget = 0.0
+
     session = None
     if fetch is None:
         # One pooled session: a cold KR snapshot makes ~250 requests.
         session = requests.Session()
-        adapter = requests.adapters.HTTPAdapter(pool_maxsize=max(1, int(max_workers)))
+        adapter = requests.adapters.HTTPAdapter(pool_maxsize=workers)
         session.mount("https://", adapter)
 
         def fetch(code: str) -> dict[str, float | None]:
@@ -68,13 +76,20 @@ def enrich_kr_valuation(
     values: dict[str, dict[str, float | None]] = {}
     failures: list[str] = []
     timed_out = 0
-    pool = ThreadPoolExecutor(max_workers=max(1, int(max_workers)))
+    pool = ThreadPoolExecutor(max_workers=workers)
     futures = {pool.submit(fetch, _naver_code(code)): code for code in codes}
     try:
-        for future in as_completed(futures, timeout=budget_seconds):
+        for future in as_completed(futures, timeout=budget):
             code = futures[future]
             try:
-                values[code] = future.result()
+                raw_item = future.result()
+                if isinstance(raw_item, dict):
+                    values[code] = {
+                        "per": finite_float(raw_item.get("per")),
+                        "pbr": finite_float(raw_item.get("pbr")),
+                    }
+                else:
+                    values[code] = {"per": None, "pbr": None}
             except Exception as exc:  # noqa: BLE001 - one listing failing is fine
                 failures.append(f"{code}: {exc}")
     except FuturesTimeout:
@@ -92,8 +107,9 @@ def enrich_kr_valuation(
         if not item:
             continue
         for column, key in (("pe_ratio", "per"), ("pb_ratio", "pbr")):
-            if pd.isna(result.at[idx, column]) and item.get(key) is not None:
-                result.at[idx, column] = item[key]
+            val = item.get(key)
+            if pd.isna(result.at[idx, column]) and val is not None:
+                result.at[idx, column] = val
                 filled += 1
 
     # Coverage counts listings that got a usable ratio, not HTTP successes:
@@ -113,7 +129,8 @@ def enrich_kr_valuation(
     if values and not usable:
         errors.append(f"naver_valuation: no PER/PBR in {len(values)} responses (payload format changed?)")
     if timed_out:
-        errors.append(f"naver_valuation exceeded {budget_seconds:.0f}s budget; {timed_out} listings left without PE/PB")
+        budget_label = f"{budget:.0f}s" if budget is not None else "configured"
+        errors.append(f"naver_valuation exceeded {budget_label} budget; {timed_out} listings left without PE/PB")
     logger.info("Naver valuation: %d/%d KR listings, %d fields filled", len(values), len(codes), filled)
     return result, errors
 
@@ -142,7 +159,9 @@ def parse_naver_number(value: object) -> float | None:
     if not match:
         return None
     number = float(match.group(1).replace(",", ""))
-    return number if number != 0 else None
+    if not math.isfinite(number) or number == 0:
+        return None
+    return number
 
 
 def _naver_code(symbol: str) -> str:

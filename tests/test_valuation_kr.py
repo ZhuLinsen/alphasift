@@ -285,3 +285,33 @@ def test_us_legacy_enrich_info_fields_sanitizes_dual_class_pb(monkeypatch):
     assert df.loc[0, "pe_ratio"] == 16.6
     assert pd.isna(df.loc[0, "pb_ratio"])
     assert df.loc[1, "pb_ratio"] == 2.62
+
+
+def test_kr_valuation_scrubs_nonfinite_bool_overflow_and_bad_fetch_payloads():
+    assert parse_naver_number("9" * 400) is None
+
+    df = pd.DataFrame(
+        {
+            "code": ["005930.KS", "000660.KS", "035420.KQ"],
+            "pe_ratio": [None, None, None],
+            "pb_ratio": [None, None, None],
+        }
+    )
+
+    def dirty_fetch(code):
+        if code == "005930":
+            return {"per": float("nan"), "pbr": True}
+        if code == "000660":
+            return {"per": float("inf"), "pbr": False}
+        return "unexpected-non-dict"
+
+    result, errors = enrich_kr_valuation(
+        df,
+        fetch=dirty_fetch,
+        max_workers=True,  # type: ignore[arg-type]
+    )
+
+    assert result["pe_ratio"].isna().all()
+    assert result["pb_ratio"].isna().all()
+    assert result.attrs["valuation_coverage"] == 0.0
+    assert any("no PER/PBR" in item for item in errors)
