@@ -7,6 +7,7 @@ from dataclasses import replace
 
 import pandas as pd
 
+from alphasift.jsonutil import finite_float
 from alphasift.models import HardFilterConfig
 
 logger = logging.getLogger(__name__)
@@ -207,6 +208,19 @@ def hard_filter_rejection_summary(
     return diagnostics
 
 
+def _finite_numeric_series(raw: pd.Series) -> pd.Series | None:
+    """Coerce non-boolean values to finite float64, scrubbing bool and +/-Inf to NaN."""
+    if pd.api.types.is_bool_dtype(raw):
+        return None
+    if raw.dtype == object:
+        non_bool = ~raw.map(lambda v: isinstance(v, bool))
+        cleaned = raw.where(non_bool)
+    else:
+        cleaned = raw
+    nums = pd.to_numeric(cleaned, errors="coerce").astype("float64")
+    return nums.replace([float("inf"), float("-inf")], float("nan"))
+
+
 def _step_quantiles(
     df: pd.DataFrame,
     active_mask: pd.Series,
@@ -215,15 +229,10 @@ def _step_quantiles(
     col = _find_col(df, list(value_columns or []))
     if not col or not active_mask.any():
         return None
-    raw = df.loc[active_mask, col]
-    if pd.api.types.is_bool_dtype(raw):
+    nums = _finite_numeric_series(df.loc[active_mask, col])
+    if nums is None:
         return None
-    if any(isinstance(v, bool) for v in raw.dropna()):
-        return None
-    nums = pd.to_numeric(raw, errors="coerce")
-    if pd.api.types.is_bool_dtype(nums):
-        return None
-    nums = nums.astype("float64").replace([float("inf"), float("-inf")], float("nan")).dropna()
+    nums = nums.dropna()
     if nums.empty:
         return None
     q25, q50, q75 = nums.quantile([0.25, 0.50, 0.75]).tolist()
@@ -261,9 +270,10 @@ def hard_filter_waterfall(
         before = int(mask.sum())
         after = int(next_mask.sum())
         removed = before - after
+        safe_thresh = threshold if finite_float(threshold) is not None else None
         quantiles = (
             _step_quantiles(df, mask, value_columns)
-            if include_quantiles and threshold is not None and before > 0 and value_columns
+            if include_quantiles and safe_thresh is not None and before > 0 and value_columns
             else None
         )
         step: dict[str, object] = {
@@ -273,8 +283,8 @@ def hard_filter_waterfall(
             "removed": removed,
             "removed_pct": round((removed / before * 100.0), 4) if before else 0.0,
         }
-        if include_quantiles and threshold is not None:
-            step["threshold"] = threshold
+        if include_quantiles and safe_thresh is not None:
+            step["threshold"] = safe_thresh
         if quantiles is not None:
             step["quantiles"] = quantiles
         if removed > 0 and sample_limit > 0:
@@ -284,10 +294,10 @@ def hard_filter_waterfall(
                 limit=sample_limit,
             )
         suggestion = _waterfall_suggestion(label, before, after, removed)
-        if include_quantiles and before > 0 and (removed / before >= 0.90 or after == 0) and quantiles is not None and threshold is not None:
+        if include_quantiles and before > 0 and (removed / before >= 0.90 or after == 0) and quantiles is not None and safe_thresh is not None:
             q_note = (
                 f"分布 p25={quantiles['p25']}, p50={quantiles['p50']}, p75={quantiles['p75']} "
-                f"(阈值 {bound or 'limit'}={threshold})"
+                f"(阈值 {bound or 'limit'}={safe_thresh})"
             )
             suggestion = f"{suggestion}; {q_note}" if suggestion else f"当前阈值过严: {q_note}"
         if suggestion:
@@ -401,24 +411,38 @@ def _find_col(df: pd.DataFrame, candidates: list[str]) -> str | None:
     return None
 
 
+def _filter_bound(
+    df: pd.DataFrame,
+    mask: pd.Series,
+    col_names: list[str],
+    value: float | None,
+    *,
+    is_min: bool,
+) -> pd.Series:
+    if value is None or not mask.any():
+        return mask
+    col = _find_col(df, col_names)
+    if not col:
+        kind = "min" if is_min else "max"
+        raise SnapshotFieldMissingError(
+            f"Missing required snapshot column for {kind} filter {col_names}: "
+            f"configured value={value}"
+        )
+    thresh = finite_float(value)
+    series = _finite_numeric_series(df[col])
+    if thresh is None or series is None:
+        return mask & False
+    cmp = series.ge(thresh) if is_min else series.le(thresh)
+    return mask & cmp & series.notna()
+
+
 def _filter_min(
     df: pd.DataFrame,
     mask: pd.Series,
     col_names: list[str],
     value: float | None,
 ) -> pd.Series:
-    if value is None:
-        return mask
-    if not mask.any():
-        return mask
-    col = _find_col(df, col_names)
-    if not col:
-        raise SnapshotFieldMissingError(
-            f"Missing required snapshot column for min filter {col_names}: "
-            f"configured value={value}"
-        )
-    series = pd.to_numeric(df[col], errors="coerce")
-    return mask & series.ge(value) & series.notna()
+    return _filter_bound(df, mask, col_names, value, is_min=True)
 
 
 def _filter_max(
@@ -427,18 +451,7 @@ def _filter_max(
     col_names: list[str],
     value: float | None,
 ) -> pd.Series:
-    if value is None:
-        return mask
-    if not mask.any():
-        return mask
-    col = _find_col(df, col_names)
-    if not col:
-        raise SnapshotFieldMissingError(
-            f"Missing required snapshot column for max filter {col_names}: "
-            f"configured value={value}"
-        )
-    series = pd.to_numeric(df[col], errors="coerce")
-    return mask & series.le(value) & series.notna()
+    return _filter_bound(df, mask, col_names, value, is_min=False)
 
 
 def _filter_bool_true(

@@ -387,3 +387,40 @@ def test_hard_filter_waterfall_attaches_quantiles_and_tight_threshold_hints():
         include_quantiles=True,
     )
     assert "quantiles" not in obj_steps[0]
+
+
+def test_apply_hard_filters_and_waterfall_reject_inf_and_bool_values():
+    df = pd.DataFrame([
+        {"name": "NormalPass", "amount": 200.0, "pe_ratio": 12.0},
+        {"name": "InfAmount", "amount": float("inf"), "pe_ratio": 12.0},
+        {"name": "NegInfPE", "amount": 200.0, "pe_ratio": float("-inf")},
+        {"name": "BoolAmount", "amount": True, "pe_ratio": 12.0},
+        {"name": "BoolPE", "amount": 200.0, "pe_ratio": False},
+    ])
+
+    filtered = apply_hard_filters(
+        df,
+        HardFilterConfig(amount_min=10.0, pe_ttm_max=20.0),
+    )
+    assert filtered["name"].tolist() == ["NormalPass"]
+
+    steps = hard_filter_waterfall(
+        df,
+        HardFilterConfig(amount_min=10.0, pe_ttm_max=20.0),
+        include_quantiles=True,
+    )
+    amt_step = next(s for s in steps if s["filter"] == "amount_min")
+    assert amt_step["removed"] == 2
+    assert amt_step["after"] == 3
+    pe_step = next(s for s in steps if s["filter"] == "pe_ttm_max")
+    assert pe_step["removed"] == 2
+    assert pe_step["after"] == 1
+
+    bool_col_df = pd.DataFrame([
+        {"name": "B1", "amount": True, "pe_ratio": False},
+        {"name": "B2", "amount": False, "pe_ratio": True},
+    ])
+    assert apply_hard_filters(
+        bool_col_df,
+        HardFilterConfig(amount_min=0.5, pe_ttm_max=5.0),
+    ).empty
