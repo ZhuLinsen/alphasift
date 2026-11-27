@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 import json
-from alphasift.jsonutil import atomic_write_strict_json
+from alphasift.jsonutil import atomic_write_strict_json, safe_int
 import os
 from pathlib import Path
 import re
@@ -45,19 +45,32 @@ def _classify_news_category(text: str) -> str:
     return "市场要闻"
 
 
+def _extract_list(payload: object, *keys: str) -> list[Any]:
+    cur: object = payload
+    for key in keys:
+        if not isinstance(cur, dict):
+            return []
+        cur = cur.get(key)
+    return cur if isinstance(cur, list) else []
+
+
 def _format_pub_time(raw: object) -> str:
     val = str(raw or "").strip()
     if not val:
         return ""
     if val.isdigit():
+        if not re.fullmatch(r"\d{10,13}", val):
+            return ""
         try:
             ts = int(val)
             if ts > 1_000_000_000_000:
                 ts //= 1000
+            if not (946_684_800 <= ts <= 4_102_444_800):
+                return ""
             return datetime.fromtimestamp(ts).strftime("%m-%d %H:%M")
         except (OSError, ValueError, OverflowError):
             return ""
-    m = re.search(r"(\d{2}-\d{2})\s+(\d{2}:\d{2})", val)
+    m = re.search(r"(\d{2}-\d{2})[\sT]+(\d{2}:\d{2})", val)
     if m:
         return f"{m.group(1)} {m.group(2)}"
     m2 = re.search(r"(\d{4}-\d{2}-\d{2})", val)
@@ -100,7 +113,7 @@ def _fetch_eastmoney_fast_news(*, limit: int = 8, timeout_sec: float = 5.0) -> l
         )
         resp.raise_for_status()
         payload = resp.json()
-        rows = ((payload.get("data") or {}).get("fastNewsList") or []) if isinstance(payload, dict) else []
+        rows = _extract_list(payload, "data", "fastNewsList")
         for item in rows:
             if not isinstance(item, dict):
                 continue
@@ -129,7 +142,7 @@ def _fetch_ths_fast_news(*, limit: int = 8, timeout_sec: float = 5.0) -> list[di
     )
     resp.raise_for_status()
     payload = resp.json()
-    rows = ((payload.get("data") or {}).get("list") or []) if isinstance(payload, dict) else []
+    rows = _extract_list(payload, "data", "list")
     out: list[dict[str, Any]] = []
     for item in rows:
         if not isinstance(item, dict):
@@ -157,11 +170,7 @@ def _fetch_sina_fast_news(*, limit: int = 8, timeout_sec: float = 5.0) -> list[d
     )
     resp.raise_for_status()
     payload = resp.json()
-    rows = (
-        ((((payload.get("result") or {}).get("data") or {}).get("feed") or {}).get("list") or [])
-        if isinstance(payload, dict)
-        else []
-    )
+    rows = _extract_list(payload, "result", "data", "feed", "list")
     out: list[dict[str, Any]] = []
     for item in rows:
         if not isinstance(item, dict):
@@ -214,7 +223,7 @@ def search_stock_news_via_web(
     """Search stock or market news via optional Tavily / SerpAPI keys without exposing credentials."""
     t_keys = _resolve_search_keys(tavily_keys, "TAVILY_API_KEYS", "TAVILY_API_KEY")
     s_keys = _resolve_search_keys(serpapi_keys, "SERPAPI_API_KEYS", "SERPAPI_API_KEY")
-    max_res = max(1, min(int(limit), 8))
+    max_res = max(1, min(safe_int(limit, default=3), 8))
 
     for key in t_keys:
         try:
@@ -235,7 +244,7 @@ def search_stock_news_via_web(
                 continue
             resp.raise_for_status()
             data = resp.json()
-            results = data.get("results") or [] if isinstance(data, dict) else []
+            results = _extract_list(data, "results")
             items: list[dict[str, str]] = []
             for r in results[:max_res]:
                 if not isinstance(r, dict):
@@ -266,7 +275,7 @@ def search_stock_news_via_web(
                 continue
             resp.raise_for_status()
             data = resp.json()
-            results = (data.get("news_results") or data.get("organic_results") or []) if isinstance(data, dict) else []
+            results = _extract_list(data, "news_results") or _extract_list(data, "organic_results")
             items = []
             for r in results[:max_res]:
                 if not isinstance(r, dict):
@@ -311,14 +320,30 @@ def _select_and_dedupe_news(raw_items: list[dict[str, Any]], *, limit: int) -> l
 
 
 def _read_news_cache(cache_file: Path | None, ttl_hours: int) -> dict[str, Any] | None:
-    if cache_file is None or not cache_file.is_file() or ttl_hours <= 0:
+    ttl = safe_int(ttl_hours, default=0)
+    if cache_file is None or not cache_file.is_file() or ttl <= 0:
         return None
     try:
         data = json.loads(cache_file.read_text(encoding="utf-8"))
-        cached_at = datetime.fromisoformat(str(data.get("cached_at") or ""))
-        if datetime.now() - cached_at > timedelta(hours=ttl_hours):
+        if not isinstance(data, dict):
             return None
-        return data if isinstance(data.get("items"), list) else None
+        raw_ts = str(data.get("cached_at") or "").strip()
+        if raw_ts.endswith("Z"):
+            raw_ts = raw_ts[:-1] + "+00:00"
+        cached_at = datetime.fromisoformat(raw_ts)
+        now = datetime.now(cached_at.tzinfo) if cached_at.tzinfo is not None else datetime.now()
+        if now - cached_at > timedelta(hours=ttl):
+            return None
+        raw_items = data.get("items")
+        if not isinstance(raw_items, list):
+            return None
+        valid_items = [
+            item for item in raw_items
+            if isinstance(item, dict) and str(item.get("title") or "").strip()
+        ]
+        if not valid_items:
+            return None
+        return {**data, "items": valid_items}
     except Exception:  # noqa: BLE001
         return None
 
@@ -347,9 +372,10 @@ def fetch_cn_market_news(
     timeout_sec: float = 5.0,
 ) -> tuple[list[dict[str, Any]], list[str], list[str]]:
     """Fetch recent CN market / policy / sector headlines with multi-source fallback."""
-    target_limit = max(1, int(limit))
+    target_limit = max(1, safe_int(limit, default=6))
     date_tag = (trade_date or datetime.now().strftime("%Y-%m-%d")).strip()
-    cache_file = Path(cache_dir) / f"market_news_cn_{date_tag}.json" if cache_dir else None
+    safe_date_tag = re.sub(r"[^0-9A-Za-z._-]", "_", date_tag).strip("._") or "latest"
+    cache_file = Path(cache_dir) / f"market_news_cn_{safe_date_tag}.json" if cache_dir else None
     cached = _read_news_cache(cache_file, cache_ttl_hours)
     if cached is not None:
         return list(cached["items"])[:target_limit], list(cached.get("sources") or []), []

@@ -378,6 +378,67 @@ def test_fetch_cn_market_news_dedupes_filters_noise_and_falls_back(monkeypatch, 
     assert search_stock_news_via_web("test query") == []
 
 
+def test_market_news_handles_malformed_containers_timestamps_and_cache(monkeypatch, tmp_path):
+    import json
+    from datetime import datetime, timezone
+    from alphasift.market_news import _format_pub_time, _read_news_cache, fetch_cn_market_news
+
+    assert _format_pub_time("123") == ""
+    assert _format_pub_time("²") == ""
+    assert _format_pub_time("2026-11-27T08:30:00Z") == "11-27 08:30"
+    epoch_out = _format_pub_time("1764201600000")
+    assert "-" in epoch_out and ":" in epoch_out
+
+    class _Resp:
+        status_code = 200
+
+        def __init__(self, body):
+            self._body = body
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self):
+            return self._body
+
+    def fake_get(url: str, **kwargs):
+        if "eastmoney.com" in url:
+            return _Resp({"data": ["unexpected-list"]})
+        if "10jqka.com.cn" in url:
+            return _Resp({"data": "unexpected-str"})
+        return _Resp({"result": {"data": ["bad-feed-container"]}})
+
+    monkeypatch.setattr("alphasift.market_news.requests.get", fake_get)
+    items, sources, errs = fetch_cn_market_news(
+        limit=3,
+        trade_date="../escape",
+        cache_dir=tmp_path,
+        tavily_keys=[],
+        serpapi_keys=[],
+    )
+    assert items == []
+    assert sources == []
+    assert errs == []
+
+    # Cache validation with timezone-aware timestamp, bool TTL rejection, and corrupted payloads.
+    cache_file = tmp_path / "market_news_cn_test.json"
+    cache_file.write_text(
+        json.dumps({
+            "cached_at": datetime.now(timezone.utc).isoformat(),
+            "items": [{"title": "Valid headline", "source": "Test"}],
+            "sources": ["Test"],
+        }),
+        encoding="utf-8",
+    )
+    assert _read_news_cache(cache_file, ttl_hours=True) is None
+    loaded = _read_news_cache(cache_file, ttl_hours=2)
+    assert loaded is not None and loaded["items"][0]["title"] == "Valid headline"
+
+    bad_cache = tmp_path / "market_news_cn_bad.json"
+    bad_cache.write_text("[]", encoding="utf-8")
+    assert _read_news_cache(bad_cache, ttl_hours=2) is None
+
+
 def test_fetch_stock_fund_flow_summary_supports_akshare_1_20_rename(monkeypatch):
     seen_calls: list[tuple[str, dict[str, object]]] = []
 
