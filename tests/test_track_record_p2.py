@@ -478,3 +478,67 @@ def test_track_record_builders_scrub_nonfinite_and_bool() -> None:
     assert "0 runs" in feed_xml
     assert "True" not in feed_xml
     assert "nan" not in feed_xml.lower() and "inf" not in feed_xml.lower()
+
+
+def test_track_record_page_js_helpers_scrub_nonfinite_and_bool() -> None:
+    import pytest
+    import re
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not installed")
+
+    page_path = Path(__file__).resolve().parents[1] / "scripts" / "track_record_page.html"
+    html = page_path.read_text(encoding="utf-8")
+    scripts = re.findall(r"<script(?![^>]*src=)[^>]*>(.*?)</script>", html, flags=re.DOTALL)
+    assert scripts
+    js_src = scripts[-1]
+
+    # Extract pure helper definitions from the page script and verify behavior under Node.
+    harness = """
+const fs = require("fs");
+const vm = require("vm");
+const assert = require("assert");
+const src = fs.readFileSync(0, "utf8");
+const start = src.indexOf("function finiteNum");
+const end = src.indexOf("function syncThemeBtn");
+assert(start !== -1 && end > start);
+const kStart = src.indexOf("function renderMiniKline");
+const kEnd = src.indexOf("function renderMetaAndKpis");
+assert(kStart !== -1 && kEnd > kStart);
+const ctx = {
+  DIST_BUCKETS: [
+    { key: "le_neg7", label: "<=-7%", tone: "down" },
+    { key: "pos0_3", label: "0~3%", tone: "up" },
+  ],
+  t: (k) => k,
+  esc: (s) => String(s),
+};
+const api = vm.runInNewContext(
+  src.slice(start, end) + "\\n" + src.slice(kStart, kEnd) +
+  "\\n;({ finiteNum, nonNegInt, pct, rate, sharePct, num, renderMiniKline, renderHitSparkline, renderReturnDistSvg });",
+  ctx
+);
+for (const bad of [null, undefined, "", true, false, NaN, Infinity, -Infinity, "Infinity", "NaN"]) {
+  assert.strictEqual(api.finiteNum(bad), null);
+  assert.strictEqual(api.pct(bad), '<span class="dim">–</span>');
+  assert.strictEqual(api.rate(bad), '<span class="dim">–</span>');
+  assert.strictEqual(api.sharePct(bad), '<span class="dim">–</span>');
+  assert.strictEqual(api.num(bad), '<span class="dim">–</span>');
+}
+assert.strictEqual(api.nonNegInt(true), 0);
+assert.strictEqual(api.nonNegInt(-5), 0);
+assert.strictEqual(api.nonNegInt(3.9), 3);
+const kline = api.renderMiniKline([[10, NaN, 9.8, 10.1], [10.1, 10.5, 9.9, 10.4]], true);
+assert(!kline.includes("NaN") && !kline.includes("Infinity") && kline.includes("<svg"));
+const klineAllBad = api.renderMiniKline([[10, null, 9.8, 10.1]], 0);
+assert.strictEqual(klineAllBad, '<span class="dim">–</span>');
+const spark = api.renderHitSparkline([{ counts_by_pattern: { p1: Infinity } }, { counts_by_pattern: { p1: true } }], "p1");
+assert(!spark.includes("NaN") && !spark.includes("Infinity"));
+const distSvg = api.renderReturnDistSvg({ le_neg7: true, pos0_3: Infinity });
+assert(!distSvg.includes("NaN") && !distSvg.includes("Infinity") && !distSvg.includes("true"));
+"""
+    proc = subprocess.run([node, "-e", harness], input=js_src, capture_output=True, text=True, check=False)
+    assert proc.returncode == 0, proc.stderr + proc.stdout

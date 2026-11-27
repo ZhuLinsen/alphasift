@@ -1944,15 +1944,35 @@ function pname(slug, serverDisplay) {
   return serverDisplay || slug;
 }
 
-function pct(v, digits = 2) {
-  if (v === null || v === undefined || Number.isNaN(Number(v))) return '<span class="dim">–</span>';
+function finiteNum(v) {
+  if (v === null || v === undefined || v === "" || typeof v === "boolean") return null;
   const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function nonNegInt(v, fallback = 0) {
+  const n = finiteNum(v);
+  return n === null ? fallback : Math.max(0, Math.trunc(n));
+}
+
+function pct(v, digits = 2) {
+  const n = finiteNum(v);
+  if (n === null) return '<span class="dim">–</span>';
   const cls = n > 0 ? "up" : n < 0 ? "down" : "";
   return `<span class="${cls}">${n > 0 ? "+" : ""}${n.toFixed(digits)}%</span>`;
 }
-const rate = (v) => (v === null || v === undefined || Number.isNaN(Number(v))) ? '<span class="dim">–</span>' : `${Math.round(Number(v) * 100)}%`;
-const sharePct = (v) => (v === null || v === undefined || Number.isNaN(Number(v))) ? '<span class="dim">–</span>' : `${Number(v).toFixed(1)}%`;
-const num = (v, d = 2) => (v === null || v === undefined || Number.isNaN(Number(v))) ? '<span class="dim">–</span>' : Number(v).toFixed(d);
+const rate = (v) => {
+  const n = finiteNum(v);
+  return n === null ? '<span class="dim">–</span>' : `${Math.round(n * 100)}%`;
+};
+const sharePct = (v) => {
+  const n = finiteNum(v);
+  return n === null ? '<span class="dim">–</span>' : `${n.toFixed(1)}%`;
+};
+const num = (v, d = 2) => {
+  const n = finiteNum(v);
+  return n === null ? '<span class="dim">–</span>' : n.toFixed(d);
+};
 const localTime = (iso) => {
   if (!iso) return "–";
   const loc = state.lang === "en" ? "en-US" : state.lang === "ja" ? "ja-JP" : "zh-CN";
@@ -2233,7 +2253,8 @@ function computeClientConsensus() {
       const entry = byCode.get(code);
       if (strat) entry.strategies.add(strat);
       entry.tracks.add(run.track || "rules");
-      if (pk.final_score !== null && pk.final_score !== undefined) entry.scores.push(Number(pk.final_score));
+      const pkScore = finiteNum(pk.final_score);
+      if (pkScore !== null) entry.scores.push(pkScore);
     }
   }
 
@@ -2270,22 +2291,25 @@ function computeClientConsensus() {
 
 function renderMiniKline(bars, observeLag) {
   if (!Array.isArray(bars) || !bars.length) return '<span class="dim">–</span>';
+  const cleanBars = [];
   let lo = Infinity, hi = -Infinity;
   for (const b of bars) {
     if (!Array.isArray(b) || b.length < 4) continue;
-    if (b[2] < lo) lo = b[2];
-    if (b[1] > hi) hi = b[1];
+    const o = finiteNum(b[0]), h = finiteNum(b[1]), l = finiteNum(b[2]), c = finiteNum(b[3]);
+    if (o === null || h === null || l === null || c === null) continue;
+    cleanBars.push([o, h, l, c]);
+    if (l < lo) lo = l;
+    if (h > hi) hi = h;
   }
-  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return '<span class="dim">–</span>';
-  const span = Math.max(hi - lo, hi * 0.005, 1e-6);
+  if (!cleanBars.length || !Number.isFinite(lo) || !Number.isFinite(hi)) return '<span class="dim">–</span>';
+  const span = Math.max(hi - lo, Math.abs(hi) * 0.005, 1e-6);
   const W = 96, H = 28, pad = 3.5;
-  const n = bars.length;
+  const n = cleanBars.length;
   const step = (W - pad * 2) / n;
   const bw = Math.max(1.8, step * 0.65);
   const y = (p) => pad + (1 - (p - lo) / span) * (H - pad * 2);
   const shapes = [];
-  bars.forEach((b, i) => {
-    const [o, h, l, c] = b;
+  cleanBars.forEach(([o, h, l, c], i) => {
     const cx = (pad + (i + 0.5) * step).toFixed(1);
     const col = c >= o ? "var(--up)" : "var(--down)";
     const yTop = y(Math.max(o, c)), yBot = y(Math.min(o, c));
@@ -2293,8 +2317,8 @@ function renderMiniKline(bars, observeLag) {
     shapes.push(`<line x1="${cx}" x2="${cx}" y1="${y(h).toFixed(1)}" y2="${y(l).toFixed(1)}" stroke="${col}" stroke-width="1"/>`);
     shapes.push(`<rect x="${(Number(cx) - bw / 2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh}" rx="0.5" fill="${col}"/>`);
   });
-  const lag = Number(observeLag || 0);
-  if (Number.isInteger(lag) && lag > 0 && n - 1 - lag >= 0) {
+  const lag = finiteNum(observeLag);
+  if (lag !== null && Number.isInteger(lag) && lag > 0 && n - 1 - lag >= 0) {
     const obsX = (pad + (n - 1 - lag + 0.5) * step).toFixed(1);
     const confX = (pad + (n - 0.5) * step).toFixed(1);
     shapes.push(`<circle cx="${obsX}" cy="2.2" r="1.8" fill="var(--accent-hi)"/>`);
@@ -2304,7 +2328,7 @@ function renderMiniKline(bars, observeLag) {
 }
 
 function renderHitSparkline(history, slug) {
-  const vals = (history || []).slice(-15).map((h) => Number(((h && h.counts_by_pattern) || {})[slug] || 0));
+  const vals = (history || []).slice(-15).map((h) => nonNegInt(((h && h.counts_by_pattern) || {})[slug], 0));
   if (!vals.length) return '<span class="dim">–</span>';
   const maxV = Math.max(1, ...vals);
   const W = 64, H = 18;
@@ -2322,7 +2346,7 @@ function renderHitSparkline(history, slug) {
 
 function renderReturnDistSvg(dist) {
   if (!dist || typeof dist !== "object") return `<div class="empty">${esc(t("no_dist"))}</div>`;
-  const counts = DIST_BUCKETS.map((b) => Number(dist[b.key] || 0));
+  const counts = DIST_BUCKETS.map((b) => nonNegInt(dist[b.key], 0));
   const maxVal = Math.max(1, ...counts);
   const W = 360, H = 116, top = 18, bot = 22, barH = H - top - bot;
   const step = W / DIST_BUCKETS.length;
@@ -2356,8 +2380,8 @@ function renderMetaAndKpis() {
     const failures = info.failures || [];
     const bad = failures.length > 0;
     const skipped = info.skipped || 0;
-    totalOk += Number(info.ok || 0);
-    totalRuns += Number(info.total || 0);
+    totalOk += nonNegInt(info.ok, 0);
+    totalRuns += nonNegInt(info.total, 0);
     totalFailures += failures.length;
     const title = failures.map((f) => `${f.market} ${f.strategy}: ${f.status} ${f.error || ""}`).join("\n");
     const statusText = skipped && info.total === 0
@@ -2389,19 +2413,20 @@ function renderMetaAndKpis() {
   }
 
   const sc = s.scorecard || [];
-  const t5Rows = sc.filter((r) => ((r.windows || {})["5"] || {}).average_excess_return_pct !== null && ((r.windows || {})["5"] || {}).average_excess_return_pct !== undefined);
-  const qualifiedT5 = t5Rows.filter((r) => Number(((r.windows || {})["5"] || {}).evaluated || 0) >= MIN_SAMPLE);
-  const sortedT5 = [...qualifiedT5].sort((a, b) => b.windows["5"].average_excess_return_pct - a.windows["5"].average_excess_return_pct);
+  const t5Rows = sc.filter((r) => finiteNum(((r.windows || {})["5"] || {}).average_excess_return_pct) !== null);
+  const qualifiedT5 = t5Rows.filter((r) => nonNegInt(((r.windows || {})["5"] || {}).evaluated, 0) >= MIN_SAMPLE);
+  const sortedT5 = [...qualifiedT5].sort((a, b) => (finiteNum(b.windows["5"].average_excess_return_pct) ?? 0) - (finiteNum(a.windows["5"].average_excess_return_pct) ?? 0));
   const bestT5 = sortedT5[0] || null;
-  const maxEval = t5Rows.reduce((mx, r) => Math.max(mx, Number(((r.windows || {})["5"] || {}).evaluated || 0)), 0);
+  const maxEval = t5Rows.reduce((mx, r) => Math.max(mx, nonNegInt(((r.windows || {})["5"] || {}).evaluated, 0)), 0);
 
   let evalTot = 0, exSum = 0;
   for (const r of t5Rows) {
     const w5 = r.windows["5"];
-    const n = Number(w5.evaluated || 0);
-    if (n > 0) {
+    const n = nonNegInt(w5.evaluated, 0);
+    const exV = finiteNum(w5.average_excess_return_pct);
+    if (n > 0 && exV !== null) {
       evalTot += n;
-      exSum += Number(w5.average_excess_return_pct) * n;
+      exSum += exV * n;
     }
   }
   const avgEx = evalTot > 0 ? exSum / evalTot : null;
@@ -2469,23 +2494,27 @@ function renderMetaAndKpis() {
   const clientSyn = computeClientConsensus();
   const topConsensus = ((rep.cross_strategy_synthesis || {}).consensus_picks || clientSyn.consensus)[0] || null;
 
+  const kpiAdv = reg ? finiteNum(reg.advance_ratio_pct) : null;
+  const consScore = topConsensus ? finiteNum(topConsensus.avg_final_score) : null;
+  const consPrice = topConsensus ? finiteNum(topConsensus.price) : null;
+
   const kpi3 = reg
     ? `<div class="kpi-cell">
          <div class="kpi-label"><span>${esc(t("kpi3_temp_lbl"))} (${esc((reg.trade_date || "").slice(5))})</span><span class="badge accent">${esc(rname(reg.regime_stage, reg.regime_stage_label))}</span></div>
-         <div class="kpi-val">${esc(Number(reg.advance_ratio_pct || 0).toFixed(1))}% <span class="small dim" style="font-weight:500;">${esc(t("kpi3_up_suffix"))}</span></div>
-         <div class="kpi-foot">${t("kpi3_temp_foot", { med: pct(reg.median_return_pct), lu: esc(String(reg.non_st_limit_up_count ?? 0)), ld: esc(String(reg.non_st_limit_down_count ?? 0)) })}</div>
+         <div class="kpi-val">${esc((kpiAdv ?? 0).toFixed(1))}% <span class="small dim" style="font-weight:500;">${esc(t("kpi3_up_suffix"))}</span></div>
+         <div class="kpi-foot">${t("kpi3_temp_foot", { med: pct(reg.median_return_pct), lu: esc(String(nonNegInt(reg.non_st_limit_up_count, 0))), ld: esc(String(nonNegInt(reg.non_st_limit_down_count, 0))) })}</div>
        </div>`
     : topConsensus
       ? `<div class="kpi-cell">
-           <div class="kpi-label"><span>${esc(t("kpi3_cons_lbl"))}</span><span class="badge accent">${esc(t("kpi3_cons_badge", { n: topConsensus.strategy_count }))}</span></div>
+           <div class="kpi-label"><span>${esc(t("kpi3_cons_lbl"))}</span><span class="badge accent">${esc(t("kpi3_cons_badge", { n: nonNegInt(topConsensus.strategy_count, 0) }))}</span></div>
            <div class="kpi-val">${esc(topConsensus.name)} <span class="small dim">${esc(topConsensus.code)}</span></div>
-           <div class="kpi-foot">${esc(t("kpi3_cons_foot", { ind: indname(topConsensus.industry), score: (topConsensus.avg_final_score != null ? Number(topConsensus.avg_final_score).toFixed(1) : "–"), price: (topConsensus.price != null ? Number(topConsensus.price).toFixed(2) : "–") }))}</div>
+           <div class="kpi-foot">${esc(t("kpi3_cons_foot", { ind: indname(topConsensus.industry), score: (consScore !== null ? consScore.toFixed(1) : "–"), price: (consPrice !== null ? consPrice.toFixed(2) : "–") }))}</div>
          </div>`
       : `<div class="kpi-cell"><div class="kpi-label">${esc(t("kpi3_empty_lbl"))}</div><div class="kpi-val dim">–</div><div class="kpi-foot">${esc(t("kpi3_empty_foot"))}</div></div>`;
 
   const ann = rep.announcement_risks || {};
   const flaggedCount = (ann.flagged_items || []).length;
-  const checkedCount = Number(ann.checked_count || 0);
+  const checkedCount = nonNegInt(ann.checked_count, 0);
   const kpi4 = checkedCount > 0
     ? `<div class="kpi-cell">
          <div class="kpi-label"><span>${esc(t("kpi4_ann_lbl"))}</span><span class="badge ${flaggedCount ? "bad" : "ok-neutral"}">${esc(flaggedCount ? t("kpi4_ann_bad", { n: flaggedCount }) : t("kpi4_ann_ok"))}</span></div>
@@ -2513,7 +2542,7 @@ function renderConsensusPane() {
   const sectors = (syn.sector_concentration && syn.sector_concentration.length) ? syn.sector_concentration : clientSyn.sectors;
   const tradeDate = rep.trade_date || clientSyn.latestDate || t("latest_fallback");
   const flagged = ann.flagged_items || [];
-  const checked = Number(ann.checked_count || 0);
+  const checked = nonNegInt(ann.checked_count, 0);
   const mNews = (rep.market_news && Array.isArray(rep.market_news.items)) ? rep.market_news.items : [];
   const candNews = (rep.market_news && rep.market_news.candidate_news) || {};
 
@@ -2525,18 +2554,20 @@ function renderConsensusPane() {
     if (state.lang !== "zh" && brief.mode !== "llm") {
       const reg = rep.market_regime || ((state.patterns || {}).latest || {}).market_regime || ((state.summary.pattern_board || {}).latest || {}).market_regime || null;
       if (reg) {
-        const adv = Number(reg.advance_ratio_pct || 0).toFixed(1);
-        const med = reg.median_return_pct !== null && reg.median_return_pct !== undefined
-          ? `${Number(reg.median_return_pct) > 0 ? "+" : ""}${Number(reg.median_return_pct).toFixed(2)}%`
+        const adv = (finiteNum(reg.advance_ratio_pct) ?? 0).toFixed(1);
+        const medVal = finiteNum(reg.median_return_pct);
+        const med = medVal !== null
+          ? `${medVal > 0 ? "+" : ""}${medVal.toFixed(2)}%`
           : "–";
-        const seal = reg.seal_rate_pct !== null && reg.seal_rate_pct !== undefined ? `${Number(reg.seal_rate_pct).toFixed(1)}%` : "–";
+        const sealVal = finiteNum(reg.seal_rate_pct);
+        const seal = sealVal !== null ? `${sealVal.toFixed(1)}%` : "–";
         hlText = t("rule_hl_fmt", {
           stale: rep.pack_is_stale ? t("rule_hl_stale") : "",
           stage: rname(reg.regime_stage, reg.regime_stage_label),
           adv,
           med,
-          lu: reg.non_st_limit_up_count ?? 0,
-          ld: reg.non_st_limit_down_count ?? 0,
+          lu: nonNegInt(reg.non_st_limit_up_count, 0),
+          ld: nonNegInt(reg.non_st_limit_down_count, 0),
           seal,
         });
         if (flagged.length) hlText += t("rule_hl_flag", { n: flagged.length });
@@ -2551,7 +2582,7 @@ function renderConsensusPane() {
         subParts.push(t("rule_sub_nocons"));
       }
       if (sectors.length) {
-        subParts.push(t("rule_sub_sec", { items: sectors.slice(0, 3).map((s) => `${indname(s.industry)} (${Number(s.share_pct || 0).toFixed(1)}%)`).join(", ") }));
+        subParts.push(t("rule_sub_sec", { items: sectors.slice(0, 3).map((s) => `${indname(s.industry)} (${Math.max(0, finiteNum(s.share_pct) ?? 0).toFixed(1)}%)`).join(", ") }));
       }
       const aiHl = rep.ai_highlights || [];
       if (aiHl.length) {
@@ -2613,12 +2644,15 @@ function renderConsensusPane() {
   const sectorHtml = sectors.length
     ? `<div class="sector-pills">
         <div class="small dim" style="display:flex;justify-content:space-between;"><span>${esc(t("sector_dist_title", { n: Math.min(5, sectors.length) }))}</span><span class="mono">${esc(t("sector_dist_col"))}</span></div>
-        ${sectors.slice(0, 5).map((s) => `
+        ${sectors.slice(0, 5).map((s) => {
+          const sp = Math.max(0, finiteNum(s.share_pct) ?? 0);
+          return `
           <div class="sector-row">
             <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(indname(s.industry))}</span>
-            <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, Number(s.share_pct || 0)).toFixed(1)}%"></div></div>
-            <span class="mono small" style="text-align:right;">${Number(s.share_pct || 0).toFixed(1)}% (${s.pick_count})</span>
-          </div>`).join("")}
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, sp).toFixed(1)}%"></div></div>
+            <span class="mono small" style="text-align:right;">${sp.toFixed(1)}% (${nonNegInt(s.pick_count, 0)})</span>
+          </div>`;
+        }).join("")}
       </div>`
     : "";
 
@@ -2665,20 +2699,20 @@ function renderCnHero() {
     const markets = state.summary.markets || [];
     const sc = state.summary.scorecard || [];
     const rowsHtml = markets.map((m) => {
-      const mRows = sc.filter((r) => r.market === m.id && ((r.windows || {})["5"] || {}).average_excess_return_pct !== null && ((r.windows || {})["5"] || {}).average_excess_return_pct !== undefined);
-      mRows.sort((a, b) => b.windows["5"].average_excess_return_pct - a.windows["5"].average_excess_return_pct);
+      const mRows = sc.filter((r) => finiteNum(((r.windows || {})["5"] || {}).average_excess_return_pct) !== null && r.market === m.id);
+      mRows.sort((a, b) => (finiteNum(b.windows["5"].average_excess_return_pct) ?? 0) - (finiteNum(a.windows["5"].average_excess_return_pct) ?? 0));
       const top = mRows[0] || null;
       if (!top) {
         return `<div class="mkt-snap-row"><span class="badge">${esc(mname(m.id))}</span><div class="mkt-snap-mid"><div class="mkt-snap-meta">${esc(m.benchmark)}</div></div><div class="mkt-snap-val dim">${esc(t("snap_pending"))}</div></div>`;
       }
       const w5 = top.windows["5"];
-      const ex = Number(w5.average_excess_return_pct);
+      const ex = finiteNum(w5.average_excess_return_pct) ?? 0;
       const barW = Math.min(100, Math.max(8, Math.abs(ex) * 14));
       return `<div class="mkt-snap-row">
         <div><strong style="font-size:12.5px;">${esc(mname(m.id))}</strong><div class="small dim">${esc(m.id.toUpperCase())}</div></div>
         <div class="mkt-snap-mid">
           <div class="mkt-snap-strat">${sname(top.strategy)}</div>
-          <div class="mkt-snap-meta">${t("snap_beat_eval", { bench: esc(m.benchmark), beat: rate(w5.beat_rate), n: w5.evaluated })}</div>
+          <div class="mkt-snap-meta">${t("snap_beat_eval", { bench: esc(m.benchmark), beat: rate(w5.beat_rate), n: nonNegInt(w5.evaluated, 0) })}</div>
           <div class="bar-track" style="margin-top:4px;height:4px;"><div class="bar-fill ${ex >= 0 ? "up-bg" : ""}" style="width:${barW.toFixed(1)}%;${ex < 0 ? "background:var(--down);" : ""}"></div></div>
         </div>
         <div class="mkt-snap-val">${pct(ex, 2)}</div>
@@ -2698,25 +2732,28 @@ function renderCnHero() {
     return;
   }
 
-  const totalTraded = Math.max(1, Number(reg.traded_count || 0));
-  const adv = Number(reg.advancing_count || 0);
-  const dec = Number(reg.declining_count || 0);
-  const flat = Number(reg.flat_count || 0);
+  const totalTraded = Math.max(1, nonNegInt(reg.traded_count, 0));
+  const adv = nonNegInt(reg.advancing_count, 0);
+  const dec = nonNegInt(reg.declining_count, 0);
+  const flat = nonNegInt(reg.flat_count, 0);
   const advW = (adv / totalTraded) * 100;
   const flatW = (flat / totalTraded) * 100;
   const decW = Math.max(0, 100 - advW - flatW);
-  const amtVal = reg.total_amount_yi !== null && reg.total_amount_yi !== undefined
-    ? (state.lang === "en" ? `${(Number(reg.total_amount_yi) * 0.1).toFixed(0)}B RMB` : `${Math.round(Number(reg.total_amount_yi))} ${t("amt_unit")}`)
+  const amtN = finiteNum(reg.total_amount_yi);
+  const amtVal = amtN !== null
+    ? (state.lang === "en" ? `${(amtN * 0.1).toFixed(0)}B RMB` : `${Math.round(amtN)} ${t("amt_unit")}`)
     : "–";
-  const seal = reg.seal_rate_pct !== null && reg.seal_rate_pct !== undefined ? `${Number(reg.seal_rate_pct).toFixed(1)}%` : "–";
+  const sealN = finiteNum(reg.seal_rate_pct);
+  const seal = sealN !== null ? `${sealN.toFixed(1)}%` : "–";
 
   const ladder = reg.consecutive_board_ladder || {};
-  const ladderEntries = Object.entries(ladder).sort((a, b) => Number(b[0]) - Number(a[0]));
-  const maxCnt = Math.max(1, ...ladderEntries.map(([, v]) => Number(v || 0)));
+  const ladderEntries = Object.entries(ladder).sort((a, b) => (finiteNum(b[0]) ?? 0) - (finiteNum(a[0]) ?? 0));
+  const maxCnt = Math.max(1, ...ladderEntries.map(([, v]) => nonNegInt(v, 0)));
   const ladderHtml = ladderEntries.length
     ? `<div class="ladder-list">${ladderEntries.map(([b, cnt]) => {
-        const w = Math.max(8, (Number(cnt) / maxCnt) * 100);
-        return `<div class="ladder-row"><span>${esc(t("ladder_board", { b }))}</span><div class="bar-track"><div class="bar-fill up-bg" style="width:${w.toFixed(1)}%"></div></div><span style="text-align:right;font-weight:600">${esc(t("ladder_cnt", { n: cnt }))}</span></div>`;
+        const cntN = nonNegInt(cnt, 0);
+        const w = Math.max(8, (cntN / maxCnt) * 100);
+        return `<div class="ladder-row"><span>${esc(t("ladder_board", { b }))}</span><div class="bar-track"><div class="bar-fill up-bg" style="width:${w.toFixed(1)}%"></div></div><span style="text-align:right;font-weight:600">${esc(t("ladder_cnt", { n: cntN }))}</span></div>`;
       }).join("")}</div>`
     : `<div class="small dim">${esc(t("ladder_empty"))}</div>`;
 
@@ -2881,8 +2918,10 @@ function renderTrackComparison() {
       const deltaCell = sufficient
         ? `<b>${pct(x.ai_minus_rules_pct)}</b><div class="small dim">${esc(t("tc_win_days", { w: x.ai_win_days ?? 0, n: paired }))}</div>`
         : `<span class="badge exp" title="${esc(tHiddenReason(x.delta_hidden_reason, paired, minPaired))}">${esc(t("tc_insuff", { p: paired, m: minPaired }))}</span>`;
-      const missRate = r.ai_missing_rate_pct !== null && r.ai_missing_rate_pct !== undefined ? `${Number(r.ai_missing_rate_pct).toFixed(1)}%` : "–";
-      const overlap = r.avg_pick_overlap_pct !== null && r.avg_pick_overlap_pct !== undefined ? `${Number(r.avg_pick_overlap_pct).toFixed(1)}%` : "–";
+      const missVal = finiteNum(r.ai_missing_rate_pct);
+      const missRate = missVal !== null ? `${missVal.toFixed(1)}%` : "–";
+      const ovVal = finiteNum(r.avg_pick_overlap_pct);
+      const overlap = ovVal !== null ? `${ovVal.toFixed(1)}%` : "–";
       const uniqTxt = x.ai_unique_count ? `${pct(x.ai_unique_excess_pct)} <span class="dim small">(${x.ai_unique_count})</span>` : '<span class="dim">–</span>';
       const dropTxt = x.rules_dropped_count ? `${pct(x.rules_dropped_excess_pct)} <span class="dim small">(${x.rules_dropped_count})</span>` : '<span class="dim">–</span>';
       return `<tr class="${sufficient ? "" : "low-sample"}">
@@ -3028,7 +3067,10 @@ function renderPatternRadar() {
       <button type="button" data-pf="active" aria-pressed="${state.patFilter === "active"}">${esc(t("pat_f_active", { n: actCnt }))}</button>
       <button type="button" data-pf="experimental" aria-pressed="${state.patFilter === "experimental"}">${esc(t("pat_f_exp", { n: expCnt }))}</button>
     </div></div>`;
-    const fmtS = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? "–" : `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`);
+    const fmtS = (v) => {
+      const n = finiteNum(v);
+      return n === null ? "–" : `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
+    };
     const visible = patMeta.filter((x) => state.patFilter === "all" || x.st === state.patFilter);
     const cards = visible.map(({ name, items, total, st }) => {
       const badge = st === "active"
@@ -3041,7 +3083,8 @@ function renderPatternRadar() {
       const rStab = rInfo ? (rInfo.stability || {}) : {};
       const gVal = rh5.gross_excess_mean_pct ?? rh5.excess_mean_pct;
       const nVal = rGrad.t5_net_excess_mean_pct ?? rh5.net_excess_mean_pct;
-      const tStr = rStab.t_stat !== null && rStab.t_stat !== undefined ? Number(rStab.t_stat).toFixed(2) : "–";
+      const tVal = finiteNum(rStab.t_stat);
+      const tStr = tVal !== null ? tVal.toFixed(2) : "–";
       const metaBar = rInfo
         ? `<div class="pat-meta-row"><span>${esc(t("pat_card_meta", { g: fmtS(gVal), n: fmtS(nVal), t: tStr, cnt: rh5.excess_scored ?? rh5.scored ?? 0 }))}</span><span title="${esc(t("pat_card_spark"))}">${renderHitSparkline(pb.history, name)}</span></div>`
         : (pb.history && pb.history.length ? `<div class="pat-meta-row"><span>${esc(t("pat_card_spark"))}</span><span>${renderHitSparkline(pb.history, name)}</span></div>` : "");
@@ -3053,7 +3096,8 @@ function renderPatternRadar() {
       }
       const rows = items.slice(0, 6).map((s) => {
         const obs = s.observe_lag_days ? ` <span class="dim small">-${s.observe_lag_days}d</span>` : "";
-        const ov = s.overhead_supply_10pct !== null && s.overhead_supply_10pct !== undefined ? `${Number(s.overhead_supply_10pct).toFixed(0)}%` : "–";
+        const ovN = finiteNum(s.overhead_supply_10pct);
+        const ov = ovN !== null ? `${ovN.toFixed(0)}%` : "–";
         return `<tr><td class="l"><strong>${esc(s.name || s.code)}</strong> <span class="mono dim small">${esc(s.code)}</span>${obs}</td>
           <td class="mono">${pct(s.change_pct)}</td><td class="dim mono">${ov}</td><td>${renderMiniKline(s.kline, s.observe_lag_days)}</td></tr>`;
       }).join("");
@@ -3080,7 +3124,7 @@ function renderPatternRadar() {
     }
     const patSumBadge = $("pat-summary-badge");
     if (patSumBadge) {
-      const totalHits = patMeta.reduce((acc, x) => acc + Number(x.total || 0), 0);
+      const totalHits = patMeta.reduce((acc, x) => acc + nonNegInt(x.total, 0), 0);
       patSumBadge.textContent = t("pat_sum_badge", { m: patMeta.length, h: totalHits });
       patSumBadge.style.display = "";
     }
@@ -3112,20 +3156,24 @@ function renderPatternRadar() {
       const stab = p.stability || {};
       const mt = p.multiple_testing || {};
       const status = grad.recommended_status || "experimental";
-      const t5ExcessN = Number(h5.excess_scored ?? h5.scored ?? 0);
-      const totalSigN = Number(h5.scored ?? 0) + Number(p.untradable_count || 0);
+      const t5ExcessN = nonNegInt(h5.excess_scored ?? h5.scored, 0);
+      const totalSigN = nonNegInt(h5.scored, 0) + nonNegInt(p.untradable_count, 0);
       const muted = status !== "active" || t5ExcessN < MIN_PATTERN_GRAD_SAMPLE;
       const badge = status === "active"
         ? `<span class="badge active">${esc(t("pat_status_active"))}</span>`
         : `<span class="badge exp">${esc(t("pat_status_exp"))}</span>`;
-      const tStat = stab.t_stat !== null && stab.t_stat !== undefined ? `${Number(stab.t_stat).toFixed(2)}` : "–";
+      const tStatVal = finiteNum(stab.t_stat);
+      const tStat = tStatVal !== null ? `${tStatVal.toFixed(2)}` : "–";
       const tTipParts = [];
-      if (stab.naive_daily_t_stat !== null && stab.naive_daily_t_stat !== undefined) tTipParts.push(`naive t=${Number(stab.naive_daily_t_stat).toFixed(2)}`);
-      if (stab.ew_t_stat !== null && stab.ew_t_stat !== undefined) tTipParts.push(`EW NW t=${Number(stab.ew_t_stat).toFixed(2)}`);
-      if (mt.bh_q_value_csi300 !== null && mt.bh_q_value_csi300 !== undefined) tTipParts.push(`BH q=${Number(mt.bh_q_value_csi300).toFixed(3)}`);
+      const naiveTVal = finiteNum(stab.naive_daily_t_stat);
+      const ewTVal = finiteNum(stab.ew_t_stat);
+      const bhQVal = finiteNum(mt.bh_q_value_csi300);
+      if (naiveTVal !== null) tTipParts.push(`naive t=${naiveTVal.toFixed(2)}`);
+      if (ewTVal !== null) tTipParts.push(`EW NW t=${ewTVal.toFixed(2)}`);
+      if (bhQVal !== null) tTipParts.push(`BH q=${bhQVal.toFixed(3)}`);
       const tTip = tTipParts.join(" · ");
-      const h1d = Number(stab.h1_days ?? 0);
-      const h2d = Number(stab.h2_days ?? 0);
+      const h1d = nonNegInt(stab.h1_days, 0);
+      const h2d = nonNegInt(stab.h2_days, 0);
       const h1h2 = (stab.h1_days || stab.h2_days)
         ? `<div>${pct(stab.h1_daily_excess_mean_pct ?? stab.h1_excess_mean_pct)} <span class="dim">(${esc(String(h1d))}d)</span></div><div>${pct(stab.h2_daily_excess_mean_pct ?? stab.h2_excess_mean_pct)} <span class="dim">(${esc(String(h2d))}d)</span></div>`
         : '<span class="dim">–</span>';
@@ -3191,8 +3239,14 @@ function renderPatternRadar() {
       const wcols = t("wf_cols");
       const wfHead = `<thead><tr><th class="l">${esc(wcols[0])}</th><th class="l">${esc(wcols[1])}</th><th class="l">${esc(wcols[2])}</th><th>${esc(wcols[3])}</th><th>${esc(wcols[4])}</th><th>${esc(wcols[5])}</th><th>${esc(wcols[6])}</th><th>${esc(wcols[7])}</th><th>${esc(wcols[8])}</th></tr></thead>`;
       const fmtStages = (arr) => (Array.isArray(arr) && arr.length ? esc(arr.map((s) => rname(s)).join(" / ")) : `<span class="dim">${esc(t("wf_none"))}</span>`);
-      const fmtPlainPct = (v) => (v === null || v === undefined || Number.isNaN(Number(v))) ? "–" : `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`;
-      const fmtStat = (v) => (v === null || v === undefined || Number.isNaN(Number(v))) ? "–" : Number(v).toFixed(2);
+      const fmtPlainPct = (v) => {
+        const n = finiteNum(v);
+        return n === null ? "–" : `${n > 0 ? "+" : ""}${n.toFixed(2)}%`;
+      };
+      const fmtStat = (v) => {
+        const n = finiteNum(v);
+        return n === null ? "–" : n.toFixed(2);
+      };
       const buildWfCli = (patId, wfObj) => {
         const j = wfObj && wfObj.h2_non_adverse_low_overhead;
         const cap = (wfObj && wfObj.low_overhead_threshold_pct) || 15;
@@ -3266,7 +3320,7 @@ function renderPatternRadar() {
       };
       const firstWf = replay.patterns.map((p) => p.walk_forward_regime_audit).find((w) => w && typeof w === "object") || {};
       const splitMid = (replay.pack_summary && replay.pack_summary.eval_mid_date) || firstWf.eval_mid_date || "";
-      const totalPurged = replay.patterns.reduce((acc, p) => acc + Number((p.walk_forward_regime_audit && p.walk_forward_regime_audit.h1_purged_signals) || 0), 0);
+      const totalPurged = replay.patterns.reduce((acc, p) => acc + nonNegInt(p.walk_forward_regime_audit && p.walk_forward_regime_audit.h1_purged_signals, 0), 0);
       const wfRows = replay.patterns.map((p) => {
         const wf = p.walk_forward_regime_audit || {};
         const h2Base = wf.h2_baseline || {};
@@ -3545,7 +3599,8 @@ function picksTable(picks, withEval) {
       if (e.status === "pending") return `<td class="dim">${esc(t("st_pending"))}</td>`;
       if (e.status === "untradable_limit_up") return `<td class="dim" title="${esc(t("st_untradable_title"))}">${esc(t("st_untradable"))}</td>`;
       if (e.status !== "ok") return `<td class="dim" title="${esc(tStatus(e.status))}">${esc(t("st_nodata"))}</td>`;
-      return `<td class="mono" title="${esc(t("chart_tip_excess"))} ${e.excess_return_pct ?? "–"}%">${pct(e.return_pct, 1)}<br><span class="small">${e.excess_return_pct === null ? "" : esc(t("st_excess_lbl")) + pct(e.excess_return_pct, 1)}</span></td>`;
+      const exTip = finiteNum(e.excess_return_pct);
+      return `<td class="mono" title="${esc(t("chart_tip_excess"))} ${exTip !== null ? exTip.toFixed(1) : "–"}%">${pct(e.return_pct, 1)}<br><span class="small">${exTip === null ? "" : esc(t("st_excess_lbl")) + pct(exTip, 1)}</span></td>`;
     }).join("");
     return `<tr><td><span class="rank-num ${p.rank <= 3 ? "top" : ""}">${p.rank}</span></td><td class="l">${name}</td>${cells}</tr>`;
   }).join("");
@@ -3571,8 +3626,9 @@ function renderLatest() {
   $("latest").innerHTML = runs.length ? runs.map((r) => {
     const badge = r.track === "ai" ? '<span class="badge ai">AI</span>' : "";
     const degNotes = Array.isArray(r.degradation_notes) ? r.degradation_notes.join(" · ") : "";
-    const degLbl = Number(r.degradation || 0) > 1 ? `${t("degraded_lbl")} (${r.degradation})` : t("degraded_lbl");
-    const degHtml = r.degradation ? `<span class="badge warn" title="${esc(degNotes)}">${esc(degLbl)}</span>` : "";
+    const degCnt = nonNegInt(r.degradation, 0);
+    const degLbl = degCnt > 1 ? `${t("degraded_lbl")} (${degCnt})` : t("degraded_lbl");
+    const degHtml = degCnt > 0 ? `<span class="badge warn" title="${esc(degNotes)}">${esc(degLbl)}</span>` : "";
     return `<div class="card">
       <div class="card-top">
         <h3><span>${sname(r.strategy)}${badge}</span><span>${degHtml}<span class="badge">${esc(t("latest_n_picks", { n: r.picks.length }))}</span></span></h3>
