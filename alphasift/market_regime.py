@@ -15,6 +15,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from alphasift.jsonutil import finite_float, json_safe, safe_int
 from alphasift.normalize import normalize_code
 from alphasift.pack import DailyPack
 
@@ -79,9 +80,9 @@ class MarketRegimeSnapshot:
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["consecutive_board_ladder"] = {
-            str(k): int(v) for k, v in self.consecutive_board_ladder.items()
+            str(k): safe_int(v, default=0) for k, v in self.consecutive_board_ladder.items()
         }
-        return payload
+        return json_safe(payload)
 
 
 def cn_price_limit_pct(code: str, *, is_st: bool = False, name: str = "") -> float:
@@ -103,7 +104,11 @@ def round_cn_tick(values: np.ndarray | float) -> np.ndarray | float:
 
 
 def _normalize_date_str(value: object) -> str | None:
-    if value is None or (isinstance(value, float) and np.isnan(value)):
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, float) and not np.isfinite(value):
+        return None
+    if pd.isna(value):
         return None
     text = str(value).strip()
     if not text or text.lower() in {"nan", "nat", "none", "<na>"}:
@@ -168,9 +173,14 @@ def compute_limit_masks(
         empty_bool = np.zeros((0, len(daily_pack.codes)), dtype=bool)
         empty_float = np.zeros((0, len(daily_pack.codes)), dtype=np.float64)
         return {
+            "dates": np.asarray([], dtype=str),
             "active": empty_bool,
             "is_st": np.zeros(len(daily_pack.codes), dtype=bool),
             "limit_pct": np.zeros(len(daily_pack.codes), dtype=np.float64),
+            "open": empty_float,
+            "high": empty_float,
+            "low": empty_float,
+            "close": empty_float,
             "pre_close": empty_float,
             "up_limit": empty_float,
             "down_limit": empty_float,
@@ -315,28 +325,34 @@ def classify_regime_stage(
     prev_limit_up_avg_return_pct: float | None,
 ) -> tuple[str, str, list[str]]:
     """Rule-based CN regime stage classification for reporting & evaluation slices only."""
-    prev_ret = prev_limit_up_avg_return_pct
-    seal = seal_rate_pct
+    adv_ratio = finite_float(advance_ratio_pct)
+    adv_ratio = 0.0 if adv_ratio is None else adv_ratio
+    non_st_lu = max(0, safe_int(non_st_limit_up_count, default=0))
+    non_st_ld = max(0, safe_int(non_st_limit_down_count, default=0))
+    non_st_bb = max(0, safe_int(non_st_broken_board_count, default=0))
+    seal = finite_float(seal_rate_pct)
+    max_lu = max(0, safe_int(max_consecutive_limit_up, default=0))
+    prev_ret = finite_float(prev_limit_up_avg_return_pct)
 
     if (
-        (advance_ratio_pct < 25.0 and non_st_limit_down_count >= 25)
-        or (advance_ratio_pct < 20.0 and non_st_limit_up_count < 35)
-        or (non_st_limit_up_count < 25 and prev_ret is not None and prev_ret < -1.0)
+        (adv_ratio < 25.0 and non_st_ld >= 25)
+        or (adv_ratio < 20.0 and non_st_lu < 35)
+        or (non_st_lu < 25 and prev_ret is not None and prev_ret < -1.0)
     ):
         reasons = [
-            f"上涨占比 {advance_ratio_pct:.1f}%",
-            f"非ST涨停 {non_st_limit_up_count} / 跌停 {non_st_limit_down_count}",
+            f"上涨占比 {adv_ratio:.1f}%",
+            f"非ST涨停 {non_st_lu} / 跌停 {non_st_ld}",
         ]
         if prev_ret is not None:
             reasons.append(f"昨涨停溢价 {prev_ret:+.2f}%")
         return "freezing", REGIME_STAGE_LABELS["freezing"], reasons
 
     if (
-        (non_st_limit_down_count >= 20 and prev_ret is not None and prev_ret < -0.5)
-        or (seal is not None and seal < 60.0 and advance_ratio_pct < 40.0 and non_st_limit_down_count >= 10)
-        or (prev_ret is not None and prev_ret <= -1.5 and advance_ratio_pct < 45.0)
+        (non_st_ld >= 20 and prev_ret is not None and prev_ret < -0.5)
+        or (seal is not None and seal < 60.0 and adv_ratio < 40.0 and non_st_ld >= 10)
+        or (prev_ret is not None and prev_ret <= -1.5 and adv_ratio < 45.0)
     ):
-        reasons = [f"非ST跌停 {non_st_limit_down_count}", f"上涨占比 {advance_ratio_pct:.1f}%"]
+        reasons = [f"非ST跌停 {non_st_ld}", f"上涨占比 {adv_ratio:.1f}%"]
         if seal is not None:
             reasons.append(f"封板率 {seal:.1f}%")
         if prev_ret is not None:
@@ -344,14 +360,14 @@ def classify_regime_stage(
         return "ebb", REGIME_STAGE_LABELS["ebb"], reasons
 
     if (
-        advance_ratio_pct >= 60.0
-        and non_st_limit_up_count >= 65
+        adv_ratio >= 60.0
+        and non_st_lu >= 65
         and (seal is None or seal >= 72.0)
         and (prev_ret is None or prev_ret >= 1.0)
     ):
         reasons = [
-            f"上涨占比 {advance_ratio_pct:.1f}%",
-            f"非ST涨停 {non_st_limit_up_count}",
+            f"上涨占比 {adv_ratio:.1f}%",
+            f"非ST涨停 {non_st_lu}",
         ]
         if seal is not None:
             reasons.append(f"封板率 {seal:.1f}%")
@@ -360,33 +376,33 @@ def classify_regime_stage(
         return "main_up", REGIME_STAGE_LABELS["main_up"], reasons
 
     if (
-        (advance_ratio_pct >= 58.0 and non_st_limit_up_count >= 45 and non_st_limit_down_count <= 10)
-        or (advance_ratio_pct >= 50.0 and prev_ret is not None and prev_ret >= 2.0 and non_st_limit_up_count >= 50)
+        (adv_ratio >= 58.0 and non_st_lu >= 45 and non_st_ld <= 10)
+        or (adv_ratio >= 50.0 and prev_ret is not None and prev_ret >= 2.0 and non_st_lu >= 50)
     ):
         reasons = [
-            f"上涨占比 {advance_ratio_pct:.1f}%",
-            f"非ST涨停 {non_st_limit_up_count}",
+            f"上涨占比 {adv_ratio:.1f}%",
+            f"非ST涨停 {non_st_lu}",
         ]
         if prev_ret is not None:
             reasons.append(f"昨涨停溢价 {prev_ret:+.2f}%")
         return "startup", REGIME_STAGE_LABELS["startup"], reasons
 
     if (
-        (non_st_limit_up_count >= 45 and seal is not None and seal < 70.0)
-        or (non_st_broken_board_count >= 30 and non_st_limit_up_count >= 40)
-        or (max_consecutive_limit_up >= 5 and advance_ratio_pct < 45.0)
+        (non_st_lu >= 45 and seal is not None and seal < 70.0)
+        or (non_st_bb >= 30 and non_st_lu >= 40)
+        or (max_lu >= 5 and adv_ratio < 45.0)
     ):
         reasons = [
-            f"非ST涨停 {non_st_limit_up_count} / 炸板 {non_st_broken_board_count}",
-            f"最高连板 {max_consecutive_limit_up}",
+            f"非ST涨停 {non_st_lu} / 炸板 {non_st_bb}",
+            f"最高连板 {max_lu}",
         ]
         if seal is not None:
             reasons.append(f"封板率 {seal:.1f}%")
         return "divergence", REGIME_STAGE_LABELS["divergence"], reasons
 
     reasons = [
-        f"上涨占比 {advance_ratio_pct:.1f}%",
-        f"非ST涨停 {non_st_limit_up_count} / 跌停 {non_st_limit_down_count}",
+        f"上涨占比 {adv_ratio:.1f}%",
+        f"非ST涨停 {non_st_lu} / 跌停 {non_st_ld}",
     ]
     return "neutral", REGIME_STAGE_LABELS["neutral"], reasons
 
@@ -464,14 +480,16 @@ def _snapshot_at_index(masks: dict[str, np.ndarray], t: int) -> MarketRegimeSnap
         prev_lu_count = int(prev_pool.sum())
         if prev_lu_count > 0:
             prev_rets = ret_t[prev_pool] * 100.0
-            prev_lu_avg_ret = round(float(np.mean(prev_rets)), 2)
-            prev_lu_win_rate = round(float((prev_rets > 0).mean() * 100.0), 2)
+            prev_rets = prev_rets[np.isfinite(prev_rets)]
+            if prev_rets.size > 0:
+                prev_lu_avg_ret = round(float(np.mean(prev_rets)), 2)
+                prev_lu_win_rate = round(float((prev_rets > 0).mean() * 100.0), 2)
             open_mask = prev_pool & np.isfinite(open_t) & (open_t > 0)
             if open_mask.any():
-                prev_lu_open_prem = round(
-                    float(np.mean((open_t[open_mask] / pc_t[open_mask] - 1.0) * 100.0)),
-                    2,
-                )
+                open_rets = (open_t[open_mask] / pc_t[open_mask] - 1.0) * 100.0
+                open_rets = open_rets[np.isfinite(open_rets)]
+                if open_rets.size > 0:
+                    prev_lu_open_prem = round(float(np.mean(open_rets)), 2)
             prev_lu_promoted = int((prev_pool & lu_non_st).sum())
             prev_lu_promo_rate = round((prev_lu_promoted / prev_lu_count) * 100.0, 2)
 

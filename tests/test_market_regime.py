@@ -283,3 +283,29 @@ def test_series_distribution_and_cli_market_stats(tmp_path, monkeypatch, capsys)
     assert len(payload) == 2
     assert payload[-1]["trade_date"] == "2026-11-20"
     assert payload[-1]["usage_policy"] == "reporting_and_slice_only"
+
+
+def test_empty_pack_masks_and_nonfinite_regime_inputs_are_safe() -> None:
+    empty_pack = _make_pack([], [])
+    masks = compute_limit_masks(empty_pack)
+    assert "dates" in masks and len(masks["dates"]) == 0
+    assert compute_market_regime_series(empty_pack) == []
+
+    stage, _, reasons = classify_regime_stage(
+        advance_ratio_pct=float("nan"),
+        non_st_limit_up_count=10,
+        non_st_limit_down_count=30,
+        non_st_broken_board_count=2,
+        seal_rate_pct=float("nan"),
+        max_consecutive_limit_up=2,
+        prev_limit_up_avg_return_pct=float("inf"),
+    )
+    assert stage == "freezing"
+    assert all("nan" not in r.lower() and "inf" not in r.lower() for r in reasons)
+
+    pack = _make_pack(["2026-11-18"], ["000001"])
+    _set_bar(pack, 0, 0, o=10.0, h=10.2, lo=9.9, c=10.1, pc=10.0)
+    snap = compute_market_regime(pack)
+    snap.seal_rate_pct = float("nan")
+    encoded = json.dumps(snap.to_dict(), allow_nan=False)
+    assert '"seal_rate_pct": null' in encoded
