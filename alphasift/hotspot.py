@@ -19,12 +19,16 @@ from alphasift.industry import (
     load_board_heat_trends,
 )
 from alphasift.normalize import normalize_code as _normalize_code  # strict: free-text paths
-from alphasift.jsonutil import atomic_write_strict_json, dumps_strict_json, finite_float
+from alphasift.jsonutil import atomic_write_strict_json, dumps_strict_json, finite_float, safe_int
 
 
 def _finite_or_default(value: object, default: float) -> float:
     parsed = finite_float(value)
     return parsed if parsed is not None else default
+
+
+def _bounded_int(value: object, *, default: int, minimum: int = 0) -> int:
+    return max(safe_int(value, default=default), minimum)
 
 
 HOTSPOT_STAGES = (
@@ -265,9 +269,9 @@ def assign_stock_roles(scored_rows: list[dict[str, Any] | HotspotStock]) -> list
     stocks = sorted(
         stocks,
         key=lambda item: (
-            item.hot_stock_score,
-            item.change_pct if item.change_pct is not None else -999.0,
-            item.amount if item.amount is not None else -1.0,
+            _finite_or_default(item.hot_stock_score, 0.0),
+            _finite_or_default(item.change_pct, -999.0),
+            _finite_or_default(item.amount, -1.0),
             item.code,
         ),
         reverse=True,
@@ -275,18 +279,19 @@ def assign_stock_roles(scored_rows: list[dict[str, Any] | HotspotStock]) -> list
     if not stocks:
         return []
 
-    top_score = stocks[0].hot_stock_score
+    top_score = _finite_or_default(stocks[0].hot_stock_score, 0.0)
     for idx, stock in enumerate(stocks):
-        change = stock.change_pct or 0.0
-        if idx == 0 and stock.hot_stock_score >= 70:
+        score = _finite_or_default(stock.hot_stock_score, 0.0)
+        change = _finite_or_default(stock.change_pct, 0.0)
+        if idx == 0 and score >= 70:
             role = "核心龙头"
-        elif idx <= 2 and stock.hot_stock_score >= max(68.0, top_score - 8.0) and change >= 5.0:
+        elif idx <= 2 and score >= max(68.0, top_score - 8.0) and change >= 5.0:
             role = "核心龙头"
-        elif stock.hot_stock_score >= 62.0 and change >= 3.0:
+        elif score >= 62.0 and change >= 3.0:
             role = "助攻"
-        elif stock.hot_stock_score >= 48.0 and change >= 0:
+        elif score >= 48.0 and change >= 0:
             role = "补涨"
-        elif stock.hot_stock_score >= 38.0:
+        elif score >= 38.0:
             role = "后排"
         else:
             role = "掉队"
@@ -380,7 +385,8 @@ def discover_hotspots(
             aliases=[topic],
         ))
 
-    ranked = sorted(summaries, key=_hotspot_sort_key, reverse=True)[:max(int(top), 0)]
+    top_limit = _bounded_int(top, default=20, minimum=0)
+    ranked = sorted(summaries, key=_hotspot_sort_key, reverse=True)[:top_limit]
     for summary in ranked:
         provider_obj = next((obj for label, obj in provider_chain if label == provider_used), None)
         stocks = _load_scored_constituents(
@@ -593,7 +599,7 @@ def get_hotspot_detail(
             summary.source_errors = _dedupe_errors([*summary.source_errors, f"timeline: {exc}"])
             _add_missing_fields(summary, ["timeline"])
             _finalize_summary_quality(summary, stock_count=len(stocks))
-    capped_stocks = stocks[:max(int(top_stocks), 0)]
+    capped_stocks = stocks[:_bounded_int(top_stocks, default=10, minimum=0)]
     route = build_hotspot_route(summary, timeline, capped_stocks)
     return HotspotDetail(summary=summary, stocks=capped_stocks, timeline=timeline, route=route)
 
@@ -830,7 +836,7 @@ def _load_board_summaries(
         ("concept", "stock_board_concept_name_em"),
         ("industry", "stock_board_industry_name_em"),
     ]
-    limit = max(int(max_boards), 1)
+    limit = _bounded_int(max_boards, default=80, minimum=1)
     for source, method_name in specs:
         frame = _call_provider_frame(
             provider,
@@ -980,7 +986,23 @@ def _normalize_stock_rows(frame: pd.DataFrame) -> list[HotspotStock]:
 
 def _coerce_hotspot_stock(item: dict[str, Any] | HotspotStock) -> HotspotStock:
     if isinstance(item, HotspotStock):
-        stock = item
+        stock = HotspotStock(
+            code=_normalize_code(item.code) or _safe_text(item.code),
+            name=_safe_text(item.name),
+            change_pct=finite_float(item.change_pct),
+            amount=finite_float(item.amount),
+            turnover_rate=finite_float(item.turnover_rate),
+            volume_ratio=finite_float(item.volume_ratio),
+            net_inflow=finite_float(item.net_inflow),
+            is_limit_up=bool(item.is_limit_up),
+            active_days=_bounded_int(item.active_days, default=0, minimum=0),
+            evidence_count=_bounded_int(item.evidence_count, default=0, minimum=0),
+            role=_safe_text(item.role),
+            hot_stock_score=_finite_or_default(item.hot_stock_score, 0.0),
+            source=_safe_text(item.source),
+            source_confidence=finite_float(item.source_confidence),
+            fallback_used=bool(item.fallback_used),
+        )
     else:
         stock = HotspotStock(
             code=_normalize_code(_row_value(item, ["code", "代码"])),
@@ -991,16 +1013,19 @@ def _coerce_hotspot_stock(item: dict[str, Any] | HotspotStock) -> HotspotStock:
             volume_ratio=_safe_float(_row_value(item, ["volume_ratio", "量比"])),
             net_inflow=_safe_float(_row_value(item, ["net_inflow", "主力净流入"])),
             is_limit_up=_safe_bool(_row_value(item, ["is_limit_up", "涨停"])),
-            active_days=int(_safe_float(_row_value(item, ["active_days", "连续活跃"])) or 0),
-            evidence_count=int(_safe_float(_row_value(item, ["evidence_count", "证据数"])) or 0),
+            active_days=_bounded_int(_row_value(item, ["active_days", "连续活跃"]), default=0, minimum=0),
+            evidence_count=_bounded_int(_row_value(item, ["evidence_count", "证据数"]), default=0, minimum=0),
             role=_safe_text(item.get("role")),
-            hot_stock_score=_safe_float(item.get("hot_stock_score")) or 0.0,
+            hot_stock_score=_finite_or_default(item.get("hot_stock_score"), 0.0),
             source=_safe_text(item.get("source")),
             source_confidence=_safe_float(item.get("source_confidence")),
             fallback_used=_safe_bool(item.get("fallback_used")),
         )
-    if stock.hot_stock_score <= 0:
+    score_val = finite_float(stock.hot_stock_score)
+    if score_val is None or score_val <= 0:
         stock.hot_stock_score = score_hotspot_stock(asdict(stock))
+    else:
+        stock.hot_stock_score = round(score_val, 4)
     return stock
 
 
@@ -1473,7 +1498,7 @@ def _load_fallback_hotspots(
         return None
     stale_age = _cache_stale_age_hours(fallback_cache_path)
     return _with_result_metadata(
-        hotspots[:max(int(top), 0)],
+        hotspots[:_bounded_int(top, default=20, minimum=0)],
         provider_used="last_good_cache",
         fallback_used=True,
         source_errors=source_errors or ["none: no live hotspot rows"],

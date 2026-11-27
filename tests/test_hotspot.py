@@ -576,3 +576,41 @@ def test_hotspot_scrubs_nonfinite_and_bool_heat_rank_and_clamp():
 
     stock_score = score_hotspot_stock({"change_pct": float("nan"), "amount": float("inf"), "net_inflow": True})
     assert isinstance(stock_score, float) and stock_score == stock_score
+
+
+def test_hotspot_roles_and_limits_scrub_nonfinite_and_bool_inputs():
+    from dataclasses import asdict
+    import json
+
+    from alphasift.hotspot import HotspotStock, assign_stock_roles, discover_hotspots
+
+    bad_stock = HotspotStock(
+        code="300001",
+        name="异常股",
+        change_pct=float("nan"),
+        amount=float("inf"),
+        hot_stock_score=float("nan"),
+    )
+    good_stock = HotspotStock(
+        code="300002",
+        name="算力真龙头",
+        change_pct=8.5,
+        amount=2e9,
+        hot_stock_score=86.0,
+    )
+    roles = assign_stock_roles([bad_stock, good_stock])
+    assert roles[0].code == "300002"
+    assert roles[0].role == "核心龙头"
+    json.dumps([asdict(item) for item in roles], allow_nan=False)
+
+    provider = {
+        "concept_boards": pd.DataFrame([
+            {"板块名称": "AI算力", "排名": 1, "涨跌幅": 3.5},
+            {"板块名称": "半导体", "排名": 2, "涨跌幅": 2.0},
+            {"板块名称": "机器人", "排名": 3, "涨跌幅": 1.2},
+        ])
+    }
+    res_nan_top = discover_hotspots(provider=provider, max_boards=float("nan"), top=True)  # type: ignore[arg-type]
+    assert len(res_nan_top) == 3
+    res_zero_top = discover_hotspots(provider=provider, top=-5)
+    assert res_zero_top == []
