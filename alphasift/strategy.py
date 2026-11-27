@@ -9,6 +9,7 @@ from pathlib import Path
 
 import yaml
 
+from alphasift.jsonutil import finite_float
 from alphasift.models import (
     HardFilterConfig,
     ScreeningConfig,
@@ -18,6 +19,17 @@ from alphasift.models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _clean_factor_weights(weights: object) -> dict[str, float]:
+    if not isinstance(weights, dict):
+        return {}
+    cleaned: dict[str, float] = {}
+    for key, value in weights.items():
+        num = finite_float(value)
+        if num is not None:
+            cleaned[str(key)] = num
+    return cleaned
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _BUNDLED_STRATEGIES_DIR = Path(__file__).resolve().parent / "strategies"
 _TOP_LEVEL_KEYS = {
@@ -214,8 +226,8 @@ def load_strategy(filepath: Path) -> Strategy:
         enabled=screening_data.get("enabled", False),
         market_scope=screening_data.get("market_scope", ["cn"]),
         hard_filters=hard_filters,
-        tech_weight=screening_data.get("tech_weight", 0.35),
-        factor_weights=screening_data.get("factor_weights", {}),
+        tech_weight=_validate_tech_weight(screening_data, filepath),
+        factor_weights=_validate_factor_weights(screening_data, filepath),
         scoring_profile=_scoring_profile(screening_data, filepath),
         risk_profile=_optional_mapping(
             screening_data, "risk_profile", filepath, allowed_keys=_RISK_PROFILE_KEYS
@@ -307,7 +319,7 @@ def list_strategies(strategies_dir: Path | None = None) -> list[StrategyInfo]:
             required_snapshot_fields=_required_snapshot_fields(s.screening.hard_filters),
             required_daily_fields=_required_daily_fields(s.screening.hard_filters),
             active_filters=_active_hard_filters(s.screening.hard_filters),
-            factor_weights={key: float(value) for key, value in s.screening.factor_weights.items()},
+            factor_weights=_clean_factor_weights(s.screening.factor_weights),
             profile_keys=_strategy_profile_keys(s.screening),
             style=_style_to_dict(s.style),
         ))
@@ -665,7 +677,7 @@ def _strategy_compare_summary(strategy: Strategy, *, daily_required: bool) -> di
         "data_requirements": _strategy_data_requirements(strategy, daily_required=daily_required),
         "requires_daily_features": daily_required,
         "active_filters": _active_hard_filters(strategy.screening.hard_filters),
-        "factor_weights": {key: float(value) for key, value in strategy.screening.factor_weights.items()},
+        "factor_weights": _clean_factor_weights(strategy.screening.factor_weights),
         "profile_keys": _strategy_profile_keys(strategy.screening),
     }
 
@@ -747,14 +759,17 @@ def _mapping_diff(base: dict[str, object], target: dict[str, object]) -> dict[st
 
 def _numeric_mapping_diff(base: dict[str, object], target: dict[str, object]) -> dict[str, object]:
     diff = _mapping_diff(
-        {key: float(value) for key, value in base.items()},
-        {key: float(value) for key, value in target.items()},
+        _clean_factor_weights(base),
+        _clean_factor_weights(target),
     )
     changed = diff.get("changed", {})
     if isinstance(changed, dict):
         for item in changed.values():
             if isinstance(item, dict):
-                item["delta"] = round(float(item["target"]) - float(item["base"]), 6)
+                t_val = finite_float(item.get("target"))
+                b_val = finite_float(item.get("base"))
+                if t_val is not None and b_val is not None:
+                    item["delta"] = round(t_val - b_val, 6)
     return diff
 
 
@@ -1038,6 +1053,37 @@ def _raise_unknown_keys(data: dict, allowed_keys: set[str], context: str) -> Non
         raise ValueError(
             f"Unknown keys in {context}: {', '.join(unknown_keys)}"
         )
+
+
+def _validate_tech_weight(screening_data: dict, filepath: Path) -> float:
+    if "tech_weight" not in screening_data or screening_data["tech_weight"] is None:
+        return 0.35
+    raw = screening_data["tech_weight"]
+    val = finite_float(raw)
+    if val is None or not (0.0 <= val <= 1.0):
+        raise ValueError(
+            f"Invalid screening.tech_weight in {filepath.name}: {raw!r} "
+            "(expected finite float between 0.0 and 1.0)"
+        )
+    return val
+
+
+def _validate_factor_weights(screening_data: dict, filepath: Path) -> dict[str, float]:
+    raw = screening_data.get("factor_weights", {})
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise ValueError(f"Invalid factor_weights section in strategy file: {filepath}")
+    cleaned: dict[str, float] = {}
+    for key, value in raw.items():
+        num = finite_float(value)
+        if num is None:
+            raise ValueError(
+                f"Invalid screening.factor_weights.{key} in {filepath.name}: {value!r} "
+                "(expected finite float)"
+            )
+        cleaned[str(key)] = num
+    return cleaned
 
 
 def _scoring_profile(screening_data: dict, filepath: Path) -> dict:

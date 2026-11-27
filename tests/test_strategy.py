@@ -498,3 +498,42 @@ def test_load_strategy_validates_factor_rank_blend_bounds(tmp_path):
     for bad_value in ("1.2", "-0.1", "true", '"bad"', "null"):
         with pytest.raises(ValueError, match="factor_rank_blend"):
             load_strategy(_write_cfg(bad_value))
+
+
+def test_load_strategy_and_numeric_diff_reject_or_scrub_nonfinite_and_bool(tmp_path):
+    from alphasift.strategy import _numeric_mapping_diff
+
+    def _write_weights_cfg(weights_yaml: str, *, tech_weight: str = "0.35") -> Path:
+        path = tmp_path / "weights.yaml"
+        path.write_text(
+            "\n".join([
+                "name: weights_test",
+                "display_name: Weights Test",
+                "description: demo",
+                "screening:",
+                "  enabled: true",
+                "  market_scope: [cn]",
+                f"  tech_weight: {tech_weight}",
+                weights_yaml,
+            ]),
+            encoding="utf-8",
+        )
+        return path
+
+    for bad_weight in (".nan", ".inf", "true", '"bad"'):
+        cfg_path = _write_weights_cfg(f"  factor_weights:\n    value: {bad_weight}")
+        with pytest.raises(ValueError, match="factor_weights"):
+            load_strategy(cfg_path)
+
+    for bad_tech in (".nan", ".inf", "true", "-0.1", "1.5"):
+        cfg_path = _write_weights_cfg("  factor_weights:\n    value: 0.5", tech_weight=bad_tech)
+        with pytest.raises(ValueError, match="tech_weight"):
+            load_strategy(cfg_path)
+
+    diff = _numeric_mapping_diff(
+        {"value": 0.4, "nan_key": float("nan"), "bool_key": True},
+        {"value": 0.65, "inf_key": float("inf")},
+    )
+    assert diff["changed"]["value"]["delta"] == pytest.approx(0.25)
+    assert diff["removed"] == {}
+    assert diff["added"] == {}
