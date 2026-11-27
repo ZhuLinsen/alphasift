@@ -29,7 +29,6 @@ from __future__ import annotations
 
 from datetime import datetime
 import logging
-import math
 import os
 import re
 import time
@@ -37,6 +36,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from alphasift.jsonutil import finite_float, safe_int
 from alphasift.markets import MarketSpec, get_market
 from alphasift.source_guard import parse_source_timeout_seconds
 from alphasift.valuation_kr import enrich_kr_valuation, kr_valuation_enabled
@@ -83,8 +83,10 @@ def fetch_yahoo_snapshot(
 
         screen = yf.screen
 
-    floor = spec.universe_min_market_cap if min_market_cap is None else float(min_market_cap)
-    limit = max_rows if max_rows is not None else _int_env("ALPHASIFT_YAHOO_MAX_ROWS", _DEFAULT_MAX_ROWS)
+    parsed_floor = finite_float(min_market_cap) if min_market_cap is not None else None
+    floor = parsed_floor if (parsed_floor is not None and parsed_floor >= 0) else spec.universe_min_market_cap
+    default_limit = _int_env("ALPHASIFT_YAHOO_MAX_ROWS", _DEFAULT_MAX_ROWS)
+    limit = max(1, safe_int(max_rows, default=default_limit)) if max_rows is not None else default_limit
     budget = parse_source_timeout_seconds(
         "ALPHASIFT_YAHOO_SNAPSHOT_BUDGET_SEC", default=_DEFAULT_BUDGET_SECONDS
     )
@@ -124,16 +126,19 @@ def fetch_yahoo_snapshot(
             except Exception as exc:  # noqa: BLE001 - one sector failing should not drop the rest
                 errors.append(f"{sector}: {exc}")
                 break
-            quotes = (payload or {}).get("quotes") or []
+            raw_quotes = payload.get("quotes") if isinstance(payload, dict) else None
+            quotes = raw_quotes if isinstance(raw_quotes, list) else []
             for quote in quotes:
+                if not isinstance(quote, dict):
+                    continue
                 row = _quote_to_row(quote, sector)
                 if row is not None:
                     rows.setdefault(str(row["code"]), row)
                     quote_ts = _num(quote.get("regularMarketTime"))
-                    if quote_ts is not None and quote_ts > 0:
+                    if quote_ts is not None and 0 < quote_ts <= 4_102_444_800:
                         max_quote_time = quote_ts if max_quote_time is None else max(max_quote_time, quote_ts)
             offset += len(quotes)
-            total = int((payload or {}).get("total") or 0)
+            total = max(0, safe_int(payload.get("total"), default=0)) if isinstance(payload, dict) else 0
             if not quotes or offset >= total:
                 break
             time.sleep(_PAGE_PAUSE_SECONDS)
@@ -146,7 +151,9 @@ def fetch_yahoo_snapshot(
 
     df = _drop_secondary_listings(pd.DataFrame(list(rows.values())), spec)
     df = df.sort_values("total_mv", ascending=False, na_position="last").head(limit).reset_index(drop=True)
-    df["avg_amount_usd"] = pd.to_numeric(df["avg_amount"], errors="coerce") / spec.usd_rate
+    df["avg_amount_usd"] = (
+        pd.to_numeric(df["avg_amount"], errors="coerce") / spec.usd_rate
+    ).replace([float("inf"), float("-inf")], pd.NA)
     valuation_errors: list[str] = []
     valuation_incomplete = False
     if spec.id == "kr" and kr_valuation_enabled():
@@ -160,16 +167,20 @@ def fetch_yahoo_snapshot(
         else:
             df, valuation_errors = enrich_kr_valuation(df, budget_seconds=remaining)
             # A mostly unvalued frame must not replace a valued last-good cache.
-            valuation_incomplete = float(df.attrs.get("valuation_coverage", 1.0)) < _MIN_VALUATION_COVERAGE
+            cov_val = finite_float(df.attrs.get("valuation_coverage"))
+            valuation_incomplete = (cov_val if cov_val is not None else 1.0) < _MIN_VALUATION_COVERAGE
     df.attrs["snapshot_source"] = "yahoo_screener"
     df.attrs["market"] = spec.id
     df.attrs["currency"] = spec.currency
     if max_quote_time is not None:
-        df.attrs["quote_date"] = (
-            datetime.fromtimestamp(max_quote_time, tz=ZoneInfo(spec.timezone))
-            .date()
-            .isoformat()
-        )
+        try:
+            df.attrs["quote_date"] = (
+                datetime.fromtimestamp(max_quote_time, tz=ZoneInfo(spec.timezone))
+                .date()
+                .isoformat()
+            )
+        except (OSError, ValueError, OverflowError):
+            pass
     df.attrs["source_errors"] = [
         *(f"yahoo_screener sector {item}" for item in errors),
         *valuation_errors,
@@ -237,11 +248,11 @@ def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
     pe = _num(quote.get("trailingPE"))
     if pe is None and same_currency:
         eps = _num(quote.get("epsTrailingTwelveMonths"))
-        pe = price / eps if eps else None
+        pe = _finite_ratio(price, eps) if eps else None
     pb = _num(quote.get("priceToBook"))
     if pb is None and same_currency:
         book = _num(quote.get("bookValue"))
-        pb = price / book if book and book > 0 else None
+        pb = _finite_ratio(price, book) if book and book > 0 else None
     pb = sanitize_yahoo_pb(
         pb,
         trading_currency=trading_currency,
@@ -253,14 +264,14 @@ def _quote_to_row(quote: dict, sector: str) -> dict[str, object] | None:
         "name": str(quote.get("longName") or quote.get("shortName") or symbol).strip(),
         "price": price,
         "change_pct": _num(quote.get("regularMarketChangePercent")),
-        "amount": price * volume if volume is not None else None,
-        "avg_amount": price * avg_volume if avg_volume is not None else None,
+        "amount": _finite_product(price, volume),
+        "avg_amount": _finite_product(price, avg_volume),
         "total_mv": market_cap,
         "circ_mv": market_cap,
         "pe_ratio": pe,
         "pb_ratio": pb,
-        "volume_ratio": (volume / avg_volume) if volume is not None and avg_volume else None,
-        "turnover_rate": (volume / shares * 100) if volume is not None and shares else None,
+        "volume_ratio": _finite_ratio(volume, avg_volume) if volume is not None and avg_volume else None,
+        "turnover_rate": _finite_ratio(volume, shares, scale=100.0) if volume is not None and shares else None,
         "industry": sector,
         "dividend_yield": dividend_yield,
         "currency": str(quote.get("currency") or ""),
@@ -312,14 +323,19 @@ def _drop_secondary_listings(df: pd.DataFrame, spec: MarketSpec) -> pd.DataFrame
     return df.loc[sorted(keep)].reset_index(drop=True)
 
 
-def _num(value: object) -> float | None:
-    if isinstance(value, bool):
+_num = finite_float
+
+
+def _finite_product(a: float | None, b: float | None) -> float | None:
+    if a is None or b is None:
         return None
-    try:
-        number = float(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
+    return finite_float(a * b)
+
+
+def _finite_ratio(a: float | None, b: float | None, *, scale: float = 1.0) -> float | None:
+    if a is None or b is None or b == 0:
         return None
-    return number if math.isfinite(number) else None
+    return finite_float((a / b) * scale)
 
 
 def _int_env(name: str, default: int) -> int:
@@ -354,13 +370,22 @@ def fetch_yahoo_quotes(symbols: list[str], *, download=None) -> pd.DataFrame:
         progress=False,
         threads=True,
     )
+    if data is None or data.empty:
+        return pd.DataFrame(columns=["code", "price"])
     rows = []
     for symbol in symbols:
         try:
             frame = data[symbol] if isinstance(data.columns, pd.MultiIndex) else data
-            close = pd.to_numeric(frame["Close"], errors="coerce").dropna()
+            close = (
+                pd.to_numeric(frame["Close"], errors="coerce")
+                .replace([float("inf"), float("-inf")], pd.NA)
+                .dropna()
+            )
         except (KeyError, TypeError):
             continue
-        if not close.empty and float(close.iloc[-1]) > 0:
-            rows.append({"code": symbol, "price": float(close.iloc[-1])})
+        if close.empty:
+            continue
+        price = finite_float(close.iloc[-1])
+        if price is not None and price > 0:
+            rows.append({"code": symbol, "price": price})
     return pd.DataFrame(rows, columns=["code", "price"])

@@ -463,3 +463,40 @@ def test_budget_expiry_returns_fetched_rows_as_partial(monkeypatch):
     assert len(df) >= 1
     assert df.attrs["partial"] is True
     assert any("not fetched" in item for item in df.attrs["source_errors"])
+
+
+def test_snapshot_yahoo_and_quotes_scrub_nonfinite_bool_and_empty():
+    from alphasift.snapshot_yahoo import _quote_to_row, fetch_yahoo_quotes
+
+    extreme = _quote(
+        "0700.HK",
+        3e12,
+        regularMarketPrice=1e300,
+        regularMarketVolume=1e300,
+        averageDailyVolume10Day=1e20,
+        sharesOutstanding=1e-20,
+        trailingPE=None,
+        epsTrailingTwelveMonths=1e-20,
+        regularMarketChangePercent=float("inf"),
+    )
+    row = _quote_to_row(extreme, "Technology")
+    assert row is not None
+    assert row["amount"] is None
+    assert row["avg_amount"] is None
+    assert row["pe_ratio"] is None
+    assert row["turnover_rate"] is None
+    assert row["change_pct"] is None
+
+    empty_quotes = fetch_yahoo_quotes(["0700.HK"], download=lambda *a, **k: pd.DataFrame())
+    assert empty_quotes.empty and list(empty_quotes.columns) == ["code", "price"]
+
+    all_inf_df = pd.DataFrame({"Close": [float("nan"), float("inf")]})
+    assert fetch_yahoo_quotes(["0700.HK"], download=lambda *a, **k: all_inf_df).empty
+
+    trailing_inf_df = pd.DataFrame({"Close": [10.0, float("inf")]})
+    trailing_inf_quotes = fetch_yahoo_quotes(["0700.HK"], download=lambda *a, **k: trailing_inf_df)
+    assert trailing_inf_quotes.to_dict("records") == [{"code": "0700.HK", "price": 10.0}]
+
+    good_df = pd.DataFrame({"Close": [float("inf"), 320.5]})
+    good_quotes = fetch_yahoo_quotes(["0700.HK"], download=lambda *a, **k: good_df)
+    assert good_quotes.to_dict("records") == [{"code": "0700.HK", "price": 320.5}]
