@@ -613,3 +613,20 @@ def test_build_site_sanitizes_nonfinite_metrics_in_public_json(tmp_path, monkeyp
     day_parsed = json.loads(day_files[0].read_text(encoding="utf-8"), parse_constant=_reject_constant)
     assert day_parsed["runs"][0]["picks"][0]["price"] is None
     assert day_parsed["runs"][0]["picks"][0]["final_score"] is None
+
+
+def test_track_record_page_mobile_nav_covers_all_sections():
+    import re
+
+    html = (Path(__file__).resolve().parents[1] / "scripts" / "track_record_page.html").read_text(encoding="utf-8")
+    nav_center = re.search(r'<div class="nav-center"[^>]*>(.*?)</div>', html, re.DOTALL)
+    mobile_nav = re.search(r'<nav class="mobile-nav"[^>]*>(.*?)</nav>', html, re.DOTALL)
+    assert nav_center and mobile_nav
+
+    link_re = re.compile(r'<a href="(#[^"]+)" data-i18n="([^"]+)"')
+    desktop_links = link_re.findall(nav_center.group(1))
+    mobile_links = link_re.findall(mobile_nav.group(1))
+    assert len(desktop_links) == 6
+    assert mobile_links == desktop_links
+    assert ".mobile-nav { display: flex; }" in html
+    assert '.mobile-nav a[href^="#"]' in html

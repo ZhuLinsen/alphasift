@@ -185,6 +185,19 @@ code {
 }
 .nav-center a:hover { color: var(--ink); background: var(--chip); text-decoration: none; }
 
+.mobile-nav {
+  display: none; flex-wrap: wrap; gap: 6px; margin-top: 14px;
+}
+.mobile-nav a {
+  display: inline-flex; align-items: center; padding: 5px 11px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border); white-space: nowrap;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.mobile-nav a:hover {
+  color: var(--ink); border-color: var(--border-strong); background: var(--surface-2); text-decoration: none;
+}
+
 .top-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .action-btn, .github-btn {
   display: inline-flex; align-items: center; gap: 6px;
@@ -629,6 +642,7 @@ footer {
 }
 @media (max-width: 1240px) {
   .nav-center { display: none; }
+  .mobile-nav { display: flex; }
 }
 @media (max-width: 1100px) {
   .bento-command { grid-template-columns: 1fr; }
@@ -729,6 +743,15 @@ footer {
       </a>
     </div>
   </header>
+
+  <nav class="mobile-nav" data-i18n-aria="nav_aria" aria-label="主导航">
+    <a href="#overview" data-i18n="nav_overview">焦点总览</a>
+    <a href="#leaderboard" data-i18n="nav_leaderboard">策略排行</a>
+    <a href="#trend-section" data-i18n="nav_trend">超额走势</a>
+    <a href="#explorer" data-i18n="nav_explorer">选股浏览</a>
+    <a href="#track-comparison-section" data-i18n="nav_ai">AI 归因</a>
+    <a href="#radar-section" data-i18n="nav_patterns">形态雷达</a>
+  </nav>
 
   <div class="stale-banner" id="stale-banner"></div>
   <div class="health-strip" id="health-strip"></div>
@@ -3890,7 +3913,7 @@ async function init() {
   renderLatest();
   openRadarAccordionsForHash(window.location.hash);
   window.addEventListener("hashchange", () => openRadarAccordionsForHash(window.location.hash));
-  document.querySelectorAll('.nav-center a[href^="#"]').forEach((a) => {
+  document.querySelectorAll('.nav-center a[href^="#"], .mobile-nav a[href^="#"]').forEach((a) => {
     a.addEventListener("click", () => openRadarAccordionsForHash(a.getAttribute("href")));
   });
   const days = (state.summary.days || []).map((d) => d.date);
