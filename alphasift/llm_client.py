@@ -10,6 +10,8 @@ from urllib.parse import quote, urlsplit
 
 import requests
 
+from alphasift.jsonutil import finite_float, safe_int
+
 logger = logging.getLogger(__name__)
 
 _DASHSCOPE = ("https://dashscope.aliyuncs.com/compatible-mode/v1", ("DASHSCOPE_API_KEY", "QWEN_API_KEY"))
@@ -94,7 +96,7 @@ class LLMAttempt:
 
 
 def normalize_model(model: str, protocol: str = "openai") -> str:
-    model = model.strip()
+    model = str(model or "").strip()
     if protocol == "openrouter" and not model.startswith("openrouter/"):
         return f"openrouter/{model}"
     if "/" in model:
@@ -103,10 +105,13 @@ def normalize_model(model: str, protocol: str = "openai") -> str:
 
 
 def split_model(model: str) -> tuple[str, str]:
-    prefix, slash, name = model.partition("/")
+    text = str(model or "").strip()
+    prefix, slash, name = text.partition("/")
+    prefix = prefix.strip()
+    name = name.strip()
     if slash and prefix in _GATEWAYS:
         return ("dashscope" if prefix == "qwen" else prefix), name
-    return "openai", model
+    return "openai", text
 
 
 def gateway_api_keys(provider: str) -> list[str]:
@@ -180,17 +185,26 @@ def build_attempts(
 
     primary_channels: list[LLMAttempt] = []
     remaining_channels: list[LLMAttempt] = []
-    for channel in channels:
-        protocol = str(channel.get("protocol", "openai"))
+    for channel in channels or []:
+        if not isinstance(channel, dict):
+            continue
+        protocol = str(channel.get("protocol", "openai") or "openai").strip() or "openai"
         models = channel.get("models")
         channel_keys = channel.get("api_keys")
         channel_url = str(channel.get("base_url") or "")
         for value in models if isinstance(models, list) else []:
-            provider, name = split_model(normalize_model(str(value), protocol))
+            cleaned_value = str(value or "").strip() if value is not None else ""
+            if not cleaned_value:
+                continue
+            provider, name = split_model(normalize_model(cleaned_value, protocol))
             same_provider = provider == primary_provider
             default_origin = _GATEWAYS.get(provider, ("", ()))[0].rstrip("/")
             url = gateway_base_url(provider, channel_url or (base_url if same_provider else ""))
-            explicit_keys = [str(k or "") for k in channel_keys] if isinstance(channel_keys, list) else []
+            explicit_keys = (
+                [str(k).strip() for k in channel_keys if k is not None and str(k).strip()]
+                if isinstance(channel_keys, list)
+                else []
+            )
             keys: list[str]
             if explicit_keys:
                 keys = explicit_keys
@@ -204,8 +218,10 @@ def build_attempts(
             target.extend(LLMAttempt(url, name, key) for key in keys if name)
 
     attempts = [*primary_channels, *direct_attempts(model), *remaining_channels]
-    for fallback in fallback_models:
-        attempts.extend(direct_attempts(fallback.strip()))
+    for fallback in fallback_models or []:
+        cleaned_fb = str(fallback or "").strip() if isinstance(fallback, str) else ""
+        if cleaned_fb:
+            attempts.extend(direct_attempts(cleaned_fb))
     return list(dict.fromkeys(attempts))
 
 
@@ -243,10 +259,19 @@ def complete(
 ) -> str:
     """Make one request and return the first assistant message's text."""
     endpoint_base = _validated_endpoint(attempt.base_url)
-    payload: dict[str, object] = {"model": attempt.model, "messages": messages, "temperature": temperature}
+    parsed_temp = finite_float(temperature)
+    eff_temperature = 0.2 if parsed_temp is None else min(max(parsed_temp, 0.0), 2.0)
+    parsed_timeout = finite_float(timeout)
+    eff_timeout = parsed_timeout if (parsed_timeout is not None and parsed_timeout > 0.0) else 60.0
+    payload: dict[str, object] = {
+        "model": attempt.model,
+        "messages": messages,
+        "temperature": eff_temperature,
+    }
     eff_tokens: int | None = None
-    if max_tokens is not None and int(max_tokens) > 0:
-        eff_tokens = int(max_tokens)
+    parsed_tokens = safe_int(max_tokens, default=0)
+    if parsed_tokens > 0:
+        eff_tokens = parsed_tokens
         payload["max_tokens"] = eff_tokens
     if reasoning_effort and supports_reasoning_effort(attempt):
         payload["reasoning_effort"] = str(reasoning_effort)
@@ -258,7 +283,7 @@ def complete(
             f"{endpoint_base}/chat/completions",
             headers=headers,
             json=payload,
-            timeout=timeout,
+            timeout=eff_timeout,
             allow_redirects=False,
         )
     except requests.RequestException as exc:
@@ -333,7 +358,11 @@ def _response_error(response: requests.Response, *, check_json_mode: bool, api_k
     timed_out = status in (408, 504)
     # Error bodies can echo credentials and prompts: classify on the raw text, but only
     # surface the provider's short message field, truncated and with the key redacted.
-    detail = response.text.lower() if check_json_mode and status in (400, 415, 422) else ""
+    detail = (
+        str(getattr(response, "text", "") or "").lower()
+        if check_json_mode and status in (400, 415, 422)
+        else ""
+    )
     rejected = (
         ("response_format" in detail or "json_object" in detail or "json mode" in detail)
         and any(tok in detail for tok in ("unsupported", "not support", "invalid", "unrecognized", "unknown", "disabled", "disallowed"))

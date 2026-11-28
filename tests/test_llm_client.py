@@ -514,3 +514,62 @@ def test_reasoning_effort_only_sent_to_thinking_models(monkeypatch):
     assert seen_payloads[0]["max_tokens"] == 2048
     assert "reasoning_effort" not in seen_payloads[1]
     assert seen_payloads[1]["max_tokens"] == 2048
+
+
+def test_complete_and_build_attempts_guard_bad_scalars_and_blank_entries(monkeypatch):
+    from alphasift.llm_client import split_model
+
+    assert split_model(" gemini/gemini-2.5-flash ") == ("gemini", "gemini-2.5-flash")
+    assert split_model(None) == ("openai", "")  # type: ignore[arg-type]
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "ds-key")
+    attempts = build_attempts(
+        " deepseek/deepseek-chat ",
+        api_key="",
+        base_url="",
+        channels=[
+            "invalid-channel",  # type: ignore[list-item]
+            {"protocol": "deepseek", "models": [None, "", "  deepseek-reasoner  "], "api_keys": ["", "chan-key"]},
+        ],
+        fallback_models=[None, "", "   "],  # type: ignore[list-item]
+    )
+    assert attempts == [
+        LLMAttempt("https://api.deepseek.com", "deepseek-chat", "ds-key"),
+        LLMAttempt("https://api.deepseek.com", "deepseek-reasoner", "chan-key"),
+    ]
+
+    captured: list[tuple[dict, float]] = []
+
+    def ok_post(url: str, *, headers: dict, json: dict, timeout: float, allow_redirects: bool):
+        captured.append((json, timeout))
+        r = requests.Response()
+        r.status_code = 200
+        r._content = b'{"choices": [{"message": {"content": "ok"}}]}'
+        return r
+
+    monkeypatch.setattr("alphasift.llm_client.requests.post", ok_post)
+    out = complete(
+        LLMAttempt("https://api.deepseek.com", "deepseek-chat", "ds-key"),
+        messages=[{"role": "user", "content": "hi"}],
+        temperature=float("nan"),
+        max_tokens=True,  # type: ignore[arg-type]
+        timeout=-5.0,
+    )
+    assert out == "ok"
+    sent_json, sent_timeout = captured[0]
+    assert sent_json["temperature"] == 0.2
+    assert "max_tokens" not in sent_json
+    assert sent_timeout == 60.0
+
+    # Clamps finite out-of-range temperature cleanly and rejects float("inf") max_tokens
+    complete(
+        LLMAttempt("https://api.deepseek.com", "deepseek-chat", "ds-key"),
+        messages=[{"role": "user", "content": "hi"}],
+        temperature=9.5,
+        max_tokens=float("inf"),  # type: ignore[arg-type]
+        timeout=True,  # type: ignore[arg-type]
+    )
+    sent_json_2, sent_timeout_2 = captured[1]
+    assert sent_json_2["temperature"] == 2.0
+    assert "max_tokens" not in sent_json_2
+    assert sent_timeout_2 == 60.0
