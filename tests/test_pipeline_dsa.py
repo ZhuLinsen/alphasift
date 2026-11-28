@@ -245,3 +245,56 @@ def test_screen_applies_dsa_provider_context_before_llm_ranking(monkeypatch):
     assert result.llm_ranked is True
     assert result.picks[0].dsa_context["quote"]["price"] == 1688.0
     assert any("DSA provider context applied 1 of 1 candidates" in item for item in result.degradation)
+
+
+def test_dsa_provider_context_scrubs_nonfinite_bool_and_na_fields():
+    from alphasift.dsa_provider import apply_dsa_provider_context
+    from alphasift.models import Pick
+
+    picks = [
+        Pick(
+            rank=1,
+            code="600519",
+            name=float("nan"),  # type: ignore[arg-type]
+            final_score=85.0,
+            screen_score=85.0,
+            price=float("nan"),
+            change_pct=True,  # type: ignore[arg-type]
+        ),
+        Pick(
+            rank=2,
+            code="000001",
+            name="平安银行",
+            final_score=80.0,
+            screen_score=80.0,
+            price=12.5,
+            change_pct=1.5,
+        ),
+    ]
+
+    def get_candidate_context(stock_code: str, stock_name: str = ""):
+        if stock_code == "600519":
+            assert stock_name == ""
+            return {
+                "dsa_analysis_summary": float("nan"),
+                "quote": {"price": float("inf"), "change_pct": True},
+                "fundamentals": {"coverage": {float("nan"): "available", "valuation": "available"}},
+                "news": {"results": [{"title": "nan"}, {"title": "null"}, {"title": "公司发布年报"}]},
+            }
+        return {
+            "quote": {"price": 12.6, "change_pct": 2.0},
+        }
+
+    notes = apply_dsa_provider_context(
+        picks,
+        {"dsa": {"get_candidate_context": get_candidate_context}},
+        max_candidates=float("nan"),  # type: ignore[arg-type]
+    )
+    assert "DSA provider context applied 2 of 2 candidates" in notes
+    assert "nan" not in picks[0].dsa_analysis_summary.lower()
+    assert "inf" not in picks[0].dsa_analysis_summary.lower()
+    assert "true" not in picks[0].dsa_analysis_summary.lower()
+    assert "DSA行情" not in picks[0].dsa_analysis_summary
+    assert "DSA基本面覆盖: valuation" in picks[0].dsa_analysis_summary
+    assert "DSA新闻: 公司发布年报" in picks[0].dsa_analysis_summary
+    assert "DSA行情: 现价 12.6, 涨跌幅 2.0%" in picks[1].dsa_analysis_summary

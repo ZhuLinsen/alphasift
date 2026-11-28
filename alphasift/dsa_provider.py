@@ -11,7 +11,9 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable
 
+from alphasift.jsonutil import finite_float, safe_int
 from alphasift.models import Pick
+from alphasift.normalize import safe_text
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ def apply_dsa_provider_context(
     if not picks or not provider:
         return []
 
-    limit = min(len(picks), max(max_candidates, 0))
+    limit = min(len(picks), max(safe_int(max_candidates, default=DSA_PROVIDER_MAX_CANDIDATES), 0))
     if limit <= 0:
         return []
 
@@ -91,10 +93,12 @@ def _fetch_candidate_context(provider: dict[str, Any], pick: Pick) -> dict[str, 
 
 
 def _call_candidate_getter(getter: Callable[..., Any], pick: Pick) -> Any:
+    code = safe_text(pick.code) or pick.code
+    name = safe_text(pick.name)
     try:
-        return getter(pick.code, pick.name)
+        return getter(code, name)
     except TypeError:
-        return getter(pick.code)
+        return getter(code)
 
 
 def _call_optional_provider(provider: Any, stock_code: str) -> dict[str, Any]:
@@ -107,13 +111,15 @@ def _call_optional_provider(provider: Any, stock_code: str) -> dict[str, Any]:
 def _call_news_provider(provider: Any, pick: Pick) -> dict[str, Any]:
     if not callable(provider):
         return {"success": False, "results": []}
+    code = safe_text(pick.code) or pick.code
+    name = safe_text(pick.name)
     try:
-        payload = provider(pick.code, pick.name, max_results=3)
+        payload = provider(code, name, max_results=3)
     except TypeError:
         try:
-            payload = provider(pick.code, pick.name)
+            payload = provider(code, name)
         except TypeError:
-            payload = provider(pick.code)
+            payload = provider(code)
     return payload if isinstance(payload, dict) else {"success": False, "results": []}
 
 
@@ -128,7 +134,7 @@ def _normalize_candidate_payload(payload: dict[str, Any], pick: Pick) -> dict[st
         news = _news_results(context.get("news"))
     news = [item for item in news if isinstance(item, dict)]
 
-    summary = str(payload.get("dsa_analysis_summary") or "").strip()
+    summary = safe_text(payload.get("dsa_analysis_summary"))
     if not summary:
         summary = _build_dsa_summary(pick, context, news)
 
@@ -163,11 +169,15 @@ def _news_results(news_payload: Any) -> list[dict[str, Any]]:
 def _build_dsa_summary(pick: Pick, context: dict[str, Any], news: list[dict[str, Any]]) -> str:
     parts: list[str] = []
     quote = context.get("quote") if isinstance(context.get("quote"), dict) else {}
-    price = quote.get("price") if quote else pick.price
-    change_pct = quote.get("change_pct") if quote else pick.change_pct
-    if price not in (None, ""):
+    price = finite_float(quote.get("price")) if quote else None
+    if price is None:
+        price = finite_float(pick.price)
+    change_pct = finite_float(quote.get("change_pct")) if quote else None
+    if change_pct is None:
+        change_pct = finite_float(pick.change_pct)
+    if price is not None:
         text = f"DSA行情: 现价 {price}"
-        if change_pct not in (None, ""):
+        if change_pct is not None:
             text += f", 涨跌幅 {change_pct}%"
         parts.append(text)
 
@@ -175,17 +185,18 @@ def _build_dsa_summary(pick: Pick, context: dict[str, Any], news: list[dict[str,
     coverage = fundamentals.get("coverage") if isinstance(fundamentals, dict) else {}
     if isinstance(coverage, dict):
         available = [
-            str(key)
+            key_txt
             for key, value in coverage.items()
-            if str(value).lower() in {"available", "partial"}
+            if (key_txt := safe_text(key))
+            and safe_text(value).lower() in {"available", "partial"}
         ]
         if available:
             parts.append(f"DSA基本面覆盖: {', '.join(available[:4])}")
 
     titles = [
-        str(item.get("title") or "").strip()
+        title_txt
         for item in news
-        if isinstance(item.get("title"), str) and item.get("title")
+        if isinstance(item.get("title"), str) and (title_txt := safe_text(item.get("title")))
     ]
     if titles:
         parts.append(f"DSA新闻: {'; '.join(titles[:2])}")
