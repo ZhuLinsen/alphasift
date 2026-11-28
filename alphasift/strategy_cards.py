@@ -11,6 +11,7 @@ from alphasift.config import Config
 from alphasift.doctor import doctor_data_sources
 from alphasift.jsonutil import finite_float, safe_int
 from alphasift.models import StrategyInfo
+from alphasift.normalize import safe_text
 from alphasift.performance_history import build_strategy_performance_summary
 from alphasift.run_history import build_strategy_run_summary
 from alphasift.strategy import list_strategies
@@ -24,6 +25,7 @@ def build_strategy_cards(
     live_data_check: bool = False,
 ) -> dict[str, Any]:
     """Build strategy cards for dashboards and agents."""
+    eff_limit = max(safe_int(runs_limit, default=100), 0)
     strategies = _filtered_strategies(
         list_strategies(config.strategies_dir),
         strategy_name=strategy_name,
@@ -36,12 +38,12 @@ def build_strategy_cards(
     ).to_dict()
     run_history = build_strategy_run_summary(
         data_dir=config.data_dir,
-        limit=runs_limit,
+        limit=eff_limit,
         strategy=strategy_name,
     )
     performance = build_strategy_performance_summary(
         data_dir=config.data_dir,
-        limit=runs_limit,
+        limit=eff_limit,
         strategy=strategy_name,
     )
     return build_strategy_cards_from_parts(
@@ -54,6 +56,19 @@ def build_strategy_cards(
     )
 
 
+def _index_strategy_dicts(raw_items: object) -> dict[str, dict[str, Any]]:
+    if not isinstance(raw_items, list):
+        return {}
+    indexed: dict[str, dict[str, Any]] = {}
+    for item in raw_items:
+        if not isinstance(item, dict):
+            continue
+        key = safe_text(item.get("strategy"))
+        if key:
+            indexed[key] = item
+    return indexed
+
+
 def build_strategy_cards_from_parts(
     strategies: list[StrategyInfo],
     *,
@@ -64,18 +79,13 @@ def build_strategy_cards_from_parts(
     strategy_filter: str = "",
 ) -> dict[str, Any]:
     """Build cards from data already gathered by overview or the API layer."""
-    coverage_by_strategy = {
-        str(item.get("strategy") or ""): item
-        for item in (strategy_coverage or [])
-    }
-    history_by_strategy = {
-        str(item.get("strategy") or ""): item
-        for item in ((run_history_summary or {}).get("strategies", []) or [])
-    }
-    performance_by_strategy = {
-        str(item.get("strategy") or ""): item
-        for item in ((performance_summary or {}).get("strategies", []) or [])
-    }
+    coverage_by_strategy = _index_strategy_dicts(strategy_coverage)
+    history_by_strategy = _index_strategy_dicts(
+        run_history_summary.get("strategies") if isinstance(run_history_summary, dict) else None
+    )
+    performance_by_strategy = _index_strategy_dicts(
+        performance_summary.get("strategies") if isinstance(performance_summary, dict) else None
+    )
     cards = [
         _strategy_card(
             strategy,
@@ -90,7 +100,7 @@ def build_strategy_cards_from_parts(
     return {
         "schema_version": 1,
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "strategy_filter": strategy_filter,
+        "strategy_filter": safe_text(strategy_filter),
         "summary": _cards_summary(cards, lanes=lanes, live_data_check=live_data_check),
         "lanes": lanes,
         "cards": cards,
@@ -110,6 +120,18 @@ def _filtered_strategies(
     return matches
 
 
+def _clean_factor_weights(weights: object) -> dict[str, float]:
+    if not isinstance(weights, dict):
+        return {}
+    cleaned: dict[str, float] = {}
+    for name, weight in weights.items():
+        key = safe_text(name)
+        val = finite_float(weight)
+        if key and val is not None:
+            cleaned[key] = val
+    return cleaned
+
+
 def _strategy_card(
     strategy: StrategyInfo,
     *,
@@ -118,35 +140,39 @@ def _strategy_card(
     performance: dict[str, Any],
     live_data_check: bool,
 ) -> dict[str, Any]:
-    readiness_status = str(coverage.get("status") or "skipped")
-    history_payload = _history_payload(history)
-    performance_payload = _performance_payload(performance)
+    cov_dict = coverage if isinstance(coverage, dict) else {}
+    hist_dict = history if isinstance(history, dict) else {}
+    perf_dict = performance if isinstance(performance, dict) else {}
+    readiness_status = safe_text(cov_dict.get("status")) or "skipped"
+    history_payload = _history_payload(hist_dict)
+    performance_payload = _performance_payload(perf_dict)
+    clean_weights = _clean_factor_weights(strategy.factor_weights)
     return {
         "name": strategy.name,
         "display_name": strategy.display_name,
         "description": strategy.description,
         "version": strategy.version,
         "category": strategy.category,
-        "tags": list(strategy.tags),
-        "style": dict(strategy.style),
+        "tags": _string_list(strategy.tags),
+        "style": dict(strategy.style) if isinstance(strategy.style, dict) else {},
         "use_case": _use_case(strategy),
         "data": {
-            "requirements": list(strategy.data_requirements),
+            "requirements": _string_list(strategy.data_requirements),
             "requires_daily_features": bool(strategy.requires_daily_features),
-            "required_snapshot_fields": list(strategy.required_snapshot_fields),
-            "required_daily_fields": list(strategy.required_daily_fields),
-            "active_filters": list(strategy.active_filters),
+            "required_snapshot_fields": _string_list(strategy.required_snapshot_fields),
+            "required_daily_fields": _string_list(strategy.required_daily_fields),
+            "active_filters": _string_list(strategy.active_filters),
         },
         "scoring": {
-            "factor_weights": dict(strategy.factor_weights),
-            "top_factors": _top_factors(strategy.factor_weights),
-            "profile_keys": dict(strategy.profile_keys),
+            "factor_weights": clean_weights,
+            "top_factors": _top_factors(clean_weights),
+            "profile_keys": dict(strategy.profile_keys) if isinstance(strategy.profile_keys, dict) else {},
         },
         "readiness": {
             "status": readiness_status,
             "live_data_check": bool(live_data_check),
-            "snapshot_missing_fields": list(coverage.get("snapshot_missing_fields", []) or []),
-            "daily_missing_fields": list(coverage.get("daily_missing_fields", []) or []),
+            "snapshot_missing_fields": _string_list(cov_dict.get("snapshot_missing_fields", [])),
+            "daily_missing_fields": _string_list(cov_dict.get("daily_missing_fields", [])),
         },
         "history": history_payload,
         "performance": performance_payload,
@@ -303,19 +329,19 @@ def _attention_card_sort_key(card: dict[str, Any]) -> tuple[int, int, float, str
 
 
 def _use_case(strategy: StrategyInfo) -> dict[str, object]:
-    style = strategy.style or {}
-    regimes = list(style.get("market_regime", []) or [])
-    risk = str(style.get("risk_profile") or "balanced")
-    holding = str(style.get("holding_period") or "watchlist")
-    execution = str(style.get("execution_style") or strategy.category)
+    style = strategy.style if isinstance(strategy.style, dict) else {}
+    regimes = _string_list(style.get("market_regime", []))
+    risk = safe_text(style.get("risk_profile")) or "balanced"
+    holding = safe_text(style.get("holding_period")) or "watchlist"
+    execution = safe_text(style.get("execution_style")) or safe_text(strategy.category) or "general"
     data_mode = "daily-confirmed" if strategy.requires_daily_features else "snapshot-only"
     return {
         "risk_profile": risk,
         "holding_period": holding,
         "execution_style": execution,
         "market_regime": regimes,
-        "capital_profile": str(style.get("capital_profile") or ""),
-        "ui_badge": str(style.get("ui_badge") or ""),
+        "capital_profile": safe_text(style.get("capital_profile")),
+        "ui_badge": safe_text(style.get("ui_badge")),
         "summary": (
             f"{risk} {holding} strategy for {','.join(regimes) or 'general'} "
             f"using {execution}; {data_mode}"
@@ -323,13 +349,19 @@ def _use_case(strategy: StrategyInfo) -> dict[str, object]:
     }
 
 
+def _dict_items(raw: object, *, limit: int = 3) -> list[dict[str, Any]]:
+    if not isinstance(raw, list):
+        return []
+    return [item for item in raw if isinstance(item, dict)][:limit]
+
+
 def _history_payload(history: dict[str, Any]) -> dict[str, Any]:
     return {
         "run_count": safe_int(history.get("run_count")),
-        "latest_run_id": str(history.get("latest_run_id") or ""),
-        "latest_created_at": str(history.get("latest_created_at") or ""),
-        "latest_report_path": str(history.get("latest_report_path") or ""),
-        "latest_snapshot_source": str(history.get("latest_snapshot_source") or ""),
+        "latest_run_id": safe_text(history.get("latest_run_id")),
+        "latest_created_at": safe_text(history.get("latest_created_at")),
+        "latest_report_path": safe_text(history.get("latest_report_path")),
+        "latest_snapshot_source": safe_text(history.get("latest_snapshot_source")),
         "total_picks": safe_int(history.get("total_picks")),
         "average_picks": finite_float(history.get("average_picks")),
         "source_error_count": safe_int(history.get("source_error_count")),
@@ -338,16 +370,19 @@ def _history_payload(history: dict[str, Any]) -> dict[str, Any]:
         "degradation_samples": _string_list(history.get("degradation_samples", []))[:5],
         "llm_ranked_runs": safe_int(history.get("llm_ranked_runs")),
         "daily_enriched_runs": safe_int(history.get("daily_enriched_runs")),
-        "recent_runs": list(history.get("recent_runs", []) or [])[:3],
+        "recent_runs": _dict_items(history.get("recent_runs"), limit=3),
     }
 
 
 def _performance_payload(performance: dict[str, Any]) -> dict[str, Any]:
+    raw_elapsed = performance.get("latest_elapsed_days")
+    elapsed_num = finite_float(raw_elapsed)
+    elapsed_days = safe_int(raw_elapsed) if elapsed_num is not None else None
     return {
         "evaluation_count": safe_int(performance.get("evaluation_count")),
-        "latest_run_id": str(performance.get("latest_run_id") or ""),
-        "latest_evaluated_at": str(performance.get("latest_evaluated_at") or ""),
-        "latest_elapsed_days": performance.get("latest_elapsed_days"),
+        "latest_run_id": safe_text(performance.get("latest_run_id")),
+        "latest_evaluated_at": safe_text(performance.get("latest_evaluated_at")),
+        "latest_elapsed_days": elapsed_days,
         "pick_count": safe_int(performance.get("pick_count")),
         "evaluated_pick_count": safe_int(performance.get("evaluated_pick_count")),
         "missing_count": safe_int(performance.get("missing_count")),
@@ -357,17 +392,18 @@ def _performance_payload(performance: dict[str, Any]) -> dict[str, Any]:
         "average_run_return_pct": finite_float(performance.get("average_run_return_pct")),
         "run_win_rate": finite_float(performance.get("run_win_rate")),
         "performance_score": finite_float(performance.get("performance_score")),
-        "outcome": str(performance.get("outcome") or "insufficient_data"),
+        "outcome": safe_text(performance.get("outcome")) or "insufficient_data",
         "next_actions": _string_list(performance.get("next_actions", []))[:3],
-        "recent_evaluations": list(performance.get("recent_evaluations", []) or [])[:3],
+        "recent_evaluations": _dict_items(performance.get("recent_evaluations"), limit=3),
     }
 
 
 def _top_factors(weights: dict[str, float]) -> list[dict[str, object]]:
+    cleaned = _clean_factor_weights(weights)
     rows = [
-        {"name": str(name), "weight": val}
-        for name, weight in weights.items()
-        if (val := finite_float(weight)) is not None and val > 0
+        {"name": name, "weight": weight}
+        for name, weight in cleaned.items()
+        if weight > 0
     ]
     rows.sort(key=lambda item: (-float(item["weight"]), str(item["name"])))
     return rows[:3]
@@ -399,10 +435,10 @@ def _card_actions(
 
 
 def _string_list(value: object) -> list[str]:
-    if isinstance(value, list):
-        return [str(item) for item in value if str(item)]
+    if isinstance(value, (list, tuple)):
+        return [txt for item in value if (txt := safe_text(item))]
     if isinstance(value, str) and value:
-        return [item.strip() for item in value.split(",") if item.strip()]
+        return [txt for item in value.split(",") if (txt := safe_text(item))]
     return []
 
 

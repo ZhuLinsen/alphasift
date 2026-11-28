@@ -240,3 +240,62 @@ def test_build_strategy_cards_from_parts_scrubs_nonfinite_and_bool_metrics():
     assert len(attn) == 1
     assert attn[0]["performance_score"] is None
     assert payload["lanes"]["performance_leaders"]["cards"][0]["name"] == "s_ok"
+
+
+def test_strategy_cards_guards_malformed_containers_string_regimes_and_elapsed_days():
+    import json
+    from alphasift.jsonutil import dumps_strict_json
+    from alphasift.models import StrategyInfo
+    from alphasift.strategy_cards import build_strategy_cards_from_parts
+
+    strategy = StrategyInfo(
+        name="custom_strat",
+        display_name="Custom",
+        description="desc",
+        version="1.0",
+        category="trend",
+        tags=[None, "nan", "trend"],  # type: ignore[list-item]
+        market_scope=["cn"],
+        style={"market_regime": "bull", "ui_badge": float("nan")},  # type: ignore[dict-item]
+        data_requirements=["snapshot"],
+        requires_daily_features=False,
+        required_snapshot_fields=[],
+        required_daily_fields=[],
+        active_filters=[],
+        factor_weights={"pe": float("nan"), "pb": True, "yield": 0.6},
+        profile_keys={},
+    )
+    payload = build_strategy_cards_from_parts(
+        [strategy],
+        strategy_coverage=["not-a-dict", {"strategy": "custom_strat", "status": float("nan"), "snapshot_missing_fields": [None, "nan", "pb"]}],  # type: ignore[list-item]
+        run_history_summary={"strategies": "bad-not-list"},  # type: ignore[arg-type]
+        performance_summary={
+            "strategies": [
+                "bad-entry",
+                {
+                    "strategy": "custom_strat",
+                    "latest_elapsed_days": True,
+                    "latest_run_id": float("nan"),
+                    "outcome": float("nan"),
+                    "next_actions": [None, "nan", "Keep monitoring"],
+                    "recent_evaluations": "bad-str",
+                },
+            ]
+        },
+        strategy_filter=float("nan"),  # type: ignore[arg-type]
+    )
+    card = payload["cards"][0]
+    assert payload["strategy_filter"] == ""
+    assert card["tags"] == ["trend"]
+    assert card["use_case"]["market_regime"] == ["bull"]
+    assert card["use_case"]["ui_badge"] == ""
+    assert card["scoring"]["factor_weights"] == {"yield": 0.6}
+    assert card["readiness"]["status"] == "skipped"
+    assert card["readiness"]["snapshot_missing_fields"] == ["pb"]
+    assert card["performance"]["latest_elapsed_days"] is None
+    assert card["performance"]["latest_run_id"] == ""
+    assert card["performance"]["outcome"] == "insufficient_data"
+    assert card["performance"]["next_actions"] == ["Keep monitoring"]
+    assert card["performance"]["recent_evaluations"] == []
+    assert card["history"]["recent_runs"] == []
+    json.loads(dumps_strict_json(payload), parse_constant=lambda c: (_ for _ in ()).throw(AssertionError(c)))
