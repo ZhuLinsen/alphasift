@@ -264,3 +264,85 @@ def test_market_digest_ignores_nonfinite_scores_and_preserves_valid_sort(tmp_pat
         raise AssertionError(f"Invalid JSON constant: {token}")
 
     json.loads(dumps_strict_json(digest), parse_constant=_reject_constant)
+
+
+def test_market_digest_handles_mixed_offsets_na_strings_and_malformed_sections(tmp_path: Path) -> None:
+    cfg = Config(data_dir=tmp_path)
+    # Chronologically 2026-11-20T22:00:00-05:00 (= 2026-11-21T03:00:00Z) is LATER than 2026-11-20T22:30:00Z
+    save_screen_result(
+        _make_run(
+            run_id="r_z",
+            strategy="us_momentum_quality",
+            market="us",
+            track="rules",
+            created_at="2026-11-20T22:30:00Z",
+            picks=[Pick(rank=1, code="OLD", name="OlderUTC", final_score=60.0, screen_score=60.0)],
+        ),
+        data_dir=cfg.data_dir,
+    )
+    save_screen_result(
+        _make_run(
+            run_id="r_offset_newer",
+            strategy="us_momentum_quality",
+            market="us",
+            track="rules",
+            created_at="2026-11-20T22:00:00-05:00",
+            picks=[Pick(rank=1, code="AAPL", name="Apple", final_score=92.0, screen_score=92.0)],
+        ),
+        data_dir=cfg.data_dir,
+    )
+
+    loaded = load_multi_market_runs(cfg, markets=[None, " us ", ""], trade_date="  ")  # type: ignore[list-item]
+    assert list(loaded.keys()) == ["us"]
+    assert [r.run_id for r in loaded["us"]] == ["r_offset_newer"]
+
+    # _top_picks_for_market ignores non-dict entries and scrubs float('nan')/'NaN' strings
+    top = _top_picks_for_market(
+        [
+            "not-a-dict",  # type: ignore[list-item]
+            {
+                "strategy": "strat_a",
+                "picks": [
+                    "bad-pick",  # type: ignore[list-item]
+                    {"code": float("nan"), "name": "BadCode"},
+                    {"code": "MSFT", "name": float("nan"), "industry": "nan", "ranking_reason": "null", "final_score": 80.0},
+                ],
+            },
+            {
+                "strategy": "strat_b",
+                "picks": [
+                    {"code": "MSFT", "name": "Microsoft", "industry": "Software", "ranking_reason": "Cloud growth", "final_score": 84.0},
+                ],
+            },
+        ],
+        display_names={"strat_a": "A", "strat_b": "B"},
+    )
+    assert len(top) == 1
+    assert top[0]["code"] == "MSFT"
+    assert top[0]["name"] == "Microsoft"
+    assert top[0]["industry"] == "Software"
+    assert top[0]["ranking_reason"] == "Cloud growth"
+
+    # Malformed market_news item or empty/nan trade_date should not crash IM card rendering
+    card = render_market_digest_im_card({
+        "trade_date": None,
+        "market_sections": [
+            "bad-section",
+            {
+                "market": "us",
+                "market_name": "美股",
+                "trade_date": None,
+                "strategy_count": 1,
+                "top_picks": [
+                    "bad-pick",
+                    {"code": None, "name": "Ghost"},
+                    {"code": "AAPL", "name": float("nan"), "avg_final_score": 90.0},
+                ],
+            },
+        ],
+        "market_news": {"items": ["not-a-dict"]},
+    })
+    assert "AlphaSift 全球市场盘后精选 (-)" in card
+    assert "AAPL(90.0分)" in card
+    assert "市场快讯" not in card
+    assert "nan" not in card.lower()
