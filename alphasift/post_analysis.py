@@ -17,13 +17,29 @@ from alphasift.jsonutil import finite_float, safe_int
 from alphasift.models import Pick
 from alphasift.normalize import (
     normalize_code,
-    safe_string_list as _safe_string_list,
+    safe_text,
 )
 
 
 def _finite_or_default(value: object, default: float) -> float:
     num = finite_float(value)
     return default if num is None else num
+
+
+def _effective_timeout(value: object, *, default: float = 15.0) -> float:
+    num = finite_float(value)
+    return num if num is not None and num > 0 else default
+
+
+def _clean_string_items(value: object) -> list[str]:
+    if value is None or isinstance(value, (bool, dict)):
+        return []
+    if isinstance(value, str):
+        text = safe_text(value)
+        return [text] if text else []
+    if isinstance(value, (list, tuple, set)):
+        return [text for item in value if (text := safe_text(item))]
+    return []
 
 
 def _normalize_code(value: object) -> str:
@@ -60,19 +76,28 @@ _DEFAULT_SCORECARD_PROFILE = {
 
 def normalize_post_analyzers(analyzers: list[str] | str | None) -> list[str]:
     """Normalize comma-separated/repeated analyzer names."""
-    if analyzers is None:
+    if analyzers is None or isinstance(analyzers, bool):
         return []
-    raw_items: list[str]
     if isinstance(analyzers, str):
-        raw_items = [analyzers]
-    else:
+        raw_items: list[object] = [analyzers]
+    elif isinstance(analyzers, (list, tuple, set)):
         raw_items = list(analyzers)
+    else:
+        raw_items = [analyzers]
 
     result: list[str] = []
     seen = set()
     for raw in raw_items:
-        for item in str(raw).split(","):
-            name = item.strip().lower()
+        if isinstance(raw, bool):
+            raise ValueError(
+                f"Unknown post analyzer '{raw}'. "
+                f"Supported: {', '.join(sorted(SUPPORTED_POST_ANALYZERS))}"
+            )
+        text = safe_text(raw)
+        if not text:
+            continue
+        for item in text.split(","):
+            name = safe_text(item).lower()
             if not name or name in seen:
                 continue
             if name not in SUPPORTED_POST_ANALYZERS:
@@ -88,20 +113,21 @@ def normalize_post_analyzers(analyzers: list[str] | str | None) -> list[str]:
 def run_post_analyzers(
     picks: list[Pick],
     *,
-    analyzer_names: list[str],
+    analyzer_names: list[str] | str,
     run_id: str,
     config: Config,
     max_picks: int | None = None,
     scorecard_profile: dict[str, object] | None = None,
 ) -> tuple[list[Pick], list[str]]:
     """Run selected post analyzers and re-rank by final_score."""
-    if not picks or not analyzer_names:
+    names = normalize_post_analyzers(analyzer_names) if isinstance(analyzer_names, str) else list(analyzer_names or [])
+    if not picks or not names:
         return picks, []
 
     degradation: list[str] = []
     result = picks
 
-    for analyzer in analyzer_names:
+    for analyzer in names:
         if analyzer == "dsa":
             default_max = max(safe_int(config.post_analysis_max_picks, default=1), 0)
             max_count = default_max if max_picks is None else max(safe_int(max_picks, default=default_max), 0)
@@ -150,8 +176,8 @@ def _run_dsa_analyzer(
     )
     analyzed = apply_dsa_overlay(analyzed)
     for pick in analyzed:
-        status = pick.deep_analysis_status
-        summary = pick.deep_analysis_summary
+        status = safe_text(pick.deep_analysis_status)
+        summary = safe_text(pick.deep_analysis_summary)
         after_score = _finite_or_default(pick.final_score, 0.0)
         delta = round(after_score - before_scores.get(pick.code, after_score), 4)
         _record_post_result(
@@ -160,8 +186,8 @@ def _run_dsa_analyzer(
             status=status,
             summary=summary,
             score_delta=delta,
-            payload=pick.deep_analysis_result or {},
-            risk_flags=pick.deep_analysis_risk_flags,
+            payload=pick.deep_analysis_result if isinstance(pick.deep_analysis_result, dict) else {},
+            risk_flags=_clean_string_items(pick.deep_analysis_risk_flags),
             tags=["dsa"] if status == "completed" else [],
         )
     return analyzed, degradation
@@ -179,7 +205,7 @@ def _run_scorecard_analyzer(
             continue
         delta, flags, tags, summary = _scorecard_delta(pick, profile=profile)
         pick.final_score = round(_finite_or_default(pick.final_score, 0.0) + delta, 4)
-        pick.risk_flags = _unique([*pick.risk_flags, *flags])
+        pick.risk_flags = _unique([*_clean_string_items(pick.risk_flags), *flags])
         _record_post_result(
             pick,
             "scorecard",
@@ -200,14 +226,15 @@ def _run_external_http_analyzer(
     config: Config,
     max_picks: int,
 ) -> tuple[list[Pick], list[str]]:
-    if not config.post_analyzer_url:
+    analyzer_url = safe_text(config.post_analyzer_url)
+    if not analyzer_url:
         raise ValueError("post analyzer 'external_http' requested but POST_ANALYZER_URL is not configured")
 
     candidates = [asdict(pick) for pick in picks[:max_picks]]
     response = requests.post(
-        config.post_analyzer_url,
+        analyzer_url,
         json={"run_id": run_id, "candidates": candidates},
-        timeout=config.post_analyzer_timeout_sec,
+        timeout=_effective_timeout(config.post_analyzer_timeout_sec, default=15.0),
     )
     response.raise_for_status()
     body = response.json()
@@ -220,20 +247,22 @@ def _run_external_http_analyzer(
     if not isinstance(items, list):
         raise ValueError("external_http analyzer response must be a list or contain ranked=list")
 
-    by_code = {_normalize_code(pick.code): pick for pick in picks}
+    by_code = {code: pick for pick in picks if (code := _normalize_code(pick.code))}
     for item in items:
         if not isinstance(item, dict):
             continue
         code = _normalize_code(item.get("code", ""))
+        if not code:
+            continue
         pick = by_code.get(code)
         if pick is None:
             continue
         delta = _finite_or_default(item.get("score_delta"), 0.0)
-        summary = str(item.get("summary", "")).strip()
-        risk_flags = _safe_string_list(item.get("risk_flags"))
-        tags = _safe_string_list(item.get("tags"))
+        summary = safe_text(item.get("summary"))
+        risk_flags = _clean_string_items(item.get("risk_flags"))
+        tags = _clean_string_items(item.get("tags"))
         pick.final_score = round(_finite_or_default(pick.final_score, 0.0) + delta, 4)
-        pick.risk_flags = _unique([*pick.risk_flags, *risk_flags])
+        pick.risk_flags = _unique([*_clean_string_items(pick.risk_flags), *risk_flags])
         _record_post_result(
             pick,
             "external_http",
@@ -291,20 +320,30 @@ def _scorecard_delta(
         elif llm_confidence < profile["low_llm_confidence"]:
             delta -= profile["low_llm_confidence_penalty"]
             flags.append("low_llm_confidence")
-    if pick.llm_catalysts:
-        delta += min(len(pick.llm_catalysts) * profile["catalyst_bonus"], profile["catalyst_bonus_cap"])
-    if pick.llm_risks:
-        delta -= min(len(pick.llm_risks) * profile["llm_risk_penalty"], profile["llm_risk_penalty_cap"])
-        flags.extend(pick.llm_risks)
+    catalysts = _clean_string_items(pick.llm_catalysts)
+    if catalysts:
+        delta += min(
+            len(catalysts) * max(profile["catalyst_bonus"], 0.0),
+            max(profile["catalyst_bonus_cap"], 0.0),
+        )
+    llm_risks = _clean_string_items(pick.llm_risks)
+    if llm_risks:
+        delta -= min(
+            len(llm_risks) * max(profile["llm_risk_penalty"], 0.0),
+            max(profile["llm_risk_penalty_cap"], 0.0),
+        )
+        flags.extend(llm_risks)
 
     cap = max(_finite_or_default(profile["score_delta_cap"], 8.0), 0.0)
     delta = round(max(min(delta, cap), -cap), 4)
+    clean_flags = _unique(flags)
+    clean_tags = _unique(tags)
     summary = "本地后置评分: " + (
-        "、".join(tags) if tags else "未发现额外加分项"
+        "、".join(clean_tags) if clean_tags else "未发现额外加分项"
     )
-    if flags:
-        summary += f"；风险: {'、'.join(flags[:3])}"
-    return delta, _unique(flags), _unique(tags), summary
+    if clean_flags:
+        summary += f"；风险: {'、'.join(clean_flags[:3])}"
+    return delta, clean_flags, clean_tags, summary
 
 
 def _scorecard_profile(profile: dict[str, object] | None) -> dict[str, float]:
@@ -330,22 +369,27 @@ def _record_post_result(
     risk_flags: list[str] | None = None,
     tags: list[str] | None = None,
 ) -> None:
-    pick.post_analysis_status[analyzer] = status
-    pick.post_analysis_summaries[analyzer] = summary
-    pick.post_analysis_score_deltas[analyzer] = round(_finite_or_default(score_delta, 0.0), 4)
-    if payload is not None:
+    if isinstance(pick.post_analysis_status, dict):
+        pick.post_analysis_status[analyzer] = safe_text(status)
+    if isinstance(pick.post_analysis_summaries, dict):
+        pick.post_analysis_summaries[analyzer] = safe_text(summary)
+    if isinstance(pick.post_analysis_score_deltas, dict):
+        pick.post_analysis_score_deltas[analyzer] = round(_finite_or_default(score_delta, 0.0), 4)
+    if payload is not None and isinstance(pick.post_analysis_results, dict):
         pick.post_analysis_results[analyzer] = payload
-    if risk_flags:
-        pick.risk_flags = _unique([*pick.risk_flags, *risk_flags])
-    if tags:
-        pick.post_analysis_tags = _unique([*pick.post_analysis_tags, *tags])
+    clean_flags = _clean_string_items(risk_flags)
+    if clean_flags:
+        pick.risk_flags = _unique([*_clean_string_items(pick.risk_flags), *clean_flags])
+    clean_tags = _clean_string_items(tags)
+    if clean_tags:
+        pick.post_analysis_tags = _unique([*_clean_string_items(pick.post_analysis_tags), *clean_tags])
 
 
 def _unique(items: list[str]) -> list[str]:
     seen = set()
     result = []
     for item in items:
-        key = str(item).strip()
+        key = safe_text(item)
         if key and key not in seen:
             seen.add(key)
             result.append(key)
