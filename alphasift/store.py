@@ -5,10 +5,8 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, fields
-from math import isfinite
 from pathlib import Path
 
-from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
 from alphasift.jsonutil import (
     atomic_write_strict_json,
     atomic_write_text,
@@ -16,6 +14,8 @@ from alphasift.jsonutil import (
     finite_float,
     safe_int,
 )
+from alphasift.models import EvaluationResult, Pick, PickEvaluation, ScreenResult
+from alphasift.normalize import safe_bool, safe_text
 
 _RUN_METADATA_SUFFIX = ".meta"
 _RUN_SOURCE_ERROR_SAMPLE_LIMIT = 5
@@ -44,6 +44,8 @@ def load_screen_result(run_ref: str | Path, *, data_dir: Path) -> ScreenResult:
     """Load a saved screen result by run_id or path."""
     path = resolve_run_path(run_ref, data_dir=data_dir)
     data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"Invalid saved run JSON in {path}: expected JSON object")
     raw_picks = data.get("picks")
     pick_items = raw_picks if isinstance(raw_picks, list) else []
     pick_fields = {field.name for field in fields(Pick)}
@@ -55,9 +57,11 @@ def load_screen_result(run_ref: str | Path, *, data_dir: Path) -> ScreenResult:
     ]
     filtered = {key: value for key, value in data.items() if key in result_fields}
     # Runs without a market predate multi-market support and were A-share.
-    filtered["market"] = filtered.get("market") or "cn"
-    if not filtered.get("track"):
-        filtered["track"] = "ai" if filtered.get("llm_ranked") else "rules"
+    filtered["market"] = safe_text(filtered.get("market")) or "cn"
+    filtered["llm_ranked"] = safe_bool(filtered.get("llm_ranked")) is True
+    filtered["daily_enriched"] = safe_bool(filtered.get("daily_enriched")) is True
+    if not safe_text(filtered.get("track")):
+        filtered["track"] = "ai" if filtered["llm_ranked"] else "rules"
     filtered["daily_source_counts"] = _int_count_dict(filtered.get("daily_source_counts"))
     filtered["daily_quality_flag_counts"] = _int_count_dict(filtered.get("daily_quality_flag_counts"))
     loaded = ScreenResult(**filtered)
@@ -94,14 +98,16 @@ def list_saved_runs(
     limit_val = max(safe_int(limit, default=0), 0)
     if limit_val <= 0:
         return []
+    strategy_filter = safe_text(strategy)
+    market_filter = safe_text(market)
     items = []
     for path in sorted(runs_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
         metadata = _read_run_metadata(path)
         if metadata is None:
             continue
-        if strategy and metadata.get("strategy") != strategy:
+        if strategy_filter and metadata.get("strategy") != strategy_filter:
             continue
-        if market and metadata.get("market") != market:
+        if market_filter and metadata.get("market") != market_filter:
             continue
         items.append(metadata)
         if len(items) >= limit_val:
@@ -162,38 +168,44 @@ def _read_run_metadata(path: Path) -> dict[str, object] | None:
     return _normalize_run_metadata(data, path)
 
 
+def _non_neg_int(value: object, *, default: int = 0) -> int:
+    return max(safe_int(value, default=default), 0)
+
+
 def _normalize_run_metadata(data: dict, path: Path) -> dict[str, object]:
     picks = data.get("picks", [])
-    pick_count = len(picks) if isinstance(picks, list) else safe_int(picks)
+    pick_count = len(picks) if isinstance(picks, list) else _non_neg_int(picks)
+    source_errors = _string_list(data.get("source_errors", []))
+    degradation = _string_list(data.get("degradation", []))
     return {
         "schema_version": safe_int(_metadata_value(data, "schema_version", 1), default=1) or 1,
-        "run_id": data.get("run_id", path.stem),
-        "strategy": data.get("strategy", ""),
-        "market": data.get("market") or "cn",
-        "strategy_version": data.get("strategy_version", ""),
-        "strategy_category": data.get("strategy_category", ""),
-        "created_at": data.get("created_at", ""),
+        "run_id": safe_text(data.get("run_id")) or path.stem,
+        "strategy": safe_text(data.get("strategy")),
+        "market": safe_text(data.get("market")) or "cn",
+        "strategy_version": safe_text(data.get("strategy_version")),
+        "strategy_category": safe_text(data.get("strategy_category")),
+        "created_at": safe_text(data.get("created_at")),
         "picks": pick_count,
-        "snapshot_count": safe_int(_metadata_value(data, "snapshot_count", 0)),
-        "after_filter_count": safe_int(_metadata_value(data, "after_filter_count", 0)),
-        "snapshot_source": data.get("snapshot_source", ""),
-        "source_error_count": safe_int(
-            _metadata_value(data, "source_error_count", _list_count(data.get("source_errors")))
+        "snapshot_count": _non_neg_int(_metadata_value(data, "snapshot_count", 0)),
+        "after_filter_count": _non_neg_int(_metadata_value(data, "after_filter_count", 0)),
+        "snapshot_source": safe_text(data.get("snapshot_source")),
+        "source_error_count": _non_neg_int(
+            _metadata_value(data, "source_error_count", len(source_errors))
         ),
-        "source_errors": _string_list(data.get("source_errors", []))[:_RUN_SOURCE_ERROR_SAMPLE_LIMIT],
-        "degradation_count": safe_int(
-            _metadata_value(data, "degradation_count", _list_count(data.get("degradation")))
+        "source_errors": source_errors[:_RUN_SOURCE_ERROR_SAMPLE_LIMIT],
+        "degradation_count": _non_neg_int(
+            _metadata_value(data, "degradation_count", len(degradation))
         ),
-        "degradation": _string_list(data.get("degradation", []))[:_RUN_DEGRADATION_SAMPLE_LIMIT],
-        "llm_ranked": bool(data.get("llm_ranked", False)),
+        "degradation": degradation[:_RUN_DEGRADATION_SAMPLE_LIMIT],
+        "llm_ranked": safe_bool(data.get("llm_ranked")) is True,
         "llm_coverage": finite_float(data.get("llm_coverage")),
-        "daily_enriched": bool(data.get("daily_enriched", False)),
-        "daily_enrich_count": safe_int(_metadata_value(data, "daily_enrich_count", 0)),
+        "daily_enriched": safe_bool(data.get("daily_enriched")) is True,
+        "daily_enrich_count": _non_neg_int(_metadata_value(data, "daily_enrich_count", 0)),
         "daily_source_counts": _int_count_dict(data.get("daily_source_counts")),
         "daily_quality_flag_counts": _int_count_dict(data.get("daily_quality_flag_counts")),
         "post_analyzers": _string_list(data.get("post_analyzers", [])),
         "path": str(path),
-        "report_path": str(data.get("report_path") or path.with_suffix(".md")),
+        "report_path": safe_text(data.get("report_path")) or str(path.with_suffix(".md")),
     }
 
 
@@ -202,15 +214,10 @@ def _int_count_dict(value: object) -> dict[str, int]:
         return {}
     result: dict[str, int] = {}
     for key, count in value.items():
-        name = str(key or "").strip()
-        if not name or isinstance(count, bool):
+        name = safe_text(key)
+        if not name:
             continue
-        if isinstance(count, float) and not isfinite(count):
-            continue
-        try:
-            parsed = int(count)
-        except (TypeError, ValueError, OverflowError):
-            continue
+        parsed = safe_int(count, default=0)
         if parsed > 0:
             result[name] = parsed
     return result
@@ -221,15 +228,11 @@ def _metadata_value(data: dict, key: str, default: object) -> object:
     return default if value is None else value
 
 
-def _list_count(value: object) -> int:
-    return len(value) if isinstance(value, list) else 0
-
-
 def _string_list(value: object) -> list[str]:
-    if isinstance(value, list):
-        return [str(item) for item in value]
+    if isinstance(value, (list, tuple, set)):
+        return [text for item in value if (text := safe_text(item))]
     if isinstance(value, str) and value:
-        return [item.strip() for item in value.split(",") if item.strip()]
+        return [text for item in value.split(",") if (text := safe_text(item))]
     return []
 
 
@@ -270,6 +273,8 @@ def evaluation_result_to_jsonl(result: EvaluationResult) -> list[str]:
 
 
 def evaluation_from_dict(data: dict) -> EvaluationResult:
+    if not isinstance(data, dict):
+        raise ValueError("Evaluation payload must be a JSON object.")
     pick_fields = {field.name for field in fields(PickEvaluation)}
     result_fields = {field.name for field in fields(EvaluationResult)}
     data = dict(data)
@@ -280,7 +285,7 @@ def evaluation_from_dict(data: dict) -> EvaluationResult:
         for item in pick_items
         if isinstance(item, dict)
     ]
-    data["run_snapshot_source"] = str(data.get("run_snapshot_source") or "")
+    data["run_snapshot_source"] = safe_text(data.get("run_snapshot_source"))
     data["run_source_errors"] = _string_list(data.get("run_source_errors"))
     data["run_degradation"] = _string_list(data.get("run_degradation"))
     data["daily_source_counts"] = _int_count_dict(data.get("daily_source_counts"))

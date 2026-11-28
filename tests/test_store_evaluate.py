@@ -1019,3 +1019,90 @@ def test_evaluate_rejects_nonpositive_and_nonfinite_entry_and_snapshot_prices(tm
     assert path_summary["path_end_return_pct"] == 20.0
     assert path_summary["max_runup_pct"] == 25.0
     assert path_summary["max_drawdown_pct"] == -5.0
+
+
+def test_store_scrubs_corrupt_metadata_string_flags_negative_counts_and_na_keys(tmp_path):
+    import json
+    import pytest
+    from alphasift.store import evaluation_from_dict
+
+    runs_dir = tmp_path / "runs"
+    runs_dir.mkdir(parents=True)
+
+    # Non-dict run JSON must raise a clear ValueError rather than AttributeError
+    (runs_dir / "not_an_object.json").write_text('["unexpected", "list"]', encoding="utf-8")
+    with pytest.raises(ValueError, match="expected JSON object"):
+        load_screen_result("not_an_object", data_dir=tmp_path)
+
+    # String false flags & NA market/track must load cleanly
+    (runs_dir / "run_flags.json").write_text(
+        json.dumps({
+            "run_id": "run_flags",
+            "strategy": "dual_low",
+            "market": "NA",
+            "track": "nan",
+            "llm_ranked": "false",
+            "daily_enriched": "0",
+            "picks": [],
+        }),
+        encoding="utf-8",
+    )
+    loaded = load_screen_result("run_flags", data_dir=tmp_path)
+    assert loaded.market == "cn"
+    assert loaded.llm_ranked is False
+    assert loaded.daily_enriched is False
+    assert loaded.track == "rules"
+
+    # Metadata normalization scrubs false-string flags, negative counts, and NA keys/lists
+    (runs_dir / "meta_corrupt.json").write_text(
+        json.dumps({
+            "run_id": None,
+            "strategy": float("nan"),
+            "market": "NA",
+            "created_at": None,
+            "picks": -3,
+            "snapshot_count": -10,
+            "after_filter_count": -2,
+            "snapshot_source": "null",
+            "source_errors": [None, float("nan"), "NA", "sina: timeout"],
+            "degradation": "none, fallback_cache, nan",
+            "llm_ranked": "false",
+            "daily_enriched": "no",
+            "daily_enrich_count": -4,
+            "daily_source_counts": {"NA": 3, "nan": 2, "tencent": "2.0", "neg": -1},
+            "post_analyzers": [None, "scorecard", "NA"],
+            "report_path": float("nan"),
+        }),
+        encoding="utf-8",
+    )
+    listed = list_saved_runs(data_dir=tmp_path, limit=10, strategy="  NA  ", market=" null ")
+    corrupt_meta = next(item for item in listed if item["run_id"] == "meta_corrupt")
+    assert corrupt_meta["strategy"] == ""
+    assert corrupt_meta["market"] == "cn"
+    assert corrupt_meta["picks"] == 0
+    assert corrupt_meta["snapshot_count"] == 0
+    assert corrupt_meta["after_filter_count"] == 0
+    assert corrupt_meta["snapshot_source"] == ""
+    assert corrupt_meta["source_error_count"] == 1
+    assert corrupt_meta["source_errors"] == ["sina: timeout"]
+    assert corrupt_meta["degradation_count"] == 1
+    assert corrupt_meta["degradation"] == ["fallback_cache"]
+    assert corrupt_meta["llm_ranked"] is False
+    assert corrupt_meta["daily_enriched"] is False
+    assert corrupt_meta["daily_enrich_count"] == 0
+    assert corrupt_meta["daily_source_counts"] == {"tencent": 2}
+    assert corrupt_meta["post_analyzers"] == ["scorecard"]
+    assert corrupt_meta["report_path"].endswith("meta_corrupt.md")
+
+    ev = evaluation_from_dict({
+        "run_id": "ev1",
+        "strategy": "dual_low",
+        "market": "cn",
+        "created_at": "2026-04-01",
+        "run_snapshot_source": "NA",
+        "run_source_errors": [None, float("nan"), "err1"],
+        "run_degradation": ("NA", "deg1"),
+    })
+    assert ev.run_snapshot_source == ""
+    assert ev.run_source_errors == ["err1"]
+    assert ev.run_degradation == ["deg1"]
