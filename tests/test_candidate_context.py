@@ -635,3 +635,91 @@ def test_candidate_context_handles_na_names_duplicate_columns_tz_cache_and_bad_l
     assert candidate_context._compress_text("abc", max_len=-5) == ""
     assert candidate_context._compress_text("abc", max_len=False) == "abc"  # type: ignore[arg-type]
     assert candidate_context._compress_text("abcdef", max_len=True) == "abcdef"  # type: ignore[arg-type]
+
+
+def test_market_news_guards_string_keys_markets_timeouts_and_bad_scalars(monkeypatch, tmp_path):
+    import json
+    from datetime import datetime, timezone
+    from alphasift.market_news import (
+        _clean_line,
+        _format_pub_time,
+        _resolve_search_keys,
+        _select_and_dedupe_news,
+        fetch_cn_market_news,
+        fetch_region_market_news,
+    )
+
+    assert _format_pub_time(float("nan")) == ""
+    assert _format_pub_time(True) == ""
+    assert _format_pub_time(1764201600.0) == _format_pub_time("1764201600")
+
+    assert _clean_line(float("nan")) == ""
+    assert _clean_line("hello", max_len=-3) == ""
+    assert _clean_line("hello", max_len=1) == "h"
+
+    assert _resolve_search_keys("tvly-a, tvly-b") == ["tvly-a", "tvly-b"]
+    assert _resolve_search_keys([None, "none", "tvly-a"]) == ["tvly-a"]  # type: ignore[list-item]
+
+    captured_calls: list[tuple[str, dict, float]] = []
+
+    class _SerpResp:
+        status_code = 200
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self):
+            return {
+                "news_results": [
+                    {
+                        "title": "US stocks gain cleanly",
+                        "snippet": "S&P 500 rises.",
+                        "date": "2026-11-28",
+                        "source": {"name": "Reuters"},
+                    }
+                ]
+            }
+
+    def fake_get(url: str, **kwargs):
+        captured_calls.append((url, kwargs.get("params") or {}, kwargs.get("timeout")))
+        return _SerpResp()
+
+    monkeypatch.setattr("alphasift.market_news.requests.get", fake_get)
+    rows1, srcs1 = fetch_region_market_news(
+        "us",
+        serpapi_keys=["serp-key"],
+        timeout_sec=float("nan"),
+    )
+    rows2, srcs2 = fetch_region_market_news(
+        [None, "us"],  # type: ignore[list-item]
+        serpapi_keys=["serp-key"],
+        timeout_sec=6.0,
+    )
+    assert srcs1 == ["Reuters"] and srcs2 == ["Reuters"]
+    assert rows1[0]["source"] == "Reuters"
+    assert captured_calls[0][1]["q"] == "US stock market S&P 500 Nasdaq closing highlights today"
+    assert captured_calls[1][1]["q"] == "US stock market S&P 500 Nasdaq closing highlights today"
+    assert captured_calls[0][2] == 6.0
+
+    deduped = _select_and_dedupe_news(
+        ["bad-item", {"title": float("nan")}, {"title": "央行降准利好股市"}],  # type: ignore[list-item]
+        limit=True,  # type: ignore[arg-type]
+    )
+    assert len(deduped) == 1 and deduped[0]["title"] == "央行降准利好股市"
+    assert _select_and_dedupe_news([{"title": "央行降准利好股市"}], limit=-1) == []
+
+    cache_file = tmp_path / "market_news_cn_2026-11-28.json"
+    cache_file.write_text(
+        json.dumps({
+            "cached_at": datetime.now(timezone.utc).isoformat(),
+            "items": [{"title": "盘后要闻汇总", "source": "Test"}],
+            "sources": "not-a-list",
+        }),
+        encoding="utf-8",
+    )
+    c_items, c_sources, c_errs = fetch_cn_market_news(
+        limit=3,
+        trade_date="2026-11-28",
+        cache_dir=tmp_path,
+    )
+    assert len(c_items) == 1 and c_sources == [] and c_errs == []

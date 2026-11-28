@@ -7,7 +7,8 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 import json
-from alphasift.jsonutil import atomic_write_strict_json, safe_int
+from alphasift.jsonutil import atomic_write_strict_json, finite_float, safe_int
+from alphasift.normalize import safe_text
 import os
 from pathlib import Path
 import re
@@ -54,10 +55,19 @@ def _extract_list(payload: object, *keys: str) -> list[Any]:
     return cur if isinstance(cur, list) else []
 
 
+def _effective_timeout(timeout_sec: object, default: float = 5.0) -> float:
+    parsed = finite_float(timeout_sec)
+    return parsed if (parsed is not None and parsed > 0.0) else default
+
+
 def _format_pub_time(raw: object) -> str:
-    val = str(raw or "").strip()
+    if isinstance(raw, bool):
+        return ""
+    val = safe_text(raw)
     if not val:
         return ""
+    if val.endswith(".0") and val[:-2].isdigit():
+        val = val[:-2]
     if val.isdigit():
         if not re.fullmatch(r"\d{10,13}", val):
             return ""
@@ -78,9 +88,15 @@ def _format_pub_time(raw: object) -> str:
 
 
 def _clean_line(text: object, *, max_len: int = 120) -> str:
-    s = " ".join(re.sub(r"<[^>]+>", " ", str(text or "")).split())
-    if len(s) > max_len:
-        return s[: max_len - 1].rstrip() + "…"
+    eff_max = max(safe_int(max_len, default=120), 0)
+    cleaned = safe_text(text)
+    if eff_max <= 0 or not cleaned:
+        return ""
+    s = " ".join(re.sub(r"<[^>]+>", " ", cleaned).split())
+    if len(s) > eff_max:
+        if eff_max == 1:
+            return s[:1]
+        return s[: eff_max - 1].rstrip() + "…"
     return s
 
 
@@ -95,6 +111,8 @@ def _redact_text(text: str, secrets: Sequence[str] = ()) -> str:
 
 def _fetch_eastmoney_fast_news(*, limit: int = 8, timeout_sec: float = 5.0) -> list[dict[str, Any]]:
     url = "https://np-weblist.eastmoney.com/comm/web/getFastNewsList"
+    eff_limit = max(safe_int(limit, default=8), 1)
+    eff_timeout = _effective_timeout(timeout_sec, 5.0)
     collected: list[dict[str, Any]] = []
     # Column 103 focuses on A-share listed companies / market moves; 102 covers broader macro/market headlines.
     for col in ("103", "102"):
@@ -105,11 +123,11 @@ def _fetch_eastmoney_fast_news(*, limit: int = 8, timeout_sec: float = 5.0) -> l
                 "biz": "web_724",
                 "fastColumn": col,
                 "sortEnd": "",
-                "pageSize": max(limit, 10),
+                "pageSize": max(eff_limit, 10),
                 "req_trace": str(int(datetime.now().timestamp() * 1000)),
             },
             headers=_HEADERS,
-            timeout=timeout_sec,
+            timeout=eff_timeout,
         )
         resp.raise_for_status()
         payload = resp.json()
@@ -128,17 +146,19 @@ def _fetch_eastmoney_fast_news(*, limit: int = 8, timeout_sec: float = 5.0) -> l
                 "source": "东方财富7x24",
                 "category": _classify_news_category(f"{title} {summary}"),
             })
-        if len(collected) >= limit * 2:
+        if len(collected) >= eff_limit * 2:
             break
     return collected
 
 
 def _fetch_ths_fast_news(*, limit: int = 8, timeout_sec: float = 5.0) -> list[dict[str, Any]]:
+    eff_limit = max(safe_int(limit, default=8), 1)
+    eff_timeout = _effective_timeout(timeout_sec, 5.0)
     resp = requests.get(
         "https://news.10jqka.com.cn/tapp/news/push/stock",
-        params={"page": 1, "tag": "", "track": "website", "pagesize": max(limit, 12)},
+        params={"page": 1, "tag": "", "track": "website", "pagesize": max(eff_limit, 12)},
         headers=_HEADERS,
-        timeout=timeout_sec,
+        timeout=eff_timeout,
     )
     resp.raise_for_status()
     payload = resp.json()
@@ -162,11 +182,13 @@ def _fetch_ths_fast_news(*, limit: int = 8, timeout_sec: float = 5.0) -> list[di
 
 
 def _fetch_sina_fast_news(*, limit: int = 8, timeout_sec: float = 5.0) -> list[dict[str, Any]]:
+    eff_limit = max(safe_int(limit, default=8), 1)
+    eff_timeout = _effective_timeout(timeout_sec, 5.0)
     resp = requests.get(
         "https://zhibo.sina.com.cn/api/zhibo/feed",
-        params={"page": 1, "page_size": max(limit, 12), "zhibo_id": 152, "tag_id": 0, "dire": "f", "dpc": 1, "type": 1},
+        params={"page": 1, "page_size": max(eff_limit, 12), "zhibo_id": 152, "tag_id": 0, "dire": "f", "dpc": 1, "type": 1},
         headers=_HEADERS,
-        timeout=timeout_sec,
+        timeout=eff_timeout,
     )
     resp.raise_for_status()
     payload = resp.json()
@@ -195,19 +217,28 @@ def _fetch_sina_fast_news(*, limit: int = 8, timeout_sec: float = 5.0) -> list[d
     return out
 
 
+_PLACEHOLDER_KEY_TOKENS = frozenset({"", "0", "false", "none", "off"})
+
+
 def _resolve_search_keys(
-    explicit: Sequence[str] | None,
+    explicit: Sequence[str] | str | None,
     *env_names: str,
 ) -> list[str]:
     if explicit is not None:
-        return [str(k).strip() for k in explicit if str(k).strip()]
+        raw_items = explicit.split(",") if isinstance(explicit, str) else explicit
+        out: list[str] = []
+        for item in raw_items:
+            k = safe_text(item)
+            if k and k.lower() not in _PLACEHOLDER_KEY_TOKENS and k not in out:
+                out.append(k)
+        return out
     out: list[str] = []
     for env_name in env_names:
         raw = os.getenv(env_name, "").strip()
-        if raw and raw.lower() not in {"0", "false", "none", "off"}:
+        if raw and raw.lower() not in _PLACEHOLDER_KEY_TOKENS:
             for item in raw.split(","):
-                k = item.strip()
-                if k and k not in out:
+                k = safe_text(item)
+                if k and k.lower() not in _PLACEHOLDER_KEY_TOKENS and k not in out:
                     out.append(k)
     return out
 
@@ -221,9 +252,13 @@ def search_stock_news_via_web(
     timeout_sec: float = 6.0,
 ) -> list[dict[str, str]]:
     """Search stock or market news via optional Tavily / SerpAPI keys without exposing credentials."""
+    clean_query = safe_text(query, max_len=240)
+    if not clean_query:
+        return []
     t_keys = _resolve_search_keys(tavily_keys, "TAVILY_API_KEYS", "TAVILY_API_KEY")
     s_keys = _resolve_search_keys(serpapi_keys, "SERPAPI_API_KEYS", "SERPAPI_API_KEY")
     max_res = max(1, min(safe_int(limit, default=3), 8))
+    eff_timeout = _effective_timeout(timeout_sec, 6.0)
 
     for key in t_keys:
         try:
@@ -231,14 +266,14 @@ def search_stock_news_via_web(
                 "https://api.tavily.com/search",
                 json={
                     "api_key": key,
-                    "query": query,
+                    "query": clean_query,
                     "search_depth": "basic",
                     "topic": "news",
                     "max_results": max_res,
                     "days": 7,
                 },
                 headers={"Content-Type": "application/json"},
-                timeout=timeout_sec,
+                timeout=eff_timeout,
             )
             if resp.status_code in {401, 403, 429, 432}:
                 continue
@@ -268,8 +303,8 @@ def search_stock_news_via_web(
         try:
             resp = requests.get(
                 "https://serpapi.com/search.json",
-                params={"q": query, "api_key": key, "num": max_res, "tbm": "nws", "hl": "zh-cn"},
-                timeout=timeout_sec,
+                params={"q": clean_query, "api_key": key, "num": max_res, "tbm": "nws", "hl": "zh-cn"},
+                timeout=eff_timeout,
             )
             if resp.status_code in {401, 403, 429}:
                 continue
@@ -283,11 +318,13 @@ def search_stock_news_via_web(
                 title = _clean_line(r.get("title") or "", max_len=110)
                 if not title:
                     continue
+                raw_source = r.get("source")
+                source_val = raw_source.get("name") if isinstance(raw_source, dict) else raw_source
                 items.append({
                     "title": title,
                     "summary": _clean_line(r.get("snippet") or "", max_len=120),
                     "published_at": _format_pub_time(r.get("date")),
-                    "source": str(r.get("source") or "SerpAPI")[:24],
+                    "source": safe_text(source_val, max_len=24) or "SerpAPI",
                     "category": _classify_news_category(title),
                 })
             if items:
@@ -299,12 +336,17 @@ def search_stock_news_via_web(
 
 
 def _select_and_dedupe_news(raw_items: list[dict[str, Any]], *, limit: int) -> list[dict[str, Any]]:
+    eff_limit = max(safe_int(limit, default=6), 0)
+    if eff_limit <= 0:
+        return []
     deduped: list[dict[str, Any]] = []
     seen_keys: set[str] = set()
     # First pass excludes low-signal platform Q&A / boilerplate; second pass backfills if needed.
     for allow_noise in (False, True):
-        for item in raw_items:
-            title = str(item.get("title") or "").strip()
+        for item in raw_items or []:
+            if not isinstance(item, dict):
+                continue
+            title = safe_text(item.get("title"))
             if not title:
                 continue
             if not allow_noise and any(p in title for p in _NOISE_PATTERNS):
@@ -314,7 +356,7 @@ def _select_and_dedupe_news(raw_items: list[dict[str, Any]], *, limit: int) -> l
                 continue
             seen_keys.add(key)
             deduped.append(item)
-            if len(deduped) >= limit:
+            if len(deduped) >= eff_limit:
                 return deduped
     return deduped
 
@@ -373,12 +415,19 @@ def fetch_cn_market_news(
 ) -> tuple[list[dict[str, Any]], list[str], list[str]]:
     """Fetch recent CN market / policy / sector headlines with multi-source fallback."""
     target_limit = max(1, safe_int(limit, default=6))
-    date_tag = (trade_date or datetime.now().strftime("%Y-%m-%d")).strip()
+    eff_timeout = _effective_timeout(timeout_sec, 5.0)
+    date_tag = (safe_text(trade_date) or datetime.now().strftime("%Y-%m-%d")).strip()
     safe_date_tag = re.sub(r"[^0-9A-Za-z._-]", "_", date_tag).strip("._") or "latest"
     cache_file = Path(cache_dir) / f"market_news_cn_{safe_date_tag}.json" if cache_dir else None
     cached = _read_news_cache(cache_file, cache_ttl_hours)
     if cached is not None:
-        return list(cached["items"])[:target_limit], list(cached.get("sources") or []), []
+        raw_sources = cached.get("sources")
+        cached_sources = (
+            [src for item in raw_sources if (src := safe_text(item))]
+            if isinstance(raw_sources, list)
+            else []
+        )
+        return list(cached["items"])[:target_limit], cached_sources, []
 
     raw_items: list[dict[str, Any]] = []
     sources: list[str] = []
@@ -398,7 +447,7 @@ def fetch_cn_market_news(
     rows_by_label: dict[str, list[dict[str, Any]]] = {}
     with ThreadPoolExecutor(max_workers=2) as pool:
         futs = {
-            pool.submit(fn, limit=max(target_limit, 8), timeout_sec=timeout_sec): label
+            pool.submit(fn, limit=max(target_limit, 8), timeout_sec=eff_timeout): label
             for label, fn in providers[:2]
         }
         for fut in as_completed(futs):
@@ -417,7 +466,7 @@ def fetch_cn_market_news(
     items = _select_and_dedupe_news(raw_items, limit=target_limit)
     if len(items) < min(3, target_limit):
         try:
-            sina_rows = _fetch_sina_fast_news(limit=max(target_limit, 8), timeout_sec=timeout_sec)
+            sina_rows = _fetch_sina_fast_news(limit=max(target_limit, 8), timeout_sec=eff_timeout)
             if sina_rows:
                 raw_items.extend(sina_rows)
                 sources.append("新浪财经7x24")
@@ -426,13 +475,13 @@ def fetch_cn_market_news(
             errors.append(f"新浪财经7x24: {_redact_text(str(exc), secrets)}")
 
     if len(items) < min(3, target_limit):
-        query = f"A股 {date_tag} 收盘 板块 要闻 政策" if trade_date else "A股 今日 收盘 板块 要闻 政策"
+        query = f"A股 {date_tag} 收盘 板块 要闻 政策" if safe_text(trade_date) else "A股 今日 收盘 板块 要闻 政策"
         web_rows = search_stock_news_via_web(
             query,
             limit=target_limit,
             tavily_keys=tavily_keys,
             serpapi_keys=serpapi_keys,
-            timeout_sec=timeout_sec + 1.0,
+            timeout_sec=eff_timeout + 1.0,
         )
         if web_rows:
             raw_items.extend(web_rows)
@@ -446,7 +495,7 @@ def fetch_cn_market_news(
 
 
 def fetch_region_market_news(
-    markets: Sequence[str],
+    markets: Sequence[str] | str | None,
     *,
     limit: int = 4,
     tavily_keys: Sequence[str] | None = None,
@@ -454,7 +503,8 @@ def fetch_region_market_news(
     timeout_sec: float = 6.0,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """Best-effort news fetch for US/Asia/Global market digests when web search keys exist."""
-    mkt_set = {str(m).strip().lower() for m in markets if str(m).strip()}
+    raw_markets = markets.split(",") if isinstance(markets, str) else (markets or [])
+    mkt_set = {cleaned for m in raw_markets if (cleaned := safe_text(m).lower())}
     if not mkt_set:
         return [], []
     if "us" in mkt_set and len(mkt_set) == 1:
@@ -463,11 +513,12 @@ def fetch_region_market_news(
         query = "港股 恒生指数 亚太股市 收盘 要闻"
     else:
         query = "Global equity markets Asia US stocks closing news today"
+    eff_timeout = _effective_timeout(timeout_sec, 6.0)
     rows = search_stock_news_via_web(
         query,
         limit=limit,
         tavily_keys=tavily_keys,
         serpapi_keys=serpapi_keys,
-        timeout_sec=timeout_sec,
+        timeout_sec=eff_timeout,
     )
     return rows, sorted({r["source"] for r in rows if r.get("source")})
