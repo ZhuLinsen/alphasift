@@ -11,6 +11,7 @@ from typing import Any
 
 from alphasift.config import Config
 from alphasift.jsonutil import dumps_strict_json, finite_float, safe_int
+from alphasift.normalize import safe_text
 
 BRIEF_DISCLAIMER = "仅供量化研究与复盘观察，不构成投资建议。"
 
@@ -59,9 +60,29 @@ def resolve_strategy_display_names(
     out = dict(base)
     if isinstance(overrides, dict):
         for k, v in overrides.items():
-            if k and v:
-                out[str(k)] = str(v)
+            key_txt = safe_text(k)
+            val_txt = safe_text(v)
+            if key_txt and val_txt:
+                out[key_txt] = val_txt
     return out
+
+
+def _string_flags(raw: object) -> list[str]:
+    if isinstance(raw, (list, tuple, set)):
+        return [txt for item in raw if (txt := safe_text(item))]
+    if isinstance(raw, str):
+        cleaned = safe_text(raw)
+        return [cleaned] if cleaned else []
+    return []
+
+
+def _brief_bullet_list(value: object, *, limit: int = 5) -> list[str]:
+    if isinstance(value, (list, tuple)):
+        return [txt for item in value if (txt := safe_text(item, max_len=200))][:limit]
+    if isinstance(value, str):
+        cleaned = safe_text(value, max_len=200)
+        return [cleaned] if cleaned else []
+    return []
 
 
 def build_cross_strategy_synthesis(
@@ -70,15 +91,19 @@ def build_cross_strategy_synthesis(
     strategy_names: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Build deterministic cross-strategy consensus, sector concentration, resonance, and risk spotlight."""
+    report_dict = report if isinstance(report, dict) else {}
+    display_overrides = report_dict.get("strategy_display_names")
     display_map = resolve_strategy_display_names(
-        overrides=(strategy_names or report.get("strategy_display_names"))
+        overrides=(strategy_names or (display_overrides if isinstance(display_overrides, dict) else None))
     )
+    mnews_raw = report_dict.get("market_news")
     cand_news = (
-        (report.get("market_news") or {}).get("candidate_news") or {}
-        if isinstance(report.get("market_news"), dict)
+        mnews_raw.get("candidate_news")
+        if isinstance(mnews_raw, dict) and isinstance(mnews_raw.get("candidate_news"), dict)
         else {}
     )
-    strategies = report.get("strategies") or []
+    raw_strategies = report_dict.get("strategies")
+    strategies = raw_strategies if isinstance(raw_strategies, list) else []
     by_code: dict[str, dict[str, Any]] = {}
     sector_counts: dict[str, dict[str, Any]] = {}
     pick_pairs_seen: set[tuple[str, str]] = set()
@@ -87,22 +112,23 @@ def build_cross_strategy_synthesis(
     for st in strategies:
         if not isinstance(st, dict):
             continue
-        strat_name = str(st.get("strategy") or "").strip()
-        track_name = str(st.get("track") or ("ai" if st.get("llm_ranked") else "rules"))
-        for pk in st.get("picks") or []:
+        strat_name = safe_text(st.get("strategy"))
+        track_name = safe_text(st.get("track")) or ("ai" if st.get("llm_ranked") else "rules")
+        raw_picks = st.get("picks")
+        for pk in raw_picks if isinstance(raw_picks, list) else []:
             if not isinstance(pk, dict):
                 continue
-            code = str(pk.get("code") or "").strip()
+            code = safe_text(pk.get("code"))
             if not code:
                 continue
-            name = str(pk.get("name") or "").strip()
-            industry = str(pk.get("industry") or "").strip()
+            name = safe_text(pk.get("name"))
+            industry = safe_text(pk.get("industry"))
             score = finite_float(pk.get("final_score"))
             chg = finite_float(pk.get("change_pct"))
-            reason = str(pk.get("ranking_reason") or "").strip()
-            ann_flags = [str(f) for f in (pk.get("announcement_risk_flags") or []) if f]
-            risk_flags = [str(f) for f in (pk.get("risk_flags") or []) if f]
-            risk_level = str(pk.get("risk_level") or "").strip()
+            reason = safe_text(pk.get("ranking_reason"))
+            ann_flags = _string_flags(pk.get("announcement_risk_flags"))
+            risk_flags = _string_flags(pk.get("risk_flags"))
+            risk_level = safe_text(pk.get("risk_level"))
 
             entry = by_code.setdefault(
                 code,
@@ -167,9 +193,9 @@ def build_cross_strategy_synthesis(
         if isinstance(news_list, list) and news_list:
             first_item = news_list[0]
             if isinstance(first_item, dict):
-                first_news = str(first_item.get("title") or "").strip()[:100]
+                first_news = safe_text(first_item.get("title"), max_len=100)
             else:
-                first_news = str(first_item).strip()[:100]
+                first_news = safe_text(first_item, max_len=100)
         rec: dict[str, Any] = {
             "code": code,
             "name": item["name"],
@@ -202,17 +228,20 @@ def build_cross_strategy_synthesis(
         })
     sector_concentration.sort(key=lambda x: (-x["pick_count"], -x["unique_codes"], x["industry"]))
 
-    pat_sec = report.get("patterns") or {}
+    raw_patterns = report_dict.get("patterns")
+    pat_sec = raw_patterns if isinstance(raw_patterns, dict) else {}
     pat_hits: dict[str, dict[str, Any]] = {}
     for bucket, pat_key in (("active", "active_patterns"), ("experimental", "experimental_patterns")):
-        for pat in pat_sec.get(bucket) or []:
+        bucket_items = pat_sec.get(bucket)
+        for pat in bucket_items if isinstance(bucket_items, list) else []:
             if not isinstance(pat, dict):
                 continue
-            pname = str(pat.get("display_name") or pat.get("pattern") or "").strip()
-            for sig in pat.get("signals") or []:
+            pname = safe_text(pat.get("display_name")) or safe_text(pat.get("pattern"))
+            signals = pat.get("signals")
+            for sig in signals if isinstance(signals, list) else []:
                 if not isinstance(sig, dict):
                     continue
-                code = str(sig.get("code") or "").strip()
+                code = safe_text(sig.get("code"))
                 if code not in by_code:
                     continue
                 rec = pat_hits.setdefault(code, {"active_patterns": [], "experimental_patterns": []})
@@ -236,20 +265,22 @@ def build_cross_strategy_synthesis(
     )
 
     risk_map: dict[str, dict[str, Any]] = {}
-    ann = report.get("announcement_risks") or {}
-    for item in ann.get("flagged_items") or []:
+    raw_ann = report_dict.get("announcement_risks")
+    ann = raw_ann if isinstance(raw_ann, dict) else {}
+    flagged_items = ann.get("flagged_items")
+    for item in flagged_items if isinstance(flagged_items, list) else []:
         if not isinstance(item, dict):
             continue
-        code = str(item.get("code") or "").strip()
+        code = safe_text(item.get("code"))
         if not code:
             continue
-        flags = [str(f) for f in (item.get("negative_event_flags") or []) if f]
+        flags = _string_flags(item.get("negative_event_flags"))
         risk_map[code] = {
             "code": code,
-            "name": str(item.get("name") or "").strip(),
+            "name": safe_text(item.get("name")),
             "severity": "high",
             "flags": flags,
-            "summary": str(item.get("announcement_summary") or "").strip()[:160],
+            "summary": safe_text(item.get("announcement_summary"), max_len=160),
             "source": "announcement",
         }
     for code, item in by_code.items():
@@ -301,22 +332,14 @@ def _parse_brief_json(raw: str) -> dict[str, Any]:
     if not isinstance(parsed, dict):
         raise ValueError("brief_json_not_object")
 
-    headline = str(parsed.get("headline") or "").strip()
-    regime_interp = str(parsed.get("regime_interpretation") or "").strip()
-    consensus_edge = str(parsed.get("consensus_and_ai_edge") or "").strip()
+    headline = safe_text(parsed.get("headline"))
+    regime_interp = safe_text(parsed.get("regime_interpretation"))
+    consensus_edge = safe_text(parsed.get("consensus_and_ai_edge"))
     if not headline or not regime_interp:
         raise ValueError("brief_json_missing_required_fields")
 
-    warnings = [
-        str(x).strip()
-        for x in (parsed.get("risk_warnings") or [])
-        if str(x).strip()
-    ][:5]
-    watches = [
-        str(x).strip()
-        for x in (parsed.get("watch_points") or [])
-        if str(x).strip()
-    ][:5]
+    warnings = _brief_bullet_list(parsed.get("risk_warnings"), limit=5)
+    watches = _brief_bullet_list(parsed.get("watch_points"), limit=5)
     return {
         "headline": headline[:140],
         "regime_interpretation": regime_interp[:400],
@@ -332,8 +355,10 @@ def _build_rule_daily_brief(
     track_comparison: Sequence[dict[str, Any]] | None = None,
     fallback_reason: str | None = None,
 ) -> dict[str, Any]:
-    reg = report.get("market_regime") or {}
-    stage_label = str(reg.get("regime_stage_label") or "-")
+    report_dict = report if isinstance(report, dict) else {}
+    raw_reg = report_dict.get("market_regime")
+    reg = raw_reg if isinstance(raw_reg, dict) else {}
+    stage_label = safe_text(reg.get("regime_stage_label")) or "-"
     adv_val = finite_float(reg.get("advance_ratio_pct"))
     adv = adv_val if adv_val is not None else 0.0
     med = finite_float(reg.get("median_return_pct"))
@@ -348,13 +373,19 @@ def _build_rule_daily_brief(
     amt = finite_float(reg.get("total_amount_yi"))
     amt_txt = f"{amt:.0f}亿" if amt is not None else "-"
 
-    syn = report.get("cross_strategy_synthesis") or build_cross_strategy_synthesis(report)
-    consensus = syn.get("consensus_picks") or []
-    sectors = syn.get("sector_concentration") or []
-    ann = report.get("announcement_risks") or {}
-    flagged = ann.get("flagged_items") or []
-    ai_hl = report.get("ai_highlights") or []
-    stale_prefix = "【旧包降级】" if report.get("pack_is_stale") else ""
+    raw_syn = report_dict.get("cross_strategy_synthesis")
+    syn = raw_syn if isinstance(raw_syn, dict) and raw_syn else build_cross_strategy_synthesis(report_dict)
+    raw_consensus = syn.get("consensus_picks")
+    consensus = [c for c in raw_consensus if isinstance(c, dict)] if isinstance(raw_consensus, list) else []
+    raw_sectors = syn.get("sector_concentration")
+    sectors = [s for s in raw_sectors if isinstance(s, dict)] if isinstance(raw_sectors, list) else []
+    raw_ann = report_dict.get("announcement_risks")
+    ann = raw_ann if isinstance(raw_ann, dict) else {}
+    raw_flagged = ann.get("flagged_items")
+    flagged = [item for item in raw_flagged if isinstance(item, dict)] if isinstance(raw_flagged, list) else []
+    raw_ai_hl = report_dict.get("ai_highlights")
+    ai_hl = [h for h in raw_ai_hl if isinstance(h, dict)] if isinstance(raw_ai_hl, list) else []
+    stale_prefix = "【旧包降级】" if report_dict.get("pack_is_stale") else ""
 
     headline = (
         f"{stale_prefix}盘面处于{stage_label}阶段，上涨 {adv:.1f}%（{med_txt}），"
@@ -365,41 +396,57 @@ def _build_rule_daily_brief(
     elif consensus:
         headline += f"，跨策略共识 {len(consensus)} 只"
 
+    trade_date_lbl = safe_text(report_dict.get("trade_date")) or "-"
     regime_interpretation = (
-        f"{report.get('trade_date', '-')} 全市场情绪处于「{stage_label}」阶段："
+        f"{trade_date_lbl} 全市场情绪处于「{stage_label}」阶段："
         f"全市场上涨占比 {adv:.1f}%、{med_txt}，成交额 {amt_txt}；"
         f"非 ST 涨停 {lu} 只 / 跌停 {ld} 只，首板封板率 {seal_txt}，连板最高 {max_streak} 板，昨涨停今日均表现 {prev_txt}。"
     )
 
     parts: list[str] = []
-    if consensus:
-        top_c = "、".join(
-            f"{c['code']}{c['name']}({c['strategy_count']}策略)" for c in consensus[:3]
-        )
-        parts.append(f"多策略共振标的前列：{top_c}")
+    consensus_chips = []
+    for c in consensus[:3]:
+        c_code = safe_text(c.get("code"))
+        if not c_code:
+            continue
+        c_name = safe_text(c.get("name"))
+        c_cnt = max(safe_int(c.get("strategy_count"), default=0), 0)
+        consensus_chips.append(f"{c_code}{c_name}({c_cnt}策略)")
+    if consensus_chips:
+        parts.append(f"多策略共振标的前列：{'、'.join(consensus_chips)}")
     else:
         parts.append("当日各策略候选分散，未出现 ≥2 个策略共同命中的重合股")
-    if sectors:
-        top_s = "、".join(f"{s['industry']}({s['share_pct']}%)" for s in sectors[:3])
-        parts.append(f"行业主要集中在 {top_s}")
+    sector_chips = []
+    for s in sectors[:3]:
+        ind = safe_text(s.get("industry")) or "未分类"
+        share_val = finite_float(s.get("share_pct"))
+        share_num = 0.0 if share_val is None else share_val
+        sector_chips.append(f"{ind}({share_num}%)")
+    if sector_chips:
+        parts.append(f"行业主要集中在 {'、'.join(sector_chips)}")
     if ai_hl:
-        added_n = sum(len(h.get("added_by_ai") or []) for h in ai_hl if isinstance(h, dict))
-        dropped_n = sum(len(h.get("dropped_by_ai") or []) for h in ai_hl if isinstance(h, dict))
+        added_n = sum(len(h.get("added_by_ai") or []) for h in ai_hl if isinstance(h.get("added_by_ai"), list))
+        dropped_n = sum(len(h.get("dropped_by_ai") or []) for h in ai_hl if isinstance(h.get("dropped_by_ai"), list))
         parts.append(f"AI 赛道当日调仓累计新增 {added_n} 只 / 剔除 {dropped_n} 只")
     elif track_comparison:
-        cn_cmp = [c for c in track_comparison if c.get("market") == "cn"]
+        cn_cmp = [c for c in track_comparison if isinstance(c, dict) and c.get("market") == "cn"]
         if cn_cmp:
             parts.append(f"当前已追踪 {len(cn_cmp)} 组 CN 规则 vs AI 同日配对样本")
     consensus_and_ai_edge = "；".join(parts) + "。"
 
     risk_warnings: list[str] = []
-    if report.get("pack_is_stale"):
+    if report_dict.get("pack_is_stale"):
+        pack_date = safe_text(report_dict.get("pack_trade_date")) or "-"
+        exp_date = safe_text(report_dict.get("expected_trade_date")) or "-"
         risk_warnings.append(
-            f"数据包滞后（包日期 {report.get('pack_trade_date')} < 目标日 {report.get('expected_trade_date')}），盘面与形态仅供参考。"
+            f"数据包滞后（包日期 {pack_date} < 目标日 {exp_date}），盘面与形态仅供参考。"
         )
     for item in flagged[:3]:
-        fl = "/".join(str(x) for x in (item.get("negative_event_flags") or [])[:2])
-        risk_warnings.append(f"公告预警：{item.get('code')} {item.get('name', '')} 命中 [{fl}]")
+        fl = "/".join(_string_flags(item.get("negative_event_flags"))[:2])
+        item_code = safe_text(item.get("code"))
+        item_name = safe_text(item.get("name"))
+        if item_code:
+            risk_warnings.append(f"公告预警：{item_code} {item_name} 命中 [{fl}]")
     checked_count = safe_int(ann.get("checked_count"))
     if not flagged and checked_count > 0:
         risk_warnings.append(f"已抽检 {checked_count} 只核心候选，未触发减持/立案等负面关键词。")
@@ -412,10 +459,13 @@ def _build_rule_daily_brief(
         f"观察次日上涨占比能否从 {adv:.1f}% 修复、跌停家数（{ld} 只）是否收敛；",
         f"跟踪昨日涨停溢价（{prev_txt}）与连板梯队（{max_streak} 板）高度延续情况；",
     ]
-    if consensus:
-        watch_points.append(
-            f"复盘多策略共识标的（{consensus[0]['code']} {consensus[0]['name']} 等）次日开盘承接与换手。"
-        )
+    if consensus_chips:
+        c0 = consensus[0]
+        c0_label = f"{safe_text(c0.get('code'))} {safe_text(c0.get('name'))}".strip()
+        if c0_label:
+            watch_points.append(
+                f"复盘多策略共识标的（{c0_label} 等）次日开盘承接与换手。"
+            )
 
     return {
         "mode": "rule_fallback",
@@ -436,9 +486,13 @@ def _build_brief_prompt(
     synthesis: dict[str, Any],
     track_comparison: Sequence[dict[str, Any]] | None = None,
 ) -> str:
-    reg = report.get("market_regime") or {}
-    mnews = report.get("market_news") or {}
-    strat_names = report.get("strategy_display_names") or resolve_strategy_display_names()
+    report_dict = report if isinstance(report, dict) else {}
+    reg = report_dict.get("market_regime") if isinstance(report_dict.get("market_regime"), dict) else {}
+    mnews = report_dict.get("market_news") if isinstance(report_dict.get("market_news"), dict) else {}
+    strat_names = report_dict.get("strategy_display_names")
+    if not isinstance(strat_names, dict) or not strat_names:
+        strat_names = resolve_strategy_display_names()
+    raw_items = mnews.get("items")
     compact_news = [
         {
             "category": n.get("category"),
@@ -446,13 +500,17 @@ def _build_brief_prompt(
             "time": n.get("published_at"),
             "title": n.get("title"),
         }
-        for n in (mnews.get("items") or [])[:5]
-        if isinstance(n, dict) and n.get("title")
+        for n in (raw_items[:5] if isinstance(raw_items, list) else [])
+        if isinstance(n, dict) and safe_text(n.get("title"))
     ]
+    syn_dict = synthesis if isinstance(synthesis, dict) else {}
+    ann_dict = report_dict.get("announcement_risks") if isinstance(report_dict.get("announcement_risks"), dict) else {}
+    raw_ai_hl = report_dict.get("ai_highlights")
+    raw_flagged = ann_dict.get("flagged_items")
     compact_context: dict[str, Any] = {
-        "trade_date": report.get("trade_date"),
-        "pack_trade_date": report.get("pack_trade_date"),
-        "pack_is_stale": bool(report.get("pack_is_stale", False)),
+        "trade_date": report_dict.get("trade_date"),
+        "pack_trade_date": report_dict.get("pack_trade_date"),
+        "pack_is_stale": bool(report_dict.get("pack_is_stale", False)),
         "strategy_display_names": strat_names,
         "market_regime": {
             "stage": reg.get("regime_stage"),
@@ -468,21 +526,21 @@ def _build_brief_prompt(
             "return_distribution": reg.get("return_distribution"),
         },
         "cross_strategy_synthesis": {
-            "consensus_picks": (synthesis.get("consensus_picks") or [])[:5],
-            "sector_concentration": (synthesis.get("sector_concentration") or [])[:5],
-            "strategy_pattern_resonance": (synthesis.get("strategy_pattern_resonance") or [])[:5],
-            "risk_spotlight": (synthesis.get("risk_spotlight") or [])[:5],
+            "consensus_picks": (syn_dict.get("consensus_picks") if isinstance(syn_dict.get("consensus_picks"), list) else [])[:5],
+            "sector_concentration": (syn_dict.get("sector_concentration") if isinstance(syn_dict.get("sector_concentration"), list) else [])[:5],
+            "strategy_pattern_resonance": (syn_dict.get("strategy_pattern_resonance") if isinstance(syn_dict.get("strategy_pattern_resonance"), list) else [])[:5],
+            "risk_spotlight": (syn_dict.get("risk_spotlight") if isinstance(syn_dict.get("risk_spotlight"), list) else [])[:5],
         },
-        "ai_highlights": (report.get("ai_highlights") or [])[:4],
-        "announcement_flagged": ((report.get("announcement_risks") or {}).get("flagged_items") or [])[:5],
+        "ai_highlights": (raw_ai_hl if isinstance(raw_ai_hl, list) else [])[:4],
+        "announcement_flagged": (raw_flagged if isinstance(raw_flagged, list) else [])[:5],
         "paired_ai_track_summary": [
             {
                 "strategy": item.get("strategy"),
                 "common_days": item.get("common_days"),
-                "t5": (item.get("windows") or {}).get("5"),
+                "t5": (item.get("windows") or {}).get("5") if isinstance(item.get("windows"), dict) else None,
             }
             for item in (track_comparison or [])
-            if item.get("market") == "cn"
+            if isinstance(item, dict) and item.get("market") == "cn"
         ][:4],
     }
     if compact_news:

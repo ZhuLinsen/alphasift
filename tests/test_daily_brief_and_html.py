@@ -1024,5 +1024,65 @@ def test_daily_report_html_scrubs_nan_inf_bool_and_malformed_svg_ladder():
     assert 'y1="2.0"' in rendered
 
 
+def test_daily_brief_handles_string_warnings_na_fields_and_malformed_sections():
+    from alphasift.daily_brief import _parse_brief_json, build_cross_strategy_synthesis, generate_ai_daily_brief
+
+    # 1. _parse_brief_json should never split a string bullet field character-by-character or keep NA values
+    parsed = _parse_brief_json(
+        '{"headline": "盘面震荡", "regime_interpretation": "结构分化明显。", '
+        '"consensus_and_ai_edge": null, '
+        '"risk_warnings": "none", '
+        '"watch_points": [null, "nan", "观察成交量变化"]}'
+    )
+    assert parsed["risk_warnings"] == []
+    assert parsed["watch_points"] == ["观察成交量变化"]
+    assert parsed["consensus_and_ai_edge"] == "多策略结果仅作同口径跟踪对照。"
+
+    parsed_str_warn = _parse_brief_json(
+        '{"headline": "核心结论", "regime_interpretation": "结构解读。", '
+        '"risk_warnings": "单一字符串风险提示"}'
+    )
+    assert parsed_str_warn["risk_warnings"] == ["单一字符串风险提示"]
+
+    # 2. Malformed patterns / announcement_risks / string flags / NA code & name should not crash or leak "nan"
+    malformed_report = {
+        "trade_date": None,
+        "pack_is_stale": True,
+        "pack_trade_date": None,
+        "expected_trade_date": float("nan"),
+        "market_regime": "invalid-dict",
+        "patterns": {"active": "bad-str", "experimental": [{"pattern": "box", "signals": "bad-signals"}]},
+        "announcement_risks": {"checked_count": 2, "flagged_items": [{"code": "600001", "name": float("nan"), "negative_event_flags": "减持"}]},
+        "strategies": [
+            {
+                "strategy": "dual_low",
+                "picks": [
+                    {"code": float("nan"), "name": "BadNanCode"},
+                    {"code": "600519", "name": float("nan"), "industry": "nan", "final_score": 88.0, "risk_flags": "高换手"},
+                ],
+            },
+            {
+                "strategy": "quality_value",
+                "picks": [
+                    {"code": "600519", "name": "贵州茅台", "industry": "白酒", "final_score": 90.0},
+                ],
+            },
+        ],
+        "ai_highlights": [{"added_by_ai": "bad-not-list", "dropped_by_ai": ["000001"]}],
+    }
+    syn = build_cross_strategy_synthesis(malformed_report)
+    assert len(syn["consensus_picks"]) == 1
+    assert syn["consensus_picks"][0]["code"] == "600519"
+    assert syn["consensus_picks"][0]["name"] == "贵州茅台"
+    assert syn["consensus_picks"][0]["industry"] == "白酒"
+    assert syn["risk_spotlight"][0]["flags"] == ["减持"]
+
+    brief = generate_ai_daily_brief(malformed_report, config=None, track_comparison=["bad-row"])
+    assert brief["mode"] == "rule_fallback"
+    assert any("命中 [减持]" in w for w in brief["risk_warnings"])
+    assert "600519贵州茅台(2策略)" in brief["consensus_and_ai_edge"]
+    assert "nan" not in str(brief).lower()
+
+
 
 
