@@ -630,6 +630,16 @@ details.sec-details > .sec-body { margin-top: 14px; padding-top: 12px; border-to
 .subhead { font-size: 13.5px; font-weight: 700; margin: 16px 0 8px; color: var(--ink); }
 .empty { padding: 20px; text-align: center; color: var(--muted); font-size: 12.5px; }
 
+.gh-short { display: none; }
+.star-callout {
+  margin-top: 12px; padding: 11px 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 10px 14px; font-size: 12.5px; color: var(--muted);
+}
+.star-callout strong { color: var(--ink); }
+.star-callout-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
 footer {
   margin-top: 48px; padding: 20px 0 0; border-top: 1px solid var(--border);
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px;
@@ -663,7 +673,10 @@ footer {
   .action-btn .btn-lbl { display: none; }
 }
 @media (max-width: 460px) {
-  .github-btn span, #theme-toggle span { display: none; }
+  #theme-toggle span { display: none; }
+  .github-btn { padding: 4px 7px; font-size: 11px; }
+  .github-btn .gh-full { display: none; }
+  .github-btn .gh-short { display: inline; }
 }
 </style>
 </head>
@@ -700,11 +713,12 @@ footer {
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         <span class="btn-lbl" data-i18n="nav_ledger">原始账本</span>
       </a>
-      <a class="github-btn" href="https://github.com/ZhuLinsen/alphasift?utm_source=dashboard" target="_blank" rel="noopener" data-i18n-title="nav_github_title" title="前往 GitHub 点 Star 或 Fork 免费部署">
+      <a class="github-btn" href="https://github.com/ZhuLinsen/alphasift?utm_source=dashboard" target="_blank" rel="noopener" data-i18n-title="nav_github_title" title="在 GitHub 点亮 Star，追踪每日盘后实盘校准与新策略">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.11.78-.25.78-.55 0-.27-.01-1.18-.02-2.14-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.06 11.06 0 0 1 5.78 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.15 0 1.55-.01 2.8-.01 3.18 0 .31.21.67.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/>
         </svg>
-        <span data-i18n="nav_github">Star 开源项目</span>
+        <span class="gh-full" data-i18n="nav_github">Star 开源项目</span>
+        <span class="gh-short" aria-hidden="true">Star</span>
       </a>
       <div class="lang-switch" id="lang-switch" role="group" aria-label="Language">
         <button type="button" data-lang="zh" aria-pressed="true">中</button>
@@ -799,6 +813,13 @@ footer {
       <div class="pill-tabs" id="market-score-pills"></div>
     </div>
     <div class="panel scroll"><table id="scorecard"></table></div>
+    <div class="star-callout">
+      <span data-i18n="star_callout_text">公开 next_open 账本每日盘后自动校验更新。觉得有参考价值？点个 Star 追踪后续样本到期。</span>
+      <div class="star-callout-actions">
+        <a class="github-btn" href="https://github.com/ZhuLinsen/alphasift?utm_source=dashboard_leaderboard" target="_blank" rel="noopener" data-i18n="star_callout_btn">⭐ 点亮 GitHub Star</a>
+        <a class="action-btn" href="https://github.com/ZhuLinsen/alphasift/discussions?utm_source=dashboard_leaderboard" target="_blank" rel="noopener" data-i18n="star_callout_discuss">策略建议 / Discussions</a>
+      </div>
+    </div>
   </section>
 
   <!-- 03 · Cumulative Excess Trend -->
@@ -904,6 +925,7 @@ footer {
       <a href="site/feed.xml" target="_blank" rel="noopener" data-i18n="footer_rss">Atom RSS 订阅</a>
       <a id="footer-manifest-link" href="site/manifest.sha256" target="_blank" rel="noopener" style="display:none;">SHA-256</a>
       <a href="https://github.com/ZhuLinsen/alphasift/blob/main/README.md" target="_blank" rel="noopener" data-i18n="footer_readme">README 文档</a>
+      <a href="https://github.com/ZhuLinsen/alphasift/discussions?utm_source=dashboard" target="_blank" rel="noopener" data-i18n="footer_discussions">策略讨论与反馈</a>
     </div>
   </footer>
 </main>
@@ -928,7 +950,10 @@ const I18N = {
     nav_ledger: "原始账本",
     nav_ledger_title: "查看 track-record 分支 Git 可审计原始运行日志",
     nav_github: "Star 开源项目",
-    nav_github_title: "前往 GitHub 点 Star 或 Fork 免费部署",
+    nav_github_title: "在 GitHub 点亮 Star，追踪每日盘后实盘校准与新策略",
+    star_callout_text: "公开 next_open 账本每日盘后自动校验更新。觉得有参考价值？点个 Star 追踪后续样本到期。",
+    star_callout_btn: "⭐ 点亮 GitHub Star",
+    star_callout_discuss: "策略建议 / Discussions",
     theme_aria: "切换明暗主题",
     theme_light: "亮色",
     theme_dark: "暗色",
@@ -980,6 +1005,7 @@ const I18N = {
     footer_report: "每日投研日报",
     footer_rss: "Atom RSS 订阅",
     footer_readme: "README 文档",
+    footer_discussions: "策略讨论与反馈",
     all_markets: "全部市场",
     meta_updated: "更新于",
     meta_runs_fmt: "{n} 次累计运行",
@@ -1203,7 +1229,10 @@ const I18N = {
     nav_ledger: "Raw Ledger",
     nav_ledger_title: "View Git-auditable raw run logs on track-record branch",
     nav_github: "Star on GitHub",
-    nav_github_title: "Star or Fork on GitHub for free daily Actions runs",
+    nav_github_title: "Star on GitHub to follow daily live T+N benchmarks and new strategies",
+    star_callout_text: "Live next_open ledger updates after every market close. Find the benchmark useful? Star to follow matured T+N outcomes.",
+    star_callout_btn: "⭐ Star on GitHub",
+    star_callout_discuss: "Discussions / Ideas",
     theme_aria: "Toggle light/dark theme",
     theme_light: "Light",
     theme_dark: "Dark",
@@ -1255,6 +1284,7 @@ const I18N = {
     footer_report: "Daily Research Brief",
     footer_rss: "Atom RSS Feed",
     footer_readme: "README",
+    footer_discussions: "Discussions",
     all_markets: "All Markets",
     meta_updated: "Updated",
     meta_runs_fmt: "{n} runs logged",
@@ -1478,7 +1508,10 @@ const I18N = {
     nav_ledger: "生ログ",
     nav_ledger_title: "track-record ブランチの Git 監査可能な生ログを表示",
     nav_github: "GitHub で Star",
-    nav_github_title: "GitHub で Star / Fork して無料自動実行",
+    nav_github_title: "GitHub で Star して毎日の T+N 実測更新をフォロー",
+    star_callout_text: "公開 next_open 台帳は毎営業日引け後に自動更新されます。検証に役立てば Star で継続フォローしてください。",
+    star_callout_btn: "⭐ GitHub で Star",
+    star_callout_discuss: "改善提案 / Discussions",
     theme_aria: "ライト／ダーク切替",
     theme_light: "ライト",
     theme_dark: "ダーク",
@@ -1530,6 +1563,7 @@ const I18N = {
     footer_report: "日次リサーチレポート",
     footer_rss: "Atom RSS 購読",
     footer_readme: "README",
+    footer_discussions: "ディスカッション",
     all_markets: "全市場",
     meta_updated: "更新日時",
     meta_runs_fmt: "累計 {n} 回実行",

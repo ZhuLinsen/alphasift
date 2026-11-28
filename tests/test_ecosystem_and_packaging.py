@@ -146,3 +146,23 @@ def test_top_level_public_api_exports_and_import_order() -> None:
         )
         assert proc.returncode == 0, proc.stderr
 
+
+def test_server_json_and_readme_zh_cn_quickstart_contract():
+    import json
+
+    root = _repo_root()
+    server_path = root / "server.json"
+    data = json.loads(server_path.read_text(encoding="utf-8"))
+    assert data["name"] == "io.github.ZhuLinsen/alphasift"
+    assert data["version"] == alphasift.__version__
+    assert data["packages"][0]["registryType"] == "pypi"
+    assert data["packages"][0]["identifier"] == "alphasift"
+    assert data["packages"][0]["transport"]["type"] == "stdio"
+
+    zh_stub = (root / "README.zh-CN.md").read_text(encoding="utf-8")
+    assert "alphasift run " not in zh_stub
+    assert "alphasift quickstart" in zh_stub
+    assert "<!-- mcp-name: io.github.ZhuLinsen/alphasift -->" in (root / "README.md").read_text(
+        encoding="utf-8"
+    )
+

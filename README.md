@@ -85,17 +85,17 @@
 
 ### 1. 接入 Claude Code / OpenClaw / Cursor / Codex（原生 MCP）
 
-安装 AlphaSift 后，在客户端 MCP 配置加入 5 行 JSON 即可让 AI 助手直接调用 `14` 个只读量化工具与 `4` 项资源（默认不触发外发推送）：
+支持用 **`uvx` 零安装直连**，或先 `pip install alphasift` 后在客户端加入 5 行 JSON，即可让 AI 助手直接调用 `14` 个只读量化工具与 `4` 项资源（默认不触发外发推送）：
 
 ```json
 {
   "mcpServers": {
-    "alphasift": { "command": "alphasift", "args": ["mcp"] }
+    "alphasift": { "command": "uvx", "args": ["alphasift", "mcp"] }
   }
 }
 ```
 
-> *上方为 Claude Code / Cursor JSON 写法；Codex（`mcp_servers` TOML）与 OpenClaw（`mcp.servers`）写法见 [docs/ecosystem.md](docs/ecosystem.md)。*
+> *上方为免预装的 `uvx` 写法；如已执行 `pip install alphasift`，可将 `"command"` 改为 `"alphasift"`。Codex（`mcp_servers` TOML）与 OpenClaw（`mcp.servers`）写法见 [docs/ecosystem.md](docs/ecosystem.md)。*
 
 **接好后直接用自然语言提问：**
 - *“用 AlphaSift 跑一遍今天低估且没有公告利空的 A 股 `dual_low` 策略，给出前 5 只及入选理由”*
@@ -140,11 +140,13 @@ alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html
 
 ### 3. 免费云端每日自动选股与推送（Fork 防撞车）
 
-1. **Fork 本仓库**并启用 **GitHub Actions**。
+1. 点击右上角 **Fork** 本仓库（顺便点个 **Star ⭐** 追踪每日盘后校准与策略更新），然后进入 Fork 仓库的 **Actions** 页签手动点击 **Enable workflows**（GitHub 对 Fork 默认禁用定时任务）。
 2. 在 *Settings → Secrets and variables → Actions → Secrets* 按需添加可选密钥：
    - `GEMINI_API_KEY`（或 `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`）：开启每日 AI 对照赛道与盘后综述；不填则静默跑纯规则赛道。
    - `NOTIFY_URLS`：一行接入 12 种原生推送通道（无配置自动跳过）。
 3. **Plan A Fork 安全护栏**：他人 Fork 后默认**只跑每日筛选与推送，跳过重复官网构建**，避免一 Fork 就挂出一份一模一样的站点；如确实要在 Fork 发布独立网页，在 *Variables* 设置 `ALPHASIFT_ENABLE_PAGES=true` 并开启 *Settings → Pages → GitHub Actions*。详细步骤见 [部署与镜像指南](docs/deployment.md)。
+
+> ⭐ **觉得「次日开盘价 T+N 公开验真 + 代码级公告排雷」有参考价值？** 点右上角 **Star** 追踪每日盘后策略榜单与新形态上线；欢迎在 [Discussions](https://github.com/ZhuLinsen/alphasift/discussions) 分享你的 Fork 跑通效果或提出新策略规则。
 
 ---
 
@@ -266,6 +268,21 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 
 ---
 
+<details>
+<summary><strong>📈 Star History</strong></summary>
+
+<p align="center">
+  <a href="https://www.star-history.com/#ZhuLinsen/alphasift&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ZhuLinsen/alphasift&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=ZhuLinsen/alphasift&type=Date" />
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=ZhuLinsen/alphasift&type=Date" width="760" />
+    </picture>
+  </a>
+</p>
+
+</details>
+
 ## 免责声明、文档索引与开源协议
 
 > 本项目仅用于量化研究、开源工程验证与个人学习，不构成任何投资建议、收益承诺或买卖指令。行情源、大模型输出与形态统计均可能存在延迟或偏差。
@@ -277,3 +294,5 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 ## 友情链接
 
 感谢 [LINUX DO](https://linux.do/) 社区的支持。
+
+<!-- mcp-name: io.github.ZhuLinsen/alphasift -->

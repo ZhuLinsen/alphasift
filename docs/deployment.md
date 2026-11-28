@@ -2,9 +2,22 @@
 
 AlphaSift 当前看板定位为**量化形态观测与回测基准**，仅供研究与后验验证，不作自动交易或投资建议。
 
+## 30 秒本地零 Key 试跑（免 Fork）
+
+如果只想先体验全市场初筛、MCP 工具或本地 Web 工作台，无需 Fork 即可本机直接运行：
+
+```bash
+pip install alphasift
+alphasift quickstart                            # 30 秒端到端演示（零 API Key）
+alphasift screen dual_low --no-llm              # A 股双低纯规则筛选
+uvx alphasift mcp                               # 零安装启动 14 工具 STDIO MCP Server
+```
+
+> ⭐ 如果验证结果对你有帮助，欢迎回到 [ZhuLinsen/alphasift](https://github.com/ZhuLinsen/alphasift) 点亮 **Star** 追踪每日盘后实盘校准更新，或在 [Discussions](https://github.com/ZhuLinsen/alphasift/discussions) 反馈策略需求。
+
 ## Fork 后 3 步启用（非“一键自动跑”）
 
-由于 GitHub 对 Fork 仓库默认**禁用定时 workflow**，且 **GitHub Pages 默认关闭**，“Fork 即一键拥有”并不成立。请按以下 3 步开启：
+由于 GitHub 对 Fork 仓库默认**禁用定时 workflow**，且 **GitHub Pages 默认关闭**，“Fork 即一键拥有”并不成立。点击右上角 Fork（顺便点个 **Star ⭐** 方便后续追踪版本更新）后，请按以下 3 步开启：
 
 1. **启用 GitHub Actions**：进入 Fork 仓库的 **Actions** 页签，点击允许运行工作流（特别是 `track-record.yml`）。如需在自动筛选中开启 **AI 赛道** 或 **通知推送**，在 *Settings → Secrets and variables → Actions* 按需配置可选 Secrets：
    - 可选 AI：`DEEPSEEK_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`（支持 `LLM_CHANNELS` 与 `LLM_DEEPSEEK_*` / `LLM_GEMINI_*` / `LLM_OPENAI_*`、`LLM_MODEL`、`LLM_FALLBACK_MODELS`、`OPENAI_BASE_URL`；可选 `TAVILY_API_KEYS` / `SERPAPI_API_KEYS` 作为盘后市场快讯与个股新闻兜底；CN AI 赛道默认开启 `LLM_CANDIDATE_CONTEXT_ENABLED=true`，注入公告/资讯/资金流上下文并启用红线风控；未配置 Key 时自动仅跑纯规则赛道，不报错）。

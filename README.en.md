@@ -85,17 +85,17 @@ Most AI stock tools stop at chatting over a pre-picked watchlist or cherry-picki
 
 ### 1. Connect to Claude Code, Cursor, Codex, or OpenClaw (Native STDIO MCP)
 
-Register the zero-dependency read-only MCP server (`14` tools, `4` resources; runs local `scorecard` without outbound notifications):
+Connect directly with zero pre-install via **`uvx`** (or `pip install alphasift` first) to expose `14` read-only tools and `4` resources (runs local `scorecard` without outbound notifications):
 
 ```json
 {
   "mcpServers": {
-    "alphasift": { "command": "alphasift", "args": ["mcp"] }
+    "alphasift": { "command": "uvx", "args": ["alphasift", "mcp"] }
   }
 }
 ```
 
-> *Claude Code / Cursor JSON shown above; for Codex (`mcp_servers` TOML) or OpenClaw (`mcp.servers`), see [docs/ecosystem.md](docs/ecosystem.md).*
+> *Zero-install `uvx` config shown above; if you installed via `pip install alphasift`, change `"command"` to `"alphasift"`. For Codex (`mcp_servers` TOML) or OpenClaw (`mcp.servers`), see [docs/ecosystem.md](docs/ecosystem.md).*
 
 **Try asking your AI assistant:**
 - *"Screen today's CN `dual_low` strategy for top-5 undervalued picks with clean filings and explain the sector mix."*
@@ -140,9 +140,11 @@ alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html
 
 ### 3. Free Cloud Daily Screening & Fork Protection
 
-1. **Fork** this repository and enable **GitHub Actions**.
+1. Click **Fork** in the top-right (and **Star ⭐** the repo to follow daily benchmark & strategy updates), then open your fork's **Actions** tab and click **Enable workflows** (GitHub disables scheduled crons on forks by default).
 2. Add optional **Secrets** under *Settings -> Secrets and variables -> Actions*: `GEMINI_API_KEY` (or `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`) for paired AI ranking, and `NOTIFY_URLS` for 1-line push alerts.
 3. **Plan A Fork Guard:** Forked repositories run screening and notifications while skipping duplicate GitHub Pages builds unless you set Repository Variable `ALPHASIFT_ENABLE_PAGES=true` and enable *Settings -> Pages -> GitHub Actions*. See [docs/deployment.md](docs/deployment.md).
+
+> ⭐ **Found the live next-open T+N benchmark or zero-key MCP useful?** Star this repo to follow daily scorecard updates and new strategy releases, or propose rules and share setups in [Discussions](https://github.com/ZhuLinsen/alphasift/discussions).
 
 ---
 
@@ -263,6 +265,21 @@ Atom 1.0 RSS feed: [`site/feed.xml`](https://alphasift.zhulinsen.tech/site/feed.
 See [docs/ecosystem.md](docs/ecosystem.md) for MCP tool schemas and Docker details.
 
 ---
+
+<details>
+<summary><strong>📈 Star History</strong></summary>
+
+<p align="center">
+  <a href="https://www.star-history.com/#ZhuLinsen/alphasift&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ZhuLinsen/alphasift&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=ZhuLinsen/alphasift&type=Date" />
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=ZhuLinsen/alphasift&type=Date" width="760" />
+    </picture>
+  </a>
+</p>
+
+</details>
 
 ## Disclaimer, Docs & License
 

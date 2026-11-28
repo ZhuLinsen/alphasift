@@ -1084,5 +1084,22 @@ def test_daily_brief_handles_string_warnings_na_fields_and_malformed_sections():
     assert "nan" not in str(brief).lower()
 
 
+def test_daily_report_html_has_star_cta_utm_and_discussions_links() -> None:
+    html_out = render_daily_report_html(_pack_less_minimal_report())
+    assert "utm_source=daily_report" in html_out
+    assert "utm_source=daily_report_footer" in html_out
+    assert 'data-i18n="btn_star"' in html_out
+    assert 'data-i18n="footer_discuss"' in html_out
+
+
+def _pack_less_minimal_report() -> dict[str, object]:
+    return {
+        "trade_date": "2026-11-28",
+        "pack_trade_date": "2026-11-28",
+        "strategies": [],
+        "patterns": {"active": [], "experimental": []},
+    }
+
+
 
 
