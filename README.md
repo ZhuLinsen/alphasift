@@ -106,7 +106,7 @@
 
 ### 2. 本机命令行、交互式 Web 工作台 & Docker
 
-可直接从 [PyPI (`alphasift`)](https://pypi.org/project/alphasift/) 一键安装（或从 [`v0.3.1` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1) / 源码可编辑安装）：
+可直接从 [PyPI (`alphasift`)](https://pypi.org/project/alphasift/) 一键安装（或从 [`v0.3.2` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.2) / 源码可编辑安装）：
 
 ```bash
 # 方式 A：从 PyPI 安装（推荐，支持 pip / uvx）

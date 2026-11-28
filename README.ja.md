@@ -106,7 +106,7 @@
 
 ### 2. ローカル CLI・Web Workbench (`/ui`)・Docker
 
-[PyPI (`alphasift`)](https://pypi.org/project/alphasift/)、[`v0.3.1` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1) の wheel、またはリポジトリから開発インストールできます：
+[PyPI (`alphasift`)](https://pypi.org/project/alphasift/)、[`v0.3.2` Release](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.2) の wheel、またはリポジトリから開発インストールできます：
 
 ```bash
 # 方法 A：PyPI からインストール（pip / uvx 対応）

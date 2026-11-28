@@ -2,14 +2,21 @@
 
 ## [Unreleased]
 
+## v0.3.2 (2026-11-28)
+
 - **Purged Walk-Forward 时间边界严格隔离与回放联动**：
   - 按每条样本 `exit_date` 执行严格 Walk-Forward 截断，禁止未闭合前瞻窗口或同批退出前样本泄漏至 `H1` 实证标签与联合 OOS 评估。
   - 公开看板、盘后 HTML/Markdown 日报与 `alphasift-workbench` 同步暴露样本外时间边界、待验证标签标记与 `250D Purged Replay` 回放审计表。
-- **MCP 能力扩展至 14 个只读工具与 4 个只读资源**：
+- **MCP 能力扩展至 14 个只读工具与 4 个只读资源，新增官方 MCP Registry 清单**：
   - 新增 `alphasift_markets` 工具与 `alphasift://markets` 资源，覆盖 7 个多市场目录配置与时区/基准指数查询；保持零交易、零外部下单边界。
-- **HTTP `/serve`、CLI 与 Workbench UI 完善**：
+  - 新增根目录 `server.json` 清单与 PyPI `mcp-name: io.github.ZhuLinsen/alphasift` 归属校验标记，同步在 `README*.md` 提供零安装 `uvx alphasift mcp` 快速启动。
+- **HTTP `/serve`、CLI、Workbench UI 与生态转换优化**：
   - HTTP 只读服务新增 `/markets`、`/patterns/replay`、`/daily-report`、`/daily-report.html` 与 `/markets-digest` 端点，并统一复用 `_json_safe(..., allow_nan=False)` 输出严格合法 RFC 8259 JSON（自动将 `NaN`/`Inf` 转为 `null`）。
   - CLI 新增 `alphasift markets` 子命令；Workbench UI 新增多市场注册表卡片与 `250D Purged Replay` 回放面板。
+  - 修复 `README.zh-CN.md` 快速开始命令，升级三语 README、公开跟踪看板与盘后 HTML 日报的 Star / GitHub Discussions 引导入口。
+- **依赖彻底精简与核心稳定性加固**：
+  - 彻底移除遗留 `LITELLM_*` 环境变量别名，全量收敛为原生轻量 `requests` OpenAI-compatible 兼容客户端。
+  - 完成核心筛选管线、结果存储、历史回溯与多源适配模块的严格 JSON 校验、非有限数（`NaN`/`Inf`）拦截与畸形输入防崩加固，全套单元测试提升至 770+ 项。
 
 ## v0.3.1 (2026-11-23)
 

@@ -3,7 +3,7 @@
   "name": "io.github.ZhuLinsen/alphasift",
   "title": "AlphaSift",
   "description": "Multi-market quantitative stock screener and T+N falsification ledger with 14 read-only STDIO MCP tools across 7 equity markets (CN/US/HK/JP/KR/TW/IN).",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "repository": {
     "url": "https://github.com/ZhuLinsen/alphasift",
     "source": "github"
@@ -14,7 +14,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "alphasift",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "runtimeHint": "uvx",
       "packageArguments": [
         {

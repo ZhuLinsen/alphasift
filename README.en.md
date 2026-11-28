@@ -106,7 +106,7 @@ Connect directly with zero pre-install via **`uvx`** (or `pip install alphasift`
 
 ### 2. Local CLI, Interactive Web Workbench (`/ui`) & Docker
 
-Install directly from [PyPI (`alphasift`)](https://pypi.org/project/alphasift/), the [`v0.3.1` Release wheel](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.1), or editable source checkout:
+Install directly from [PyPI (`alphasift`)](https://pypi.org/project/alphasift/), the [`v0.3.2` Release wheel](https://github.com/ZhuLinsen/alphasift/releases/tag/v0.3.2), or editable source checkout:
 
 ```bash
 # Option A: Install from PyPI (supports pip / uvx)

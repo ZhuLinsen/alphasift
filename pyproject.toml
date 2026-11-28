@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alphasift"
-version = "0.3.1"
+version = "0.3.2"
 description = "Full-market stock discovery for AI agents: YAML strategies, optional LLM ranking, sector-diversified picks and T+N evaluation across CN, US, HK, JP, KR, TW and IN"
 readme = "README.md"
 license = "Apache-2.0"
