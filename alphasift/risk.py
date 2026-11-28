@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from alphasift.jsonutil import finite_float, safe_int
 from alphasift.models import Pick
+from alphasift.normalize import safe_text
 
 _DEFAULT_RISK_PROFILE = {
     "chase_change_pct": 8.0,
@@ -73,7 +74,7 @@ def apply_risk_overlay(
         pick.risk_penalty = round(penalty, 4)
         pick.risk_score = round(0.0 if max_penalty == 0 else min(points / max_penalty * 100, 100), 4)
         pick.risk_level = _risk_level(points, max_penalty)
-        pick.risk_flags = _unique([*pick.risk_flags, *flags])
+        pick.risk_flags = _unique([*_clean_string_items(pick.risk_flags), *flags])
         base_score = _finite_or_default(pick.final_score, 0.0)
         pick.final_score = round(base_score - penalty, 4)
         pick.excluded_by_risk = bool(veto_high_risk) and pick.risk_level == "high"
@@ -148,8 +149,8 @@ def apply_portfolio_overlay(
         cur_penalty = _finite_or_default(pick.portfolio_penalty, 0.0)
         cur_score = _finite_or_default(pick.final_score, 0.0)
         pick.portfolio_penalty = round(cur_penalty + penalty, 4)
-        pick.portfolio_flags = _unique([*pick.portfolio_flags, flag])
-        pick.risk_flags = _unique([*pick.risk_flags, flag])
+        pick.portfolio_flags = _unique([*_clean_string_items(pick.portfolio_flags), flag])
+        pick.risk_flags = _unique([*_clean_string_items(pick.risk_flags), flag])
         pick.final_score = round(cur_score - penalty, 4)
         bucket_penalties.setdefault(bucket, []).append((pick.code, sector, penalty))
 
@@ -194,7 +195,7 @@ def _apply_bucket_hard_cap(
             within.append(pick)
             continue
         flag = f"portfolio_sector_cap:{bucket}"
-        pick.portfolio_flags = _unique([*pick.portfolio_flags, flag])
+        pick.portfolio_flags = _unique([*_clean_string_items(pick.portfolio_flags), flag])
         overflow.append(pick)
         deferred.setdefault(bucket, []).append(pick.code)
     notes = [
@@ -258,17 +259,18 @@ def assess_pick_risk(
     points += daily_points
     flags.extend(daily_flags)
 
-    llm_risks = [risk for risk in pick.llm_risks if risk]
+    llm_risks = _clean_string_items(pick.llm_risks)
     if llm_risks:
         points += min(len(llm_risks) * profile["llm_risk_points"], profile["llm_risk_points_cap"])
         flags.extend(llm_risks)
 
-    if pick.deep_analysis_risk_flags:
+    deep_risks = _clean_string_items(pick.deep_analysis_risk_flags)
+    if deep_risks:
         points += min(
-            len(pick.deep_analysis_risk_flags) * profile["deep_risk_points"],
+            len(deep_risks) * profile["deep_risk_points"],
             profile["deep_risk_points_cap"],
         )
-        flags.extend(pick.deep_analysis_risk_flags)
+        flags.extend(deep_risks)
 
     return points, _unique(flags)
 
@@ -302,14 +304,18 @@ def _assess_daily_data_risk(pick: Pick, profile: dict[str, float]) -> tuple[floa
     return points, flags
 
 
-def _daily_quality_flag_set(value: str) -> set[str]:
-    text = str(value or "").strip()
-    if not text or text.lower() in {"nan", "none", "<na>"}:
+def _daily_quality_flag_set(value: object) -> set[str]:
+    if isinstance(value, (list, tuple, set)):
+        items = _clean_string_items(value)
+        text = ";".join(items)
+    else:
+        text = _clean_text(value)
+    if not text:
         return set()
     normalized = text
     for separator in (",", "，", "|", " "):
         normalized = normalized.replace(separator, ";")
-    return {item.strip() for item in normalized.split(";") if item.strip()}
+    return {cleaned for item in normalized.split(";") if (cleaned := _clean_text(item))}
 
 
 def _risk_level(points: float, max_penalty: float) -> str:
@@ -391,8 +397,13 @@ def summarize_portfolio_exposure(
     return exposure, overconcentrated, replacements
 
 
-def _canonical_sector(label: str) -> str:
-    cleaned = str(label or "").strip()[:40]
+def _clean_text(value: object, *, max_len: int | None = None) -> str:
+    text = safe_text(value, max_len=max_len)
+    return "" if text.lower() in {"n/a", "-"} else text
+
+
+def _canonical_sector(label: object) -> str:
+    cleaned = _clean_text(label, max_len=40)
     if not cleaned:
         return ""
     aliases = {
@@ -413,7 +424,7 @@ def _canonical_sector(label: str) -> str:
 
 
 def _pick_sector(pick: Pick) -> str:
-    return pick.llm_sector or pick.industry
+    return _clean_text(pick.llm_sector, max_len=40) or _clean_text(pick.industry, max_len=40)
 
 
 def _pick_bucket(pick: Pick, *, buckets: object = None) -> tuple[str, str]:
@@ -437,11 +448,12 @@ def _risk_profile(profile: dict[str, object] | None) -> dict[str, float]:
 
 def _portfolio_bucket(
     sector: str,
-    theme: str = "",
+    theme: object = "",
     *,
     buckets: object = None,
 ) -> str:
-    text = f"{sector} {theme or ''}"
+    clean_theme = _clean_text(theme, max_len=80)
+    text = f"{sector} {clean_theme}".strip()
     bucket_map = _portfolio_buckets(buckets)
     for bucket, needles in bucket_map.items():
         if any(needle in text for needle in needles):
@@ -454,14 +466,12 @@ def _portfolio_buckets(custom_buckets: object = None) -> dict[str, tuple[str, ..
     if not isinstance(custom_buckets, dict):
         return bucket_map
     for bucket, needles in custom_buckets.items():
-        if isinstance(needles, str):
-            items = [needles]
-        elif isinstance(needles, list):
-            items = [str(item) for item in needles]
-        else:
+        bucket_name = _clean_text(bucket, max_len=40)
+        if not bucket_name:
             continue
+        items = _clean_string_items(needles)
         if items:
-            bucket_map[str(bucket)] = tuple(items)
+            bucket_map[bucket_name] = tuple(items)
     return bucket_map
 
 
@@ -475,12 +485,22 @@ def _format_penalty_codes(items: list[tuple[str, str, float]], limit: int = 5) -
     return ",".join(shown)
 
 
-def _unique(items: list[str]) -> list[str]:
-    seen = set()
-    result = []
-    for item in items:
-        key = str(item).strip()
-        if key and key not in seen:
+def _clean_string_items(value: object) -> list[str]:
+    if value is None or isinstance(value, (bool, dict)):
+        return []
+    if isinstance(value, str):
+        text = _clean_text(value)
+        return [text] if text else []
+    if isinstance(value, (list, tuple, set)):
+        return [text for item in value if (text := _clean_text(item))]
+    return []
+
+
+def _unique(items: object) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for key in _clean_string_items(items):
+        if key not in seen:
             seen.add(key)
             result.append(key)
     return result

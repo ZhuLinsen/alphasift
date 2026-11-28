@@ -388,3 +388,70 @@ def test_risk_and_portfolio_overlays_scrub_nan_inf_bool_and_malformed_inputs():
     assert len(reps) == 1
     assert reps[0]["code"] == "688981"
     assert reps[0]["final_score"] == 0.0
+
+
+def test_risk_and_portfolio_overlays_guard_string_flags_and_na_sectors():
+    from alphasift.models import Pick
+    from alphasift.risk import (
+        apply_portfolio_overlay,
+        apply_risk_overlay,
+        assess_pick_risk,
+        summarize_portfolio_exposure,
+    )
+
+    p_str = Pick(
+        rank=1,
+        code="600001",
+        name="邯郸钢铁",
+        final_score=80.0,
+        screen_score=80.0,
+        llm_sector="N/A",
+        industry="海洋工程",
+        llm_theme="N/A",
+        llm_risks="高质押",  # type: ignore[arg-type]
+        deep_analysis_risk_flags="问询函",  # type: ignore[arg-type]
+        risk_flags="stale_flag",  # type: ignore[arg-type]
+        portfolio_flags="old_cap",  # type: ignore[arg-type]
+        daily_quality_flags=["stale_cache", "N/A", None],  # type: ignore[arg-type]
+    )
+    points, flags = assess_pick_risk(p_str)
+    # Single bare-string llm_risks (1.2) + single deep_risk (1.5) + stale_cache (2.5) = 5.2 (not per-char multiplied)
+    assert abs(points - 5.2) < 1e-6
+    assert "高质押" in flags and "问询函" in flags and "daily_stale_cache" in flags
+
+    p_na = Pick(
+        rank=2,
+        code="600002",
+        name="齐鲁石化",
+        final_score=76.0,
+        screen_score=76.0,
+        llm_sector="nan",
+        industry=float("nan"),  # type: ignore[arg-type]
+        llm_risks=["N/A", None, ""],  # type: ignore[list-item]
+        risk_flags=None,  # type: ignore[arg-type]
+        portfolio_flags=None,  # type: ignore[arg-type]
+    )
+    kept, _ = apply_risk_overlay([p_str, p_na], max_penalty=12.0)
+    assert [p.code for p in kept] == ["600002", "600001"]
+    assert kept[0].risk_penalty == 0.0
+    assert "stale_flag" in kept[1].risk_flags
+
+    p_bank = Pick(
+        rank=3,
+        code="600000",
+        name="浦发银行",
+        final_score=75.0,
+        screen_score=75.0,
+        industry="银行",
+    )
+    ordered, _ = apply_portfolio_overlay(
+        [p_str, p_na, p_bank],
+        profile={"buckets": {"空匹配": [""], "深海组": ("海洋工程",)}},
+    )
+    exp, over, _ = summarize_portfolio_exposure(
+        ordered,
+        buckets={"空匹配": [""], "深海组": ("海洋工程",)},
+    )
+    # "N/A" llm_sector did not shadow "海洋工程"; "nan" became "unclassified"; [""] did not match anything
+    assert "深海组" in exp and "N/A" not in exp and "nan" not in exp and "空匹配" not in exp
+    assert "unclassified" in exp and over == []
