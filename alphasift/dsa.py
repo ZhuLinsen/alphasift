@@ -10,11 +10,26 @@ import requests
 
 from alphasift.jsonutil import dumps_strict_json, finite_float, safe_int as _json_safe_int
 from alphasift.models import Pick
+from alphasift.normalize import safe_text
 
 
 def _finite_or_default(value: object, default: float = 0.0) -> float:
     num = finite_float(value)
     return default if num is None else num
+
+
+def _effective_timeout(value: object, *, default: float) -> float:
+    num = finite_float(value)
+    return num if num is not None and num > 0 else default
+
+
+def _clean_risk_flags(value: object) -> list[str]:
+    if isinstance(value, str):
+        text = safe_text(value)
+        return [text] if text else []
+    if isinstance(value, (list, tuple, set)):
+        return [text for item in value if (text := safe_text(item))]
+    return []
 
 logger = logging.getLogger(__name__)
 _DEFAULT_ANALYZE_PATH = "/api/v1/analysis/analyze"
@@ -49,7 +64,8 @@ def analyze_picks_with_dsa(
     notify: bool = False,
 ) -> tuple[list[Pick], list[str]]:
     """Run DSA deep analysis for the top picks and attach results in place."""
-    if not api_url:
+    clean_url = safe_text(api_url)
+    if not clean_url:
         raise ValueError("DSA_API_URL is required when deep_analysis=True")
     analyze_limit = max(_json_safe_int(max_picks, default=0), 0)
     if analyze_limit <= 0:
@@ -57,7 +73,7 @@ def analyze_picks_with_dsa(
 
     analyze_count = min(analyze_limit, len(picks))
     degradation: list[str] = []
-    endpoint = build_dsa_analyze_url(api_url)
+    endpoint = build_dsa_analyze_url(clean_url)
 
     for idx, pick in enumerate(picks):
         if idx >= analyze_count:
@@ -76,7 +92,7 @@ def analyze_picks_with_dsa(
                 notify=notify,
             )
             pick.deep_analysis_status = "completed"
-            pick.deep_analysis_query_id = str(result.get("query_id", ""))
+            pick.deep_analysis_query_id = safe_text(result.get("query_id"))
             pick.deep_analysis_result = result
             pick.deep_analysis_summary = extract_deep_analysis_summary(result)
             _attach_deep_analysis_fields(pick, result)
@@ -91,7 +107,7 @@ def analyze_picks_with_dsa(
 
 def build_dsa_analyze_url(api_url: str) -> str:
     """Accept a base URL or a full endpoint URL."""
-    stripped = api_url.rstrip("/")
+    stripped = safe_text(api_url).rstrip("/")
     parsed = urlparse(stripped)
     if parsed.path and parsed.path not in ("", "/"):
         return stripped
@@ -100,7 +116,8 @@ def build_dsa_analyze_url(api_url: str) -> str:
 
 def check_dsa_readiness(api_url: str, *, timeout_sec: float = 5.0) -> dict:
     """Best-effort DSA endpoint readiness probe for CLI/runtime diagnostics."""
-    if not api_url:
+    clean_url = safe_text(api_url)
+    if not clean_url:
         return {
             "available": False,
             "status": "missing_url",
@@ -109,9 +126,9 @@ def check_dsa_readiness(api_url: str, *, timeout_sec: float = 5.0) -> dict:
             "error": "DSA_API_URL is not configured",
         }
 
-    endpoint = build_dsa_analyze_url(api_url)
+    endpoint = build_dsa_analyze_url(clean_url)
     try:
-        response = requests.get(endpoint, timeout=timeout_sec)
+        response = requests.get(endpoint, timeout=_effective_timeout(timeout_sec, default=5.0))
     except requests.RequestException as exc:
         return {
             "available": False,
@@ -121,7 +138,7 @@ def check_dsa_readiness(api_url: str, *, timeout_sec: float = 5.0) -> dict:
             "error": str(exc),
         }
 
-    status_code = int(getattr(response, "status_code", 0) or 0)
+    status_code = _json_safe_int(getattr(response, "status_code", 0), default=0)
     if status_code in {200, 204, 405, 422}:
         status = "route_present"
         available = True
@@ -171,7 +188,7 @@ def call_dsa_analysis(
         # but we keep it in the payload for forward compatibility.
         payload["query_id"] = query_id
 
-    response = requests.post(endpoint, json=payload, timeout=timeout_sec)
+    response = requests.post(endpoint, json=payload, timeout=_effective_timeout(timeout_sec, default=120.0))
     response.raise_for_status()
     try:
         body = response.json()
@@ -189,14 +206,14 @@ def extract_deep_analysis_summary(result: dict) -> str:
 
     for key in ("summary", "analysis_summary", "conclusion", "message"):
         value = result.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
+        if isinstance(value, str) and (text := safe_text(value)):
+            return text
 
     report = result.get("report")
     if isinstance(report, dict):
         summary = report.get("summary")
-        if isinstance(summary, str) and summary.strip():
-            return summary.strip()
+        if isinstance(summary, str) and (text := safe_text(summary)):
+            return text
         if isinstance(summary, dict):
             for key in (
                 "analysis_summary",
@@ -207,8 +224,8 @@ def extract_deep_analysis_summary(result: dict) -> str:
                 "signal_level",
             ):
                 value = summary.get(key)
-                if isinstance(value, str) and value.strip():
-                    return value.strip()
+                if isinstance(value, str) and (text := safe_text(value)):
+                    return text
             rendered = dumps_strict_json(summary, indent=None)
             return rendered[:280]
 
@@ -254,14 +271,15 @@ def _compute_dsa_overlay_score(pick: Pick) -> float:
     if sentiment_score is not None:
         score += (sentiment_score - 50) * 0.12
 
-    advice = pick.deep_analysis_operation_advice.strip()
+    advice = safe_text(pick.deep_analysis_operation_advice)
     score += _ADVICE_SCORE_MAP.get(advice, 0.0)
 
-    trend = pick.deep_analysis_trend_prediction.strip()
+    trend = safe_text(pick.deep_analysis_trend_prediction)
     score += _TREND_SCORE_MAP.get(trend, 0.0)
 
-    if pick.deep_analysis_risk_flags:
-        score -= min(len(pick.deep_analysis_risk_flags) * 2.0, 6.0)
+    risk_flags = _clean_risk_flags(pick.deep_analysis_risk_flags)
+    if risk_flags:
+        score -= min(len(risk_flags) * 2.0, 6.0)
 
     return score
 
@@ -289,10 +307,7 @@ def _extract_trend_result(result: dict) -> dict:
 
 
 def _extract_risk_flags(trend_result: dict) -> list[str]:
-    risks = trend_result.get("risk_factors")
-    if not isinstance(risks, list):
-        return []
-    return [str(item).strip() for item in risks if str(item).strip()]
+    return _clean_risk_flags(trend_result.get("risk_factors"))
 
 
 def _safe_int(value: object) -> int | None:
@@ -301,8 +316,6 @@ def _safe_int(value: object) -> int | None:
 
 
 def _safe_str(value: object) -> str:
-    if value is None or isinstance(value, bool):
+    if isinstance(value, bool):
         return ""
-    if isinstance(value, float) and finite_float(value) is None:
-        return ""
-    return str(value).strip()
+    return safe_text(value)

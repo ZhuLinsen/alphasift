@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 
 from alphasift import __version__
 from alphasift.jsonutil import finite_float, json_safe, safe_int
+from alphasift.normalize import safe_bool, safe_text
 from alphasift.pipeline import screen as run_screen
 from alphasift.strategy import list_strategies as load_strategies
 
@@ -94,17 +95,17 @@ def screen(
     return {
         "source": "alphasift",
         "contract_version": CONTRACT_VERSION,
-        "run_id": result.run_id,
-        "strategy": result.strategy,
-        "strategy_version": result.strategy_version,
-        "strategy_category": result.strategy_category,
-        "market": result.market,
+        "run_id": safe_text(result.run_id),
+        "strategy": safe_text(result.strategy),
+        "strategy_version": safe_text(result.strategy_version),
+        "strategy_category": safe_text(result.strategy_category),
+        "market": safe_text(result.market),
         "snapshot_count": max(safe_int(result.snapshot_count, default=0), 0),
         "after_filter_count": max(safe_int(result.after_filter_count, default=0), 0),
-        "llm_ranked": bool(result.llm_ranked),
-        "llm_market_view": result.llm_market_view,
-        "llm_selection_logic": result.llm_selection_logic,
-        "llm_portfolio_risk": result.llm_portfolio_risk,
+        "llm_ranked": safe_bool(result.llm_ranked) is True,
+        "llm_market_view": safe_text(result.llm_market_view),
+        "llm_selection_logic": safe_text(result.llm_selection_logic),
+        "llm_portfolio_risk": safe_text(result.llm_portfolio_risk),
         "llm_coverage": finite_float(result.llm_coverage),
         "llm_parse_errors": _safe_list(result.llm_parse_errors),
         "candidate_count": len(picks),
@@ -117,7 +118,7 @@ def screen(
 def _normalize_pick(raw: Any, fallback_rank: int) -> Dict[str, Any]:
     item = _to_plain(raw)
     if not isinstance(item, dict):
-        item = {"code": str(item)}
+        item = {"code": safe_text(item)}
     raw_rank = safe_int(item.get("rank"), default=0)
     rank = raw_rank if raw_rank > 0 else max(safe_int(fallback_rank, default=1), 1)
     screen_score = finite_float(item.get("screen_score"))
@@ -134,40 +135,45 @@ def _normalize_pick(raw: Any, fallback_rank: int) -> Dict[str, Any]:
         if isinstance(raw_factors, dict)
         else {}
     )
+    llm_thesis = safe_text(item.get("llm_thesis"))
     reason = (
-        item.get("llm_thesis")
-        or item.get("ranking_reason")
-        or item.get("risk_summary")
+        llm_thesis
+        or safe_text(item.get("ranking_reason"))
+        or safe_text(item.get("risk_summary"))
         or _build_reason(item)
     )
     return {
         "rank": rank,
-        "code": item.get("code") or item.get("symbol") or item.get("stock_code") or "",
-        "name": item.get("name") or item.get("stock_name") or "",
+        "code": (
+            safe_text(item.get("code"))
+            or safe_text(item.get("symbol"))
+            or safe_text(item.get("stock_code"))
+        ),
+        "name": safe_text(item.get("name")) or safe_text(item.get("stock_name")),
         "score": score,
         "screen_score": screen_score,
         "reason": reason,
-        "risk_level": item.get("risk_level") or "",
+        "risk_level": safe_text(item.get("risk_level")),
         "risk_flags": _safe_list(item.get("risk_flags")),
         "llm_score": finite_float(item.get("llm_score")),
         "llm_confidence": finite_float(item.get("llm_confidence")),
-        "llm_sector": item.get("llm_sector") or "",
-        "llm_theme": item.get("llm_theme") or "",
+        "llm_sector": safe_text(item.get("llm_sector")),
+        "llm_theme": safe_text(item.get("llm_theme")),
         "llm_tags": _safe_list(item.get("llm_tags")),
-        "llm_thesis": item.get("llm_thesis") or "",
+        "llm_thesis": llm_thesis,
         "llm_catalysts": _safe_list(item.get("llm_catalysts")),
         "llm_risks": _safe_list(item.get("llm_risks")),
         "llm_watch_items": _safe_list(item.get("llm_watch_items")),
         "llm_invalidators": _safe_list(item.get("llm_invalidators")),
-        "llm_style_fit": item.get("llm_style_fit") or "",
+        "llm_style_fit": safe_text(item.get("llm_style_fit")),
         "price": finite_float(item.get("price")),
         "change_pct": finite_float(item.get("change_pct")),
         "amount": finite_float(item.get("amount")),
-        "industry": item.get("industry") or "",
+        "industry": safe_text(item.get("industry")),
         "factor_scores": factor_scores,
         "dsa_context": _safe_dict(item.get("dsa_context")),
         "dsa_news": _safe_list(item.get("dsa_news")),
-        "dsa_analysis_summary": item.get("dsa_analysis_summary") or "",
+        "dsa_analysis_summary": safe_text(item.get("dsa_analysis_summary")),
         "post_analysis_summaries": _safe_dict(item.get("post_analysis_summaries")),
         "post_analysis_tags": _safe_list(item.get("post_analysis_tags")),
         "raw": json_safe(item),
@@ -177,7 +183,7 @@ def _normalize_pick(raw: Any, fallback_rank: int) -> Dict[str, Any]:
 def _build_reason(item: Dict[str, Any]) -> str:
     summaries = item.get("post_analysis_summaries") or {}
     if isinstance(summaries, dict):
-        summary = next((str(value) for value in summaries.values() if value), "")
+        summary = next((text for value in summaries.values() if (text := safe_text(value))), "")
         if summary:
             return summary
 
@@ -197,10 +203,12 @@ def _build_reason(item: Dict[str, Any]) -> str:
         if top_factors:
             factor_text = ", ".join(f"{key} {value:.1f}" for key, value in top_factors)
             parts.append(f"Top factors: {factor_text}")
-    if item.get("industry"):
-        parts.append(f"Industry: {item['industry']}")
-    if item.get("risk_level"):
-        parts.append(f"Risk level: {item['risk_level']}")
+    industry = safe_text(item.get("industry"))
+    if industry:
+        parts.append(f"Industry: {industry}")
+    risk_level = safe_text(item.get("risk_level"))
+    if risk_level:
+        parts.append(f"Risk level: {risk_level}")
     return "; ".join(parts)
 
 

@@ -187,3 +187,78 @@ def test_dsa_overlay_and_extractors_scrub_nan_inf_and_bool_scores(monkeypatch):
     assert all(math.isfinite(float(p.final_score)) for p in reranked)
     # p1 starts at scrubbed 0.0 + 8.0 ("买入") + 4.0 ("看多") == 12.0 without bool signal_score penalty (-9.8)
     assert reranked[1].final_score == 12.0
+
+
+def test_dsa_guards_timeouts_urls_na_summaries_and_risk_flags(monkeypatch):
+    from alphasift.dsa import (
+        _compute_dsa_overlay_score,
+        _extract_risk_flags,
+        analyze_picks_with_dsa,
+        call_dsa_analysis,
+        check_dsa_readiness,
+        extract_deep_analysis_summary,
+    )
+
+    assert check_dsa_readiness("   ")["status"] == "missing_url"
+
+    seen_timeouts: list[tuple[str, object]] = []
+
+    class ReadyResp:
+        status_code = 200
+        text = "ok"
+
+    class PostResp:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"query_id": None, "summary": "NA", "report": {"summary": {"analysis_summary": "ok"}}}
+
+    monkeypatch.setattr(
+        "alphasift.dsa.requests.get",
+        lambda url, **kw: seen_timeouts.append((url, kw.get("timeout"))) or ReadyResp(),
+    )
+    monkeypatch.setattr(
+        "alphasift.dsa.requests.post",
+        lambda url, **kw: seen_timeouts.append((url, kw.get("timeout"))) or PostResp(),
+    )
+
+    probe = check_dsa_readiness("  http://example.test/  ", timeout_sec=float("nan"))
+    assert probe["available"] is True
+    call_dsa_analysis("http://example.test/api/v1/analysis/analyze", stock_code="600519", timeout_sec=True)  # type: ignore[arg-type]
+    call_dsa_analysis("http://example.test/api/v1/analysis/analyze", stock_code="600519", timeout_sec=-1.0)
+    assert seen_timeouts == [
+        ("http://example.test/api/v1/analysis/analyze", 5.0),
+        ("http://example.test/api/v1/analysis/analyze", 120.0),
+        ("http://example.test/api/v1/analysis/analyze", 120.0),
+    ]
+
+    assert (
+        extract_deep_analysis_summary({
+            "summary": "NA",
+            "report": {"summary": {"analysis_summary": "nan", "conclusion": "Real conclusion"}},
+        })
+        == "Real conclusion"
+    )
+    assert _extract_risk_flags({"risk_factors": [None, float("nan"), "NA", "pledge"]}) == ["pledge"]
+
+    p = Pick(
+        rank=1,
+        code="600519",
+        name="贵州茅台",
+        final_score=80.0,
+        screen_score=80.0,
+        deep_analysis_operation_advice=None,  # type: ignore[arg-type]
+        deep_analysis_trend_prediction=float("nan"),  # type: ignore[arg-type]
+        deep_analysis_risk_flags="high_debt",  # type: ignore[arg-type]
+    )
+    assert _compute_dsa_overlay_score(p) == -2.0
+
+    analyzed, deg = analyze_picks_with_dsa(
+        [Pick(rank=1, code="600519", name="贵州茅台", final_score=80.0, screen_score=80.0)],
+        run_id="r72",
+        api_url="  http://example.test/ ",
+        max_picks=1,
+    )
+    assert deg == []
+    assert analyzed[0].deep_analysis_query_id == ""

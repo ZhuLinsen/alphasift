@@ -177,3 +177,46 @@ def test_screen_scrubs_nonfinite_bool_and_malformed_pick_fields(monkeypatch):
     assert cand["factor_scores"] == {"momentum": 84.2}
     assert cand["reason"] == "Top factors: momentum 84.2"
     assert cand["dsa_context"] == {"quote": {"price": None}}
+
+
+def test_dsa_adapter_scrubs_na_and_nan_scalar_strings_and_false_flags(monkeypatch):
+    import json
+
+    monkeypatch.setattr(
+        dsa_adapter,
+        "run_screen",
+        lambda *args, **kwargs: ScreenResult(
+            strategy="NA",
+            market="cn",
+            run_id=float("nan"),  # type: ignore[arg-type]
+            llm_ranked="false",  # type: ignore[arg-type]
+            llm_market_view="null",
+            picks=[
+                {
+                    "rank": 1,
+                    "code": "600519",
+                    "name": float("nan"),
+                    "stock_name": "RealName",
+                    "final_score": 82.0,
+                    "llm_thesis": float("nan"),
+                    "ranking_reason": "NA",
+                    "industry": float("nan"),
+                    "risk_level": "null",
+                    "post_analysis_summaries": {"scorecard": "NA", "dsa": "Valid summary"},
+                }
+            ],
+        ),
+    )
+
+    payload = dsa_adapter.screen("dual_low")
+    encoded = json.dumps(payload, allow_nan=False)
+    assert encoded
+    assert payload["strategy"] == ""
+    assert payload["run_id"] == ""
+    assert payload["llm_ranked"] is False
+    assert payload["llm_market_view"] == ""
+    cand = payload["candidates"][0]
+    assert cand["name"] == "RealName"
+    assert cand["industry"] == ""
+    assert cand["risk_level"] == ""
+    assert cand["reason"] == "Valid summary"
