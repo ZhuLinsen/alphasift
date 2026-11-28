@@ -4,7 +4,7 @@
   <img src="docs/assets/alphasift-logo.svg" alt="AlphaSift Logo" width="480">
 </a>
 
-[简体中文](README.md) | [English](README.en.md) | 日本語
+[简体中文](README.md) | [English](README.en.md) | 日本語 | [Türkçe](README.tr.md)
 
 # 🔎 AlphaSift
 
@@ -85,17 +85,17 @@
 
 ### 1. Claude Code・Cursor・Codex・OpenClaw と連携（ネイティブ MCP）
 
-**`uvx` による事前インストール不要の直結**（または `pip install alphasift` 後）で、`14` ツール + `4` リソースの読み取り専用 STDIO MCP サーバーを 5 行の JSON で利用できます（外部通知は送信しません）：
+読み取り専用の STDIO MCP サーバー（`14` ツール + `4` リソース、外部通知を送らない `scorecard` 後処理のみ実行）を 5 行の JSON で接続できます：
 
 ```json
 {
   "mcpServers": {
-    "alphasift": { "command": "uvx", "args": ["alphasift", "mcp"] }
+    "alphasift": { "command": "alphasift", "args": ["mcp"] }
   }
 }
 ```
 
-> *事前インストール不要の `uvx` 例です。`pip install alphasift` で導入済みの場合は `"command"` を `"alphasift"` に変更してください。Codex（`mcp_servers` TOML）や OpenClaw（`mcp.servers`）の設定形式は [docs/ecosystem.md](docs/ecosystem.md) を参照してください。*
+> *上記は Claude Code / Cursor 用 JSON 例です。Codex（`mcp_servers` TOML）や OpenClaw（`mcp.servers`）の設定形式は [docs/ecosystem.md](docs/ecosystem.md) を参照してください。*
 
 **接続後のプロンプト例：**
 - *「AlphaSift で割安かつ適時開示の悪材料がない中国A株 `dual_low` 上位5銘柄を抽出し、業種分散と根拠を要約して」*
@@ -140,11 +140,9 @@ alphasift daily-report --pack-dir ./data/pack/cn --output-html daily_report.html
 
 ### 3. GitHub Actions で無料定期実行＆Fork 保護
 
-1. 右上の **Fork** をクリックし（あわせて **Star ⭐** で毎日の検証更新をフォロー）、Fork 先の **Actions** タブで **Enable workflows** を有効化します（GitHub は Fork の定期実行を既定で無効にします）。
+1. リポジトリを **Fork** し **GitHub Actions** を有効化します。
 2. *Settings -> Secrets and variables -> Actions -> Secrets* に `GEMINI_API_KEY`（任意）および `NOTIFY_URLS`（任意）を追加します。
 3. **Plan A Fork Pages 保護**：Fork 先では重複サイト公開を防ぐため、Variables に `ALPHASIFT_ENABLE_PAGES=true` を設定しない限り GitHub Pages デプロイをスキップし、スクリーニングと通知のみ動作します。詳細は [docs/deployment.md](docs/deployment.md)。
-
-> ⭐ **公開 `next_open` T+N 検証台帳やゼロキー MCP が役に立ったら**、右上の **Star** で毎日のスコア更新をフォローしてください。新戦略の提案や運用共有は [Discussions](https://github.com/ZhuLinsen/alphasift/discussions) へどうぞ。
 
 ---
 
@@ -264,21 +262,6 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 構成の詳細は [docs/ecosystem.md](docs/ecosystem.md) をご覧ください。
 
 ---
-
-<details>
-<summary><strong>📈 Star History</strong></summary>
-
-<p align="center">
-  <a href="https://www.star-history.com/#ZhuLinsen/alphasift&Date">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ZhuLinsen/alphasift&type=Date&theme=dark" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=ZhuLinsen/alphasift&type=Date" />
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=ZhuLinsen/alphasift&type=Date" width="760" />
-    </picture>
-  </a>
-</p>
-
-</details>
 
 ## 免責事項・ドキュメント・ライセンス
 
