@@ -174,3 +174,100 @@ def test_build_overview_and_performance_actions_scrub_nonfinite_and_bool_limits(
     assert _performance_actions({"evaluation_count": float("nan"), "summary": {"next_actions": ["keep"]}}, has_recent_runs=False) == []
     assert _performance_actions({"evaluation_count": "bad", "summary": {"next_actions": ["keep"]}}, has_recent_runs=False) == []
     assert _performance_actions({"evaluation_count": 2, "summary": {"next_actions": ["keep"]}}, has_recent_runs=False) == ["keep"]
+
+
+def test_overview_helpers_guard_malformed_containers_string_lists_and_na_keys():
+    from types import SimpleNamespace
+
+    from alphasift.overview import (
+        _next_actions,
+        _performance_actions,
+        _snapshot_quality,
+        _source_history_actions,
+        _strategy_groups,
+    )
+
+    assert _snapshot_quality({"snapshot": "bad-snapshot"}) == {}
+    assert _snapshot_quality({"snapshot": {"quality_summary": {"score": 0.9}}}) == {"score": 0.9}
+
+    strategies = [
+        SimpleNamespace(
+            name="alpha_one",
+            category=float("nan"),
+            style=None,
+            data_requirements="snapshot",
+        ),
+        SimpleNamespace(
+            name="alpha_two",
+            category="trend",
+            style={"risk_profile": float("nan"), "holding_period": "NA"},
+            data_requirements=[None, float("nan"), "daily_k"],
+        ),
+    ]
+    groups = _strategy_groups(strategies)
+    assert groups["by_category"] == [
+        {"name": "trend", "count": 1, "strategies": ["alpha_two"]},
+        {"name": "unknown", "count": 1, "strategies": ["alpha_one"]},
+    ]
+    assert groups["by_risk_profile"] == [{"name": "unknown", "count": 2, "strategies": ["alpha_one", "alpha_two"]}]
+    assert groups["by_holding_period"] == [{"name": "unknown", "count": 2, "strategies": ["alpha_one", "alpha_two"]}]
+    assert groups["by_data_requirement"] == [
+        {"name": "daily_k", "count": 1, "strategies": ["alpha_two"]},
+        {"name": "snapshot", "count": 1, "strategies": ["alpha_one"]},
+    ]
+
+    assert _source_history_actions({"watchlist": [{"next_actions": "Verify sina"}, {"next_actions": [float("nan"), "Check cache"]}]}) == [
+        "Verify sina",
+        "Check cache",
+    ]
+    assert _performance_actions(
+        {"evaluation_count": 1, "summary": {"next_actions": "Review drawdown"}},
+        has_recent_runs=True,
+    ) == ["Review drawdown"]
+
+    actions = _next_actions(
+        doctor={"recommendations": "Inspect snapshot"},
+        recent_runs=[],
+        source_history={"watchlist": [{"next_actions": [None, "Watch daily_k"]}]},
+        performance_summary={"evaluation_count": 1, "summary": {"next_actions": [float("nan"), "Tune stop"]}},
+        strategy_matches=[{"name": None}],
+        strategy_name="blue_chip_income",
+        live_data_check=False,
+    )
+    assert "Inspect snapshot" in actions
+    assert "Watch daily_k" in actions
+    assert "Tune stop" in actions
+    assert "Try `alphasift screen blue_chip_income --explain` to validate the focused strategy." in actions
+    assert not any("None --explain" in item for item in actions)
+
+
+def test_build_overview_ignores_nondict_strategy_match_and_snapshot(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    config = Config(
+        strategies_dir=Path("strategies"),
+        data_dir=tmp_path,
+        snapshot_source_priority=["sina"],
+        daily_source="auto",
+        fallback_snapshot_path=tmp_path / "snapshot.last_good.json",
+        daily_history_cache_dir=tmp_path / "daily_history",
+    )
+    monkeypatch.setattr(
+        "alphasift.overview.doctor_data_sources",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            to_dict=lambda: {
+                "status": "ok",
+                "snapshot": "corrupted-snapshot-value",
+                "recommendations": "Single recommendation string",
+            }
+        ),
+    )
+
+    payload = build_overview(
+        config,
+        strategy_match=["not-a-dict"],  # type: ignore[arg-type]
+    )
+
+    assert payload["data_sources"]["snapshot_quality"] == {}
+    assert payload["data_sources"]["recommendations"] == ["Single recommendation string"]
+    assert payload["summary"]["strategy_match_count"] == 0
