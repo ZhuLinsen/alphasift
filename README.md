@@ -247,7 +247,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 | `kr` | Yahoo Finance + Naver Finance | 从 Naver 补充韩股 PE/PB（`ALPHASIFT_KR_VALUATION=0` 可关闭） |
 
 - **2026-11-20 `--no-llm` 离线样本示例**：A 股 `dual_low`（5,215 → 205 → 5 行业 Top 5：`601997` 贵阳银行、`601117` 中国化学、`600741` 华域汽车、`603799` 华友钴业、`601233` 桐昆股份）；港股 `global_value --market hk`（`0267.HK`、`0001.HK`、`1339.HK`、`1398.HK`、`0358.HK`）；日股 `global_value --market jp`（`9501.T`、`5401.T`、`1605.T`、`9104.T`、`9022.T`）。
-- **核心环境变量**：`LITELLM_MODEL`（默认 `gemini/gemini-3.8-flash`）、`LITELLM_FALLBACK_MODELS`（`gemini/gemini-4-hydrogen`）、`GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`、`LLM_CANDIDATE_CONTEXT_ENABLED=true`（CI Actions 默认开启；本地默认关闭）、`NOTIFY_URLS`、`ALPHASIFT_ENABLE_PAGES=true`（Fork 启用网页开关）、`DSA_API_URL`。详情见 [docs/configuration.md](docs/configuration.md)。
+- **核心环境变量**：`LLM_MODEL`（默认 `gemini/gemini-3.8-flash`）、`LLM_FALLBACK_MODELS`（`gemini/gemini-4-hydrogen`）、`GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`、`LLM_CANDIDATE_CONTEXT_ENABLED=true`（CI Actions 默认开启；本地默认关闭）、`NOTIFY_URLS`、`ALPHASIFT_ENABLE_PAGES=true`（Fork 启用网页开关）、`DSA_API_URL`。详情见 [docs/configuration.md](docs/configuration.md)。
 - **口径说明**：AlphaSift 为研究初筛与后验审计引擎，不构成投资建议或自动交易系统；公开账本在 `ALPHASIFT_NEXT_OPEN_SWITCH_DATE`（`2026-11-21`）前采用 `close` 入场口径，切换日起采用 `next_open` 并严格计量开盘一字涨停不可成交比例。
 
 </details>

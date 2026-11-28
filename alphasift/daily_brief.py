@@ -585,7 +585,7 @@ def generate_ai_daily_brief(
         and (
             config.has_usable_llm_config()
             if hasattr(config, "has_usable_llm_config")
-            else (config.llm_api_key or config.llm_channels or config.llm_config_path)
+            else (config.llm_api_key or config.llm_channels)
         )
     )
     if mode == "auto" and not has_llm_cfg and llm_caller is None:
@@ -638,7 +638,6 @@ def generate_ai_daily_brief(
                 json_mode=True,
                 silent=True,
                 channels=config.llm_channels,
-                config_path=str(config.llm_config_path or ""),
                 timeout_sec=eff_timeout,
                 max_tokens=brief_max_tokens,
                 reasoning_effort="low",

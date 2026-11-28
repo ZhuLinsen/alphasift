@@ -22,7 +22,7 @@ _PARTIAL_JSON = '{"ranked": [{"code": "AA'
 
 @pytest.fixture(autouse=True)
 def isolated_llm_env(monkeypatch):
-    prefixes = ("LLM_", "LITELLM_", "OPENAI_", "GEMINI_", "DEEPSEEK_", "OPENROUTER_")
+    prefixes = ("LLM_", "OPENAI_", "GEMINI_", "DEEPSEEK_", "OPENROUTER_")
     for name in os.environ.copy():
         if name.startswith(prefixes):
             monkeypatch.delenv(name)

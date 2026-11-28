@@ -245,7 +245,7 @@ NOTIFY_URLS="pushplus://TOKEN,sct://SENDKEY,bark://api.day.app/KEY,mailto://send
 | `kr` | Yahoo Finance + Naver Finance | Naver で PE/PB 補完（`ALPHASIFT_KR_VALUATION=0` で無効化） |
 
 - **2026-11-20 `--no-llm` サンプル**：A株 `dual_low`（`601997`, `601117`, `600741`, `603799`, `601233`）、香港 `global_value`（`0267.HK`, `0001.HK`, `1339.HK`, `1398.HK`, `0358.HK`）、日本 `global_value`（`9501.T`, `5401.T`, `1605.T`, `9104.T`, `9022.T`）。
-- **主な環境変数**：`LITELLM_MODEL`（既定 `gemini/gemini-3.8-flash`）、`LITELLM_FALLBACK_MODELS`（`gemini/gemini-4-hydrogen`）、`GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`、`LLM_CANDIDATE_CONTEXT_ENABLED=true`、`NOTIFY_URLS`、`ALPHASIFT_ENABLE_PAGES=true`、`DSA_API_URL`（[詳細](docs/configuration.md)）。
+- **主な環境変数**：`LLM_MODEL`（既定 `gemini/gemini-3.8-flash`）、`LLM_FALLBACK_MODELS`（`gemini/gemini-4-hydrogen`）、`GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`、`LLM_CANDIDATE_CONTEXT_ENABLED=true`、`NOTIFY_URLS`、`ALPHASIFT_ENABLE_PAGES=true`、`DSA_API_URL`（[詳細](docs/configuration.md)）。
 
 </details>
 

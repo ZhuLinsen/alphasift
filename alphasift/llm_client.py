@@ -136,15 +136,7 @@ def gateway_base_url(provider: str, override: str = "") -> str:
     return url
 
 
-def configuration_error(channels: list[dict[str, object]], config_path: str) -> str:
-    if config_path:
-        return (
-            "LITELLM_CONFIG (Router YAML) is unsupported. Unset LITELLM_CONFIG and migrate each "
-            "route to LLM_CHANNELS=primary,backup with LLM_PRIMARY_PROTOCOL=openai, "
-            "LLM_PRIMARY_BASE_URL=<OpenAI-compatible base URL>, LLM_PRIMARY_API_KEY=<key> "
-            "(or LLM_PRIMARY_API_KEYS=<key1,key2>), and LLM_PRIMARY_MODELS=<model>. "
-            "Repeat with LLM_BACKUP_* for the next route."
-        )
+def configuration_error(channels: list[dict[str, object]]) -> str:
     if any(str(channel.get("protocol", "openai")) not in _CHANNEL_PROTOCOLS for channel in channels):
         return (
             "Unsupported LLM channel protocol. Set LLM_<NAME>_PROTOCOL=openai and "

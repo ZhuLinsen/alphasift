@@ -15,18 +15,18 @@ from alphasift.snapshot import (
 )
 
 
-def test_doctor_reports_unsupported_router_yaml_without_opening_it(monkeypatch, capsys):
-    monkeypatch.setenv("LITELLM_CONFIG", "/private/removed-router.yaml")
+def test_doctor_reports_unsupported_channel_protocol(monkeypatch, capsys):
+    monkeypatch.setenv("LLM_CHANNELS", "primary")
+    monkeypatch.setenv("LLM_PRIMARY_PROTOCOL", "anthropic")
     monkeypatch.setattr(sys, "argv", ["alphasift", "doctor", "data-sources", "--no-live", "--json"])
 
     main()
 
     payload = json.loads(capsys.readouterr().out)
     assert any(
-        "Unset LITELLM_CONFIG" in note and "LLM_CHANNELS=primary,backup" in note
+        "Unsupported LLM channel protocol" in note and "LLM_<NAME>_PROTOCOL=openai" in note
         for note in payload["recommendations"]
     )
-    assert "/private/removed-router.yaml" not in json.dumps(payload)
 
 
 def test_snapshot_source_health_snapshot_reports_disabled_failures(monkeypatch):

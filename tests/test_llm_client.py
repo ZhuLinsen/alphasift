@@ -14,8 +14,6 @@ from alphasift.ranker import _call_llm, rank_candidates_with_metadata
 def isolated_llm_env(monkeypatch):
     prefixes = (
         "LLM_",
-        "LITELLM_",
-        "AGENT_LITELLM_",
         "OPENAI_",
         "GEMINI_",
         "DEEPSEEK_",
@@ -62,10 +60,10 @@ def isolated_llm_env(monkeypatch):
             [("http://ollama:11434/v1", "qwen:8b", "")],
         ),
         (
-            {"AGENT_LITELLM_MODEL": "ollama/qwen:8b", "OLLAMA_API_BASE": "http://ollama:11434/v1/"},
+            {"LLM_MODEL": "ollama/qwen:8b", "OLLAMA_API_BASE": "http://ollama:11434/v1/"},
             [("http://ollama:11434/v1", "qwen:8b", "")],
         ),
-        ({"AGENT_LITELLM_MODEL": "ollama/qwen:8b"}, [("http://localhost:11434/v1", "qwen:8b", "")]),
+        ({"LLM_MODEL": "ollama/qwen:8b"}, [("http://localhost:11434/v1", "qwen:8b", "")]),
         (
             {"AIHUBMIX_KEY": "test-key", "OPENAI_API_KEY": "unused"},
             [("https://aihubmix.com/v1", "gpt-4o-mini", "test-key")],
@@ -79,7 +77,6 @@ def isolated_llm_env(monkeypatch):
                 "LLM_API_KEY": "legacy-key",
                 "LLM_MODEL": "vendor/model",
                 "LLM_BASE_URL": "https://example.test/v1",
-                "AGENT_LITELLM_MODEL": "openai/unused",
                 "OPENAI_API_KEY": "unused",
                 "OPENAI_BASE_URL": "unused",
             },
@@ -87,9 +84,7 @@ def isolated_llm_env(monkeypatch):
         ),
         (
             {
-                "LITELLM_MODEL": "openai/vendor/model",
-                "LLM_MODEL": "unused",
-                "AGENT_LITELLM_MODEL": "unused",
+                "LLM_MODEL": "openai/vendor/model",
                 "OPENAI_API_KEY": "test-key",
                 "OPENAI_BASE_URL": "https://example.test/v1",
             },
@@ -97,7 +92,7 @@ def isolated_llm_env(monkeypatch):
         ),
         (
             {
-                "LITELLM_MODEL": "gemini/custom",
+                "LLM_MODEL": "gemini/custom",
                 "LLM_API_KEY": "override",
                 "GEMINI_API_KEYS": "override,unused",
                 "OPENAI_BASE_URL": "https://example.test/v1",
@@ -153,7 +148,7 @@ def test_compatibility_env_resolves_attempts(monkeypatch, env, expected):
     ],
 )
 def test_provider_prefix_resolves_gateway(monkeypatch, model, key_name, base_url, name):
-    monkeypatch.setenv("AGENT_LITELLM_MODEL", model)
+    monkeypatch.setenv("LLM_MODEL", model)
     monkeypatch.setenv(key_name, "test-key")
 
     config = Config.from_env()
@@ -174,7 +169,7 @@ def _attempts(config: Config) -> list[LLMAttempt]:
 
 def test_channel_keys_and_models_are_tried_before_direct_fallbacks(monkeypatch):
     env = {
-        "LITELLM_MODEL": "openai/first",
+        "LLM_MODEL": "openai/first",
         "LLM_API_KEY": "direct-key",
         "LLM_BASE_URL": "https://direct.test/v1",
         "LLM_CHANNELS": "disabled,primary,backup",
@@ -189,7 +184,7 @@ def test_channel_keys_and_models_are_tried_before_direct_fallbacks(monkeypatch):
         "LLM_BACKUP_API_KEY": "backup-key",
         "LLM_BACKUP_MODELS": "anthropic/claude-model",
         "DEEPSEEK_API_KEY": "deepseek-key",
-        "LITELLM_FALLBACK_MODELS": "openai/second,deepseek/third,openai/first,deepseek/third",
+        "LLM_FALLBACK_MODELS": "openai/second,deepseek/third,openai/first,deepseek/third",
     }
     for key, value in env.items():
         monkeypatch.setenv(key, value)
@@ -237,7 +232,6 @@ def test_channel_keys_and_models_are_tried_before_direct_fallbacks(monkeypatch):
 @pytest.mark.parametrize(
     ("env", "message"),
     [
-        ({"LITELLM_CONFIG": "/private-key-in-path.yaml"}, "Unset LITELLM_CONFIG"),
         ({"LLM_CHANNELS": "primary", "LLM_PRIMARY_PROTOCOL": "anthropic"}, "LLM_<NAME>_PROTOCOL=openai"),
     ],
 )
@@ -257,16 +251,11 @@ def test_unsupported_config_degrades_with_migration_message(monkeypatch, env, me
         config.llm_model,
         config.llm_base_url,
         channels=config.llm_channels,
-        config_path=str(config.llm_config_path or ""),
     )
 
     assert result.picks == picks
     assert not result.ranked
     assert message in result.errors[0]
-    if config.llm_config_path:
-        assert "LLM_CHANNELS=primary,backup" in result.errors[0]
-        assert "LLM_PRIMARY_MODELS=<model>" in result.errors[0]
-        assert str(config.llm_config_path) not in result.errors[0]
     post.assert_not_called()
 
 
@@ -408,7 +397,7 @@ def test_round9_key_origin_isolation_empty_content_fallback_and_userinfo_block(m
     monkeypatch.setenv("LLM_PRIMARY_MODELS", "deepseek-chat")
     monkeypatch.setenv("LLM_PRIMARY_BASE_URL", "https://api.deepseek.com")
     monkeypatch.setenv("LLM_PRIMARY_API_KEY", "ds-k")
-    monkeypatch.setenv("LITELLM_FALLBACK_MODELS", "")
+    monkeypatch.setenv("LLM_FALLBACK_MODELS", "")
     monkeypatch.setenv("GEMINI_MODEL", "")
     cfg_empty = Config.from_env()
     assert cfg_empty.llm_channels[0]["protocol"] == "openai"
@@ -449,7 +438,7 @@ def test_foreign_gateway_guard_and_structured_validator_fallback(monkeypatch):
     monkeypatch.setenv("OPENAI_BASE_URL", "https://api.deepseek.com/v1")
     monkeypatch.setenv("OPENAI_API_KEY", "ds-key")
     monkeypatch.setenv("GEMINI_API_KEY", "gem-key")
-    monkeypatch.setenv("LITELLM_FALLBACK_MODELS", "gemini/gemini-2.5-flash,openai/gpt-4o")
+    monkeypatch.setenv("LLM_FALLBACK_MODELS", "gemini/gemini-2.5-flash,openai/gpt-4o")
 
     cfg = Config.from_env()
     attempts = _attempts(cfg)

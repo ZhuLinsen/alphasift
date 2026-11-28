@@ -71,8 +71,8 @@ jobs:
       ALPHASIFT_PACK_DIR: ${{ github.workspace }}/pack
       ALPHASIFT_NOTIFY_STATE_PATH: ${{ github.workspace }}/state/notify_state.json
       OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
-      LITELLM_MODEL: ${{ vars.LITELLM_MODEL }}
-      LITELLM_FALLBACK_MODELS: ${{ vars.LITELLM_FALLBACK_MODELS }}
+      LLM_MODEL: ${{ vars.LLM_MODEL }}
+      LLM_FALLBACK_MODELS: ${{ vars.LLM_FALLBACK_MODELS }}
       LLM_CHANNELS: ${{ vars.LLM_CHANNELS }}
       LLM_PRIMARY_PROTOCOL: ${{ vars.LLM_PRIMARY_PROTOCOL || 'openai' }}
       LLM_PRIMARY_BASE_URL: ${{ vars.LLM_PRIMARY_BASE_URL }}
@@ -173,7 +173,7 @@ jobs:
           LLM_BACKUP_BASE_URL: ${{ secrets.LLM_BACKUP_BASE_URL || vars.LLM_BACKUP_BASE_URL }}
           LLM_BACKUP_API_KEY: ${{ secrets.LLM_BACKUP_API_KEY }}
           LLM_BACKUP_API_KEYS: ${{ secrets.LLM_BACKUP_API_KEYS }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || vars.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_DEEPSEEK_ENABLED: ${{ secrets.LLM_DEEPSEEK_ENABLED || vars.LLM_DEEPSEEK_ENABLED }}
@@ -197,7 +197,7 @@ jobs:
           TAVILY_API_KEYS: ${{ secrets.TAVILY_API_KEYS }}
           SERPAPI_API_KEYS: ${{ secrets.SERPAPI_API_KEYS }}
         run: |
-          if [ -z "${LITELLM_FALLBACK_MODELS:-}" ]; then unset LITELLM_FALLBACK_MODELS; fi
+          if [ -z "${LLM_FALLBACK_MODELS:-}" ]; then unset LLM_FALLBACK_MODELS; fi
           python scripts/track_record.py screen --track track \
             --session "$SESSION" --markets "$MARKETS" --pack-dir "$ALPHASIFT_PACK_DIR" \
             || echo "::warning::no strategy saved a run this session"
@@ -295,7 +295,7 @@ jobs:
           LLM_BACKUP_BASE_URL: ${{ secrets.LLM_BACKUP_BASE_URL || vars.LLM_BACKUP_BASE_URL }}
           LLM_BACKUP_API_KEY: ${{ secrets.LLM_BACKUP_API_KEY }}
           LLM_BACKUP_API_KEYS: ${{ secrets.LLM_BACKUP_API_KEYS }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || vars.LLM_MODEL }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_DEEPSEEK_ENABLED: ${{ secrets.LLM_DEEPSEEK_ENABLED || vars.LLM_DEEPSEEK_ENABLED }}
@@ -341,7 +341,7 @@ jobs:
           CUSTOM_WEBHOOK_URL: ${{ secrets.CUSTOM_WEBHOOK_URL }}
           CUSTOM_WEBHOOK_TOKEN: ${{ secrets.CUSTOM_WEBHOOK_TOKEN }}
         run: |
-          if [ -z "${LITELLM_FALLBACK_MODELS:-}" ]; then unset LITELLM_FALLBACK_MODELS; fi
+          if [ -z "${LLM_FALLBACK_MODELS:-}" ]; then unset LLM_FALLBACK_MODELS; fi
           if [ -f "$ALPHASIFT_PACK_DIR/manifest.json" ]; then
             push_flag=()
             if [ "${SESSION:-asia}" = "asia" ]; then

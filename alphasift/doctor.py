@@ -142,7 +142,7 @@ def doctor_data_sources(
         enabled=compare_snapshot_sources and market == "cn",
     )
     recommendations = _build_recommendations(snapshot, daily)
-    if error := configuration_error(config.llm_channels, str(config.llm_config_path or "")):
+    if error := configuration_error(config.llm_channels):
         recommendations.append(error)
     statuses = [snapshot.status, daily.status if daily is not None else "skipped"]
     status = _overall_status(statuses)

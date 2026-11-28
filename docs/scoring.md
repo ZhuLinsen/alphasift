@@ -178,17 +178,17 @@ LLM 输出会经过 JSON 解析、代码覆盖率校验、重复代码/未知代
 
 ### LLM 配置
 
-为便于复用 `daily_stock_analysis` 的配置，AlphaSift 支持同一套多渠道与标准模型环境变量（v0.3 已移除 `LITELLM_CONFIG` Router YAML）：
+AlphaSift 支持多渠道与标准模型环境变量：
 
-- `LITELLM_MODEL`（默认 `gemini/gemini-3.8-flash`）
-- `LITELLM_FALLBACK_MODELS`（默认 `gemini/gemini-4-hydrogen`）
+- `LLM_MODEL`（默认 `gemini/gemini-3.8-flash`）
+- `LLM_FALLBACK_MODELS`（默认 `gemini/gemini-4-hydrogen`）
 - `LLM_CHANNELS` + `LLM_{NAME}_PROTOCOL/BASE_URL/API_KEY/API_KEYS/MODELS/ENABLED`
 - `OPENAI_API_KEY` / `OPENAI_BASE_URL`
 - `GEMINI_API_KEY` / `GEMINI_API_KEYS`
 - `DEEPSEEK_API_KEY`
 - `OLLAMA_API_BASE`
 
-旧变量 `LLM_API_KEY`、`LLM_MODEL`、`LLM_BASE_URL` 仍兼容。
+显式变量 `LLM_API_KEY`、`LLM_BASE_URL` 优先级最高。
 
 ## 风险覆盖层
 

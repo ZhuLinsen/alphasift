@@ -163,7 +163,6 @@ def rank_candidates(
     json_mode: bool = True,
     silent: bool = True,
     channels: list[dict[str, object]] | None = None,
-    config_path: str = "",
     timeout_sec: float = 60.0,
     max_prompt_chars: int | None = _DEFAULT_RANKING_PROMPT_MAX_CHARS,
     max_tokens: int | None = DEFAULT_LLM_MAX_TOKENS,
@@ -187,7 +186,6 @@ def rank_candidates(
         json_mode=json_mode,
         silent=silent,
         channels=channels,
-        config_path=config_path,
         timeout_sec=timeout_sec,
         max_prompt_chars=max_prompt_chars,
         max_tokens=max_tokens,
@@ -210,7 +208,6 @@ def rank_candidates_with_metadata(
     json_mode: bool = True,
     silent: bool = True,
     channels: list[dict[str, object]] | None = None,
-    config_path: str = "",
     timeout_sec: float = 60.0,
     max_prompt_chars: int | None = _DEFAULT_RANKING_PROMPT_MAX_CHARS,
     degradation: list[str] | None = None,
@@ -276,7 +273,6 @@ def rank_candidates_with_metadata(
                 json_mode=json_mode,
                 silent=silent,
                 channels=channels or [],
-                config_path=config_path,
                 timeout_sec=eff_timeout_sec,
                 max_tokens=max_tokens,
                 degradation=degradation,
@@ -708,7 +704,6 @@ def _call_llm_with_metadata(
     json_mode: bool = True,
     silent: bool = True,
     channels: list[dict[str, object]] | None = None,
-    config_path: str = "",
     timeout_sec: float = 60.0,
     max_tokens: int | None = DEFAULT_LLM_MAX_TOKENS,
     reasoning_effort: str | None = None,
@@ -716,7 +711,7 @@ def _call_llm_with_metadata(
     degradation: list[str] | None = None,
 ) -> tuple[str, str]:
     """Try configured OpenAI-compatible endpoints and return (content, used_model)."""
-    if error := configuration_error(channels or [], config_path):
+    if error := configuration_error(channels or []):
         raise LLMClientError(error)
 
     attempts = build_attempts(
@@ -786,7 +781,6 @@ def _call_llm(
     json_mode: bool = True,
     silent: bool = True,
     channels: list[dict[str, object]] | None = None,
-    config_path: str = "",
     timeout_sec: float = 60.0,
     max_tokens: int | None = DEFAULT_LLM_MAX_TOKENS,
     degradation: list[str] | None = None,
@@ -802,7 +796,6 @@ def _call_llm(
         json_mode=json_mode,
         silent=silent,
         channels=channels,
-        config_path=config_path,
         timeout_sec=timeout_sec,
         max_tokens=max_tokens,
         degradation=degradation,

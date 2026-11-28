@@ -192,7 +192,6 @@ class Config:
     llm_api_key: str = ""
     llm_model: str = DEFAULT_LLM_MODEL
     llm_base_url: str = ""
-    llm_config_path: Path | None = None
     llm_fallback_models: list[str] = field(default_factory=list)
     llm_channels: list[dict[str, object]] = field(default_factory=list)
     llm_context: str = ""
@@ -322,20 +321,19 @@ class Config:
     snapshot_fallback_max_age_hours: float | None = None
 
     def has_llm_config(self) -> bool:
-        """Return whether LLM ranking is configured, including legacy YAML to diagnose."""
+        """Return whether LLM ranking is configured."""
         return any([
             bool(self.llm_api_key),
             bool(self.llm_base_url and self.llm_model.startswith("ollama/")),
-            bool(self.llm_config_path),
             bool(self.llm_channels),
             self.llm_model.startswith("ollama/"),
         ])
 
     def has_usable_llm_config(self) -> bool:
-        """Return whether a supported non-legacy LLM route is usable."""
+        """Return whether a supported LLM route is usable."""
         from alphasift.llm_client import configuration_error
 
-        if configuration_error(self.llm_channels, str(self.llm_config_path or "")):
+        if configuration_error(self.llm_channels):
             return False
         has_channels_with_models = any(
             bool(ch.get("models"))
@@ -374,7 +372,6 @@ class Config:
             llm_api_key=_resolve_llm_api_key(llm_model),
             llm_model=llm_model,
             llm_base_url=_resolve_llm_base_url(llm_model),
-            llm_config_path=_parse_optional_path_env("LITELLM_CONFIG"),
             llm_fallback_models=_resolve_llm_fallback_models(llm_model),
             llm_channels=channels,
             llm_context=os.getenv("LLM_CONTEXT", ""),
@@ -669,12 +666,7 @@ def _parse_llm_channels_env() -> list[dict[str, object]]:
 
 
 def _resolve_llm_model(channels: list[dict[str, object]]) -> str:
-    explicit = (
-        os.getenv("LITELLM_MODEL")
-        or os.getenv("LLM_MODEL")
-        or os.getenv("AGENT_LITELLM_MODEL")
-        or ""
-    ).strip()
+    explicit = (os.getenv("LLM_MODEL") or "").strip()
     if explicit:
         return normalize_model(explicit)
 
@@ -698,12 +690,12 @@ def _resolve_llm_model(channels: list[dict[str, object]]) -> str:
 
 
 def _resolve_llm_fallback_models(llm_model: str) -> list[str]:
-    raw_fb = os.getenv("LITELLM_FALLBACK_MODELS")
+    raw_fb = os.getenv("LLM_FALLBACK_MODELS")
     if raw_fb is not None:
         cleaned = raw_fb.strip()
         if not cleaned or cleaned.lower() in {"none", "off", "false", "0"}:
             return []
-        return _parse_csv_env("LITELLM_FALLBACK_MODELS", [])
+        return _parse_csv_env("LLM_FALLBACK_MODELS", [])
     if llm_model == DEFAULT_LLM_MODEL:
         return list(DEFAULT_GEMINI_FALLBACK_MODELS)
     return []

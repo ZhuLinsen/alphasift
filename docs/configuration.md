@@ -18,7 +18,7 @@ alphasift screen dual_low --no-llm
 
 ```env
 GEMINI_API_KEY=...
-LITELLM_MODEL=gemini/gemini-3.8-flash
+LLM_MODEL=gemini/gemini-3.8-flash
 ```
 
 使用 Tushare 兜底数据源时，填入：
@@ -31,14 +31,13 @@ TUSHARE_TOKEN=...
 
 | 变量 | 必须 | 说明 | 默认值 |
 |------|------|------|--------|
-| `LITELLM_MODEL` | 推荐 | 主模型，兼容 daily_stock_analysis，格式 `provider/model` | `gemini/gemini-3.8-flash` |
-| `LITELLM_FALLBACK_MODELS` | 否 | 备选模型，逗号分隔 | 默认主模型时为 `gemini/gemini-4-hydrogen` |
+| `LLM_MODEL` | 推荐 | 主模型，格式 `provider/model` | `gemini/gemini-3.8-flash` |
+| `LLM_FALLBACK_MODELS` | 否 | 备选模型，逗号分隔 | 默认主模型时为 `gemini/gemini-4-hydrogen` |
 | `LLM_CHANNELS` | 否 | 多渠道配置，配合 `LLM_{NAME}_*` 使用 | - |
-| `GEMINI_API_KEY` / `GEMINI_API_KEYS` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM 排序时至少一种 | 供应商 API Key，兼容 daily_stock_analysis 配置 | - |
+| `GEMINI_API_KEY` / `GEMINI_API_KEYS` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` | LLM 排序时至少一种 | 供应商 API Key | - |
 | `OPENAI_BASE_URL` / `OLLAMA_API_BASE` | 否 | OpenAI 兼容接口或 Ollama 地址 | - |
-| `LLM_API_KEY` | 否 | 旧版兼容 API Key，会优先覆盖供应商 key | - |
-| `LLM_MODEL` | 否 | 旧版兼容模型名；`LITELLM_MODEL` 优先 | `gemini/gemini-3.8-flash` |
-| `LLM_BASE_URL` | 否 | 旧版兼容自定义 API 地址 | - |
+| `LLM_API_KEY` | 否 | 显式 API Key，会优先覆盖供应商 key | - |
+| `LLM_BASE_URL` | 否 | 显式自定义 API 地址 | - |
 | `LLM_CONTEXT` | 否 | 传给 LLM 的市场、新闻或主题上下文 | - |
 | `LLM_TEMPERATURE` | 否 | LLM 排序温度，默认偏确定性 | `0.2` |
 | `LLM_JSON_MODE` | 否 | 是否请求 JSON response_format，不支持时自动降级 | `true` |
@@ -99,7 +98,7 @@ TUSHARE_TOKEN=...
 
 ## OpenAI 兼容网关与渠道配置
 
-AlphaSift 无需安装 `litellm`，直接通过轻量 `requests` 客户端调用 OpenAI 兼容 `/chat/completions`，并兼容 `daily_stock_analysis` 的环境变量命名习惯（主模型按 `LITELLM_MODEL > LLM_MODEL > AGENT_LITELLM_MODEL > 首个渠道模型 > 供应商默认模型` 解析；`LLM_API_KEY` 与 `LLM_BASE_URL` 优先于主模型默认网关）：
+AlphaSift 直接通过轻量 `requests` 客户端调用 OpenAI 兼容 `/chat/completions`（无外部 LLM SDK 依赖），主模型按 `LLM_MODEL > 首个渠道模型 > 供应商默认模型` 解析；`LLM_API_KEY` 与 `LLM_BASE_URL` 优先于主模型默认网关：
 
 | 前缀 | 默认 Base URL | 密钥变量 |
 |---|---|---|
@@ -114,7 +113,7 @@ AlphaSift 无需安装 `litellm`，直接通过轻量 `requests` 客户端调用
 | `moonshot` | `https://api.moonshot.cn/v1` | `MOONSHOT_API_KEY` |
 | `aihubmix` | `https://aihubmix.com/v1` | `AIHUBMIX_KEY` / `AIHUBMIX_API_KEY` |
 
-如果旧配置曾使用 `LITELLM_CONFIG` 或原生非 OpenAI 渠道协议，请删除 `LITELLM_CONFIG` 并迁移为 `LLM_CHANNELS`：
+如需配置多渠道与主备回退模型，请使用 `LLM_CHANNELS`：
 
 ```env
 LLM_CHANNELS=primary,backup

@@ -4,11 +4,11 @@ from pathlib import Path
 from alphasift.config import Config, DEFAULT_LLM_MODEL
 
 
-def test_config_reads_daily_stock_analysis_litellm_env(monkeypatch):
-    monkeypatch.setenv("LITELLM_MODEL", "openai/deepseek-ai/DeepSeek-V3")
+def test_config_reads_llm_model_and_fallback_env(monkeypatch):
+    monkeypatch.setenv("LLM_MODEL", "openai/deepseek-ai/DeepSeek-V3")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://api.siliconflow.cn/v1")
-    monkeypatch.setenv("LITELLM_FALLBACK_MODELS", "openai/gpt-4o-mini,anthropic/claude-3-5-sonnet")
+    monkeypatch.setenv("LLM_FALLBACK_MODELS", "openai/gpt-4o-mini,anthropic/claude-3-5-sonnet")
     monkeypatch.setenv("LLM_TIMEOUT_SEC", "42")
     monkeypatch.setenv("LLM_MAX_TOKENS", "1234")
 
@@ -235,7 +235,7 @@ def test_config_loads_extra_env_files(monkeypatch, tmp_path):
     env_file = tmp_path / "external.env"
     env_file.write_text(
         "\n".join([
-            "LITELLM_MODEL=openai/test-model",
+            "LLM_MODEL=openai/test-model",
             "OPENAI_API_KEY=sk-from-file",
             "OPENAI_BASE_URL=https://example.test/v1",
         ]),
@@ -253,7 +253,7 @@ def test_config_loads_extra_env_files(monkeypatch, tmp_path):
 def test_empty_values_in_extra_env_file_do_not_block_later_files(monkeypatch, tmp_path):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
-    monkeypatch.delenv("LITELLM_MODEL", raising=False)
+    monkeypatch.delenv("LLM_MODEL", raising=False)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     first = tmp_path / "first.env"
     second = tmp_path / "second.env"
@@ -268,9 +268,7 @@ def test_empty_values_in_extra_env_file_do_not_block_later_files(monkeypatch, tm
 
 def test_config_from_env_loads_env_file_once_per_process(monkeypatch, tmp_path):
     for name in (
-        "LITELLM_MODEL",
         "LLM_MODEL",
-        "AGENT_LITELLM_MODEL",
         "OPENAI_API_KEY",
         "OPENAI_BASE_URL",
         "DEEPSEEK_API_KEY",
@@ -283,7 +281,7 @@ def test_config_from_env_loads_env_file_once_per_process(monkeypatch, tmp_path):
     env_file = tmp_path / "cached.env"
     env_file.write_text(
         "\n".join([
-            "LITELLM_MODEL=openai/cached-model",
+            "LLM_MODEL=openai/cached-model",
             "OPENAI_API_KEY=sk-cached",
         ]),
         encoding="utf-8",
@@ -309,17 +307,15 @@ def test_config_from_env_loads_env_file_once_per_process(monkeypatch, tmp_path):
     monkeypatch.delenv("ALPHASIFT_ENV_FILES", raising=False)
     third = Config.from_env()
 
-    assert os.getenv("LITELLM_MODEL") is None
+    assert os.getenv("LLM_MODEL") is None
     assert os.getenv("OPENAI_API_KEY") is None
     assert third.llm_model == DEFAULT_LLM_MODEL
 
 
 def test_default_gemini_model_and_hydrogen_fallback(monkeypatch):
     for name in (
-        "LITELLM_MODEL",
         "LLM_MODEL",
-        "AGENT_LITELLM_MODEL",
-        "LITELLM_FALLBACK_MODELS",
+        "LLM_FALLBACK_MODELS",
         "GEMINI_MODEL",
         "OPENAI_API_KEY",
         "DEEPSEEK_API_KEY",
@@ -341,11 +337,11 @@ def test_default_gemini_model_and_hydrogen_fallback(monkeypatch):
     assert cfg_h.llm_fallback_models == []
 
     monkeypatch.delenv("GEMINI_MODEL", raising=False)
-    monkeypatch.setenv("LITELLM_FALLBACK_MODELS", "none")
+    monkeypatch.setenv("LLM_FALLBACK_MODELS", "none")
     cfg_none = Config.from_env()
     assert cfg_none.llm_fallback_models == []
 
-    monkeypatch.setenv("LITELLM_FALLBACK_MODELS", "")
+    monkeypatch.setenv("LLM_FALLBACK_MODELS", "")
     cfg_empty = Config.from_env()
     assert cfg_empty.llm_fallback_models == []
 

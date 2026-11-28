@@ -245,7 +245,7 @@ Atom 1.0 RSS feed: [`site/feed.xml`](https://alphasift.zhulinsen.tech/site/feed.
 | `kr` | Yahoo Finance screener + Naver Finance mobile API | Naver supplies PE/PB (`ALPHASIFT_KR_VALUATION=0` disables); `~10s` extra |
 
 - **2026-11-20 `--no-llm` sample**: CN `dual_low` (5,215 -> 205 -> 5 distinct industries: `601997`, `601117`, `600741`, `603799`, `601233`), HK `global_value` (`0267.HK`, `0001.HK`, `1339.HK`, `1398.HK`, `0358.HK`), JP `global_value` (`9501.T`, `5401.T`, `1605.T`, `9104.T`, `9022.T`).
-- **Key env vars**: `LITELLM_MODEL` (default `gemini/gemini-3.8-flash`), `LITELLM_FALLBACK_MODELS` (`gemini/gemini-4-hydrogen`), `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`, `LLM_CANDIDATE_CONTEXT_ENABLED=true` (enabled in CI Actions; local default off), `NOTIFY_URLS`, `ALPHASIFT_ENABLE_PAGES=true`, `TUSHARE_TOKEN`, `DSA_API_URL`. See [docs/configuration.md](docs/configuration.md).
+- **Key env vars**: `LLM_MODEL` (default `gemini/gemini-3.8-flash`), `LLM_FALLBACK_MODELS` (`gemini/gemini-4-hydrogen`), `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`, `LLM_CANDIDATE_CONTEXT_ENABLED=true` (enabled in CI Actions; local default off), `NOTIFY_URLS`, `ALPHASIFT_ENABLE_PAGES=true`, `TUSHARE_TOKEN`, `DSA_API_URL`. See [docs/configuration.md](docs/configuration.md).
 - **Known limitations**: Research screening & audit engine only (no order routing or dividend-adjusted portfolio simulation). Pre-`2026-11-21` `track-record` runs used `close` entry; `2026-11-21+` CN uses `next_open` with raw limit-up block accounting.
 
 </details>
