@@ -10,6 +10,8 @@ from statistics import median
 
 from alphasift.jsonutil import finite_float, safe_int
 from alphasift.models import EvaluationResult, PickEvaluation
+from alphasift.normalize import safe_text
+from alphasift.run_history import _average
 from alphasift.store import evaluation_from_dict
 from alphasift.timeutil import MIN_TIMESTAMP, parse_timestamp
 
@@ -22,13 +24,18 @@ def build_strategy_performance_summary(
 ) -> dict[str, object]:
     """Summarize saved T+N evaluation files without re-running live evaluation."""
     limit_val = max(safe_int(limit, default=0), 0)
-    evaluations = _list_saved_evaluations(data_dir=data_dir, limit=limit_val, strategy=strategy)
+    strategy_filter = safe_text(strategy)
+    evaluations = _list_saved_evaluations(
+        data_dir=data_dir,
+        limit=limit_val,
+        strategy=strategy_filter or None,
+    )
     strategy_rows = [_strategy_summary(items) for items in _group_by_strategy(evaluations).values()]
     strategy_rows.sort(
         key=lambda item: (
             _score_value(item.get("performance_score")),
-            _parse_datetime(str(item.get("latest_evaluated_at") or "")),
-            str(item.get("strategy") or ""),
+            _parse_datetime(item.get("latest_evaluated_at")),
+            safe_text(item.get("strategy")),
         ),
         reverse=True,
     )
@@ -38,7 +45,7 @@ def build_strategy_performance_summary(
         "evaluation_count": len(evaluations),
         "strategy_count": len(strategy_rows),
         "limit": limit_val,
-        "strategy_filter": strategy or "",
+        "strategy_filter": strategy_filter,
         "summary": _history_summary(evaluations),
         "strategies": strategy_rows,
         "leaderboard": strategy_rows[:10],
@@ -87,18 +94,25 @@ def _load_evaluation(path: Path) -> EvaluationResult | None:
 def _group_by_strategy(evaluations: list[EvaluationResult]) -> dict[str, list[EvaluationResult]]:
     groups: dict[str, list[EvaluationResult]] = {}
     for item in evaluations:
-        groups.setdefault(item.strategy or "unknown", []).append(item)
+        groups.setdefault(safe_text(item.strategy) or "unknown", []).append(item)
     return groups
 
 
-def _strategy_summary(evaluations: list[EvaluationResult]) -> dict[str, object]:
-    ordered = sorted(evaluations, key=_evaluation_sort_key, reverse=True)
-    latest = ordered[0] if ordered else None
+def _sequence(value: object) -> list[object]:
+    return list(value) if isinstance(value, (list, tuple)) else []
+
+
+def _clean_elapsed_days(value: object) -> int | None:
+    num = finite_float(value)
+    if num is None or num < 0:
+        return None
+    return int(num)
+
+
+def _build_base_metrics(ordered: list[EvaluationResult]) -> tuple[dict[str, object], dict[str, object]]:
     pick_stats = _pick_stats(_all_picks(ordered))
     run_returns = _run_returns(ordered)
-    missing_count = sum(len(item.missing_codes) for item in ordered)
-    source_error_count = sum(len(item.source_errors) for item in ordered)
-    degradation_count = sum(len(item.degradation) for item in ordered)
+    missing_count = sum(len(_sequence(item.missing_codes)) for item in ordered)
     performance_score = _performance_score(
         average_return_pct=pick_stats["average_return_pct"],
         win_rate=pick_stats["win_rate"],
@@ -109,13 +123,8 @@ def _strategy_summary(evaluations: list[EvaluationResult]) -> dict[str, object]:
         average_return_pct=pick_stats["average_return_pct"],
         win_rate=pick_stats["win_rate"],
     )
-    return {
-        "strategy": latest.strategy if latest else "unknown",
+    metrics = {
         "evaluation_count": len(ordered),
-        "latest_run_id": latest.run_id if latest else "",
-        "latest_evaluated_at": latest.evaluated_at if latest else "",
-        "latest_elapsed_days": latest.elapsed_days if latest else None,
-        "latest_snapshot_source": latest.snapshot_source if latest else "",
         "pick_count": pick_stats["pick_count"],
         "evaluated_pick_count": pick_stats["evaluated_pick_count"],
         "missing_count": missing_count,
@@ -123,49 +132,40 @@ def _strategy_summary(evaluations: list[EvaluationResult]) -> dict[str, object]:
         "average_return_pct": pick_stats["average_return_pct"],
         "median_return_pct": pick_stats["median_return_pct"],
         "win_rate": pick_stats["win_rate"],
-        "average_max_drawdown_pct": pick_stats["average_max_drawdown_pct"],
-        "average_max_runup_pct": pick_stats["average_max_runup_pct"],
         "average_run_return_pct": _average(run_returns),
         "run_win_rate": _rate(sum(1 for value in run_returns if value > 0), len(run_returns), percent=True),
         "performance_score": performance_score,
         "outcome": outcome,
-        "source_error_count": source_error_count,
-        "degradation_count": degradation_count,
         "next_actions": _performance_actions(outcome),
+    }
+    return pick_stats, metrics
+
+
+def _strategy_summary(evaluations: list[EvaluationResult]) -> dict[str, object]:
+    ordered = sorted(evaluations, key=_evaluation_sort_key, reverse=True)
+    latest = ordered[0] if ordered else None
+    pick_stats, metrics = _build_base_metrics(ordered)
+    return {
+        "strategy": safe_text(latest.strategy) or "unknown" if latest else "unknown",
+        "latest_run_id": safe_text(latest.run_id) if latest else "",
+        "latest_evaluated_at": safe_text(latest.evaluated_at) if latest else "",
+        "latest_elapsed_days": _clean_elapsed_days(latest.elapsed_days) if latest else None,
+        "latest_snapshot_source": safe_text(latest.snapshot_source) if latest else "",
+        **metrics,
+        "average_max_drawdown_pct": pick_stats["average_max_drawdown_pct"],
+        "average_max_runup_pct": pick_stats["average_max_runup_pct"],
+        "source_error_count": sum(len(_sequence(item.source_errors)) for item in ordered),
+        "degradation_count": sum(len(_sequence(item.degradation)) for item in ordered),
         "recent_evaluations": [_compact_evaluation(item) for item in ordered[:5]],
     }
 
 
 def _history_summary(evaluations: list[EvaluationResult]) -> dict[str, object]:
     ordered = sorted(evaluations, key=_evaluation_sort_key, reverse=True)
-    pick_stats = _pick_stats(_all_picks(ordered))
-    run_returns = _run_returns(ordered)
-    missing_count = sum(len(item.missing_codes) for item in ordered)
-    performance_score = _performance_score(
-        average_return_pct=pick_stats["average_return_pct"],
-        win_rate=pick_stats["win_rate"],
-        pick_count=pick_stats["pick_count"],
-        missing_count=missing_count,
-    )
-    outcome = _performance_outcome(
-        average_return_pct=pick_stats["average_return_pct"],
-        win_rate=pick_stats["win_rate"],
-    )
+    _, metrics = _build_base_metrics(ordered)
     return {
-        "evaluation_count": len(ordered),
-        "pick_count": pick_stats["pick_count"],
-        "evaluated_pick_count": pick_stats["evaluated_pick_count"],
-        "missing_count": missing_count,
-        "missing_rate": _rate(missing_count, pick_stats["pick_count"]),
-        "average_return_pct": pick_stats["average_return_pct"],
-        "median_return_pct": pick_stats["median_return_pct"],
-        "win_rate": pick_stats["win_rate"],
-        "average_run_return_pct": _average(run_returns),
-        "run_win_rate": _rate(sum(1 for value in run_returns if value > 0), len(run_returns), percent=True),
-        "performance_score": performance_score,
-        "outcome": outcome,
+        **metrics,
         "latest_evaluation": _compact_evaluation(ordered[0]) if ordered else {},
-        "next_actions": _performance_actions(outcome),
     }
 
 
@@ -187,7 +187,7 @@ def _pick_stats(picks: list[PickEvaluation]) -> dict[str, object]:
 def _all_picks(evaluations: list[EvaluationResult]) -> list[PickEvaluation]:
     picks: list[PickEvaluation] = []
     for item in evaluations:
-        picks.extend(item.picks)
+        picks.extend(_sequence(item.picks))
     return picks
 
 
@@ -198,7 +198,7 @@ def _run_returns(evaluations: list[EvaluationResult]) -> list[float]:
         if avg_ret is not None:
             values.append(avg_ret)
             continue
-        returns = [val for pick in item.picks if (val := finite_float(pick.return_pct)) is not None]
+        returns = [val for pick in _sequence(item.picks) if (val := finite_float(pick.return_pct)) is not None]
         if returns:
             values.append(sum(returns) / len(returns))
     return values
@@ -251,26 +251,20 @@ def _performance_actions(outcome: str) -> list[str]:
 
 
 def _compact_evaluation(item: EvaluationResult) -> dict[str, object]:
+    picks = _sequence(item.picks)
     return {
-        "run_id": item.run_id,
-        "strategy": item.strategy,
-        "evaluated_at": item.evaluated_at,
-        "elapsed_days": item.elapsed_days,
-        "snapshot_source": item.snapshot_source,
-        "pick_count": len(item.picks),
-        "evaluated_pick_count": sum(1 for pick in item.picks if finite_float(pick.return_pct) is not None),
-        "missing_count": len(item.missing_codes),
+        "run_id": safe_text(item.run_id),
+        "strategy": safe_text(item.strategy),
+        "evaluated_at": safe_text(item.evaluated_at),
+        "elapsed_days": _clean_elapsed_days(item.elapsed_days),
+        "snapshot_source": safe_text(item.snapshot_source),
+        "pick_count": len(picks),
+        "evaluated_pick_count": sum(1 for pick in picks if finite_float(pick.return_pct) is not None),
+        "missing_count": len(_sequence(item.missing_codes)),
         "average_return_pct": finite_float(item.average_return_pct),
         "win_rate": finite_float(item.win_rate),
-        "saved_path": item.saved_path,
+        "saved_path": safe_text(item.saved_path),
     }
-
-
-def _average(values: list[float]) -> float | None:
-    clean = [num for item in values if (num := finite_float(item)) is not None]
-    if not clean:
-        return None
-    return round(sum(clean) / len(clean), 4)
 
 
 def _median(values: list[float]) -> float | None:
@@ -297,8 +291,8 @@ def _score_value(value: object) -> float:
 
 
 def _evaluation_sort_key(item: EvaluationResult) -> tuple[datetime, str]:
-    return (_parse_datetime(item.evaluated_at), item.run_id)
+    return (_parse_datetime(item.evaluated_at), safe_text(item.run_id))
 
 
-def _parse_datetime(value: str) -> datetime:
-    return parse_timestamp(value) or MIN_TIMESTAMP
+def _parse_datetime(value: object) -> datetime:
+    return parse_timestamp(safe_text(value)) or MIN_TIMESTAMP

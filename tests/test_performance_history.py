@@ -243,3 +243,53 @@ def test_performance_history_helpers_scrub_nonfinite_and_bool(tmp_path):
     assert _rate(True, 4) is None  # type: ignore[arg-type]
     assert _rate(1, float("nan")) is None  # type: ignore[arg-type]
     assert _rate(1, 4, percent=True) == 25.0
+
+
+def test_build_strategy_performance_summary_scrubs_na_fields_bad_elapsed_and_nones(
+    monkeypatch,
+    tmp_path,
+):
+    import json
+
+    corrupt_eval = EvaluationResult(
+        run_id=float("nan"),  # type: ignore[arg-type]
+        strategy="NA",
+        market="cn",
+        created_at="2026-04-07T09:30:00",
+        evaluated_at=float("nan"),  # type: ignore[arg-type]
+        elapsed_days=True,  # type: ignore[arg-type]
+        snapshot_source="null",
+        picks=None,  # type: ignore[arg-type]
+        missing_codes=None,  # type: ignore[arg-type]
+        source_errors=None,  # type: ignore[arg-type]
+        degradation=None,  # type: ignore[arg-type]
+    )
+    negative_elapsed = EvaluationResult(
+        run_id="run_neg",
+        strategy="nan",
+        market="cn",
+        created_at="2026-04-08T09:30:00",
+        evaluated_at="2026-04-08T09:30:00",
+        elapsed_days=-3,
+        snapshot_source=None,  # type: ignore[arg-type]
+        picks=[],
+    )
+    monkeypatch.setattr(
+        "alphasift.performance_history._list_saved_evaluations",
+        lambda **_kwargs: [corrupt_eval, negative_elapsed],
+    )
+
+    payload = build_strategy_performance_summary(data_dir=tmp_path, limit=10, strategy="  NA  ")
+
+    json.dumps(payload, allow_nan=False)
+    assert payload["strategy_filter"] == ""
+    assert payload["evaluation_count"] == 2
+    assert payload["strategy_count"] == 1
+    row = payload["strategies"][0]
+    assert row["strategy"] == "unknown"
+    assert row["latest_elapsed_days"] is None
+    assert row["latest_snapshot_source"] == ""
+    assert row["source_error_count"] == 0
+    assert row["degradation_count"] == 0
+    assert all(entry["elapsed_days"] is None for entry in row["recent_evaluations"])
+    assert all(entry["run_id"] != "nan" for entry in row["recent_evaluations"])
