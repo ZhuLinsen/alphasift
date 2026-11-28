@@ -164,3 +164,45 @@ def test_build_data_source_history_scrubs_nonfinite_and_bool_limit(tmp_path):
         payload = build_data_source_history(data_dir=tmp_path, limit=bad_limit)  # type: ignore[arg-type]
         assert payload["limit"] == 0
         assert payload["run_count"] == 0
+
+
+def test_build_data_source_history_scrubs_na_lists_false_string_flags_and_negative_counts(
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(
+        "alphasift.source_history.list_saved_runs",
+        lambda **_kwargs: [
+            42,
+            {
+                "run_id": None,
+                "strategy": "nan",
+                "created_at": float("nan"),
+                "snapshot_source": float("nan"),
+                "picks": -4,
+                "source_error_count": 1,
+                "source_errors": [None, "timeout"],
+                "degradation_count": -3,
+                "degradation": "none, stale_cache",
+                "daily_enriched": "false",
+                "daily_enrich_count": -1,
+            },
+        ],
+    )
+
+    payload = build_data_source_history(data_dir=tmp_path, limit=10, strategy="null")
+
+    assert payload["strategy_filter"] == ""
+    assert payload["run_count"] == 1
+    src = payload["snapshot_sources"][0]
+    assert src["snapshot_source"] == "unknown"
+    assert src["strategies"] == []
+    assert src["strategy_count"] == 0
+    assert src["latest_created_at"] == ""
+    assert src["total_picks"] == 0
+    assert src["average_picks"] == 0.0
+    assert src["source_error_samples"] == ["timeout"]
+    assert src["degradation_count"] == 0
+    assert src["degradation_samples"] == ["stale_cache"]
+    assert src["daily_enriched_runs"] == 0
+    assert src["daily_enrich_count"] == 0

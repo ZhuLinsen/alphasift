@@ -147,3 +147,51 @@ def test_build_strategy_run_summary_scrubs_nonfinite_and_bool_limit(tmp_path):
         payload = build_strategy_run_summary(data_dir=tmp_path, limit=bad_limit)  # type: ignore[arg-type]
         assert payload["limit"] == 0
         assert payload["run_count"] == 0
+
+
+def test_build_strategy_run_summary_scrubs_na_lists_false_string_flags_and_negative_counts(
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(
+        "alphasift.run_history.list_saved_runs",
+        lambda **_kwargs: [
+            "corrupt-row",
+            {
+                "run_id": float("nan"),
+                "strategy": float("nan"),
+                "strategy_category": "NA",
+                "created_at": "2026-04-05T09:30:00",
+                "snapshot_source": "nan",
+                "picks": -5,
+                "source_error_count": -2,
+                "source_errors": [None, float("nan"), "NA", "akshare timeout"],
+                "degradation_count": -1,
+                "degradation": "NA, fallback, null",
+                "llm_ranked": "false",
+                "daily_enriched": "0",
+                "daily_enrich_count": -3,
+                "post_analyzers": [None, "scorecard", float("nan")],
+            },
+        ],
+    )
+
+    payload = build_strategy_run_summary(data_dir=tmp_path, limit=10, strategy="  NA  ")
+
+    assert payload["strategy_filter"] == ""
+    assert payload["run_count"] == 1
+    row = payload["strategies"][0]
+    assert row["strategy"] == "unknown"
+    assert row["strategy_category"] == ""
+    assert row["latest_run_id"] == ""
+    assert row["latest_snapshot_source"] == ""
+    assert row["snapshot_sources"] == []
+    assert row["total_picks"] == 0
+    assert row["average_picks"] == 0.0
+    assert row["source_error_count"] == 0
+    assert row["source_error_samples"] == ["akshare timeout"]
+    assert row["degradation_samples"] == ["fallback"]
+    assert row["llm_ranked_runs"] == 0
+    assert row["daily_enriched_runs"] == 0
+    assert row["daily_enrich_count"] == 0
+    assert row["post_analyzers"] == ["scorecard"]
